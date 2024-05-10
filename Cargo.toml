@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+eframe = { features = ["default"], version = "0.27.2" }
+egui_extras = { features = ["default"], version = "0.27.2" }
 open_dmx = "1.1.1"
