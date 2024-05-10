@@ -21,7 +21,7 @@ impl Action {
         }
     }
 
-    pub fn run_set_intensity(
+    fn run_set_intensity(
         &self,
         dmx: &mut DMXSerial,
         fixture_selector: &FixtureSelector,
@@ -30,11 +30,9 @@ impl Action {
         let fixture_dmx_channels = fixture_selector.get_dmx_channels();
         for fixture_channel in fixture_dmx_channels {
             dmx.set_channel(fixture_channel, intensity)
-                .map_err(|err| ActionRunError::DMXChannelValidityError(err))?;
+                .map_err(ActionRunError::DMXChannelValidityError)?;
         }
 
-        Ok(ActionRunResult {
-            should_update: true,
-        })
+        Ok(ActionRunResult::new(true))
     }
 }

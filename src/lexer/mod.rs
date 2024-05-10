@@ -13,21 +13,22 @@ impl<'a> Lexer<'a> {
         Lexer { input, position: 0 }
     }
 
-    pub fn peek(&self) -> char {
+    fn peek(&self) -> char {
         self.input.chars().nth(self.position).unwrap()
     }
 
-    pub fn consume(&mut self) -> char {
+    fn consume(&mut self) -> char {
         let current_char = self.peek();
         self.position += 1;
-        return current_char;
+        current_char
     }
 
-    pub fn advance(&mut self) {
+    #[allow(dead_code)]
+    fn advance(&mut self) {
         self.position += 1;
     }
 
-    pub fn is_eof(&self) -> bool {
+    fn is_eof(&self) -> bool {
         self.position >= self.input.len() - 1
     }
 
@@ -35,10 +36,10 @@ impl<'a> Lexer<'a> {
         let mut tokens = Vec::<Token>::new();
 
         while !self.is_eof() {
-            if self.peek().is_digit(10) {
+            if self.peek().is_ascii_digit() {
                 let mut num = String::new();
 
-                while self.peek().is_digit(10) {
+                while self.peek().is_ascii_digit() {
                     num.push(self.consume());
                 }
 
@@ -51,7 +52,7 @@ impl<'a> Lexer<'a> {
                 }
 
                 if keyword == "intens" {
-                    tokens.push(Token::Intens);
+                    tokens.push(Token::KeywordIntens);
                 } else {
                     return Err(TokenizationError::UnknownKeyword(keyword));
                 }
@@ -60,6 +61,6 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        return Ok(tokens);
+        Ok(tokens)
     }
 }

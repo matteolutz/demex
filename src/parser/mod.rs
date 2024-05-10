@@ -21,15 +21,15 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn current_token(&self) -> &Token {
+    fn current_token(&self) -> &Token {
         &self.tokens[self.current_token_idx]
     }
 
-    pub fn advance(&mut self) {
+    fn advance(&mut self) {
         self.current_token_idx += 1;
     }
 
-    pub fn parse_fixture_selector(&mut self) -> Result<FixtureSelector, ParseError> {
+    fn parse_fixture_selector(&mut self) -> Result<FixtureSelector, ParseError> {
         let token = self.current_token().clone();
 
         match token {
@@ -44,11 +44,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_action(&mut self) -> Result<Action, ParseError> {
+    fn parse_action(&mut self) -> Result<Action, ParseError> {
         let fixture_select = self.parse_fixture_selector()?;
 
         let action = match self.current_token() {
-            Token::Intens => {
+            Token::KeywordIntens => {
                 self.advance();
 
                 let token = self.current_token().clone();

@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let res = action.run(&mut dmx)?;
 
-        if res.should_update {
+        if res.should_update() {
             dmx.update().unwrap();
         }
     }
