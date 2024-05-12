@@ -1,8 +1,8 @@
-use open_dmx::error::DMXChannelValidityError;
+use crate::fixture::handler::error::FixtureHandlerError;
 
 #[derive(Debug)]
 pub enum ActionRunError {
-    DMXChannelValidityError(DMXChannelValidityError),
+    FixtureHandlerError(FixtureHandlerError),
 }
 
 impl std::fmt::Display for ActionRunError {

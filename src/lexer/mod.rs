@@ -14,7 +14,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn peek(&self) -> char {
-        self.input.chars().nth(self.position).unwrap()
+        self.input.chars().nth(self.position).unwrap_or('\n')
     }
 
     fn consume(&mut self) -> char {
@@ -29,7 +29,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn is_eof(&self) -> bool {
-        self.position >= self.input.len() - 1
+        self.position >= self.input.len()
     }
 
     pub fn tokenize(&mut self) -> Result<Vec<Token>, TokenizationError> {
@@ -53,9 +53,18 @@ impl<'a> Lexer<'a> {
 
                 if keyword == "intens" {
                     tokens.push(Token::KeywordIntens);
+                } else if keyword == "thru" {
+                    tokens.push(Token::KeywordThru);
+                } else if keyword == "full" {
+                    tokens.push(Token::KeywordFull);
+                } else if keyword == "home" {
+                    tokens.push(Token::KeywordHome);
                 } else {
                     return Err(TokenizationError::UnknownKeyword(keyword));
                 }
+            } else if self.peek() == '@' {
+                self.consume();
+                tokens.push(Token::KeywordIntens);
             } else if self.peek().is_whitespace() {
                 self.consume();
             }

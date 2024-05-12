@@ -5,10 +5,10 @@ pub enum FixtureSelector {
 }
 
 impl FixtureSelector {
-    pub fn get_dmx_channels(&self) -> Vec<usize> {
+    pub fn get_fixtures(&self) -> Vec<u32> {
         match self {
-            Self::SingleFixture(f) => vec![*f as usize],
-            Self::FixtureRange(begin, end) => (*begin as usize..*end as usize).collect(),
+            Self::SingleFixture(f) => vec![*f],
+            Self::FixtureRange(begin, end) => (*begin..*end + 1).collect(),
         }
     }
 }
