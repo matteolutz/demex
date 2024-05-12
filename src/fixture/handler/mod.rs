@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 
 use crate::dmx::DMXOutput;
 
@@ -13,7 +13,7 @@ pub struct FixtureHandler {
     fixtures: Vec<Fixture>,
     state: HashMap<u32, FixtureState>,
     outputs: Vec<Box<dyn DMXOutput>>,
-    dirty_fixtures: HashSet<u32>,
+    dirty_fixtures: BTreeSet<u32>,
     universe_output_state: HashMap<u16, [u8; 512]>,
 }
 
@@ -23,7 +23,7 @@ impl FixtureHandler {
             fixtures: Vec::new(),
             state: HashMap::new(),
             outputs: Vec::new(),
-            dirty_fixtures: HashSet::new(),
+            dirty_fixtures: BTreeSet::new(),
             universe_output_state: HashMap::new(),
         }
     }
@@ -99,7 +99,7 @@ impl FixtureHandler {
 
     pub fn update(&mut self) -> Result<(), FixtureHandlerError> {
         if !self.dirty_fixtures.is_empty() {
-            let mut dirty_universes: HashSet<u16> = HashSet::new();
+            let mut dirty_universes: BTreeSet<u16> = BTreeSet::new();
 
             for f in self.fixtures.iter() {
                 let fixture_id = f.id();
@@ -125,7 +125,7 @@ impl FixtureHandler {
                         universe_data_packet[start_address - 1 + i] = *byte;
                     }
 
-                    self.dirty_fixtures.retain(|&x| x != fixture_id);
+                    self.dirty_fixtures.remove(&fixture_id);
                 }
             }
 
