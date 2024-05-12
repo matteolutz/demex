@@ -7,7 +7,9 @@ pub enum ActionRunError {
 
 impl std::fmt::Display for ActionRunError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            ActionRunError::FixtureHandlerError(e) => write!(f, "Fixture handler error: {}", e),
+        }
     }
 }
 

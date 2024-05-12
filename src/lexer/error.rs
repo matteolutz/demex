@@ -5,7 +5,9 @@ pub enum TokenizationError {
 
 impl std::fmt::Display for TokenizationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            TokenizationError::UnknownKeyword(kw) => write!(f, "Unknown keyword: {}", kw),
+        }
     }
 }
 

@@ -14,7 +14,9 @@ pub struct FixtureHandler {
     state: HashMap<u32, FixtureState>,
     outputs: Vec<Box<dyn DMXOutput>>,
     dirty_fixtures: BTreeSet<u32>,
+    should_update: bool,
     universe_output_state: HashMap<u16, [u8; 512]>,
+    grand_master: u8,
 }
 
 impl FixtureHandler {
@@ -24,7 +26,9 @@ impl FixtureHandler {
             state: HashMap::new(),
             outputs: Vec::new(),
             dirty_fixtures: BTreeSet::new(),
+            should_update: false,
             universe_output_state: HashMap::new(),
+            grand_master: 255,
         }
     }
 
@@ -48,7 +52,7 @@ impl FixtureHandler {
         if self.state.contains_key(&fixture_id) {
             Ok(())
         } else {
-            Err(FixtureHandlerError::FixtureNotFound)
+            Err(FixtureHandlerError::FixtureNotFound(fixture_id))
         }
     }
 
@@ -97,18 +101,32 @@ impl FixtureHandler {
         &self.fixtures
     }
 
+    pub fn grand_master(&self) -> u8 {
+        self.grand_master
+    }
+
+    pub fn set_grand_master(&mut self, grand_master: u8) {
+        self.grand_master = grand_master;
+        self.should_update = true;
+    }
+
     pub fn update(&mut self) -> Result<(), FixtureHandlerError> {
-        if !self.dirty_fixtures.is_empty() {
+        // update if there are dirty fixtures or if the update flag is set
+        if !self.dirty_fixtures.is_empty() || self.should_update {
             let mut dirty_universes: BTreeSet<u16> = BTreeSet::new();
 
             for f in self.fixtures.iter() {
                 let fixture_id = f.id();
-                if self.dirty_fixtures.contains(&fixture_id) {
+
+                if self.should_update || self.dirty_fixtures.contains(&fixture_id) {
                     let fixture_state = self.state.get(&fixture_id).unwrap();
-                    let fixture_data_packet = f.generate_data_packet(fixture_state.clone());
+
+                    // generate the fixture data packet, translating the fixture state into a packet of bytes
+                    let fixture_data_packet = f.generate_data_packet(
+                        fixture_state.intensity_mult(self.grand_master() as f32 / 255.0),
+                    );
 
                     let universe = f.universe();
-                    dirty_universes.insert(universe);
 
                     // insert universe if it doesn't exist
                     self.universe_output_state
@@ -120,6 +138,25 @@ impl FixtureHandler {
                     // copy fixture data packet into universe data packet
                     let universe_data_packet =
                         self.universe_output_state.get_mut(&universe).unwrap();
+
+                    // if the manual update flag is set (e.g. through a GM value change), check if the fixture is really dirty
+                    if self.should_update {
+                        let mut is_dirty = false;
+
+                        for i in 0..fixture_data_packet.len() {
+                            if fixture_data_packet[i] != universe_data_packet[start_address - 1 + i]
+                            {
+                                is_dirty = true;
+                                break;
+                            }
+                        }
+
+                        if !is_dirty {
+                            continue;
+                        }
+                    }
+
+                    dirty_universes.insert(universe);
 
                     for (i, byte) in fixture_data_packet.iter().enumerate() {
                         universe_data_packet[start_address - 1 + i] = *byte;
@@ -142,6 +179,7 @@ impl FixtureHandler {
             }
 
             self.dirty_fixtures.clear();
+            self.should_update = false;
         }
 
         Ok(())

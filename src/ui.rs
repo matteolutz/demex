@@ -7,36 +7,39 @@ use crate::{
 
 pub struct UIApp {
     command_input: String,
+    gm_slider_val: u8,
     fixture_handler: FixtureHandler,
+    global_error: Option<Box<dyn std::error::Error>>,
+}
+
+fn get_test_fixture_handler(num_fixtures: u32) -> FixtureHandler {
+    let mut fh = FixtureHandler::new();
+
+    fh.add_output(Box::new(DebugDummyOutput {}));
+
+    for i in 1..num_fixtures + 1 {
+        fh.add_fixture(Fixture::new(
+            i,
+            format!("PAR {}", i),
+            vec![FixtureChannelType::Intesity],
+            1,
+            i as u8,
+        ))
+        .expect("This shouldn't happen :)");
+    }
+
+    fh
 }
 
 impl Default for UIApp {
     fn default() -> Self {
-        let mut fh = FixtureHandler::new();
-
-        fh.add_output(Box::new(DebugDummyOutput {}));
-
-        fh.add_fixture(Fixture::new(
-            1,
-            "PAR 1".to_string(),
-            vec![FixtureChannelType::Intesity],
-            1,
-            1,
-        ))
-        .expect("This shouldn't happen :)");
-
-        fh.add_fixture(Fixture::new(
-            2,
-            "PAR 2".to_string(),
-            vec![FixtureChannelType::Intesity],
-            2,
-            1,
-        ))
-        .expect("This shouldn't happen :)");
+        let fh = get_test_fixture_handler(10);
 
         Self {
             command_input: String::new(),
+            gm_slider_val: fh.grand_master(),
             fixture_handler: fh,
+            global_error: None,
         }
     }
 }
@@ -60,8 +63,25 @@ impl eframe::App for UIApp {
         let _ = self.fixture_handler.update();
 
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("demex");
+            ui.horizontal(|ui| {
+                ui.heading("demex");
+                ui.separator();
+                let slider =
+                    ui.add(eframe::egui::Slider::new(&mut self.gm_slider_val, 0..=255).text("GM"));
+
+                if slider.changed() {
+                    self.fixture_handler.set_grand_master(self.gm_slider_val);
+                }
+            });
+
+            if let Some(error) = &self.global_error {
+                ui.colored_label(eframe::egui::Color32::RED, format!("Error: {}", error));
+            }
+
             ui.separator();
+
+            let fixture_card_size = eframe::egui::vec2(75.0, 100.0);
+            let window_width = ui.available_width();
 
             ui.with_layout(
                 eframe::egui::Layout::top_down(eframe::egui::Align::LEFT),
@@ -70,24 +90,20 @@ impl eframe::App for UIApp {
                         .max_height(ui.available_height() - 60.0)
                         .show(ui, |ui| {
                             ui.heading("Fixtures");
-                            for fixture_chunk in self.fixture_handler.fixtures().chunks(5) {
+
+                            for fixture_chunk in self
+                                .fixture_handler
+                                .fixtures()
+                                .chunks((window_width / fixture_card_size.x) as usize - 1)
+                            {
                                 ui.horizontal(|ui| {
                                     for f in fixture_chunk {
-                                        /*let _ = ui.button(format!(
-                                        "{} {} (U{}.A{})\n\n{}",
-                                        f.id(),
-                                        f.name(),
-                                        f.universe(),
-                                        f.start_address(),
-                                        self.fixture_handler.fixture_state(f.id()).expect("")
-                                        ));*/
-
                                         let fixture_state =
                                             self.fixture_handler.fixture_state(f.id()).expect("");
                                         let fixture_intenstiy = fixture_state.intensity();
 
                                         let (rect, _) = ui.allocate_exact_size(
-                                            eframe::egui::vec2(75.0, 100.0),
+                                            fixture_card_size,
                                             eframe::egui::Sense::click(),
                                         );
 
@@ -114,7 +130,7 @@ impl eframe::App for UIApp {
                                                     255,
                                                 ),
                                                 format!(
-                                                    "{}\n{} ({}.{})\n\n{}",
+                                                    "{}\n{} (U{}.{})\n\n{}",
                                                     f.name(),
                                                     f.id(),
                                                     f.universe(),
@@ -153,6 +169,7 @@ impl eframe::App for UIApp {
                     {
                         if let Err(e) = self.run_cmd() {
                             eprintln!("{}", e);
+                            self.global_error = Some(e);
                         }
 
                         self.command_input.clear();

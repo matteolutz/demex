@@ -9,6 +9,8 @@ pub enum FixtureChannelType {
     ColorR,
     ColorG,
     ColorB,
+    Pan,
+    Tilt,
 }
 
 #[derive(Debug)]
@@ -72,6 +74,12 @@ impl Fixture {
                 }
                 FixtureChannelType::ColorB => {
                     data_packet.push(fixture_state.color().2);
+                }
+                FixtureChannelType::Pan => {
+                    data_packet.push(fixture_state.pan());
+                }
+                FixtureChannelType::Tilt => {
+                    data_packet.push(fixture_state.tilt());
                 }
             }
         }

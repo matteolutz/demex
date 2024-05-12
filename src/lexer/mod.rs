@@ -57,6 +57,8 @@ impl<'a> Lexer<'a> {
                     tokens.push(Token::KeywordThru);
                 } else if keyword == "full" {
                     tokens.push(Token::KeywordFull);
+                } else if keyword == "out" {
+                    tokens.push(Token::KeywordOut);
                 } else if keyword == "home" {
                     tokens.push(Token::KeywordHome);
                 } else {
@@ -65,6 +67,18 @@ impl<'a> Lexer<'a> {
             } else if self.peek() == '@' {
                 self.consume();
                 tokens.push(Token::KeywordIntens);
+            } else if self.peek() == '+' {
+                self.consume();
+                tokens.push(Token::Plus);
+            } else if self.peek() == '-' {
+                self.consume();
+                tokens.push(Token::Minus);
+            } else if self.peek() == '(' {
+                self.consume();
+                tokens.push(Token::ParenOpen);
+            } else if self.peek() == ')' {
+                self.consume();
+                tokens.push(Token::ParenClose);
             } else if self.peek().is_whitespace() {
                 self.consume();
             }

@@ -4,11 +4,16 @@ use crate::lexer::token::Token;
 pub enum ParseError {
     UnexpectedToken(Token, String),
     UnknownAction(String),
+    UnexpectedEndOfInput,
 }
 
 impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            ParseError::UnexpectedToken(t, e) => write!(f, "Unexpected token: {:?} ({})", t, e),
+            ParseError::UnknownAction(a) => write!(f, "Unknown action: {}", a),
+            ParseError::UnexpectedEndOfInput => write!(f, "Unexpected end of input"),
+        }
     }
 }
 

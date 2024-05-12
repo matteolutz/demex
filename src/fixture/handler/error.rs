@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub enum FixtureHandlerError {
-    FixtureNotFound,
+    FixtureNotFound(u32),
     FixtureAlreadyExists,
     FixtureHandlerUpdateError(Box<dyn std::error::Error>),
 }
@@ -8,7 +8,9 @@ pub enum FixtureHandlerError {
 impl std::fmt::Display for FixtureHandlerError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            FixtureHandlerError::FixtureNotFound => write!(f, "Fixture not found"),
+            FixtureHandlerError::FixtureNotFound(fixture) => {
+                write!(f, "Fixture {} not found", fixture)
+            }
             FixtureHandlerError::FixtureAlreadyExists => write!(f, "Fixture already exists"),
             FixtureHandlerError::FixtureHandlerUpdateError(e) => {
                 write!(f, "Fixture handler update error: {}", e)
