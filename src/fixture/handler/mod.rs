@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::dmx::DMXOutput;
 
@@ -13,8 +13,8 @@ pub struct FixtureHandler {
     fixtures: Vec<Fixture>,
     state: HashMap<u32, FixtureState>,
     outputs: Vec<Box<dyn DMXOutput>>,
-    dirty_fixtures: Vec<u32>,
-    sent_data_packets: HashMap<u16, [u8; 512]>,
+    dirty_fixtures: HashSet<u32>,
+    universe_output_state: HashMap<u16, [u8; 512]>,
 }
 
 impl FixtureHandler {
@@ -23,8 +23,8 @@ impl FixtureHandler {
             fixtures: Vec::new(),
             state: HashMap::new(),
             outputs: Vec::new(),
-            dirty_fixtures: Vec::new(),
-            sent_data_packets: HashMap::new(),
+            dirty_fixtures: HashSet::new(),
+            universe_output_state: HashMap::new(),
         }
     }
 
@@ -59,8 +59,15 @@ impl FixtureHandler {
     ) -> Result<(), FixtureHandlerError> {
         self.assert_fixture_exists(fixture_id)?;
 
+        // don't update if the state is the same
+        if let Some(fixture_state) = self.state.get(&fixture_id) {
+            if fixture_state == &new_state {
+                return Ok(());
+            }
+        }
+
         self.state.insert(fixture_id, new_state);
-        self.dirty_fixtures.push(fixture_id);
+        self.dirty_fixtures.insert(fixture_id);
         Ok(())
     }
 
@@ -92,7 +99,8 @@ impl FixtureHandler {
 
     pub fn update(&mut self) -> Result<(), FixtureHandlerError> {
         if !self.dirty_fixtures.is_empty() {
-            // TODO: remove unnecessary sending of new data packet to universes that are not flagged as dirty
+            let mut dirty_universes: HashSet<u16> = HashSet::new();
+
             for f in self.fixtures.iter() {
                 let fixture_id = f.id();
                 if self.dirty_fixtures.contains(&fixture_id) {
@@ -100,13 +108,18 @@ impl FixtureHandler {
                     let fixture_data_packet = f.generate_data_packet(fixture_state.clone());
 
                     let universe = f.universe();
-                    if !self.sent_data_packets.contains_key(&universe) {
-                        self.sent_data_packets.insert(universe, [0; 512]);
-                    }
+                    dirty_universes.insert(universe);
+
+                    // insert universe if it doesn't exist
+                    self.universe_output_state
+                        .entry(universe)
+                        .or_insert_with(|| [0; 512]);
 
                     let start_address = f.start_address() as usize;
 
-                    let universe_data_packet = self.sent_data_packets.get_mut(&universe).unwrap();
+                    // copy fixture data packet into universe data packet
+                    let universe_data_packet =
+                        self.universe_output_state.get_mut(&universe).unwrap();
 
                     for (i, byte) in fixture_data_packet.iter().enumerate() {
                         universe_data_packet[start_address - 1 + i] = *byte;
@@ -117,7 +130,11 @@ impl FixtureHandler {
             }
 
             for output in self.outputs.iter_mut() {
-                for (universe, data) in self.sent_data_packets.iter() {
+                for (universe, data) in self.universe_output_state.iter() {
+                    if !dirty_universes.contains(universe) {
+                        continue;
+                    }
+
                     output
                         .send(*universe, data)
                         .map_err(FixtureHandlerError::FixtureHandlerUpdateError)?;

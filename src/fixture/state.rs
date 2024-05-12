@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FixtureState {
     intensity: u8,
     color: (u8, u8, u8),
@@ -35,7 +35,7 @@ impl std::fmt::Display for FixtureState {
         write!(f, "{}%", (self.intensity as f32 / 255.0) * 100.0)?;
 
         let (r, g, b) = self.color;
-        write!(f, "({}, {}, {})", r, g, b)?;
+        write!(f, "\n({}, {}, {})", r, g, b)?;
 
         Ok(())
     }

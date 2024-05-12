@@ -29,8 +29,8 @@ impl Default for UIApp {
             2,
             "PAR 2".to_string(),
             vec![FixtureChannelType::Intesity],
-            1,
             2,
+            1,
         ))
         .expect("This shouldn't happen :)");
 
@@ -73,12 +73,56 @@ impl eframe::App for UIApp {
                             for fixture_chunk in self.fixture_handler.fixtures().chunks(5) {
                                 ui.horizontal(|ui| {
                                     for f in fixture_chunk {
-                                        let _ = ui.button(format!(
-                                            "{} {}\n{}",
-                                            f.id(),
-                                            f.name(),
-                                            self.fixture_handler.fixture_state(f.id()).expect("")
-                                        ));
+                                        /*let _ = ui.button(format!(
+                                        "{} {} (U{}.A{})\n\n{}",
+                                        f.id(),
+                                        f.name(),
+                                        f.universe(),
+                                        f.start_address(),
+                                        self.fixture_handler.fixture_state(f.id()).expect("")
+                                        ));*/
+
+                                        let fixture_state =
+                                            self.fixture_handler.fixture_state(f.id()).expect("");
+                                        let fixture_intenstiy = fixture_state.intensity();
+
+                                        let (rect, _) = ui.allocate_exact_size(
+                                            eframe::egui::vec2(75.0, 100.0),
+                                            eframe::egui::Sense::click(),
+                                        );
+
+                                        ui.painter().rect_stroke(
+                                            rect,
+                                            10.0,
+                                            eframe::egui::Stroke::new(
+                                                2.0,
+                                                eframe::egui::Color32::from_rgba_unmultiplied(
+                                                    255,
+                                                    255,
+                                                    255 - fixture_intenstiy,
+                                                    255,
+                                                ),
+                                            ),
+                                        );
+
+                                        ui.put(rect, |ui: &mut eframe::egui::Ui| {
+                                            ui.colored_label(
+                                                eframe::egui::Color32::from_rgba_unmultiplied(
+                                                    255,
+                                                    255,
+                                                    255 - fixture_intenstiy,
+                                                    255,
+                                                ),
+                                                format!(
+                                                    "{}\n{} ({}.{})\n\n{}",
+                                                    f.name(),
+                                                    f.id(),
+                                                    f.universe(),
+                                                    f.start_address(),
+                                                    fixture_state
+                                                ),
+                                            )
+                                        });
                                     }
                                 });
                             }

@@ -31,32 +31,35 @@ impl<'a> Parser<'a> {
 
     fn parse_fixture_selector(&mut self) -> Result<FixtureSelector, ParseError> {
         let token = self.current_token().clone();
-
-        if let Token::Numeral(i1) = token {
-            self.advance();
-            if let Token::KeywordThru = self.current_token() {
+        match token {
+            Token::Numeral(i1) => {
                 self.advance();
-
                 let token = self.current_token().clone();
 
-                if let Token::Numeral(i2) = token {
-                    self.advance();
-                    return Ok(FixtureSelector::FixtureRange(i1, i2));
-                } else {
-                    return Err(ParseError::UnexpectedToken(
-                        token,
-                        "Expected Numeral".to_string(),
-                    ));
-                }
-            } else {
-                return Ok(FixtureSelector::SingleFixture(i1));
-            }
-        }
+                match token {
+                    Token::KeywordThru => {
+                        self.advance();
+                        let token = self.current_token().clone();
 
-        Err(ParseError::UnexpectedToken(
-            token,
-            "Expected Numeral".to_string(),
-        ))
+                        match token {
+                            Token::Numeral(i2) => {
+                                self.advance();
+                                Ok(FixtureSelector::FixtureRange(i1, i2))
+                            }
+                            _ => Err(ParseError::UnexpectedToken(
+                                token,
+                                "Expected numeral".to_string(),
+                            )),
+                        }
+                    }
+                    _ => Ok(FixtureSelector::SingleFixture(i1)),
+                }
+            }
+            _ => Err(ParseError::UnexpectedToken(
+                token,
+                "Expected numeral or \"thru\"".to_string(),
+            )),
+        }
     }
 
     fn parse_action(&mut self) -> Result<Action, ParseError> {
