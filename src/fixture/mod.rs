@@ -75,12 +75,11 @@ impl Fixture {
     pub fn generate_data_packet(&self, fixture_state: FixtureState) -> Vec<u8> {
         self.patch
             .iter()
-            .map(|channel| match channel {
-                FixturePatchPart::Intesity => vec![fixture_state.intensity()],
+            .flat_map(|channel| match channel {
+                FixturePatchPart::Intesity => vec![fixture_state.intensity().unwrap_or(0)],
                 FixturePatchPart::ColorRGB => vec![0, 0, 0],
                 _ => vec![0],
             })
-            .flatten()
             .collect()
     }
 }

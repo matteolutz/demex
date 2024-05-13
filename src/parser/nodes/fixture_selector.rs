@@ -39,7 +39,7 @@ impl FixtureSelector {
             }
             Self::Modulus(fixture_selector, d, invert) => {
                 let mut fixtures = fixture_selector.get_fixtures();
-                fixtures.retain(|f| (f % d == 0) == !invert);
+                fixtures.retain(|f| (f % d == 0) != *invert);
                 fixtures
             }
         }

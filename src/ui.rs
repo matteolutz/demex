@@ -1,7 +1,7 @@
+#[allow(unused_imports)]
 use crate::{
-    dmx::output::debug_dummy::DebugDummyOutput,
-    dmx::output::dmx_serial::DMXSerialOutput,
-    fixture::{handler::FixtureHandler, Fixture, FixtureChannelType},
+    dmx::output::{debug_dummy::DebugDummyOutput, dmx_serial::DMXSerialOutput},
+    fixture::{handler::FixtureHandler, Fixture, FixturePatchPart},
     lexer::Lexer,
     parser::Parser,
 };
@@ -17,16 +17,16 @@ fn get_test_fixture_handler(num_fixtures: u32) -> FixtureHandler {
     FixtureHandler::new(
         vec![
             Box::new(DebugDummyOutput {}),
-            Box::new(
-                DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ").expect("this shouldn't happen"),
-            ),
+            /*Box::new(
+            DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ").expect("this shouldn't happen"),
+            ),*/
         ],
         (1..num_fixtures + 1)
             .map(|id| {
                 Fixture::new(
                     id,
                     format!("PAR {}", id),
-                    vec![FixtureChannelType::Intesity],
+                    vec![FixturePatchPart::Intesity],
                     1,
                     9 - id as u8,
                 )
@@ -104,7 +104,8 @@ impl eframe::App for UIApp {
                                     for f in fixture_chunk {
                                         let fixture_state =
                                             self.fixture_handler.fixture_state(f.id()).expect("");
-                                        let fixture_intenstiy = fixture_state.intensity();
+                                        let fixture_intenstiy =
+                                            fixture_state.intensity().unwrap_or(0);
 
                                         let (rect, _) = ui.allocate_exact_size(
                                             fixture_card_size,
