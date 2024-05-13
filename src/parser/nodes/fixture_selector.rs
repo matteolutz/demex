@@ -20,6 +20,7 @@ pub enum FixtureSelector {
     Atomic(AtomicFixtureSelector),
     Additive(AtomicFixtureSelector, Box<FixtureSelector>),
     Subtractive(AtomicFixtureSelector, Box<FixtureSelector>),
+    Modulus(AtomicFixtureSelector, u32, bool),
 }
 
 impl FixtureSelector {
@@ -34,6 +35,11 @@ impl FixtureSelector {
             Self::Subtractive(a, b) => {
                 let mut fixtures = a.get_fixtures();
                 fixtures.retain(|f| !b.get_fixtures().contains(f));
+                fixtures
+            }
+            Self::Modulus(fixture_selector, d, invert) => {
+                let mut fixtures = fixture_selector.get_fixtures();
+                fixtures.retain(|f| (f % d == 0) == !invert);
                 fixtures
             }
         }

@@ -4,20 +4,27 @@ pub mod handler;
 pub mod state;
 
 #[derive(Debug)]
-pub enum FixtureChannelType {
+pub enum FixturePatchPart {
     Intesity,
-    ColorR,
-    ColorG,
-    ColorB,
-    Pan,
-    Tilt,
+    ColorRGB,
+    PositionPanTilt,
+}
+
+impl FixturePatchPart {
+    pub fn address_bandwidth(&self) -> u8 {
+        match self {
+            FixturePatchPart::Intesity => 1,
+            FixturePatchPart::ColorRGB => 3,
+            FixturePatchPart::PositionPanTilt => 2,
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct Fixture {
     id: u32,
     name: String,
-    channel_map: Vec<FixtureChannelType>,
+    patch: Vec<FixturePatchPart>,
     universe: u16,
     start_address: u8,
 }
@@ -26,14 +33,14 @@ impl Fixture {
     pub fn new(
         id: u32,
         name: String,
-        channel_map: Vec<FixtureChannelType>,
+        patch: Vec<FixturePatchPart>,
         universe: u16,
         start_address: u8,
     ) -> Self {
         Self {
             id,
             name,
-            channel_map,
+            patch,
             universe,
             start_address,
         }
@@ -47,8 +54,8 @@ impl Fixture {
         &self.name
     }
 
-    pub fn channel_map(&self) -> &Vec<FixtureChannelType> {
-        &self.channel_map
+    pub fn patch(&self) -> &Vec<FixturePatchPart> {
+        &self.patch
     }
 
     pub fn universe(&self) -> u16 {
@@ -59,30 +66,21 @@ impl Fixture {
         self.start_address
     }
 
+    pub fn address_bandwidth(&self) -> u8 {
+        self.patch
+            .iter()
+            .fold(0u8, |sum, patch_part| sum + patch_part.address_bandwidth())
+    }
+
     pub fn generate_data_packet(&self, fixture_state: FixtureState) -> Vec<u8> {
-        let mut data_packet = Vec::new();
-        for channel in self.channel_map.iter() {
-            match channel {
-                FixtureChannelType::Intesity => {
-                    data_packet.push(fixture_state.intensity());
-                }
-                FixtureChannelType::ColorR => {
-                    data_packet.push(fixture_state.color().0);
-                }
-                FixtureChannelType::ColorG => {
-                    data_packet.push(fixture_state.color().1);
-                }
-                FixtureChannelType::ColorB => {
-                    data_packet.push(fixture_state.color().2);
-                }
-                FixtureChannelType::Pan => {
-                    data_packet.push(fixture_state.pan());
-                }
-                FixtureChannelType::Tilt => {
-                    data_packet.push(fixture_state.tilt());
-                }
-            }
-        }
-        data_packet
+        self.patch
+            .iter()
+            .map(|channel| match channel {
+                FixturePatchPart::Intesity => vec![fixture_state.intensity()],
+                FixturePatchPart::ColorRGB => vec![0, 0, 0],
+                _ => vec![0],
+            })
+            .flatten()
+            .collect()
     }
 }

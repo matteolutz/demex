@@ -73,6 +73,12 @@ impl<'a> Lexer<'a> {
             } else if self.peek() == '-' {
                 self.consume();
                 tokens.push(Token::Minus);
+            } else if self.peek() == '%' {
+                self.consume();
+                tokens.push(Token::Percent);
+            } else if self.peek() == '!' {
+                self.consume();
+                tokens.push(Token::Exclamation);
             } else if self.peek() == '(' {
                 self.consume();
                 tokens.push(Token::ParenOpen);

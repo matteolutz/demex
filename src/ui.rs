@@ -1,5 +1,6 @@
 use crate::{
     dmx::output::debug_dummy::DebugDummyOutput,
+    dmx::output::dmx_serial::DMXSerialOutput,
     fixture::{handler::FixtureHandler, Fixture, FixtureChannelType},
     lexer::Lexer,
     parser::Parser,
@@ -13,27 +14,30 @@ pub struct UIApp {
 }
 
 fn get_test_fixture_handler(num_fixtures: u32) -> FixtureHandler {
-    let mut fh = FixtureHandler::new();
-
-    fh.add_output(Box::new(DebugDummyOutput {}));
-
-    for i in 1..num_fixtures + 1 {
-        fh.add_fixture(Fixture::new(
-            i,
-            format!("PAR {}", i),
-            vec![FixtureChannelType::Intesity],
-            1,
-            i as u8,
-        ))
-        .expect("This shouldn't happen :)");
-    }
-
-    fh
+    FixtureHandler::new(
+        vec![
+            Box::new(DebugDummyOutput {}),
+            Box::new(
+                DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ").expect("this shouldn't happen"),
+            ),
+        ],
+        (1..num_fixtures + 1)
+            .map(|id| {
+                Fixture::new(
+                    id,
+                    format!("PAR {}", id),
+                    vec![FixtureChannelType::Intesity],
+                    1,
+                    9 - id as u8,
+                )
+            })
+            .collect(),
+    )
 }
 
 impl Default for UIApp {
     fn default() -> Self {
-        let fh = get_test_fixture_handler(10);
+        let fh = get_test_fixture_handler(8);
 
         Self {
             command_input: String::new(),

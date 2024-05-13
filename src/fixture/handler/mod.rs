@@ -20,32 +20,24 @@ pub struct FixtureHandler {
 }
 
 impl FixtureHandler {
-    pub fn new() -> Self {
-        Self {
-            fixtures: Vec::new(),
+    pub fn new(outputs: Vec<Box<dyn DMXOutput>>, fixtures: Vec<Fixture>) -> Self {
+        let mut selff = Self {
+            universe_output_state: HashMap::with_capacity(fixtures.len()),
+            fixtures,
             state: HashMap::new(),
-            outputs: Vec::new(),
+            outputs,
             dirty_fixtures: BTreeSet::new(),
             should_update: false,
-            universe_output_state: HashMap::new(),
             grand_master: 255,
-        }
-    }
+        };
 
-    pub fn add_output(&mut self, output: Box<dyn DMXOutput>) {
-        self.outputs.push(output);
-    }
+        // TODO: sanitize fixture input
 
-    pub fn add_fixture(&mut self, fixture: Fixture) -> Result<(), FixtureHandlerError> {
-        if self.state.contains_key(&fixture.id) {
-            return Err(FixtureHandlerError::FixtureAlreadyExists);
+        for f in &selff.fixtures {
+            selff.state.insert(f.id, FixtureState::default());
         }
 
-        // TODO: check for overlapping DMX addresses
-
-        self.state.insert(fixture.id, FixtureState::default());
-        self.fixtures.push(fixture);
-        Ok(())
+        selff
     }
 
     fn assert_fixture_exists(&self, fixture_id: u32) -> Result<(), FixtureHandlerError> {
@@ -56,13 +48,12 @@ impl FixtureHandler {
         }
     }
 
-    pub fn set_fixture_state(
+    // only used within FixtureHandler
+    fn set_fixture_state_unchecked(
         &mut self,
         fixture_id: u32,
         new_state: FixtureState,
     ) -> Result<(), FixtureHandlerError> {
-        self.assert_fixture_exists(fixture_id)?;
-
         // don't update if the state is the same
         if let Some(fixture_state) = self.state.get(&fixture_id) {
             if fixture_state == &new_state {
@@ -75,9 +66,17 @@ impl FixtureHandler {
         Ok(())
     }
 
-    pub fn go_home(&mut self, fixture_id: u32) -> Result<(), FixtureHandlerError> {
+    pub fn set_fixture_state(
+        &mut self,
+        fixture_id: u32,
+        new_state: FixtureState,
+    ) -> Result<(), FixtureHandlerError> {
         self.assert_fixture_exists(fixture_id)?;
 
+        self.set_fixture_state_unchecked(fixture_id, new_state)
+    }
+
+    pub fn go_home(&mut self, fixture_id: u32) -> Result<(), FixtureHandlerError> {
         self.set_fixture_state(fixture_id, FixtureState::default())
     }
 

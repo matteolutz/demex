@@ -106,6 +106,34 @@ impl<'a> Parser<'a> {
                     Box::new(next_selector),
                 ))
             }
+            Token::Percent => {
+                self.advance();
+                let current_token = self.current_token()?.clone();
+                match current_token {
+                    Token::Exclamation => {
+                        self.advance();
+                        let current_token = self.current_token()?.clone();
+                        match current_token {
+                            Token::Numeral(d) => {
+                                self.advance();
+                                Ok(FixtureSelector::Modulus(atomic_selector, d, true))
+                            }
+                            _ => Err(ParseError::UnexpectedToken(
+                                current_token,
+                                "Expected numeral".to_string(),
+                            )),
+                        }
+                    }
+                    Token::Numeral(d) => {
+                        self.advance();
+                        Ok(FixtureSelector::Modulus(atomic_selector, d, false))
+                    }
+                    _ => Err(ParseError::UnexpectedToken(
+                        current_token,
+                        "Expected numeral or \"!\"".to_string(),
+                    )),
+                }
+            }
             _ => Ok(FixtureSelector::Atomic(atomic_selector)),
         }
     }
