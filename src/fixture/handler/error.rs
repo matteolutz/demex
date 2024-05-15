@@ -1,8 +1,11 @@
+use crate::fixture::error::FixtureError;
+
 #[derive(Debug)]
 pub enum FixtureHandlerError {
     FixtureNotFound(u32),
     FixtureAlreadyExists,
     FixtureHandlerUpdateError(Box<dyn std::error::Error>),
+    FixtureError(FixtureError),
 }
 
 impl std::fmt::Display for FixtureHandlerError {
@@ -15,6 +18,7 @@ impl std::fmt::Display for FixtureHandlerError {
             FixtureHandlerError::FixtureHandlerUpdateError(e) => {
                 write!(f, "Fixture handler update error: {}", e)
             }
+            FixtureHandlerError::FixtureError(e) => write!(f, "Fixture error: {}", e),
         }
     }
 }

@@ -1,7 +1,8 @@
+use crate::fixture::channel::FixtureChannel;
 #[allow(unused_imports)]
 use crate::{
     dmx::output::{debug_dummy::DebugDummyOutput, dmx_serial::DMXSerialOutput},
-    fixture::{handler::FixtureHandler, Fixture, FixturePatchPart},
+    fixture::{handler::FixtureHandler, Fixture},
     lexer::Lexer,
     parser::Parser,
 };
@@ -16,7 +17,7 @@ pub struct UIApp {
 fn get_test_fixture_handler(num_fixtures: u32) -> FixtureHandler {
     FixtureHandler::new(
         vec![
-            Box::new(DebugDummyOutput {}),
+            Box::new(DebugDummyOutput::new(true)),
             /*Box::new(
             DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ").expect("this shouldn't happen"),
             ),*/
@@ -26,10 +27,14 @@ fn get_test_fixture_handler(num_fixtures: u32) -> FixtureHandler {
                 Fixture::new(
                     id,
                     format!("PAR {}", id),
-                    vec![FixturePatchPart::Intesity],
+                    vec![
+                        FixtureChannel::intensity(),
+                        FixtureChannel::maintenance("test"),
+                    ],
                     1,
-                    9 - id as u8,
+                    (id as u8 - 1) * 2 + 1,
                 )
+                .unwrap()
             })
             .collect(),
     )
@@ -56,7 +61,15 @@ impl UIApp {
         let mut p = Parser::new(&tokens);
         let action = p.parse()?;
 
+        let now = std::time::Instant::now();
+
         action.run(&mut self.fixture_handler)?;
+
+        println!(
+            "Execution of action {:?} took {:.2?}",
+            action,
+            now.elapsed()
+        );
 
         Ok(())
     }
@@ -102,10 +115,8 @@ impl eframe::App for UIApp {
                             {
                                 ui.horizontal(|ui| {
                                     for f in fixture_chunk {
-                                        let fixture_state =
-                                            self.fixture_handler.fixture_state(f.id()).expect("");
                                         let fixture_intenstiy =
-                                            fixture_state.intensity().unwrap_or(0);
+                                            f.intensity().expect("").unwrap_or(0);
 
                                         let (rect, _) = ui.allocate_exact_size(
                                             fixture_card_size,
@@ -134,14 +145,7 @@ impl eframe::App for UIApp {
                                                     255 - fixture_intenstiy,
                                                     255,
                                                 ),
-                                                format!(
-                                                    "{}\n{} (U{}.{})\n\n{}",
-                                                    f.name(),
-                                                    f.id(),
-                                                    f.universe(),
-                                                    f.start_address(),
-                                                    fixture_state
-                                                ),
+                                                f.to_string(),
                                             )
                                         });
                                     }

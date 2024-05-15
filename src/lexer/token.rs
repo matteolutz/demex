@@ -1,6 +1,7 @@
 #[derive(Debug, Clone)]
 pub enum Token {
     Numeral(u32),
+    String(String),
     Plus,
     Minus,
     Percent,
@@ -12,4 +13,5 @@ pub enum Token {
     KeywordFull,
     KeywordOut,
     KeywordHome,
+    KeywordManSet,
 }

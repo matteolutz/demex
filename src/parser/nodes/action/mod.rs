@@ -1,4 +1,4 @@
-use crate::fixture::{handler::FixtureHandler, state::FixtureState};
+use crate::fixture::handler::FixtureHandler;
 
 use self::{error::ActionRunError, result::ActionRunResult};
 
@@ -12,6 +12,7 @@ pub enum Action {
     SetIntensity(FixtureSelector, u8),
     GoHome(FixtureSelector),
     GoHomeAll,
+    ManSet(FixtureSelector, String, u8),
 }
 
 impl Action {
@@ -25,6 +26,12 @@ impl Action {
             }
             Self::GoHome(fixture_selector) => self.run_go_home(fixture_handler, fixture_selector),
             Self::GoHomeAll => self.run_go_home_all(fixture_handler),
+            Self::ManSet(fixture_selector, channel_name, channel_value) => self.run_man_set(
+                fixture_handler,
+                fixture_selector,
+                channel_name,
+                *channel_value,
+            ),
         }
     }
 
@@ -33,7 +40,7 @@ impl Action {
         fixture_handler: &mut FixtureHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         fixture_handler
-            .go_home_all()
+            .home_all()
             .map_err(ActionRunError::FixtureHandlerError)?;
 
         Ok(ActionRunResult::new())
@@ -45,10 +52,10 @@ impl Action {
         fixture_selector: &FixtureSelector,
     ) -> Result<ActionRunResult, ActionRunError> {
         let fixtures = fixture_selector.get_fixtures();
-        for fixture in fixtures {
-            fixture_handler
-                .go_home(fixture)
-                .map_err(ActionRunError::FixtureHandlerError)?;
+        for fixture_id in fixtures {
+            if let Some(fixture) = fixture_handler.fixture(fixture_id) {
+                fixture.home().map_err(ActionRunError::FixtureError)?;
+            }
         }
 
         Ok(ActionRunResult::new())
@@ -61,11 +68,31 @@ impl Action {
         intensity: u8,
     ) -> Result<ActionRunResult, ActionRunError> {
         let fixtures = fixture_selector.get_fixtures();
-        println!("{:?}", fixtures);
+
         for fixture in fixtures {
-            fixture_handler
-                .set_fixture_state(fixture, FixtureState::from_intensity(intensity))
-                .map_err(ActionRunError::FixtureHandlerError)?;
+            if let Some(f) = fixture_handler.fixture(fixture) {
+                f.set_intensity(intensity)
+                    .map_err(ActionRunError::FixtureError)?;
+            }
+        }
+
+        Ok(ActionRunResult::new())
+    }
+
+    fn run_man_set(
+        &self,
+        fixture_handler: &mut FixtureHandler,
+        fixture_selector: &FixtureSelector,
+        channel_name: &str,
+        channel_value: u8,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let fixtures = fixture_selector.get_fixtures();
+
+        for fixture in fixtures {
+            if let Some(f) = fixture_handler.fixture(fixture) {
+                f.set_maintenance(channel_name, channel_value)
+                    .map_err(ActionRunError::FixtureError)?;
+            }
         }
 
         Ok(ActionRunResult::new())

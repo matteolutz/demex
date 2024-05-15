@@ -173,6 +173,34 @@ impl<'a> Parser<'a> {
 
                 Ok(Action::SetIntensity(fixture_select, intensity))
             }
+            Token::KeywordManSet => {
+                self.advance();
+
+                let token = self.current_token()?.clone();
+
+                match token {
+                    Token::String(channel_name) => {
+                        self.advance();
+
+                        let token = self.current_token()?.clone();
+
+                        match token {
+                            Token::Numeral(i) => {
+                                self.advance();
+                                Ok(Action::ManSet(fixture_select, channel_name, i as u8))
+                            }
+                            _ => Err(ParseError::UnexpectedToken(
+                                token,
+                                "Expected numeral".to_string(),
+                            )),
+                        }
+                    }
+                    _ => Err(ParseError::UnexpectedToken(
+                        token,
+                        "Expected string".to_string(),
+                    )),
+                }
+            }
             Token::KeywordHome => {
                 self.advance();
                 Ok(Action::GoHome(fixture_select))

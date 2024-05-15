@@ -61,6 +61,8 @@ impl<'a> Lexer<'a> {
                     tokens.push(Token::KeywordOut);
                 } else if keyword == "home" {
                     tokens.push(Token::KeywordHome);
+                } else if keyword == "manset" {
+                    tokens.push(Token::KeywordManSet);
                 } else {
                     return Err(TokenizationError::UnknownKeyword(keyword));
                 }
@@ -85,6 +87,18 @@ impl<'a> Lexer<'a> {
             } else if self.peek() == ')' {
                 self.consume();
                 tokens.push(Token::ParenClose);
+            } else if self.peek() == '\"' {
+                self.consume();
+
+                let mut string = String::new();
+
+                while self.peek() != '\"' {
+                    string.push(self.consume());
+                }
+
+                self.consume();
+
+                tokens.push(Token::String(string));
             } else if self.peek().is_whitespace() {
                 self.consume();
             }
