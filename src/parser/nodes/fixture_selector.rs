@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AtomicFixtureSelector {
     SingleFixture(u32),
     FixtureRange(u32, u32),
@@ -15,7 +15,7 @@ impl AtomicFixtureSelector {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FixtureSelector {
     Atomic(AtomicFixtureSelector),
     Additive(AtomicFixtureSelector, Box<FixtureSelector>),

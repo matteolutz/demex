@@ -7,3 +7,5 @@ edition = "2021"
 eframe = { features = ["default"], version = "0.27.2" }
 egui_extras = { features = ["default"], version = "0.27.2" }
 open_dmx = "1.1.1"
+rand = "0.8.5"
+ref-map = "0.1.3"

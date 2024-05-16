@@ -14,4 +14,5 @@ pub enum Token {
     KeywordOut,
     KeywordHome,
     KeywordManSet,
+    Eof,
 }

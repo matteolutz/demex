@@ -6,6 +6,7 @@ pub enum FixtureHandlerError {
     FixtureAlreadyExists,
     FixtureHandlerUpdateError(Box<dyn std::error::Error>),
     FixtureError(FixtureError),
+    FixtureAddressOverlap(u16, u8, u8),
 }
 
 impl std::fmt::Display for FixtureHandlerError {
@@ -19,6 +20,13 @@ impl std::fmt::Display for FixtureHandlerError {
                 write!(f, "Fixture handler update error: {}", e)
             }
             FixtureHandlerError::FixtureError(e) => write!(f, "Fixture error: {}", e),
+            FixtureHandlerError::FixtureAddressOverlap(universe, start, end) => {
+                write!(
+                    f,
+                    "Fixture address overlap (U{}): {} - {}",
+                    universe, start, end
+                )
+            }
         }
     }
 }

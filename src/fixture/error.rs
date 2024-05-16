@@ -3,6 +3,7 @@ pub enum FixtureError {
     ChannelNotFound(Option<String>),
     EmptyPatch,
     DuplicateChannelType,
+    InvalidDataLength,
 }
 
 impl std::fmt::Display for FixtureError {
@@ -11,6 +12,7 @@ impl std::fmt::Display for FixtureError {
             Self::ChannelNotFound(s) => write!(f, "Channel ({:?}) not found", s),
             Self::EmptyPatch => write!(f, "Patch is empty"),
             Self::DuplicateChannelType => write!(f, "Duplicate channel type"),
+            Self::InvalidDataLength => write!(f, "Invalid data length"),
         }
     }
 }

@@ -205,6 +205,10 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Ok(Action::GoHome(fixture_select))
             }
+            Token::Eof => {
+                self.advance();
+                Ok(Action::FixtureSelector(fixture_select))
+            }
             _ => Err(ParseError::UnknownAction(format!(
                 "{:?}",
                 self.current_token()

@@ -47,13 +47,40 @@ pub struct FixtureHandler {
 }
 
 impl FixtureHandler {
-    pub fn new(outputs: Vec<Box<dyn DMXOutput>>, fixtures: Vec<Fixture>) -> Self {
-        Self {
+    pub fn new(
+        outputs: Vec<Box<dyn DMXOutput>>,
+        fixtures: Vec<Fixture>,
+    ) -> Result<Self, FixtureHandlerError> {
+        // check if the fixtures overlap
+
+        let mut fixture_addresses: HashMap<u16, BTreeSet<u8>> = HashMap::new();
+
+        for f in &fixtures {
+            let start_address = f.start_address();
+            let end_address = start_address + f.address_bandwidth() - 1;
+            let address_set = fixture_addresses
+                .entry(f.universe())
+                .or_insert_with(|| BTreeSet::new());
+
+            for i in start_address..=end_address {
+                if address_set.contains(&i) {
+                    return Err(FixtureHandlerError::FixtureAddressOverlap(
+                        f.universe(),
+                        start_address,
+                        end_address,
+                    ));
+                }
+
+                address_set.insert(i);
+            }
+        }
+
+        Ok(Self {
             universe_output_data: HashMap::with_capacity(fixtures.len()),
             fixtures,
             outputs,
             grand_master: 255,
-        }
+        })
     }
 
     pub fn fixture(&mut self, fixture_id: u32) -> Option<&mut Fixture> {

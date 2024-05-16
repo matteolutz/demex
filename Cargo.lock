@@ -839,6 +839,8 @@ dependencies = [
  "eframe",
  "egui_extras",
  "open_dmx",
+ "rand",
+ "ref-map",
 ]
 
 [[package]]
@@ -2355,6 +2357,12 @@ checksum = "469052894dcb553421e483e4209ee581a45100d31b4018de03e5a7ad86374a7e"
 dependencies = [
  "bitflags 2.5.0",
 ]
+
+[[package]]
+name = "ref-map"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d22b73985e369f260445a5e08ad470117b30e522c91b4820585baa2e0cbf7075"
 
 [[package]]
 name = "regex"

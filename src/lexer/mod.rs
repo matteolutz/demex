@@ -104,6 +104,8 @@ impl<'a> Lexer<'a> {
             }
         }
 
+        tokens.push(Token::Eof);
+
         Ok(tokens)
     }
 }

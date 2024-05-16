@@ -13,6 +13,7 @@ pub enum Action {
     GoHome(FixtureSelector),
     GoHomeAll,
     ManSet(FixtureSelector, String, u8),
+    FixtureSelector(FixtureSelector),
 }
 
 impl Action {
@@ -32,6 +33,7 @@ impl Action {
                 channel_name,
                 *channel_value,
             ),
+            Self::FixtureSelector(_) => Ok(ActionRunResult::new()),
         }
     }
 
@@ -71,8 +73,8 @@ impl Action {
 
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
-                f.set_intensity(intensity)
-                    .map_err(ActionRunError::FixtureError)?;
+                let intens = f.intensity_ref().map_err(ActionRunError::FixtureError)?;
+                *intens = Some(intensity);
             }
         }
 
@@ -90,8 +92,10 @@ impl Action {
 
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
-                f.set_maintenance(channel_name, channel_value)
+                let maintanence = f
+                    .maintenance_ref(channel_name)
                     .map_err(ActionRunError::FixtureError)?;
+                *maintanence = Some(channel_value);
             }
         }
 
