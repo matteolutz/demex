@@ -95,6 +95,7 @@ impl Fixture {
         self.patch.iter().all(|c| match c {
             FixtureChannel::Intensity(_, intens) => intens.is_none(),
             FixtureChannel::Strobe(strobe) => strobe.is_none(),
+            FixtureChannel::Zoom(_, zoom) => zoom.is_none(),
             FixtureChannel::ColorRGB(_, rgb) => rgb.is_none(),
             FixtureChannel::PositionPanTilt(_, pan_tilt) => pan_tilt.is_none(),
             FixtureChannel::Maintenance(_, _, value) => value.is_none(),
@@ -150,6 +151,7 @@ impl Fixture {
         match self.patch.iter().find(|c| c.type_id() == channel_id) {
             Some(FixtureChannel::Intensity(_, intens)) => Ok(*intens),
             Some(FixtureChannel::Strobe(strobe)) => Ok(*strobe),
+            Some(FixtureChannel::Zoom(_, zoom)) => Ok(*zoom),
             _ => Err(FixtureError::ChannelNotFound(None)),
         }
     }
@@ -214,6 +216,7 @@ impl Fixture {
         match self.patch.iter_mut().find(|c| c.type_id() == type_id) {
             Some(FixtureChannel::Intensity(_, intens)) => Ok(intens),
             Some(FixtureChannel::Strobe(strobe)) => Ok(strobe),
+            Some(FixtureChannel::Zoom(_, zoom)) => Ok(zoom),
             _ => Err(FixtureError::ChannelNotFound(None)),
         }
     }

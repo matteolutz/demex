@@ -39,13 +39,36 @@ impl<'a> eframe::egui::Widget for PositionSelector<'a> {
             eframe::egui::Stroke::new(1.0, eframe::egui::Color32::WHITE),
         );
 
+        // draw crosshair
+        ui.painter().line_segment(
+            [
+                eframe::egui::Pos2::new(rect.left(), rect.top() + rect.height() / 2.0),
+                eframe::egui::Pos2::new(rect.right(), rect.top() + rect.height() / 2.0),
+            ],
+            eframe::egui::Stroke::new(2.0, eframe::egui::Color32::WHITE.linear_multiply(0.2)),
+        );
+
+        ui.painter().line_segment(
+            [
+                eframe::egui::Pos2::new(rect.left() + rect.width() / 2.0, rect.top()),
+                eframe::egui::Pos2::new(rect.left() + rect.width() / 2.0, rect.bottom()),
+            ],
+            eframe::egui::Stroke::new(2.0, eframe::egui::Color32::WHITE.linear_multiply(0.2)),
+        );
+
         let vis_x = rect.left() + vis_size + (position.x * (rect.width() - 2.0 * vis_size));
         let vis_y = rect.top() + vis_size + (position.y * (rect.height() - 2.0 * vis_size));
 
         ui.painter().circle_filled(
             eframe::egui::Pos2::new(vis_x, vis_y),
+            vis_size - 2.0,
+            eframe::egui::Color32::YELLOW,
+        );
+
+        ui.painter().circle_stroke(
+            eframe::egui::pos2(vis_x, vis_y),
             vis_size,
-            eframe::egui::Color32::WHITE,
+            eframe::egui::Stroke::new(2.0, eframe::egui::Color32::LIGHT_YELLOW),
         );
 
         response

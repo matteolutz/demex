@@ -47,8 +47,7 @@ fn get_test_fixture_handler(num_fixtures: u32) -> FixtureHandler {
                         FixtureChannel::maintenance("ColorTint"),
                         FixtureChannel::maintenance("ColorMacro"),
                         FixtureChannel::maintenance("ColorMacroCrossfade"),
-                        FixtureChannel::maintenance("Zoom"),
-                        FixtureChannel::maintenance("ZoomFine"),
+                        FixtureChannel::zoom(true),
                         FixtureChannel::maintenance("PanTiltSpeed"),
                         FixtureChannel::maintenance("DeviceSettings"),
                     ],
@@ -154,7 +153,8 @@ impl UIApp {
                     for channel_type in mutual_channel_types {
                         match channel_type {
                             fixture::channel::FIXTURE_CHANNEL_INTENSITY_ID
-                            | fixture::channel::FIXTURE_CHANNEL_STROBE => {
+                            | fixture::channel::FIXTURE_CHANNEL_STROBE
+                            | fixture::channel::FIXTURE_CHANNEL_ZOOM => {
                                 ui.vertical(|ui| {
                                     ui.label(FixtureChannel::name_by_id(channel_type));
                                     ui.add(eframe::egui::Slider::from_get_set(0.0..=1.0, |val| {
@@ -263,6 +263,7 @@ impl UIApp {
                                 });
                             }
                             _ => {
+                                ui.label(FixtureChannel::name_by_id(channel_type));
                                 ui.label("Not supported");
                             }
                         }

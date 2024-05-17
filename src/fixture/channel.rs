@@ -2,14 +2,15 @@ use crate::utils::hash;
 
 pub const FIXTURE_CHANNEL_INTENSITY_ID: u16 = 0;
 pub const FIXTURE_CHANNEL_STROBE: u16 = 1;
+pub const FIXTURE_CHANNEL_ZOOM: u16 = 2;
 pub const FIXTURE_CHANNEL_COLOR_RGB_ID: u16 = 10;
 pub const FIXTURE_CHANNEL_POSITION_PAN_TILT_ID: u16 = 20;
-pub const FIXTURE_CHANNEL_MAINTENANCE_ID: u16 = 30;
 
 #[derive(Debug)]
 pub enum FixtureChannel {
     Intensity(bool, Option<f32>),
     Strobe(Option<f32>),
+    Zoom(bool, Option<f32>),
     ColorRGB(bool, Option<[f32; 3]>),
     PositionPanTilt(bool, Option<[f32; 2]>),
     Maintenance(String, u16, Option<u8>),
@@ -22,6 +23,10 @@ impl FixtureChannel {
 
     pub fn strobe() -> Self {
         FixtureChannel::Strobe(None)
+    }
+
+    pub fn zoom(is_fine: bool) -> Self {
+        FixtureChannel::Zoom(is_fine, None)
     }
 
     pub fn color_rgb(is_fine: bool) -> Self {
@@ -42,6 +47,7 @@ impl FixtureChannel {
         match self {
             FixtureChannel::Intensity(_, intens) => *intens = None,
             FixtureChannel::Strobe(strobe) => *strobe = None,
+            FixtureChannel::Zoom(_, zoom) => *zoom = None,
             FixtureChannel::ColorRGB(_, rgb) => *rgb = None,
             FixtureChannel::PositionPanTilt(_, pan_tilt) => *pan_tilt = None,
             FixtureChannel::Maintenance(_, _, value) => *value = None,
@@ -60,6 +66,13 @@ impl FixtureChannel {
                 }
             }
             FixtureChannel::Strobe(_) => 1,
+            FixtureChannel::Zoom(is_fine, _) => {
+                if *is_fine {
+                    2
+                } else {
+                    1
+                }
+            }
             FixtureChannel::ColorRGB(is_fine, _) => {
                 if *is_fine {
                     6
@@ -82,6 +95,7 @@ impl FixtureChannel {
         match self {
             FixtureChannel::Intensity(_, _) => FIXTURE_CHANNEL_INTENSITY_ID,
             FixtureChannel::Strobe(_) => FIXTURE_CHANNEL_STROBE,
+            FixtureChannel::Zoom(_, _) => FIXTURE_CHANNEL_ZOOM,
             FixtureChannel::ColorRGB(_, _) => FIXTURE_CHANNEL_COLOR_RGB_ID,
             FixtureChannel::PositionPanTilt(_, _) => FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
             FixtureChannel::Maintenance(_, id, _) => *id,
@@ -96,9 +110,9 @@ impl FixtureChannel {
         match id {
             FIXTURE_CHANNEL_INTENSITY_ID => "Intensity".to_owned(),
             FIXTURE_CHANNEL_STROBE => "Strobe".to_owned(),
+            FIXTURE_CHANNEL_ZOOM => "Zoom".to_owned(),
             FIXTURE_CHANNEL_COLOR_RGB_ID => "ColorRGB".to_owned(),
             FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => "PositionPanTilt".to_owned(),
-            FIXTURE_CHANNEL_MAINTENANCE_ID => "Maintenance".to_owned(),
             _ => "Unknown".to_owned(),
         }
     }
@@ -122,6 +136,15 @@ impl FixtureChannel {
                 }
             }
             FixtureChannel::Strobe(strobe) => vec![(strobe.unwrap_or(0.0) * 255.0) as u8],
+            FixtureChannel::Zoom(is_fine, zoom) => {
+                let (zoom_coarse, zoom_fine) = Self::float_to_coarse_and_fine(zoom.unwrap_or(0.0));
+
+                if *is_fine {
+                    vec![zoom_coarse, zoom_fine]
+                } else {
+                    vec![zoom_coarse]
+                }
+            }
             FixtureChannel::ColorRGB(is_fine, rgb) => {
                 let [f_r, f_g, f_b] = rgb.unwrap_or([0.0, 0.0, 0.0]);
 
