@@ -1,17 +1,10 @@
+use crate::utils::hash;
+
 pub const FIXTURE_CHANNEL_INTENSITY_ID: u16 = 0;
 pub const FIXTURE_CHANNEL_STROBE: u16 = 1;
 pub const FIXTURE_CHANNEL_COLOR_RGB_ID: u16 = 10;
 pub const FIXTURE_CHANNEL_POSITION_PAN_TILT_ID: u16 = 20;
 pub const FIXTURE_CHANNEL_MAINTENANCE_ID: u16 = 30;
-
-fn my_hash<T>(obj: T) -> u64
-where
-    T: std::hash::Hash,
-{
-    let mut hasher = std::hash::DefaultHasher::new();
-    obj.hash(&mut hasher);
-    std::hash::Hasher::finish(&hasher)
-}
 
 #[derive(Debug)]
 pub enum FixtureChannel {
@@ -40,7 +33,19 @@ impl FixtureChannel {
     }
 
     pub fn maintenance(name: &str) -> Self {
-        FixtureChannel::Maintenance(name.to_owned(), my_hash(name) as u16, None)
+        FixtureChannel::Maintenance(name.to_owned(), hash::hash(name) as u16, None)
+    }
+}
+
+impl FixtureChannel {
+    pub fn home(&mut self) {
+        match self {
+            FixtureChannel::Intensity(_, intens) => *intens = None,
+            FixtureChannel::Strobe(strobe) => *strobe = None,
+            FixtureChannel::ColorRGB(_, rgb) => *rgb = None,
+            FixtureChannel::PositionPanTilt(_, pan_tilt) => *pan_tilt = None,
+            FixtureChannel::Maintenance(_, _, value) => *value = None,
+        }
     }
 }
 
@@ -98,26 +103,31 @@ impl FixtureChannel {
         }
     }
 
+    fn float_to_coarse_and_fine(val: f32) -> (u8, u8) {
+        let coarse = (val * 255.0) as u8;
+        let fine = ((val * 255.0 - coarse as f32) * 255.0) as u8;
+        (coarse, fine)
+    }
+
     pub fn generate_data_packet(&self) -> Vec<u8> {
         match self {
             FixtureChannel::Intensity(is_fine, intens) => {
+                let (intens_coarse, intens_fine) =
+                    Self::float_to_coarse_and_fine(intens.unwrap_or(0.0));
+
                 if *is_fine {
-                    vec![(intens.unwrap_or(0.0) * 255.0) as u8, 0]
+                    vec![intens_coarse, intens_fine]
                 } else {
-                    vec![(intens.unwrap_or(0.0) * 255.0) as u8]
+                    vec![intens_coarse]
                 }
             }
             FixtureChannel::Strobe(strobe) => vec![(strobe.unwrap_or(0.0) * 255.0) as u8],
             FixtureChannel::ColorRGB(is_fine, rgb) => {
                 let [f_r, f_g, f_b] = rgb.unwrap_or([0.0, 0.0, 0.0]);
 
-                let r = (f_r * 255.0) as u8;
-                let g = (f_g * 255.0) as u8;
-                let b = (f_b * 255.0) as u8;
-
-                let r_fine = ((f_r * 255.0 - r as f32) * 255.0) as u8;
-                let g_fine = ((f_g * 255.0 - g as f32) * 255.0) as u8;
-                let b_fine = ((f_b * 255.0 - b as f32) * 255.0) as u8;
+                let (r, r_fine) = Self::float_to_coarse_and_fine(f_r);
+                let (g, g_fine) = Self::float_to_coarse_and_fine(f_g);
+                let (b, b_fine) = Self::float_to_coarse_and_fine(f_b);
 
                 if *is_fine {
                     vec![r, r_fine, g, g_fine, b, b_fine]
@@ -128,11 +138,8 @@ impl FixtureChannel {
             FixtureChannel::PositionPanTilt(is_fine, pan_tilt) => {
                 let [pan_f, tilt_f] = pan_tilt.unwrap_or([0.0, 0.0]);
 
-                let pan = (pan_f * 255.0) as u8;
-                let tilt = (tilt_f * 255.0) as u8;
-
-                let pan_fine = ((pan_f * 255.0 - pan as f32) * 255.0) as u8;
-                let tilt_fine = ((tilt_f * 255.0 - tilt as f32) * 255.0) as u8;
+                let (pan, pan_fine) = Self::float_to_coarse_and_fine(pan_f);
+                let (tilt, tilt_fine) = Self::float_to_coarse_and_fine(tilt_f);
 
                 if *is_fine {
                     vec![pan, pan_fine, tilt, tilt_fine]

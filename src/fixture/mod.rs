@@ -153,28 +153,11 @@ impl Fixture {
             _ => Err(FixtureError::ChannelNotFound(None)),
         }
     }
-
-    pub fn channel_by_type_id(&self, type_id: u16) -> Result<Option<Vec<u8>>, FixtureError> {
-        match self.patch.iter().find(|c| c.type_id() == type_id) {
-            Some(channel) => Ok(Some(channel.generate_data_packet())),
-            None => Err(FixtureError::ChannelNotFound(None)),
-        }
-    }
 }
 
 impl Fixture {
     pub fn home(&mut self) -> Result<(), FixtureError> {
-        // set all channels to none
-
-        for channel in self.patch.iter_mut() {
-            match channel {
-                FixtureChannel::Intensity(_, intens) => *intens = None,
-                FixtureChannel::Strobe(strobe) => *strobe = None,
-                FixtureChannel::ColorRGB(_, rgb) => *rgb = None,
-                FixtureChannel::PositionPanTilt(_, pan_tilt) => *pan_tilt = None,
-                FixtureChannel::Maintenance(_, _, value) => *value = None,
-            }
-        }
+        self.patch.iter_mut().for_each(FixtureChannel::home);
 
         Ok(())
     }
@@ -249,10 +232,13 @@ impl std::fmt::Display for Fixture {
 
         if let Ok(intens) = self.intensity() {
             state.push_str(
-                intens
-                    .map(|i| i.to_string())
-                    .unwrap_or("-".to_string())
-                    .as_str(),
+                format!(
+                    "{}%",
+                    intens
+                        .map(|i| (i * 100.0).to_string())
+                        .unwrap_or("-".to_string())
+                )
+                .as_str(),
             );
         }
 
