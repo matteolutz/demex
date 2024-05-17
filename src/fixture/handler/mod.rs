@@ -11,7 +11,7 @@ pub mod error;
 fn compare_universe_output_data(
     previous_data_option: Option<&[u8; 512]>,
     fixture_data: &[u8],
-    fixture_universe_offset: u8,
+    fixture_universe_offset: u16,
 ) -> bool {
     if previous_data_option.is_none() {
         return false;
@@ -31,7 +31,7 @@ fn compare_universe_output_data(
 fn write_universe_data(
     universe_data: &mut [u8; 512],
     fixture_data: &[u8],
-    fixture_universe_offset: u8,
+    fixture_universe_offset: u16,
 ) {
     for (i, d) in fixture_data.iter().enumerate() {
         universe_data[i + fixture_universe_offset as usize] = *d;
@@ -53,14 +53,12 @@ impl FixtureHandler {
     ) -> Result<Self, FixtureHandlerError> {
         // check if the fixtures overlap
 
-        let mut fixture_addresses: HashMap<u16, BTreeSet<u8>> = HashMap::new();
+        let mut fixture_addresses: HashMap<u16, BTreeSet<u16>> = HashMap::new();
 
         for f in &fixtures {
             let start_address = f.start_address();
             let end_address = start_address + f.address_bandwidth() - 1;
-            let address_set = fixture_addresses
-                .entry(f.universe())
-                .or_insert_with(|| BTreeSet::new());
+            let address_set = fixture_addresses.entry(f.universe()).or_default();
 
             for i in start_address..=end_address {
                 if address_set.contains(&i) {

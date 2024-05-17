@@ -6,7 +6,7 @@ pub enum FixtureHandlerError {
     FixtureAlreadyExists,
     FixtureHandlerUpdateError(Box<dyn std::error::Error>),
     FixtureError(FixtureError),
-    FixtureAddressOverlap(u16, u8, u8),
+    FixtureAddressOverlap(u16, u16, u16),
 }
 
 impl std::fmt::Display for FixtureHandlerError {

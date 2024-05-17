@@ -12,8 +12,8 @@ pub struct Fixture {
     name: String,
     patch: Vec<FixtureChannel>,
     universe: u16,
-    start_address: u8,
-    address_bandwith: u8,
+    start_address: u16,
+    address_bandwith: u16,
     channel_types: BTreeSet<u16>,
 }
 
@@ -23,7 +23,7 @@ impl Fixture {
         name: String,
         patch: Vec<FixtureChannel>,
         universe: u16,
-        start_address: u8,
+        start_address: u16,
     ) -> Result<Self, FixtureError> {
         // validate, that the patch is not empty
         if patch.is_empty() {
@@ -46,7 +46,7 @@ impl Fixture {
             name,
             address_bandwith: patch
                 .iter()
-                .fold(0u8, |sum, patch_part| sum + patch_part.address_bandwidth()),
+                .fold(0, |sum, patch_part| sum + patch_part.address_bandwidth()),
             patch,
             universe,
             start_address,
@@ -70,11 +70,11 @@ impl Fixture {
         self.universe
     }
 
-    pub fn start_address(&self) -> u8 {
+    pub fn start_address(&self) -> u16 {
         self.start_address
     }
 
-    pub fn address_bandwidth(&self) -> u8 {
+    pub fn address_bandwidth(&self) -> u16 {
         self.address_bandwith
     }
 
@@ -94,13 +94,14 @@ impl Fixture {
     pub fn is_home(&self) -> bool {
         self.patch.iter().all(|c| match c {
             FixtureChannel::Intensity(_, intens) => intens.is_none(),
+            FixtureChannel::Strobe(strobe) => strobe.is_none(),
             FixtureChannel::ColorRGB(_, rgb) => rgb.is_none(),
             FixtureChannel::PositionPanTilt(_, pan_tilt) => pan_tilt.is_none(),
             FixtureChannel::Maintenance(_, _, value) => value.is_none(),
         })
     }
 
-    pub fn intensity(&self) -> Result<Option<u8>, FixtureError> {
+    pub fn intensity(&self) -> Result<Option<f32>, FixtureError> {
         match self
             .patch
             .iter()
@@ -122,6 +123,19 @@ impl Fixture {
         }
     }
 
+    pub fn position_pan_tilt(&self) -> Result<Option<[f32; 2]>, FixtureError> {
+        match self
+            .patch
+            .iter()
+            .find(|c| matches!(c, FixtureChannel::PositionPanTilt(_, _)))
+        {
+            Some(FixtureChannel::PositionPanTilt(_, pan_tilt)) => Ok(*pan_tilt),
+            _ => Err(FixtureError::ChannelNotFound(Some(
+                "PositionPanTilt".to_string(),
+            ))),
+        }
+    }
+
     pub fn maintenance(&self, name: &str) -> Result<Option<u8>, FixtureError> {
         match self.patch.iter().find(|c| match c {
             FixtureChannel::Maintenance(n, _, _) => n == name,
@@ -129,6 +143,14 @@ impl Fixture {
         }) {
             Some(FixtureChannel::Maintenance(_, _, value)) => Ok(*value),
             _ => Err(FixtureError::ChannelNotFound(Some(name.to_string()))),
+        }
+    }
+
+    pub fn channel_single_value(&self, channel_id: u16) -> Result<Option<f32>, FixtureError> {
+        match self.patch.iter().find(|c| c.type_id() == channel_id) {
+            Some(FixtureChannel::Intensity(_, intens)) => Ok(*intens),
+            Some(FixtureChannel::Strobe(strobe)) => Ok(*strobe),
+            _ => Err(FixtureError::ChannelNotFound(None)),
         }
     }
 
@@ -147,6 +169,7 @@ impl Fixture {
         for channel in self.patch.iter_mut() {
             match channel {
                 FixtureChannel::Intensity(_, intens) => *intens = None,
+                FixtureChannel::Strobe(strobe) => *strobe = None,
                 FixtureChannel::ColorRGB(_, rgb) => *rgb = None,
                 FixtureChannel::PositionPanTilt(_, pan_tilt) => *pan_tilt = None,
                 FixtureChannel::Maintenance(_, _, value) => *value = None,
@@ -156,7 +179,7 @@ impl Fixture {
         Ok(())
     }
 
-    pub fn intensity_ref(&mut self) -> Result<&mut Option<u8>, FixtureError> {
+    pub fn intensity_ref(&mut self) -> Result<&mut Option<f32>, FixtureError> {
         match self
             .patch
             .iter_mut()
@@ -178,6 +201,19 @@ impl Fixture {
         }
     }
 
+    pub fn position_pan_tilt_ref(&mut self) -> Result<&mut Option<[f32; 2]>, FixtureError> {
+        match self
+            .patch
+            .iter_mut()
+            .find(|c| matches!(c, FixtureChannel::PositionPanTilt(_, _)))
+        {
+            Some(FixtureChannel::PositionPanTilt(_, pan_tilt)) => Ok(pan_tilt),
+            _ => Err(FixtureError::ChannelNotFound(Some(
+                "PositionPanTilt".to_string(),
+            ))),
+        }
+    }
+
     pub fn maintenance_ref(&mut self, name: &str) -> Result<&mut Option<u8>, FixtureError> {
         match self.patch.iter_mut().find(|c| match c {
             FixtureChannel::Maintenance(n, _, _) => n == name,
@@ -188,20 +224,20 @@ impl Fixture {
         }
     }
 
-    pub fn channel_name(&self, type_id: u16) -> Result<String, FixtureError> {
-        match self.patch.iter().find(|c| c.type_id() == type_id) {
-            Some(channel) => Ok(channel.name().to_string()),
-            None => Err(FixtureError::ChannelNotFound(None)),
+    pub fn channel_single_value_ref(
+        &mut self,
+        type_id: u16,
+    ) -> Result<&mut Option<f32>, FixtureError> {
+        match self.patch.iter_mut().find(|c| c.type_id() == type_id) {
+            Some(FixtureChannel::Intensity(_, intens)) => Ok(intens),
+            Some(FixtureChannel::Strobe(strobe)) => Ok(strobe),
+            _ => Err(FixtureError::ChannelNotFound(None)),
         }
     }
 
-    pub fn set_channel_by_type_id(
-        &mut self,
-        type_id: u16,
-        data: &[u8],
-    ) -> Result<(), FixtureError> {
-        match self.patch.iter_mut().find(|c| c.type_id() == type_id) {
-            Some(channel) => channel.set_from_data_slice(data),
+    pub fn channel_name(&self, type_id: u16) -> Result<String, FixtureError> {
+        match self.patch.iter().find(|c| c.type_id() == type_id) {
+            Some(channel) => Ok(channel.name().to_string()),
             None => Err(FixtureError::ChannelNotFound(None)),
         }
     }
@@ -213,11 +249,10 @@ impl std::fmt::Display for Fixture {
 
         if let Ok(intens) = self.intensity() {
             state.push_str(
-                format!(
-                    "{}",
-                    intens.map(|i| i.to_string()).unwrap_or("-".to_string())
-                )
-                .as_str(),
+                intens
+                    .map(|i| i.to_string())
+                    .unwrap_or("-".to_string())
+                    .as_str(),
             );
         }
 
@@ -232,6 +267,22 @@ impl std::fmt::Display for Fixture {
                         (rgb[2] * 255.0) as u8
                     ))
                     .unwrap_or("-".to_string())
+                )
+                .as_str(),
+            );
+        }
+
+        if let Ok(pan_tilt) = self.position_pan_tilt() {
+            state.push_str(
+                format!(
+                    "\n{}",
+                    pan_tilt
+                        .map(|pan_tilt| format!(
+                            "{} {}",
+                            (pan_tilt[0] * 255.0) as u8,
+                            (pan_tilt[1] * 255.0) as u8
+                        ))
+                        .unwrap_or("-".to_string())
                 )
                 .as_str(),
             );

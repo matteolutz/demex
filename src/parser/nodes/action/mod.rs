@@ -74,7 +74,7 @@ impl Action {
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
                 let intens = f.intensity_ref().map_err(ActionRunError::FixtureError)?;
-                *intens = Some(intensity);
+                *intens = Some(intensity as f32 / 255.0);
             }
         }
 

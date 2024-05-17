@@ -10,6 +10,8 @@ use crate::{
     parser::nodes::{action::Action, fixture_selector::FixtureSelector},
 };
 
+use self::components::position_selector::PositionSelector;
+
 pub mod components;
 
 pub struct UIApp {
@@ -18,6 +20,7 @@ pub struct UIApp {
     fixture_handler: FixtureHandler,
     global_error: Option<Box<dyn std::error::Error>>,
     global_fixture_select: Option<FixtureSelector>,
+    max_update_time: Option<std::time::Duration>,
 }
 
 fn get_test_fixture_handler(num_fixtures: u32) -> FixtureHandler {
@@ -26,7 +29,7 @@ fn get_test_fixture_handler(num_fixtures: u32) -> FixtureHandler {
             Box::new(DebugDummyOutput::new(true)),
             /*Box::new(
             DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ").expect("this shouldn't happen"),
-            ),*/
+            )*/
         ],
         (1..num_fixtures + 1)
             .map(|id| {
@@ -36,7 +39,7 @@ fn get_test_fixture_handler(num_fixtures: u32) -> FixtureHandler {
                     vec![
                         FixtureChannel::position_pan_tilt(true),
                         FixtureChannel::intensity(true),
-                        FixtureChannel::maintenance("Strobe"),
+                        FixtureChannel::strobe(),
                         FixtureChannel::color_rgb(true),
                         FixtureChannel::maintenance("White"),
                         FixtureChannel::maintenance("WhiteFine"),
@@ -50,7 +53,7 @@ fn get_test_fixture_handler(num_fixtures: u32) -> FixtureHandler {
                         FixtureChannel::maintenance("DeviceSettings"),
                     ],
                     1,
-                    (id as u8 - 1) * 23 + 1,
+                    (id as u16 - 1) * 40 + 411,
                 )
                 .unwrap()
             })
@@ -69,6 +72,7 @@ impl Default for UIApp {
             fixture_handler: fh,
             global_error: None,
             global_fixture_select: None,
+            max_update_time: None,
         }
     }
 }
@@ -149,35 +153,33 @@ impl UIApp {
 
                     for channel_type in mutual_channel_types {
                         match channel_type {
-                            fixture::channel::FIXTURE_CHANNEL_INTENSITY_ID => {
+                            fixture::channel::FIXTURE_CHANNEL_INTENSITY_ID
+                            | fixture::channel::FIXTURE_CHANNEL_STROBE => {
                                 ui.vertical(|ui| {
-                                    ui.label("Intensity");
-                                    ui.add(eframe::egui::Slider::from_get_set(
-                                        0.0..=255.0,
-                                        |val| {
-                                            if let Some(val) = val {
-                                                for fixture_id in selected_fixtures.iter() {
-                                                    let intens = self
-                                                        .fixture_handler
-                                                        .fixture(*fixture_id)
-                                                        .unwrap()
-                                                        .intensity_ref()
-                                                        .expect("");
-                                                    *intens = Some(val as u8);
-                                                }
-
-                                                0.0
-                                            } else {
-                                                self.fixture_handler
-                                                    .fixture(selected_fixtures[0])
+                                    ui.label(FixtureChannel::name_by_id(channel_type));
+                                    ui.add(eframe::egui::Slider::from_get_set(0.0..=1.0, |val| {
+                                        if let Some(val) = val {
+                                            for fixture_id in selected_fixtures.iter() {
+                                                let intens = self
+                                                    .fixture_handler
+                                                    .fixture(*fixture_id)
                                                     .unwrap()
-                                                    .intensity()
-                                                    .expect("")
-                                                    .unwrap_or(0)
-                                                    as f64
+                                                    .channel_single_value_ref(channel_type)
+                                                    .expect("");
+                                                *intens = Some(val as f32);
                                             }
-                                        },
-                                    ));
+
+                                            val
+                                        } else {
+                                            self.fixture_handler
+                                                .fixture(selected_fixtures[0])
+                                                .unwrap()
+                                                .channel_single_value(channel_type)
+                                                .expect("")
+                                                .unwrap_or(0.0)
+                                                as f64
+                                        }
+                                    }));
                                 });
                             }
                             fixture::channel::FIXTURE_CHANNEL_COLOR_RGB_ID => {
@@ -189,8 +191,7 @@ impl UIApp {
                                         .fixture(selected_fixtures[0])
                                         .unwrap()
                                         .color_rgb()
-                                        .expect("")
-                                        .clone();
+                                        .expect("");
 
                                     if fixture_color.is_some() {
                                         let c = ui.color_edit_button_rgb(
@@ -212,7 +213,7 @@ impl UIApp {
                                                     .color_rgb_ref()
                                                     .expect("");
 
-                                                *color = fixture_color.clone();
+                                                color.clone_from(&fixture_color)
                                             }
                                         }
                                     } else {
@@ -229,6 +230,36 @@ impl UIApp {
                                             }
                                         }
                                     }
+                                });
+                            }
+                            fixture::channel::FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => {
+                                ui.vertical(|ui| {
+                                    ui.label("Pan/Tilt");
+                                    ui.add(PositionSelector::new(|val| {
+                                        if let Some(val) = val {
+                                            for fixture_id in selected_fixtures.iter() {
+                                                let position = self
+                                                    .fixture_handler
+                                                    .fixture(*fixture_id)
+                                                    .unwrap()
+                                                    .position_pan_tilt_ref()
+                                                    .expect("");
+                                                *position = Some(val.into());
+                                            }
+
+                                            Some(eframe::egui::vec2(0.0, 0.0))
+                                        } else {
+                                            let pos = self
+                                                .fixture_handler
+                                                .fixture(selected_fixtures[0])
+                                                .unwrap()
+                                                .position_pan_tilt()
+                                                .expect("")
+                                                .unwrap_or([0.0, 0.0]);
+
+                                            Some(eframe::egui::vec2(pos[0], pos[1]))
+                                        }
+                                    }));
                                 });
                             }
                             _ => {
@@ -252,7 +283,14 @@ impl eframe::App for UIApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         self.update_fixture_control_window(ctx);
 
+        let now = std::time::Instant::now();
         let _ = self.fixture_handler.update();
+        let elapsed = now.elapsed();
+
+        if self.max_update_time.is_none() || (self.max_update_time.unwrap() < elapsed) {
+            self.max_update_time = Some(elapsed);
+            println!("New max: {:?}", elapsed);
+        }
 
         eframe::egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
@@ -272,7 +310,7 @@ impl eframe::App for UIApp {
         });
 
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
-            let fixture_card_size = eframe::egui::vec2(75.0, 100.0);
+            let fixture_card_size = eframe::egui::vec2(75.0 * 1.5, 100.0 * 1.5);
             let window_width = ui.available_width();
 
             ui.with_layout(
@@ -298,7 +336,7 @@ impl eframe::App for UIApp {
                                 ui.horizontal(|ui| {
                                     for f in fixture_chunk {
                                         let fixture_intenstiy =
-                                            f.intensity().expect("").unwrap_or(0);
+                                            f.intensity().expect("").unwrap_or(0.0);
 
                                         let (rect, _) = ui.allocate_exact_size(
                                             fixture_card_size,
@@ -316,7 +354,7 @@ impl eframe::App for UIApp {
                                                     eframe::egui::Color32::from_rgb(
                                                         255,
                                                         255,
-                                                        255 - fixture_intenstiy,
+                                                        255 - (fixture_intenstiy * 255.0) as u8,
                                                     )
                                                 },
                                             ),
@@ -327,7 +365,7 @@ impl eframe::App for UIApp {
                                                 eframe::egui::Color32::from_rgb(
                                                     255,
                                                     255,
-                                                    255 - fixture_intenstiy,
+                                                    255 - (fixture_intenstiy * 255.0) as u8,
                                                 ),
                                                 f.to_string(),
                                             )
