@@ -23,7 +23,33 @@ pub struct UIApp {
     max_update_time: Option<std::time::Duration>,
 }
 
-fn get_test_fixture_handler(num_fixtures: u32) -> FixtureHandler {
+fn get_test_fixture_handler() -> FixtureHandler {
+    let mut fixtures = Vec::new();
+    fixtures.extend((1..=2).map(|id| {
+        Fixture::new(
+            id,
+            format!("WASH {}", id),
+            vec![
+                FixtureChannel::position_pan_tilt(true),
+                FixtureChannel::intensity(true),
+                FixtureChannel::strobe(),
+                FixtureChannel::color_rgb(true),
+                FixtureChannel::maintenance("White"),
+                FixtureChannel::maintenance("WhiteFine"),
+                FixtureChannel::maintenance("ColorTemp"),
+                FixtureChannel::maintenance("ColorTint"),
+                FixtureChannel::maintenance("ColorMacro"),
+                FixtureChannel::maintenance("ColorMacroCrossfade"),
+                FixtureChannel::zoom(true),
+                FixtureChannel::maintenance("PanTiltSpeed"),
+                FixtureChannel::maintenance("DeviceSettings"),
+            ],
+            1,
+            (id as u16 - 1) * 40 + 411,
+        )
+        .unwrap()
+    }));
+
     FixtureHandler::new(
         vec![
             Box::new(DebugDummyOutput::new(true)),
@@ -31,39 +57,14 @@ fn get_test_fixture_handler(num_fixtures: u32) -> FixtureHandler {
             DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ").expect("this shouldn't happen"),
             )*/
         ],
-        (1..num_fixtures + 1)
-            .map(|id| {
-                Fixture::new(
-                    id,
-                    format!("WASH {}", id),
-                    vec![
-                        FixtureChannel::position_pan_tilt(true),
-                        FixtureChannel::intensity(true),
-                        FixtureChannel::strobe(),
-                        FixtureChannel::color_rgb(true),
-                        FixtureChannel::maintenance("White"),
-                        FixtureChannel::maintenance("WhiteFine"),
-                        FixtureChannel::maintenance("ColorTemp"),
-                        FixtureChannel::maintenance("ColorTint"),
-                        FixtureChannel::maintenance("ColorMacro"),
-                        FixtureChannel::maintenance("ColorMacroCrossfade"),
-                        FixtureChannel::zoom(true),
-                        FixtureChannel::maintenance("PanTiltSpeed"),
-                        FixtureChannel::maintenance("DeviceSettings"),
-                    ],
-                    1,
-                    (id as u16 - 1) * 40 + 411,
-                )
-                .unwrap()
-            })
-            .collect(),
+        fixtures,
     )
     .expect("")
 }
 
 impl Default for UIApp {
     fn default() -> Self {
-        let fh = get_test_fixture_handler(2);
+        let fh = get_test_fixture_handler();
 
         Self {
             command_input: String::new(),
@@ -262,8 +263,57 @@ impl UIApp {
                                     }));
                                 });
                             }
+                            fixture::channel::FIXTURE_CHANNEL_TOGGLE_FLAGS => {
+                                ui.style_mut().spacing.item_spacing = [0.0, 10.0].into();
+                                ui.style_mut().wrap = Some(false);
+
+                                ui.vertical(|ui| {
+                                    ui.label("Toggle flags");
+
+                                    let unset_button = ui.button("Unset");
+                                    if unset_button.clicked() {
+                                        for fixture_id in selected_fixtures.iter() {
+                                            self.fixture_handler
+                                                .fixture(*fixture_id)
+                                                .unwrap()
+                                                .unset_toggle_flags()
+                                                .expect("");
+                                        }
+                                    }
+
+                                    ui.separator();
+
+                                    let mut mutual_flags = self
+                                        .fixture_handler
+                                        .fixture(selected_fixtures[0])
+                                        .unwrap()
+                                        .toggle_flags();
+                                    for f in selected_fixtures.iter().skip(1) {
+                                        mutual_flags.retain(|flag| {
+                                            self.fixture_handler
+                                                .fixture(*f)
+                                                .unwrap()
+                                                .toggle_flags()
+                                                .contains(flag)
+                                        });
+                                    }
+
+                                    for flag in mutual_flags {
+                                        let flag_button = ui.button(flag.clone());
+
+                                        if flag_button.clicked() {
+                                            for fixture_id in selected_fixtures.iter() {
+                                                self.fixture_handler
+                                                    .fixture(*fixture_id)
+                                                    .unwrap()
+                                                    .set_toggle_flag(&flag)
+                                                    .expect("");
+                                            }
+                                        }
+                                    }
+                                });
+                            }
                             _ => {
-                                ui.label(FixtureChannel::name_by_id(channel_type));
                                 ui.label("Not supported");
                             }
                         }

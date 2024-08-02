@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::utils::hash;
 
 pub const FIXTURE_CHANNEL_INTENSITY_ID: u16 = 0;
@@ -5,6 +7,7 @@ pub const FIXTURE_CHANNEL_STROBE: u16 = 1;
 pub const FIXTURE_CHANNEL_ZOOM: u16 = 2;
 pub const FIXTURE_CHANNEL_COLOR_RGB_ID: u16 = 10;
 pub const FIXTURE_CHANNEL_POSITION_PAN_TILT_ID: u16 = 20;
+pub const FIXTURE_CHANNEL_TOGGLE_FLAGS: u16 = 30;
 
 #[derive(Debug)]
 pub enum FixtureChannel {
@@ -14,6 +17,7 @@ pub enum FixtureChannel {
     ColorRGB(bool, Option<[f32; 3]>),
     PositionPanTilt(bool, Option<[f32; 2]>),
     Maintenance(String, u16, Option<u8>),
+    ToggleFlags(HashMap<String, u8>, Option<String>),
 }
 
 impl FixtureChannel {
@@ -40,6 +44,10 @@ impl FixtureChannel {
     pub fn maintenance(name: &str) -> Self {
         FixtureChannel::Maintenance(name.to_owned(), hash::hash(name) as u16, None)
     }
+
+    pub fn toggle_flags(flags: HashMap<String, u8>) -> Self {
+        FixtureChannel::ToggleFlags(flags, None)
+    }
 }
 
 impl FixtureChannel {
@@ -51,6 +59,7 @@ impl FixtureChannel {
             FixtureChannel::ColorRGB(_, rgb) => *rgb = None,
             FixtureChannel::PositionPanTilt(_, pan_tilt) => *pan_tilt = None,
             FixtureChannel::Maintenance(_, _, value) => *value = None,
+            FixtureChannel::ToggleFlags(_, value) => *value = None,
         }
     }
 }
@@ -88,6 +97,7 @@ impl FixtureChannel {
                 }
             }
             FixtureChannel::Maintenance(_, _, _) => 1,
+            FixtureChannel::ToggleFlags(_, _) => 1,
         }
     }
 
@@ -99,6 +109,7 @@ impl FixtureChannel {
             FixtureChannel::ColorRGB(_, _) => FIXTURE_CHANNEL_COLOR_RGB_ID,
             FixtureChannel::PositionPanTilt(_, _) => FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
             FixtureChannel::Maintenance(_, id, _) => *id,
+            FixtureChannel::ToggleFlags(_, _) => FIXTURE_CHANNEL_TOGGLE_FLAGS,
         }
     }
 
@@ -113,6 +124,7 @@ impl FixtureChannel {
             FIXTURE_CHANNEL_ZOOM => "Zoom".to_owned(),
             FIXTURE_CHANNEL_COLOR_RGB_ID => "ColorRGB".to_owned(),
             FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => "PositionPanTilt".to_owned(),
+            FIXTURE_CHANNEL_TOGGLE_FLAGS => "ToggleFlags".to_owned(),
             _ => "Unknown".to_owned(),
         }
     }
@@ -171,6 +183,14 @@ impl FixtureChannel {
                 }
             }
             FixtureChannel::Maintenance(_, _, value) => vec![value.unwrap_or(0)],
+            FixtureChannel::ToggleFlags(flags, set_flag) => {
+                let value: u8 = set_flag
+                    .as_ref()
+                    .map(|f| *flags.get(f).unwrap_or(&0))
+                    .unwrap_or(0);
+
+                vec![value]
+            }
         }
     }
 }

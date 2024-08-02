@@ -82,6 +82,19 @@ impl Fixture {
         &self.channel_types
     }
 
+    pub fn toggle_flags(&self) -> Vec<String> {
+        self.patch
+            .iter()
+            .filter_map(|channel| match channel {
+                FixtureChannel::ToggleFlags(flags, _) => {
+                    Some(flags.keys().cloned().collect::<Vec<String>>())
+                }
+                _ => None,
+            })
+            .flatten()
+            .collect()
+    }
+
     pub fn generate_data_packet(&self) -> Vec<u8> {
         self.patch
             .iter()
@@ -99,6 +112,7 @@ impl Fixture {
             FixtureChannel::ColorRGB(_, rgb) => rgb.is_none(),
             FixtureChannel::PositionPanTilt(_, pan_tilt) => pan_tilt.is_none(),
             FixtureChannel::Maintenance(_, _, value) => value.is_none(),
+            FixtureChannel::ToggleFlags(_, value) => value.is_none(),
         })
     }
 
@@ -207,6 +221,29 @@ impl Fixture {
             Some(FixtureChannel::Maintenance(_, _, value_ref)) => Ok(value_ref),
             _ => Err(FixtureError::ChannelNotFound(Some(name.to_string()))),
         }
+    }
+
+    pub fn set_toggle_flag(&mut self, flag_name: &str) -> Result<(), FixtureError> {
+        match self.patch.iter_mut().find(|c| match c {
+            FixtureChannel::ToggleFlags(flags, _) => flags.contains_key(flag_name),
+            _ => false,
+        }) {
+            Some(FixtureChannel::ToggleFlags(_, value)) => {
+                *value = Some(flag_name.to_owned());
+                Ok(())
+            }
+            _ => Err(FixtureError::ChannelNotFound(Some(flag_name.to_string()))),
+        }
+    }
+
+    pub fn unset_toggle_flags(&mut self) -> Result<(), FixtureError> {
+        self.patch.iter_mut().for_each(|c| {
+            if let FixtureChannel::ToggleFlags(_, value) = c {
+                *value = None;
+            }
+        });
+
+        Ok(())
     }
 
     pub fn channel_single_value_ref(
