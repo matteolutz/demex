@@ -50,6 +50,19 @@ fn get_test_fixture_handler() -> FixtureHandler {
         .unwrap()
     }));
 
+    for i in 0..8 {
+        fixtures.push(
+            Fixture::new(
+                i + 3,
+                format!("PAR {}", i + 2),
+                vec![FixtureChannel::intensity(false)],
+                1,
+                8 - i as u16,
+            )
+            .unwrap(),
+        )
+    }
+
     FixtureHandler::new(
         vec![
             Box::new(DebugDummyOutput::new(true)),
@@ -351,7 +364,7 @@ impl eframe::App for UIApp {
                     ui.add(eframe::egui::Slider::new(&mut self.gm_slider_val, 0..=255).text("GM"));
 
                 if slider.changed() {
-                    self.fixture_handler.set_grand_master(self.gm_slider_val);
+                    *self.fixture_handler.grand_master_mut() = self.gm_slider_val;
                 }
             });
 

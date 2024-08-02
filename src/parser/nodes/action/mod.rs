@@ -9,10 +9,10 @@ pub mod result;
 
 #[derive(Debug)]
 pub enum Action {
-    SetIntensity(FixtureSelector, u8),
+    SetIntensity(FixtureSelector, f32),
     GoHome(FixtureSelector),
     GoHomeAll,
-    ManSet(FixtureSelector, String, u8),
+    ManSet(FixtureSelector, String, f32),
     FixtureSelector(FixtureSelector),
 }
 
@@ -67,14 +67,14 @@ impl Action {
         &self,
         fixture_handler: &mut FixtureHandler,
         fixture_selector: &FixtureSelector,
-        intensity: u8,
+        intensity: f32,
     ) -> Result<ActionRunResult, ActionRunError> {
         let fixtures = fixture_selector.get_fixtures();
 
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
                 let intens = f.intensity_ref().map_err(ActionRunError::FixtureError)?;
-                *intens = Some(intensity as f32 / 255.0);
+                *intens = Some(intensity / 100.0);
             }
         }
 
@@ -86,7 +86,7 @@ impl Action {
         fixture_handler: &mut FixtureHandler,
         fixture_selector: &FixtureSelector,
         channel_name: &str,
-        channel_value: u8,
+        channel_value: f32,
     ) -> Result<ActionRunResult, ActionRunError> {
         let fixtures = fixture_selector.get_fixtures();
 
@@ -95,7 +95,7 @@ impl Action {
                 let maintanence = f
                     .maintenance_ref(channel_name)
                     .map_err(ActionRunError::FixtureError)?;
-                *maintanence = Some(channel_value);
+                *maintanence = Some(((channel_value / 100.0) * 255.0) as u8);
             }
         }
 

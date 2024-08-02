@@ -43,6 +43,17 @@ impl<'a> Lexer<'a> {
                     num.push(self.consume());
                 }
 
+                if self.peek() == '.' {
+                    num.push(self.consume());
+
+                    while self.peek().is_ascii_digit() {
+                        num.push(self.consume());
+                    }
+
+                    tokens.push(Token::FloatingPoint(num.parse().unwrap()));
+                    continue;
+                }
+
                 tokens.push(Token::Numeral(num.parse().unwrap()));
             } else if self.peek().is_alphabetic() {
                 let mut keyword = String::new();

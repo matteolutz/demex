@@ -155,15 +155,19 @@ impl<'a> Parser<'a> {
                 let intensity = match token {
                     Token::Numeral(i) => {
                         self.advance();
-                        Ok(i as u8)
+                        Ok(i as f32)
+                    }
+                    Token::FloatingPoint(i) => {
+                        self.advance();
+                        Ok(i)
                     }
                     Token::KeywordFull => {
                         self.advance();
-                        Ok(255)
+                        Ok(100.0)
                     }
                     Token::KeywordOut => {
                         self.advance();
-                        Ok(0)
+                        Ok(0.0)
                     }
                     _ => Err(ParseError::UnexpectedToken(
                         token,
@@ -185,9 +189,13 @@ impl<'a> Parser<'a> {
                         let token = self.current_token()?.clone();
 
                         match token {
+                            Token::FloatingPoint(i) => {
+                                self.advance();
+                                Ok(Action::ManSet(fixture_select, channel_name, i))
+                            }
                             Token::Numeral(i) => {
                                 self.advance();
-                                Ok(Action::ManSet(fixture_select, channel_name, i as u8))
+                                Ok(Action::ManSet(fixture_select, channel_name, i as f32))
                             }
                             _ => Err(ParseError::UnexpectedToken(
                                 token,

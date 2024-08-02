@@ -101,8 +101,8 @@ impl FixtureHandler {
         self.grand_master
     }
 
-    pub fn set_grand_master(&mut self, grand_master: u8) {
-        self.grand_master = grand_master;
+    pub fn grand_master_mut(&mut self) -> &mut u8 {
+        &mut self.grand_master
     }
 
     pub fn update(&mut self) -> Result<(), FixtureHandlerError> {
