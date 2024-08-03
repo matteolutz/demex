@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::{lexer::token::Token, ui::DemexUiContext};
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) -> () {
@@ -14,7 +16,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) -> () {
                 }),
         );
 
-        for group in context.preset_handler.groups().values() {
+        for (_, group) in context
+            .preset_handler
+            .groups()
+            .iter()
+            .sorted_by(|a, b| a.0.cmp(b.0))
+        {
             let group_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new(group.name()));
             if group_button.clicked() {
                 context
@@ -47,7 +54,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) -> () {
                 }),
         );
 
-        for preset in context.preset_handler.colors().values() {
+        for (_, preset) in context
+            .preset_handler
+            .colors()
+            .iter()
+            .sorted_by(|a, b| a.0.cmp(b.0))
+        {
             let preset_button =
                 ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
             if preset_button.clicked() {
@@ -83,7 +95,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) -> () {
                 }),
         );
 
-        for preset in context.preset_handler.positions().values() {
+        for (_, preset) in context
+            .preset_handler
+            .positions()
+            .iter()
+            .sorted_by(|a, b| a.0.cmp(b.0))
+        {
             let preset_button =
                 ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
             if preset_button.clicked() {
