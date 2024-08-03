@@ -5,7 +5,7 @@ pub mod parser;
 pub mod ui;
 pub mod utils;
 
-use ui::UIApp;
+use ui::DemexUiApp;
 
 // const SERIAL_PORT: &str = "/dev/tty.usbserial-A10KPDBZ";
 
@@ -14,7 +14,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         viewport: eframe::egui::ViewportBuilder::default().with_inner_size([1120.0, 720.0]),
         ..Default::default()
     };
-    eframe::run_native("demex", options, Box::new(|_| Box::<UIApp>::default()))?;
+    eframe::run_native(
+        "demex",
+        options,
+        Box::new(|_| Ok(Box::<DemexUiApp>::default())),
+    )?;
 
     Ok(())
 }

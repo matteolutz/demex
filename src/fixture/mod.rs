@@ -1,10 +1,14 @@
 use std::collections::BTreeSet;
 
+use channel::{color::FixtureColorValue, position::FixturePositionValue, FIXTURE_CHANNEL_COLOR_ID};
+use presets::PresetHandler;
+
 use self::{channel::FixtureChannel, error::FixtureError};
 
 pub mod channel;
 pub mod error;
 pub mod handler;
+pub mod presets;
 
 #[derive(Debug)]
 pub struct Fixture {
@@ -95,28 +99,20 @@ impl Fixture {
             .collect()
     }
 
-    pub fn generate_data_packet(&self) -> Vec<u8> {
+    pub fn generate_data_packet(&self, preset_handler: &PresetHandler) -> Vec<u8> {
         self.patch
             .iter()
-            .flat_map(|channel| channel.generate_data_packet())
+            .flat_map(|channel| channel.generate_data_packet(self.id, preset_handler))
             .collect()
     }
 }
 
 impl Fixture {
     pub fn is_home(&self) -> bool {
-        self.patch.iter().all(|c| match c {
-            FixtureChannel::Intensity(_, intens) => intens.is_none(),
-            FixtureChannel::Strobe(strobe) => strobe.is_none(),
-            FixtureChannel::Zoom(_, zoom) => zoom.is_none(),
-            FixtureChannel::ColorRGB(_, rgb) => rgb.is_none(),
-            FixtureChannel::PositionPanTilt(_, pan_tilt) => pan_tilt.is_none(),
-            FixtureChannel::Maintenance(_, _, value) => value.is_none(),
-            FixtureChannel::ToggleFlags(_, value) => value.is_none(),
-        })
+        self.patch.iter().all(|c| c.is_home())
     }
 
-    pub fn intensity(&self) -> Result<Option<f32>, FixtureError> {
+    pub fn intensity(&self) -> Result<f32, FixtureError> {
         match self
             .patch
             .iter()
@@ -127,31 +123,31 @@ impl Fixture {
         }
     }
 
-    pub fn color_rgb(&self) -> Result<Option<[f32; 3]>, FixtureError> {
+    pub fn color(&self) -> Result<FixtureColorValue, FixtureError> {
         match self
             .patch
             .iter()
             .find(|c| matches!(c, FixtureChannel::ColorRGB(_, _)))
         {
-            Some(FixtureChannel::ColorRGB(_, rgb)) => Ok(*rgb),
-            _ => Err(FixtureError::ChannelNotFound(Some("ColorRGB".to_string()))),
+            Some(FixtureChannel::ColorRGB(_, color)) => Ok(color.clone()),
+            _ => Err(FixtureError::ChannelNotFound(Some("Color".to_string()))),
         }
     }
 
-    pub fn position_pan_tilt(&self) -> Result<Option<[f32; 2]>, FixtureError> {
+    pub fn position_pan_tilt(&self) -> Result<FixturePositionValue, FixtureError> {
         match self
             .patch
             .iter()
             .find(|c| matches!(c, FixtureChannel::PositionPanTilt(_, _)))
         {
-            Some(FixtureChannel::PositionPanTilt(_, pan_tilt)) => Ok(*pan_tilt),
+            Some(FixtureChannel::PositionPanTilt(_, position)) => Ok(position.clone()),
             _ => Err(FixtureError::ChannelNotFound(Some(
                 "PositionPanTilt".to_string(),
             ))),
         }
     }
 
-    pub fn maintenance(&self, name: &str) -> Result<Option<u8>, FixtureError> {
+    pub fn maintenance(&self, name: &str) -> Result<u8, FixtureError> {
         match self.patch.iter().find(|c| match c {
             FixtureChannel::Maintenance(n, _, _) => n == name,
             _ => false,
@@ -161,7 +157,7 @@ impl Fixture {
         }
     }
 
-    pub fn channel_single_value(&self, channel_id: u16) -> Result<Option<f32>, FixtureError> {
+    pub fn channel_single_value(&self, channel_id: u16) -> Result<f32, FixtureError> {
         match self.patch.iter().find(|c| c.type_id() == channel_id) {
             Some(FixtureChannel::Intensity(_, intens)) => Ok(*intens),
             Some(FixtureChannel::Strobe(strobe)) => Ok(*strobe),
@@ -178,7 +174,7 @@ impl Fixture {
         Ok(())
     }
 
-    pub fn intensity_ref(&mut self) -> Result<&mut Option<f32>, FixtureError> {
+    pub fn intensity_ref(&mut self) -> Result<&mut f32, FixtureError> {
         match self
             .patch
             .iter_mut()
@@ -189,31 +185,31 @@ impl Fixture {
         }
     }
 
-    pub fn color_rgb_ref(&mut self) -> Result<&mut Option<[f32; 3]>, FixtureError> {
+    pub fn color_ref(&mut self) -> Result<&mut FixtureColorValue, FixtureError> {
         match self
             .patch
             .iter_mut()
-            .find(|c| matches!(c, FixtureChannel::ColorRGB(_, _)))
+            .find(|c| c.type_id() == FIXTURE_CHANNEL_COLOR_ID)
         {
-            Some(FixtureChannel::ColorRGB(_, rgb)) => Ok(rgb),
-            _ => Err(FixtureError::ChannelNotFound(Some("ColorRGB".to_string()))),
+            Some(FixtureChannel::ColorRGB(_, color)) => Ok(color),
+            _ => Err(FixtureError::ChannelNotFound(Some("Color".to_string()))),
         }
     }
 
-    pub fn position_pan_tilt_ref(&mut self) -> Result<&mut Option<[f32; 2]>, FixtureError> {
+    pub fn position_pan_tilt_ref(&mut self) -> Result<&mut FixturePositionValue, FixtureError> {
         match self
             .patch
             .iter_mut()
             .find(|c| matches!(c, FixtureChannel::PositionPanTilt(_, _)))
         {
-            Some(FixtureChannel::PositionPanTilt(_, pan_tilt)) => Ok(pan_tilt),
+            Some(FixtureChannel::PositionPanTilt(_, position)) => Ok(position),
             _ => Err(FixtureError::ChannelNotFound(Some(
                 "PositionPanTilt".to_string(),
             ))),
         }
     }
 
-    pub fn maintenance_ref(&mut self, name: &str) -> Result<&mut Option<u8>, FixtureError> {
+    pub fn maintenance_ref(&mut self, name: &str) -> Result<&mut u8, FixtureError> {
         match self.patch.iter_mut().find(|c| match c {
             FixtureChannel::Maintenance(n, _, _) => n == name,
             _ => false,
@@ -246,10 +242,7 @@ impl Fixture {
         Ok(())
     }
 
-    pub fn channel_single_value_ref(
-        &mut self,
-        type_id: u16,
-    ) -> Result<&mut Option<f32>, FixtureError> {
+    pub fn channel_single_value_ref(&mut self, type_id: u16) -> Result<&mut f32, FixtureError> {
         match self.patch.iter_mut().find(|c| c.type_id() == type_id) {
             Some(FixtureChannel::Intensity(_, intens)) => Ok(intens),
             Some(FixtureChannel::Strobe(strobe)) => Ok(strobe),
@@ -266,56 +259,25 @@ impl Fixture {
     }
 }
 
-impl std::fmt::Display for Fixture {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Fixture {
+    pub fn to_string(&self, preset_handler: &PresetHandler) -> String {
         let mut state = String::new();
 
         if let Ok(intens) = self.intensity() {
-            state.push_str(
-                format!(
-                    "{}%",
-                    intens
-                        .map(|i| (i * 100.0).to_string())
-                        .unwrap_or("-".to_string())
-                )
-                .as_str(),
-            );
+            state.push_str(format!("{}%", (intens * 100.0).to_string()).as_str());
         }
 
-        if let Ok(rgb) = self.color_rgb() {
-            state.push_str(
-                format!(
-                    "\n{}",
-                    rgb.map(|rgb| format!(
-                        "{} {} {}",
-                        (rgb[0] * 255.0) as u8,
-                        (rgb[1] * 255.0) as u8,
-                        (rgb[2] * 255.0) as u8
-                    ))
-                    .unwrap_or("-".to_string())
-                )
-                .as_str(),
-            );
+        if let Ok(color) = self.color() {
+            state.push_str("\n");
+            state.push_str(color.to_string(preset_handler).as_str());
         }
 
-        if let Ok(pan_tilt) = self.position_pan_tilt() {
-            state.push_str(
-                format!(
-                    "\n{}",
-                    pan_tilt
-                        .map(|pan_tilt| format!(
-                            "{} {}",
-                            (pan_tilt[0] * 255.0) as u8,
-                            (pan_tilt[1] * 255.0) as u8
-                        ))
-                        .unwrap_or("-".to_string())
-                )
-                .as_str(),
-            );
+        if let Ok(position) = self.position_pan_tilt() {
+            state.push_str("\n");
+            state.push_str(&position.to_string(preset_handler));
         }
 
-        write!(
-            f,
+        format!(
             "{}\n{} (U{}.{})\n\n{}",
             self.name, self.id, self.universe, self.start_address, state
         )

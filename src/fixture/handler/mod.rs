@@ -4,7 +4,7 @@ use crate::dmx::DMXOutput;
 
 use self::error::FixtureHandlerError;
 
-use super::Fixture;
+use super::{presets::PresetHandler, Fixture};
 
 pub mod error;
 
@@ -81,6 +81,10 @@ impl FixtureHandler {
         })
     }
 
+    pub fn fixture_immut(&self, fixture_id: u32) -> Option<&Fixture> {
+        self.fixtures.iter().find(|f| f.id() == fixture_id)
+    }
+
     pub fn fixture(&mut self, fixture_id: u32) -> Option<&mut Fixture> {
         self.fixtures.iter_mut().find(|f| f.id() == fixture_id)
     }
@@ -105,13 +109,13 @@ impl FixtureHandler {
         &mut self.grand_master
     }
 
-    pub fn update(&mut self) -> Result<(), FixtureHandlerError> {
+    pub fn update(&mut self, preset_handler: &PresetHandler) -> Result<(), FixtureHandlerError> {
         let mut dirty_universes: BTreeSet<u16> = BTreeSet::new();
 
         for f in &self.fixtures {
             let fixture_universe_offset = f.start_address() - 1;
 
-            let fixture_data = f.generate_data_packet();
+            let fixture_data = f.generate_data_packet(preset_handler);
             if compare_universe_output_data(
                 self.universe_output_data.get(&f.universe()),
                 &fixture_data,

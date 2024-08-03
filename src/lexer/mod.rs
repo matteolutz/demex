@@ -74,6 +74,20 @@ impl<'a> Lexer<'a> {
                     tokens.push(Token::KeywordHome);
                 } else if keyword == "manset" {
                     tokens.push(Token::KeywordManSet);
+                } else if keyword == "record" {
+                    tokens.push(Token::KeywordRecord);
+                } else if keyword == "group" {
+                    tokens.push(Token::KeywordGroup);
+                } else if keyword == "rename" {
+                    tokens.push(Token::KeywordRename);
+                } else if keyword == "clear" {
+                    tokens.push(Token::KeywordClear);
+                } else if keyword == "color" {
+                    tokens.push(Token::KeywordColor);
+                } else if keyword == "position" {
+                    tokens.push(Token::KeywordPosition);
+                } else if keyword == "preset" {
+                    tokens.push(Token::KeywordPreset);
                 } else {
                     return Err(TokenizationError::UnknownKeyword(keyword));
                 }
@@ -104,6 +118,10 @@ impl<'a> Lexer<'a> {
                 let mut string = String::new();
 
                 while self.peek() != '\"' {
+                    if self.peek() == '\n' {
+                        return Err(TokenizationError::UnterminatedString);
+                    }
+
                     string.push(self.consume());
                 }
 

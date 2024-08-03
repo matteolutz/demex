@@ -79,6 +79,21 @@ impl<'a> Parser<'a> {
                     ))
                 }
             }
+            Token::KeywordGroup => {
+                self.advance();
+                let token = self.current_token()?.clone();
+
+                match token {
+                    Token::Numeral(i) => {
+                        self.advance();
+                        Ok(AtomicFixtureSelector::FixtureGroup(i))
+                    }
+                    _ => Err(ParseError::UnexpectedToken(
+                        token,
+                        "Expected numeral".to_string(),
+                    )),
+                }
+            }
             _ => Err(ParseError::UnexpectedToken(
                 token,
                 "Expected numeral or \"thru\"".to_string(),
@@ -144,6 +159,120 @@ impl<'a> Parser<'a> {
             return Ok(Action::GoHomeAll);
         }
 
+        if let Token::KeywordClear = self.current_token()? {
+            self.advance();
+            return Ok(Action::ClearAll);
+        }
+
+        if let Token::KeywordRename = self.current_token()? {
+            self.advance();
+
+            let token = self.current_token()?.clone();
+
+            match token {
+                Token::KeywordGroup => {
+                    self.advance();
+
+                    let token = self.current_token()?.clone();
+
+                    if let Token::Numeral(group) = token {
+                        self.advance();
+
+                        let token = self.current_token()?.clone();
+
+                        if let Token::String(name) = token {
+                            self.advance();
+                            return Ok(Action::RenameGroup(group, name));
+                        }
+                        return Err(ParseError::UnexpectedToken(
+                            token,
+                            "Expected string".to_string(),
+                        ));
+                    }
+                    return Err(ParseError::UnexpectedToken(
+                        token,
+                        "Expected numeral".to_string(),
+                    ));
+                }
+                Token::KeywordColor => {
+                    self.advance();
+
+                    let token = self.current_token()?.clone();
+
+                    if let Token::KeywordPreset = token {
+                        self.advance();
+
+                        let token = self.current_token()?.clone();
+
+                        if let Token::Numeral(group) = token {
+                            self.advance();
+
+                            let token = self.current_token()?.clone();
+
+                            if let Token::String(name) = token {
+                                self.advance();
+                                return Ok(Action::RenameColorPreset(group, name));
+                            }
+                            return Err(ParseError::UnexpectedToken(
+                                token,
+                                "Expected string".to_string(),
+                            ));
+                        }
+                        return Err(ParseError::UnexpectedToken(
+                            token,
+                            "Expected numeral".to_string(),
+                        ));
+                    } else {
+                        return Err(ParseError::UnexpectedToken(
+                            token,
+                            "Expected \"preset\"".to_string(),
+                        ));
+                    }
+                }
+                Token::KeywordPosition => {
+                    self.advance();
+
+                    let token = self.current_token()?.clone();
+
+                    if let Token::KeywordPreset = token {
+                        self.advance();
+
+                        let token = self.current_token()?.clone();
+
+                        if let Token::Numeral(group) = token {
+                            self.advance();
+
+                            let token = self.current_token()?.clone();
+
+                            if let Token::String(name) = token {
+                                self.advance();
+                                return Ok(Action::RenamePositionPreset(group, name));
+                            }
+                            return Err(ParseError::UnexpectedToken(
+                                token,
+                                "Expected string".to_string(),
+                            ));
+                        }
+                        return Err(ParseError::UnexpectedToken(
+                            token,
+                            "Expected numeral".to_string(),
+                        ));
+                    } else {
+                        return Err(ParseError::UnexpectedToken(
+                            token,
+                            "Expected \"preset\"".to_string(),
+                        ));
+                    }
+                }
+                _ => {
+                    return Err(ParseError::UnexpectedToken(
+                        token,
+                        "Expected \"group\"".to_string(),
+                    ))
+                }
+            }
+        }
+
         let fixture_select = self.parse_fixture_selector()?;
 
         match self.current_token()? {
@@ -176,6 +305,122 @@ impl<'a> Parser<'a> {
                 }?;
 
                 Ok(Action::SetIntensity(fixture_select, intensity))
+            }
+            Token::KeywordPosition => {
+                self.advance();
+
+                let token = self.current_token()?.clone();
+
+                if matches!(token, Token::Numeral(_) | Token::FloatingPoint(_)) {
+                    let pan = (match token {
+                        Token::Numeral(i) => i as f32,
+                        Token::FloatingPoint(f) => f,
+                        _ => unreachable!(),
+                    }) / 255.0;
+
+                    self.advance();
+
+                    let token = self.current_token()?.clone();
+
+                    if matches!(token, Token::Numeral(_) | Token::FloatingPoint(_)) {
+                        let tilt = (match token {
+                            Token::Numeral(i) => i as f32,
+                            Token::FloatingPoint(f) => f,
+                            _ => unreachable!(),
+                        }) / 255.0;
+
+                        Ok(Action::SetPosition(fixture_select, [pan, tilt]))
+                    } else {
+                        Err(ParseError::UnexpectedToken(
+                            token,
+                            "Expected numeral or floating point".to_string(),
+                        ))
+                    }
+                } else {
+                    match token {
+                        Token::KeywordPreset => {
+                            self.advance();
+
+                            let token = self.current_token()?.clone();
+
+                            match token {
+                                Token::Numeral(preset_id) => {
+                                    self.advance();
+                                    Ok(Action::SetPositionPreset(fixture_select, preset_id))
+                                }
+                                _ => Err(ParseError::UnexpectedToken(
+                                    token,
+                                    "Expected numeral".to_string(),
+                                )),
+                            }
+                        }
+                        _ => Err(ParseError::UnexpectedToken(
+                            token,
+                            "Expected \"preset\"".to_string(),
+                        )),
+                    }
+                }
+            }
+            Token::KeywordColor => {
+                self.advance();
+
+                let token = self.current_token()?.clone();
+
+                // if token is numeral or floating point
+                if matches!(token, Token::Numeral(_) | Token::FloatingPoint(_)) {
+                    let red = (match token {
+                        Token::Numeral(i) => i as f32,
+                        Token::FloatingPoint(f) => f,
+                        _ => unreachable!(),
+                    }) / 255.0;
+
+                    let mut components = vec![red];
+
+                    for _ in 0..3 {
+                        self.advance();
+                        let token = self.current_token()?.clone();
+
+                        let component = match token {
+                            Token::Numeral(i) => Ok(i as f32),
+                            Token::FloatingPoint(f) => Ok(f),
+                            _ => Err(ParseError::UnexpectedToken(
+                                token,
+                                "Expected numeral or floating point".to_string(),
+                            )),
+                        };
+
+                        components.push((component?) / 255.0);
+                    }
+
+                    Ok(Action::SetColor(
+                        fixture_select,
+                        [components[0], components[1], components[2], components[3]],
+                    ))
+                } else {
+                    // TODO: manual color and preset by name
+                    match token {
+                        Token::KeywordPreset => {
+                            self.advance();
+
+                            let token = self.current_token()?.clone();
+
+                            match token {
+                                Token::Numeral(preset_id) => {
+                                    self.advance();
+                                    Ok(Action::SetColorPreset(fixture_select, preset_id))
+                                }
+                                _ => Err(ParseError::UnexpectedToken(
+                                    token,
+                                    "Expected numeral".to_string(),
+                                )),
+                            }
+                        }
+                        _ => Err(ParseError::UnexpectedToken(
+                            token,
+                            "Expected \"preset\"".to_string(),
+                        )),
+                    }
+                }
             }
             Token::KeywordManSet => {
                 self.advance();
@@ -213,6 +458,64 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Ok(Action::GoHome(fixture_select))
             }
+            Token::KeywordRecord => {
+                self.advance();
+
+                let token = self.current_token()?.clone();
+
+                match token {
+                    Token::KeywordGroup => {
+                        self.advance();
+
+                        let token = self.current_token()?.clone();
+
+                        if let Token::Numeral(group) = token {
+                            self.advance();
+                            Ok(Action::RecordGroup(fixture_select, group))
+                        } else {
+                            Err(ParseError::UnexpectedToken(
+                                token,
+                                "Expected numeral".to_string(),
+                            ))
+                        }
+                    }
+                    Token::KeywordColor => {
+                        self.advance();
+
+                        let token = self.current_token()?.clone();
+
+                        if let Token::Numeral(group) = token {
+                            self.advance();
+                            Ok(Action::RecordColor(fixture_select, group))
+                        } else {
+                            Err(ParseError::UnexpectedToken(
+                                token,
+                                "Expected numeral".to_string(),
+                            ))
+                        }
+                    }
+                    Token::KeywordPosition => {
+                        self.advance();
+
+                        let token = self.current_token()?.clone();
+
+                        if let Token::Numeral(group) = token {
+                            self.advance();
+                            Ok(Action::RecordPosition(fixture_select, group))
+                        } else {
+                            Err(ParseError::UnexpectedToken(
+                                token,
+                                "Expected numeral".to_string(),
+                            ))
+                        }
+                    }
+                    _ => Err(ParseError::UnexpectedToken(
+                        token,
+                        "Expected \"group\", \"color\" or \"position\"".to_string(),
+                    )),
+                }
+            }
+
             Token::Eof => {
                 self.advance();
                 Ok(Action::FixtureSelector(fixture_select))
