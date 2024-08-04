@@ -1,5 +1,3 @@
-use crate::fixture::channel::color::FixtureColorValue;
-
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let fixture_card_size = eframe::egui::vec2(75.0 * 1.5, 100.0 * 1.5);
     let window_width = ui.available_width();
@@ -30,31 +28,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             for f in fixture_chunk {
                                 let fixture_intenstiy = f.intensity().expect("");
 
-                                let (rect, _) = ui.allocate_exact_size(
+                                let (rect, response) = ui.allocate_exact_size(
                                     fixture_card_size,
                                     eframe::egui::Sense::click(),
                                 );
 
-                                let fixture_color = match f
-                                    .color()
-                                    .unwrap_or(FixtureColorValue::Rgbw([1.0, 1.0, 1.0, 1.0]))
-                                {
-                                    FixtureColorValue::Rgbw(rgbw) => rgbw,
-                                    FixtureColorValue::Preset(preset_id) => {
-                                        let preset = context.preset_handler.get_color(preset_id);
-
-                                        if let Ok(preset) = preset {
-                                            let preset_for_fixture = preset.color(f.id());
-                                            if let Some(preset_for_fixture) = preset_for_fixture {
-                                                *preset_for_fixture
-                                            } else {
-                                                [1.0, 1.0, 1.0, 1.0]
-                                            }
-                                        } else {
-                                            [1.0, 1.0, 1.0, 1.0]
-                                        }
-                                    }
-                                };
+                                if response.clicked() {
+                                    // TODO: make this work
+                                    println!("fixture clicked: {}", f.id());
+                                }
 
                                 ui.painter().rect_stroke(
                                     rect,

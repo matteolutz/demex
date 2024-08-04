@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use crate::{lexer::token::Token, ui::DemexUiContext};
 
-pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) -> () {
+pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     eframe::egui::Grid::new("preset_grid").show(ui, |ui| {
         // Groups
         ui.add_sized(

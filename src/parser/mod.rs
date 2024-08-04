@@ -159,6 +159,21 @@ impl<'a> Parser<'a> {
             return Ok(Action::GoHomeAll);
         }
 
+        if let Token::KeywordTest = self.current_token()? {
+            self.advance();
+
+            let token = self.current_token()?.clone();
+
+            if let Token::String(str) = token {
+                return Ok(Action::Test(str));
+            } else {
+                return Err(ParseError::UnexpectedToken(
+                    token,
+                    "Expected string".to_string(),
+                ));
+            }
+        }
+
         if let Token::KeywordClear = self.current_token()? {
             self.advance();
             return Ok(Action::ClearAll);

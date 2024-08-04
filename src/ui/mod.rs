@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use std::collections::HashMap;
 use tabs::DemexTabs;
 
 #[allow(unused_imports)]
@@ -9,7 +10,11 @@ use crate::{
     parser::Parser,
 };
 use crate::{
-    fixture::{channel::FixtureChannel, presets::PresetHandler},
+    fixture::{
+        channel::FixtureChannel,
+        presets::PresetHandler,
+        sequence::{cue::Cue, runtime::SequenceRuntime, Sequence},
+    },
     lexer::token::Token,
     parser::nodes::{
         action::Action,
@@ -25,6 +30,7 @@ pub struct DemexUiContext {
     preset_handler: PresetHandler,
     global_fixture_select: Option<FixtureSelector>,
     command: Vec<Token>,
+    sequence_runtimes: Vec<SequenceRuntime>,
 }
 
 pub struct DemexUiApp {
@@ -56,7 +62,10 @@ fn get_test_fixture_handler() -> FixtureHandler {
                 FixtureChannel::maintenance("ColorMacroCrossfade"),
                 FixtureChannel::zoom(true),
                 FixtureChannel::maintenance("PanTiltSpeed"),
-                FixtureChannel::maintenance("DeviceSettings"),
+                FixtureChannel::toggle_flags(HashMap::from([
+                    ("Turn On".to_owned(), 131u8),
+                    ("Turn Off".to_owned(), 231u8),
+                ])),
             ],
             1,
             (id as u16 - 1) * 40 + 411,
@@ -92,6 +101,7 @@ fn get_test_fixture_handler() -> FixtureHandler {
 fn get_test_preset_handler() -> PresetHandler {
     let mut ph = PresetHandler::new();
 
+    // Groups
     ph.record_group(
         FixtureSelector::Atomic(AtomicFixtureSelector::FixtureRange(1, 2)),
         1,
@@ -105,6 +115,27 @@ fn get_test_preset_handler() -> PresetHandler {
     )
     .expect("");
     ph.rename_group(2, "PARs".to_owned()).expect("");
+
+    // Sequences
+    let mut seq = Sequence::new(1);
+    seq.add_cue(Cue::new(HashMap::from([(
+        1,
+        vec![FixtureChannel::Intensity(true, 1.0)],
+    )])));
+    seq.add_cue(Cue::new(HashMap::from([(
+        2,
+        vec![FixtureChannel::Intensity(true, 1.0)],
+    )])));
+    seq.add_cue(Cue::new(HashMap::from([(
+        1,
+        vec![FixtureChannel::Intensity(true, 0.0)],
+    )])));
+    seq.add_cue(Cue::new(HashMap::from([(
+        2,
+        vec![FixtureChannel::Intensity(true, 0.0)],
+    )])));
+
+    ph.add_sequence(seq);
 
     ph
 }
@@ -123,6 +154,7 @@ impl Default for DemexUiApp {
                 preset_handler: ph,
                 global_fixture_select: None,
                 command: Vec::new(),
+                sequence_runtimes: Vec::new(),
             },
             global_error: None,
             max_update_time: None,
@@ -145,6 +177,29 @@ impl DemexUiApp {
             }
             Action::ClearAll => {
                 self.context.global_fixture_select = None;
+            }
+            Action::Test(cmd) => {
+                match cmd.as_str() {
+                    "start" => {
+                        println!("starting seq");
+                        let seq = self.context.preset_handler.sequence(1).unwrap().clone();
+                        self.context
+                            .sequence_runtimes
+                            .push(SequenceRuntime::new(seq));
+
+                        self.context.sequence_runtimes.last_mut().unwrap().play();
+                    }
+                    "next" => {
+                        println!("going to next cue");
+                        self.context
+                            .sequence_runtimes
+                            .last_mut()
+                            .unwrap()
+                            .next_cue();
+                    }
+                    _ => {}
+                }
+                self.context.preset_handler.sequence(1).unwrap();
             }
             _ => {}
         }
@@ -169,10 +224,21 @@ impl DemexUiApp {
 impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         let now = std::time::Instant::now();
+
+        // update fixture handler
         let _ = self
             .context
             .fixture_handler
             .update(&self.context.preset_handler);
+
+        // update sequence runtimes
+        for sr in self.context.sequence_runtimes.iter_mut() {
+            sr.update(
+                &mut self.context.fixture_handler,
+                &self.context.preset_handler,
+            );
+        }
+
         let elapsed = now.elapsed();
 
         if self.max_update_time.is_none() || (self.max_update_time.unwrap() < elapsed) {

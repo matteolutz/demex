@@ -88,6 +88,8 @@ impl<'a> Lexer<'a> {
                     tokens.push(Token::KeywordPosition);
                 } else if keyword == "preset" {
                     tokens.push(Token::KeywordPreset);
+                } else if keyword == "test" {
+                    tokens.push(Token::KeywordTest);
                 } else {
                     return Err(TokenizationError::UnknownKeyword(keyword));
                 }

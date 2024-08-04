@@ -7,7 +7,7 @@ use position::FixturePositionPreset;
 
 use crate::parser::nodes::fixture_selector::FixtureSelector;
 
-use super::handler::FixtureHandler;
+use super::{handler::FixtureHandler, sequence::Sequence};
 
 pub mod color;
 pub mod error;
@@ -18,6 +18,7 @@ pub struct PresetHandler {
     groups: HashMap<u32, FixtureGroup>,
     colors: HashMap<u32, FixtureColorPreset>,
     positions: HashMap<u32, FixturePositionPreset>,
+    sequences: HashMap<u32, Sequence>,
 }
 
 impl PresetHandler {
@@ -26,6 +27,7 @@ impl PresetHandler {
             groups: HashMap::new(),
             colors: HashMap::new(),
             positions: HashMap::new(),
+            sequences: HashMap::new(),
         }
     }
 }
@@ -89,6 +91,16 @@ impl PresetHandler {
             .ok_or(PresetHandlerError::PresetNotFound(id))
     }
 
+    pub fn get_color_for_fixture(&self, preset_id: u32, fixture_id: u32) -> Option<[f32; 4]> {
+        let color = self.get_color(preset_id);
+
+        if let Ok(color) = color {
+            color.color(fixture_id).copied()
+        } else {
+            None
+        }
+    }
+
     pub fn rename_color(&mut self, id: u32, new_name: String) -> Result<(), PresetHandlerError> {
         let color = self
             .colors
@@ -126,6 +138,16 @@ impl PresetHandler {
             .ok_or(PresetHandlerError::PresetNotFound(id))
     }
 
+    pub fn get_position_for_fixture(&self, preset_id: u32, fixture_id: u32) -> Option<[f32; 2]> {
+        let pos = self.get_position(preset_id);
+
+        if let Ok(pos) = pos {
+            pos.position(fixture_id).copied()
+        } else {
+            None
+        }
+    }
+
     pub fn rename_position(&mut self, id: u32, new_name: String) -> Result<(), PresetHandlerError> {
         let position = self
             .positions
@@ -137,5 +159,15 @@ impl PresetHandler {
 
     pub fn positions(&self) -> &HashMap<u32, FixturePositionPreset> {
         &self.positions
+    }
+}
+
+impl PresetHandler {
+    pub fn add_sequence(&mut self, sequence: Sequence) {
+        self.sequences.insert(sequence.id(), sequence);
+    }
+
+    pub fn sequence(&self, id: u32) -> Option<&Sequence> {
+        self.sequences.get(&id)
     }
 }

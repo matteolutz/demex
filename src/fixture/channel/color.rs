@@ -7,6 +7,12 @@ pub enum FixtureColorValue {
 }
 
 impl FixtureColorValue {
+    pub fn from_rgb(rgb: [f32; 3]) -> Self {
+        FixtureColorValue::Rgbw([rgb[0], rgb[1], rgb[2], 0.0])
+    }
+}
+
+impl FixtureColorValue {
     pub fn to_string(&self, preset_handler: &PresetHandler) -> String {
         match self {
             FixtureColorValue::Preset(preset_id) => preset_handler

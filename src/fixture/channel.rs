@@ -17,7 +17,9 @@ pub const FIXTURE_CHANNEL_COLOR_ID: u16 = 10;
 pub const FIXTURE_CHANNEL_POSITION_PAN_TILT_ID: u16 = 20;
 pub const FIXTURE_CHANNEL_TOGGLE_FLAGS: u16 = 30;
 
-#[derive(Debug)]
+pub type FixtureId = u32;
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum FixtureChannel {
     Intensity(bool, f32),
     Strobe(f32),
@@ -87,7 +89,7 @@ impl FixtureChannel {
                 *position == FixturePositionValue::PanTilt([0.0, 0.0])
             }
             FixtureChannel::Maintenance(_, _, value) => *value == 0,
-            FixtureChannel::ToggleFlags(_, value) => *value == None,
+            FixtureChannel::ToggleFlags(_, value) => value.is_none(),
         }
     }
 }
@@ -187,20 +189,9 @@ impl FixtureChannel {
             FixtureChannel::ColorRGB(is_fine, color) => {
                 let [f_r, f_g, f_b, _] = match color {
                     FixtureColorValue::Rgbw([r, g, b, _]) => [*r, *g, *b, 0.0],
-                    FixtureColorValue::Preset(preset_id) => {
-                        let preset = preset_handler.get_color(*preset_id);
-
-                        if let Ok(preset) = preset {
-                            let preset_for_fixture = preset.color(fixture_id);
-                            if let Some(preset_for_fixture) = preset_for_fixture {
-                                *preset_for_fixture
-                            } else {
-                                [0.0, 0.0, 0.0, 0.0]
-                            }
-                        } else {
-                            [0.0, 0.0, 0.0, 0.0]
-                        }
-                    }
+                    FixtureColorValue::Preset(preset_id) => preset_handler
+                        .get_color_for_fixture(*preset_id, fixture_id)
+                        .unwrap_or([0.0, 0.0, 0.0, 0.0]),
                 };
 
                 let (r, r_fine) = Self::float_to_coarse_and_fine(f_r);
@@ -216,20 +207,9 @@ impl FixtureChannel {
             FixtureChannel::PositionPanTilt(is_fine, position) => {
                 let [pan_f, tilt_f] = match position {
                     FixturePositionValue::PanTilt([pan, tilt]) => [*pan, *tilt],
-                    FixturePositionValue::Preset(preset_id) => {
-                        let preset = preset_handler.get_position(*preset_id);
-
-                        if let Ok(preset) = preset {
-                            let preset_for_fixture = preset.position(fixture_id);
-                            if let Some(preset_for_fixture) = preset_for_fixture {
-                                *preset_for_fixture
-                            } else {
-                                [0.0, 0.0]
-                            }
-                        } else {
-                            [0.0, 0.0]
-                        }
-                    }
+                    FixturePositionValue::Preset(preset_id) => preset_handler
+                        .get_position_for_fixture(*preset_id, fixture_id)
+                        .unwrap_or([0.0, 0.0]),
                 };
 
                 let (pan, pan_fine) = Self::float_to_coarse_and_fine(pan_f);

@@ -6,7 +6,7 @@ use crate::fixture::{
 
 use self::{error::ActionRunError, result::ActionRunResult};
 
-use super::fixture_selector::{self, FixtureSelector};
+use super::fixture_selector::FixtureSelector;
 
 pub mod error;
 pub mod result;
@@ -29,6 +29,7 @@ pub enum Action {
     RenamePositionPreset(u32, String),
     FixtureSelector(FixtureSelector),
     ClearAll,
+    Test(String),
 }
 
 impl Action {
@@ -91,6 +92,7 @@ impl Action {
             }
             Self::ClearAll => Ok(ActionRunResult::new()),
             Self::FixtureSelector(_) => Ok(ActionRunResult::new()),
+            Self::Test(_) => Ok(ActionRunResult::new()),
         }
     }
 
@@ -185,7 +187,7 @@ impl Action {
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
                 if let Ok(color_ref) = f.color_ref() {
-                    *color_ref = FixtureColorValue::Rgbw(color.clone());
+                    *color_ref = FixtureColorValue::Rgbw(color);
                 }
             }
         }
@@ -233,7 +235,7 @@ impl Action {
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
                 if let Ok(position_ref) = f.position_pan_tilt_ref() {
-                    *position_ref = FixturePositionValue::PanTilt(position.clone());
+                    *position_ref = FixturePositionValue::PanTilt(position);
                 }
             }
         }

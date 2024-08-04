@@ -1,6 +1,8 @@
 use std::collections::BTreeSet;
 
-use channel::{color::FixtureColorValue, position::FixturePositionValue, FIXTURE_CHANNEL_COLOR_ID};
+use channel::{
+    color::FixtureColorValue, position::FixturePositionValue, FixtureId, FIXTURE_CHANNEL_COLOR_ID,
+};
 use presets::PresetHandler;
 
 use self::{channel::FixtureChannel, error::FixtureError};
@@ -9,10 +11,11 @@ pub mod channel;
 pub mod error;
 pub mod handler;
 pub mod presets;
+pub mod sequence;
 
 #[derive(Debug)]
 pub struct Fixture {
-    id: u32,
+    id: FixtureId,
     name: String,
     patch: Vec<FixtureChannel>,
     universe: u16,
@@ -23,7 +26,7 @@ pub struct Fixture {
 
 impl Fixture {
     pub fn new(
-        id: u32,
+        id: FixtureId,
         name: String,
         patch: Vec<FixtureChannel>,
         universe: u16,
@@ -58,7 +61,7 @@ impl Fixture {
         })
     }
 
-    pub fn id(&self) -> u32 {
+    pub fn id(&self) -> FixtureId {
         self.id
     }
 
@@ -260,20 +263,47 @@ impl Fixture {
 }
 
 impl Fixture {
+    pub fn update_channel(&mut self, channel: &FixtureChannel) -> Result<(), FixtureError> {
+        for c in self.patch.iter_mut() {
+            if c.type_id() == channel.type_id() {
+                *c = channel.clone();
+                return Ok(());
+            }
+        }
+
+        Err(FixtureError::ChannelNotFound(Some(format!(
+            "Channel with ID {}",
+            channel.type_id()
+        ))))
+    }
+
+    pub fn update_channels<'a, I>(&mut self, channels: I) -> Result<(), FixtureError>
+    where
+        I: IntoIterator<Item = &'a FixtureChannel>,
+    {
+        for channel in channels.into_iter() {
+            self.update_channel(channel)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl Fixture {
     pub fn to_string(&self, preset_handler: &PresetHandler) -> String {
         let mut state = String::new();
 
         if let Ok(intens) = self.intensity() {
-            state.push_str(format!("{}%", (intens * 100.0).to_string()).as_str());
+            state.push_str(format!("{}%", intens * 100.0).as_str());
         }
 
         if let Ok(color) = self.color() {
-            state.push_str("\n");
+            state.push('\n');
             state.push_str(color.to_string(preset_handler).as_str());
         }
 
         if let Ok(position) = self.position_pan_tilt() {
-            state.push_str("\n");
+            state.push('\n');
             state.push_str(&position.to_string(preset_handler));
         }
 

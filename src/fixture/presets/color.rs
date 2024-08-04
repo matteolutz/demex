@@ -41,14 +41,9 @@ impl FixtureColorPreset {
 
                 let rgbw = match fixture_color {
                     FixtureColorValue::Rgbw(rgbw) => rgbw,
-                    FixtureColorValue::Preset(preset_id) => {
-                        let preset = preset_handler.get_color(preset_id);
-                        if let Ok(preset) = preset {
-                            *preset.color(fixture_id).unwrap_or(&[0.0, 0.0, 0.0, 0.0])
-                        } else {
-                            [0.0, 0.0, 0.0, 0.0]
-                        }
-                    }
+                    FixtureColorValue::Preset(preset_id) => preset_handler
+                        .get_color_for_fixture(preset_id, fixture_id)
+                        .unwrap_or([0.0, 0.0, 0.0, 0.0]),
                 };
 
                 color.insert(fixture_id, rgbw);

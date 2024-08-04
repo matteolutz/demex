@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 eframe = { features = ["default"], version = "0.28.1" }
+egui = { features = ["default"], version = "0.28.1" }
 egui_dock = "0.13.0"
 egui_extras = { features = ["default"], version = "0.28.1" }
 itertools = "0.13.0"

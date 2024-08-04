@@ -1,5 +1,10 @@
+use egui::color_picker::color_picker_color32;
+
 use crate::{
-    fixture::{self, channel::FixtureChannel},
+    fixture::{
+        self,
+        channel::{color::FixtureColorValue, position::FixturePositionValue, FixtureChannel},
+    },
     ui::components::position_selector::PositionSelector,
 };
 
@@ -80,68 +85,86 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     ui.vertical(|ui| {
                         ui.label("Color RGB");
 
-                        /*let fixture_color = context
+                        let fixture_color = context
                             .fixture_handler
                             .fixture(selected_fixtures[0])
                             .unwrap()
-                            .color_rgb()
+                            .color()
                             .expect("");
 
-                        let c = ui.color_edit_button_rgb(
-                            context
-                                .fixture_handler
-                                .fixture(selected_fixtures[0])
-                                .unwrap()
-                                .color_rgb_ref()
-                                .expect(""),
+                        let rgb_color = match fixture_color {
+                            FixtureColorValue::Rgbw(rgbw) => [rgbw[0], rgbw[1], rgbw[2]],
+                            FixtureColorValue::Preset(preset_id) => context
+                                .preset_handler
+                                .get_color_for_fixture(preset_id, selected_fixtures[0])
+                                .map(|color| [color[0], color[1], color[2]])
+                                .unwrap_or([0.0, 0.0, 0.0]),
+                        };
+
+                        let mut color = eframe::egui::Color32::from_rgb(
+                            (rgb_color[0] * 255.0) as u8,
+                            (rgb_color[1] * 255.0) as u8,
+                            (rgb_color[2] * 255.0) as u8,
                         );
 
-                        if c.changed() || c.clicked() {
-                            for fixture_id in selected_fixtures.iter().skip(1) {
-                                let color = context
+                        if color_picker_color32(ui, &mut color, egui::color_picker::Alpha::Opaque) {
+                            for fixture_id in selected_fixtures.iter() {
+                                let f_color = context
                                     .fixture_handler
                                     .fixture(*fixture_id)
                                     .unwrap()
-                                    .color_rgb_ref()
+                                    .color_ref()
                                     .expect("");
 
-                                color.clone_from(&fixture_color)
+                                *f_color = FixtureColorValue::from_rgb([
+                                    color.r() as f32 / 255.0,
+                                    color.g() as f32 / 255.0,
+                                    color.b() as f32 / 255.0,
+                                ]);
                             }
-                            }*/
+                        }
                     });
                 }
                 fixture::channel::FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => {
                     ui.vertical(|ui| {
                         ui.label("Pan/Tilt");
-                        /*ui.add(PositionSelector::new(|val| {
-                        if let Some(val) = val {
-                            for fixture_id in selected_fixtures.iter() {
-                                let position = context
+                        ui.add(PositionSelector::new(|val| {
+                            if let Some(val) = val {
+                                for fixture_id in selected_fixtures.iter() {
+                                    let position = context
+                                        .fixture_handler
+                                        .fixture(*fixture_id)
+                                        .unwrap()
+                                        .position_pan_tilt_ref()
+                                        .expect("");
+                                    *position = FixturePositionValue::PanTilt(val.into());
+                                }
+
+                                Some(eframe::egui::vec2(0.0, 0.0))
+                            } else {
+                                let pos_val = context
                                     .fixture_handler
-                                    .fixture(*fixture_id)
+                                    .fixture(selected_fixtures[0])
                                     .unwrap()
-                                    .position_pan_tilt_ref()
+                                    .position_pan_tilt()
                                     .expect("");
-                                *position = val.into();
+
+                                let pos = match pos_val {
+                                    FixturePositionValue::PanTilt(pos) => pos,
+                                    FixturePositionValue::Preset(preset_id) => context
+                                        .preset_handler
+                                        .get_position_for_fixture(preset_id, selected_fixtures[0])
+                                        .unwrap_or([0.0, 0.0]),
+                                };
+
+                                Some(eframe::egui::vec2(pos[0], pos[1]))
                             }
-
-                            Some(eframe::egui::vec2(0.0, 0.0))
-                        } else {
-                            let pos = context
-                                .fixture_handler
-                                .fixture(selected_fixtures[0])
-                                .unwrap()
-                                .position_pan_tilt()
-                                .expect("");
-
-                            Some(eframe::egui::vec2(pos[0], pos[1]))
-                        }
-                        }));*/
+                        }));
                     });
                 }
                 fixture::channel::FIXTURE_CHANNEL_TOGGLE_FLAGS => {
                     ui.style_mut().spacing.item_spacing = [0.0, 10.0].into();
-                    ui.style_mut().wrap = Some(false);
+                    ui.style_mut().wrap_mode = Some(eframe::egui::TextWrapMode::Extend);
 
                     ui.vertical(|ui| {
                         ui.label("Toggle flags");

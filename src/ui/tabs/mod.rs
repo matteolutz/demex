@@ -37,6 +37,11 @@ impl<'a> TabViewer for DemexTabViewer<'a> {
         }
     }
 
+    fn on_close(&mut self, _tab: &mut Self::Tab) -> bool {
+        // prevent closing tabs
+        false
+    }
+
     fn on_add(&mut self, _surface: egui_dock::SurfaceIndex, _node: egui_dock::NodeIndex) {
         println!("on add!!!");
     }
@@ -67,6 +72,7 @@ impl DemexTabs {
     ) {
         DockArea::new(&mut self.dock_state)
             .show_add_buttons(true)
+            .show_close_buttons(false)
             .style(Style::from_egui(ui.style().as_ref()))
             .show_inside(ui, &mut DemexTabViewer { context, egui_ctx });
     }
