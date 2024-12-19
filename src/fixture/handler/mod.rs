@@ -109,7 +109,11 @@ impl FixtureHandler {
         &mut self.grand_master
     }
 
-    pub fn update(&mut self, preset_handler: &PresetHandler) -> Result<(), FixtureHandlerError> {
+    pub fn update(
+        &mut self,
+        preset_handler: &PresetHandler,
+        _delta_time: f64,
+    ) -> Result<(), FixtureHandlerError> {
         let mut dirty_universes: BTreeSet<u16> = BTreeSet::new();
 
         for f in &self.fixtures {

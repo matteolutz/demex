@@ -24,6 +24,7 @@ impl SequenceRuntime {
         &mut self,
         fixture_handler: &mut FixtureHandler,
         _preset_handler: &PresetHandler,
+        _delta_time: f64,
     ) {
         if !self.started {
             return;

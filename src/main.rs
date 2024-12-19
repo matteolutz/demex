@@ -14,6 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         viewport: eframe::egui::ViewportBuilder::default().with_inner_size([1120.0, 720.0]),
         ..Default::default()
     };
+
     eframe::run_native(
         "demex",
         options,

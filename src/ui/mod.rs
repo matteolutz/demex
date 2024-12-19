@@ -25,6 +25,9 @@ use crate::{
 pub mod components;
 pub mod tabs;
 
+const DEMEX_FIXED_UPDATE_RATE: u32 = 60;
+const DEMEX_RUN_WITH_FIXED_UPDATE: bool = false;
+
 pub struct DemexUiContext {
     fixture_handler: FixtureHandler,
     preset_handler: PresetHandler,
@@ -40,6 +43,7 @@ pub struct DemexUiApp {
     context: DemexUiContext,
     global_error: Option<Box<dyn std::error::Error>>,
     max_update_time: Option<std::time::Duration>,
+    last_update: std::time::Instant,
     tabs: DemexTabs,
 }
 
@@ -149,6 +153,7 @@ impl Default for DemexUiApp {
             command_input: String::new(),
             is_command_input_empty: true,
             gm_slider_val: fh.grand_master(),
+            last_update: std::time::Instant::now(),
             context: DemexUiContext {
                 fixture_handler: fh,
                 preset_handler: ph,
@@ -219,25 +224,42 @@ impl DemexUiApp {
 
         Ok(())
     }
-}
 
-impl eframe::App for DemexUiApp {
-    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        let now = std::time::Instant::now();
+    pub fn fixed_update(&mut self) {
+        let elapsed = self.last_update.elapsed();
+
+        if DEMEX_RUN_WITH_FIXED_UPDATE
+            && elapsed.as_millis() < 1_000 / DEMEX_FIXED_UPDATE_RATE as u128
+        {
+            return;
+        };
+
+        let delta_time = elapsed.as_secs_f64();
 
         // update fixture handler
         let _ = self
             .context
             .fixture_handler
-            .update(&self.context.preset_handler);
+            .update(&self.context.preset_handler, delta_time);
 
         // update sequence runtimes
         for sr in self.context.sequence_runtimes.iter_mut() {
             sr.update(
                 &mut self.context.fixture_handler,
                 &self.context.preset_handler,
+                delta_time,
             );
         }
+
+        self.last_update = std::time::Instant::now();
+    }
+}
+
+impl eframe::App for DemexUiApp {
+    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+        let now = std::time::Instant::now();
+
+        self.fixed_update();
 
         let elapsed = now.elapsed();
 
@@ -347,5 +369,7 @@ impl eframe::App for DemexUiApp {
                 }
             });
         });
+
+        ctx.request_repaint();
     }
 }
