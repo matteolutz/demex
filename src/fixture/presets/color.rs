@@ -5,7 +5,7 @@ use crate::{
         channel::{color::FixtureColorValue, FIXTURE_CHANNEL_COLOR_ID},
         handler::FixtureHandler,
     },
-    parser::nodes::fixture_selector::FixtureSelector,
+    parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 
 use super::{error::PresetHandlerError, PresetHandler};
@@ -21,6 +21,7 @@ impl FixtureColorPreset {
     pub fn new(
         id: u32,
         fixture_selector: &FixtureSelector,
+        fixture_selector_context: FixtureSelectorContext,
         preset_handler: &PresetHandler,
         fixture_handler: &FixtureHandler,
     ) -> Result<Self, PresetHandlerError> {
@@ -28,7 +29,7 @@ impl FixtureColorPreset {
 
         let mut color = HashMap::new();
         for fixture_id in fixture_selector
-            .get_fixtures(preset_handler)
+            .get_fixtures(preset_handler, fixture_selector_context)
             .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?
         {
             let fixture = fixture_handler.fixture_immut(fixture_id);

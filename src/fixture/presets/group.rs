@@ -1,4 +1,6 @@
-use crate::parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorError};
+use crate::parser::nodes::fixture_selector::{
+    FixtureSelector, FixtureSelectorContext, FixtureSelectorError,
+};
 
 use super::PresetHandler;
 
@@ -11,6 +13,11 @@ pub struct FixtureGroup {
 
 impl FixtureGroup {
     pub fn new(id: u32, fixture_selector: FixtureSelector) -> Self {
+        assert!(
+            fixture_selector.is_flat(),
+            "FixtureGroup fixture selector must be flattened"
+        );
+
         FixtureGroup {
             id,
             name: format!("Group {}", id),
@@ -33,7 +40,8 @@ impl FixtureGroup {
     pub fn get_fixtures(
         &self,
         preset_handler: &PresetHandler,
+        context: FixtureSelectorContext,
     ) -> Result<Vec<u32>, FixtureSelectorError> {
-        self.fixture_selector.get_fixtures(preset_handler)
+        self.fixture_selector.get_fixtures(preset_handler, context)
     }
 }

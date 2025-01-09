@@ -39,6 +39,10 @@ impl<'a> Parser<'a> {
     fn parse_atomic_fixture_selector(&mut self) -> Result<AtomicFixtureSelector, ParseError> {
         let token = self.current_token()?.clone();
         match token {
+            Token::KeywordFixturesSelected => {
+                self.advance();
+                Ok(AtomicFixtureSelector::CurrentFixturesSelected)
+            }
             Token::Numeral(i1) => {
                 self.advance();
                 let token = self.current_token()?.clone();

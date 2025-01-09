@@ -18,7 +18,7 @@ use crate::{
     lexer::token::Token,
     parser::nodes::{
         action::Action,
-        fixture_selector::{AtomicFixtureSelector, FixtureSelector},
+        fixture_selector::{AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext},
     },
 };
 
@@ -178,7 +178,27 @@ impl DemexUiApp {
 
         match &action {
             Action::FixtureSelector(fixture_selector) => {
-                self.context.global_fixture_select = Some(fixture_selector.clone());
+                let fixture_selector = fixture_selector.flatten(
+                    &self.context.preset_handler,
+                    FixtureSelectorContext::new(&self.context.global_fixture_select),
+                );
+
+                if let Ok(fixture_selector) = fixture_selector {
+                    let selected_fixtures = fixture_selector.get_fixtures(
+                        &self.context.preset_handler,
+                        FixtureSelectorContext::new(&self.context.global_fixture_select),
+                    );
+
+                    if selected_fixtures.is_ok() {
+                        self.context.global_fixture_select = Some(fixture_selector);
+                    } else if let Err(fixture_selector_err) = selected_fixtures {
+                        self.context.global_fixture_select = None;
+                        self.global_error = Some(Box::new(fixture_selector_err));
+                    }
+                } else if let Err(fixture_selector_err) = fixture_selector {
+                    self.context.global_fixture_select = None;
+                    self.global_error = Some(Box::new(fixture_selector_err))
+                }
             }
             Action::ClearAll => {
                 self.context.global_fixture_select = None;
@@ -214,6 +234,7 @@ impl DemexUiApp {
         action.run(
             &mut self.context.fixture_handler,
             &mut self.context.preset_handler,
+            FixtureSelectorContext::new(&self.context.global_fixture_select),
         )?;
 
         println!(

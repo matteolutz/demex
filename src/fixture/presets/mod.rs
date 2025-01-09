@@ -5,7 +5,7 @@ use error::PresetHandlerError;
 use group::FixtureGroup;
 use position::FixturePositionPreset;
 
-use crate::parser::nodes::fixture_selector::FixtureSelector;
+use crate::parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext};
 
 use super::{handler::FixtureHandler, sequence::Sequence};
 
@@ -73,6 +73,7 @@ impl PresetHandler {
     pub fn record_color(
         &mut self,
         fixture_selector: &FixtureSelector,
+        fixture_selector_context: FixtureSelectorContext,
         id: u32,
         fixture_handler: &FixtureHandler,
     ) -> Result<(), PresetHandlerError> {
@@ -80,7 +81,13 @@ impl PresetHandler {
             return Err(PresetHandlerError::PresetAlreadyExists(id));
         }
 
-        let color = FixtureColorPreset::new(id, fixture_selector, self, fixture_handler)?;
+        let color = FixtureColorPreset::new(
+            id,
+            fixture_selector,
+            fixture_selector_context,
+            self,
+            fixture_handler,
+        )?;
         self.colors.insert(id, color);
         Ok(())
     }
@@ -120,6 +127,7 @@ impl PresetHandler {
     pub fn record_position(
         &mut self,
         fixture_selector: &FixtureSelector,
+        fixture_selector_context: FixtureSelectorContext,
         id: u32,
         fixture_handler: &FixtureHandler,
     ) -> Result<(), PresetHandlerError> {
@@ -127,7 +135,13 @@ impl PresetHandler {
             return Err(PresetHandlerError::PresetAlreadyExists(id));
         }
 
-        let position = FixturePositionPreset::new(id, fixture_selector, self, fixture_handler)?;
+        let position = FixturePositionPreset::new(
+            id,
+            fixture_selector,
+            fixture_selector_context,
+            self,
+            fixture_handler,
+        )?;
         self.positions.insert(id, position);
         Ok(())
     }

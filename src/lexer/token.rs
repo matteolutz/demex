@@ -23,6 +23,7 @@ pub enum Token {
     KeywordPosition,
     KeywordPreset,
     KeywordTest,
+    KeywordFixturesSelected,
     Eof,
 }
 
@@ -52,6 +53,7 @@ impl std::fmt::Display for Token {
             Token::KeywordPosition => write!(f, "position"),
             Token::KeywordPreset => write!(f, "preset"),
             Token::KeywordTest => write!(f, "test"),
+            Token::KeywordFixturesSelected => write!(f, "~"),
             Token::Eof => write!(f, "Eof"),
         }
     }

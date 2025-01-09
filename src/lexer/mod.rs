@@ -76,7 +76,7 @@ impl<'a> Lexer<'a> {
                     tokens.push(Token::KeywordManSet);
                 } else if keyword == "record" {
                     tokens.push(Token::KeywordRecord);
-                } else if keyword == "group" {
+                } else if keyword == "group" || keyword == "g" {
                     tokens.push(Token::KeywordGroup);
                 } else if keyword == "rename" {
                     tokens.push(Token::KeywordRename);
@@ -130,6 +130,9 @@ impl<'a> Lexer<'a> {
                 self.consume();
 
                 tokens.push(Token::String(string));
+            } else if self.peek() == '~' {
+                self.consume();
+                tokens.push(Token::KeywordFixturesSelected);
             } else if self.peek().is_whitespace() {
                 self.consume();
             }

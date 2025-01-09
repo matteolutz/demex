@@ -5,6 +5,7 @@ use crate::{
         self,
         channel::{color::FixtureColorValue, position::FixturePositionValue, FixtureChannel},
     },
+    parser::nodes::fixture_selector::FixtureSelectorContext,
     ui::components::position_selector::PositionSelector,
 };
 
@@ -18,7 +19,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
         .global_fixture_select
         .as_ref()
         .unwrap()
-        .get_fixtures(&context.preset_handler)
+        .get_fixtures(
+            &context.preset_handler,
+            FixtureSelectorContext::new(&context.global_fixture_select),
+        )
         .expect("fixture selection failed");
 
     if selected_fixtures.is_empty() {

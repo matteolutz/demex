@@ -1,3 +1,5 @@
+use crate::parser::nodes::fixture_selector::FixtureSelectorContext;
+
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let fixture_card_size = eframe::egui::vec2(75.0 * 1.5, 100.0 * 1.5);
     let window_width = ui.available_width();
@@ -13,7 +15,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     let selectd_fixtures =
                         if let Some(fixture_select) = &context.global_fixture_select {
                             fixture_select
-                                .get_fixtures(&context.preset_handler)
+                                .get_fixtures(
+                                    &context.preset_handler,
+                                    FixtureSelectorContext::new(&context.global_fixture_select),
+                                )
                                 .unwrap_or(vec![])
                         } else {
                             vec![]
