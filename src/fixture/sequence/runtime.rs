@@ -8,7 +8,6 @@ pub struct SequenceRuntime {
     sequence: Sequence,
 
     current_cue: usize,
-    prev_cue: usize,
     cue_update: Option<time::Instant>,
     started: bool,
 }
@@ -16,7 +15,6 @@ pub struct SequenceRuntime {
 impl SequenceRuntime {
     pub fn new(sequence: Sequence) -> Self {
         Self {
-            prev_cue: sequence.cues().len(),
             sequence,
             current_cue: 0,
             cue_update: None,
@@ -33,12 +31,6 @@ impl SequenceRuntime {
         if !self.started {
             return;
         }
-
-        /*if self.current_cue == self.prev_cue {
-            return;
-        }
-
-        self.prev_cue = self.current_cue;*/
 
         let delta = self
             .cue_update
