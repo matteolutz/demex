@@ -11,7 +11,7 @@ use super::fixture_selector::{FixtureSelector, FixtureSelectorContext};
 pub mod error;
 pub mod result;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Action {
     SetIntensity(FixtureSelector, f32),
     SetColor(FixtureSelector, [f32; 4]),
@@ -24,6 +24,7 @@ pub enum Action {
     RecordGroup(FixtureSelector, u32),
     RecordColor(FixtureSelector, u32),
     RecordPosition(FixtureSelector, u32),
+    RecordMacro(Box<Action>, u32),
     RenameGroup(u32, String),
     RenameColorPreset(u32, String),
     RenamePositionPreset(u32, String),
@@ -117,6 +118,7 @@ impl Action {
                 preset_handler,
                 fixture_handler,
             ),
+            Self::RecordMacro(action, id) => self.run_record_macro(*id, action, preset_handler),
             Self::ClearAll => Ok(ActionRunResult::new()),
             Self::FixtureSelector(_) => Ok(ActionRunResult::new()),
             Self::Test(_) => Ok(ActionRunResult::new()),
@@ -396,6 +398,19 @@ impl Action {
                 id,
                 fixture_handler,
             )
+            .map_err(ActionRunError::PresetHandlerError)?;
+
+        Ok(ActionRunResult::new())
+    }
+
+    fn run_record_macro(
+        &self,
+        id: u32,
+        action: &Action,
+        preset_handler: &mut PresetHandler,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        preset_handler
+            .record_macro(id, Box::new(action.clone()))
             .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())

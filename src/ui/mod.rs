@@ -12,7 +12,7 @@ use crate::{
 use crate::{
     fixture::{
         channel::FixtureChannel,
-        presets::PresetHandler,
+        presets::{command_slice::CommandSlice, PresetHandler},
         sequence::{cue::Cue, runtime::SequenceRuntime, Sequence},
     },
     lexer::token::Token,
@@ -120,6 +120,26 @@ fn get_test_preset_handler() -> PresetHandler {
     .expect("");
     ph.rename_group(2, "PARs".to_owned()).expect("");
 
+    ph.record_macro(
+        1,
+        Box::new(Action::SetIntensity(
+            FixtureSelector::Atomic(AtomicFixtureSelector::CurrentFixturesSelected),
+            100.0,
+        )),
+    )
+    .expect("");
+    ph.rename_macro(1, "~ @ Full".to_owned()).expect("");
+
+    ph.record_macro(2, Box::new(Action::GoHomeAll)).expect("");
+    ph.rename_macro(2, "Home".to_owned()).expect("");
+
+    ph.record_command_slice(CommandSlice::new(
+        1,
+        vec![Token::KeywordIntens, Token::KeywordFull],
+    ))
+    .expect("");
+    ph.rename_command_slice(1, "@ Full".to_owned()).expect("");
+
     // Sequences
     let mut seq = Sequence::new(1);
     seq.add_cue(Cue::new(HashMap::from([(
@@ -169,13 +189,10 @@ impl Default for DemexUiApp {
 }
 
 impl DemexUiApp {
-    pub fn run_cmd(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        /*let mut l = Lexer::new(&self.command_input);
-        let tokens = l.tokenize()?;*/
-
-        let mut p = Parser::new(&self.context.command);
-        let action = p.parse()?;
-
+    pub fn run_and_handle_action(
+        &mut self,
+        action: Action,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         match &action {
             Action::FixtureSelector(fixture_selector) => {
                 let fixture_selector = fixture_selector.flatten(
@@ -244,6 +261,13 @@ impl DemexUiApp {
         );
 
         Ok(())
+    }
+
+    pub fn run_cmd(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut p = Parser::new(&self.context.command);
+        let action = p.parse()?;
+
+        self.run_and_handle_action(action)
     }
 
     pub fn fixed_update(&mut self) {

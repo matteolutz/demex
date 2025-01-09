@@ -1,17 +1,24 @@
 use std::collections::HashMap;
 
 use color::FixtureColorPreset;
+use command_slice::CommandSlice;
 use error::PresetHandlerError;
 use group::FixtureGroup;
+use mmacro::MMacro;
 use position::FixturePositionPreset;
 
-use crate::parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext};
+use crate::parser::nodes::{
+    action::{result::ActionRunResult, Action},
+    fixture_selector::{FixtureSelector, FixtureSelectorContext},
+};
 
 use super::{handler::FixtureHandler, sequence::Sequence};
 
 pub mod color;
+pub mod command_slice;
 pub mod error;
 pub mod group;
+pub mod mmacro;
 pub mod position;
 
 pub struct PresetHandler {
@@ -19,6 +26,8 @@ pub struct PresetHandler {
     colors: HashMap<u32, FixtureColorPreset>,
     positions: HashMap<u32, FixturePositionPreset>,
     sequences: HashMap<u32, Sequence>,
+    macros: HashMap<u32, MMacro>,
+    command_slices: HashMap<u32, CommandSlice>,
 }
 
 impl PresetHandler {
@@ -28,6 +37,8 @@ impl PresetHandler {
             colors: HashMap::new(),
             positions: HashMap::new(),
             sequences: HashMap::new(),
+            macros: HashMap::new(),
+            command_slices: HashMap::new(),
         }
     }
 }
@@ -176,6 +187,7 @@ impl PresetHandler {
     }
 }
 
+// Sequences
 impl PresetHandler {
     pub fn add_sequence(&mut self, sequence: Sequence) {
         self.sequences.insert(sequence.id(), sequence);
@@ -183,5 +195,82 @@ impl PresetHandler {
 
     pub fn sequence(&self, id: u32) -> Option<&Sequence> {
         self.sequences.get(&id)
+    }
+}
+
+// Macros
+impl PresetHandler {
+    pub fn record_macro(&mut self, id: u32, action: Box<Action>) -> Result<(), PresetHandlerError> {
+        if self.macros.contains_key(&id) {
+            return Err(PresetHandlerError::PresetAlreadyExists(id));
+        }
+
+        self.macros.insert(id, MMacro::new(id, action));
+        Ok(())
+    }
+
+    pub fn rename_macro(&mut self, id: u32, new_name: String) -> Result<(), PresetHandlerError> {
+        let mmacro = self
+            .macros
+            .get_mut(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))?;
+        *mmacro.name_mut() = new_name;
+        Ok(())
+    }
+
+    pub fn run_macro(
+        &mut self,
+        id: u32,
+        fixture_handler: &mut FixtureHandler,
+        fixture_selector_context: FixtureSelectorContext,
+    ) -> Result<ActionRunResult, PresetHandlerError> {
+        let mmacro = self
+            .macros
+            .get(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))?
+            .clone();
+
+        mmacro
+            .run(fixture_handler, self, fixture_selector_context)
+            .map_err(|err| PresetHandlerError::MacroExecutionError(Box::new(err)))
+    }
+
+    pub fn macros(&self) -> &HashMap<u32, MMacro> {
+        &self.macros
+    }
+}
+
+// Command Slices
+impl PresetHandler {
+    pub fn record_command_slice(&mut self, slice: CommandSlice) -> Result<(), PresetHandlerError> {
+        if self.command_slices.contains_key(&slice.id()) {
+            return Err(PresetHandlerError::PresetAlreadyExists(slice.id()));
+        }
+
+        self.command_slices.insert(slice.id(), slice);
+        Ok(())
+    }
+
+    pub fn rename_command_slice(
+        &mut self,
+        id: u32,
+        new_name: String,
+    ) -> Result<(), PresetHandlerError> {
+        let slice = self
+            .command_slices
+            .get_mut(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))?;
+        *slice.name_mut() = new_name;
+        Ok(())
+    }
+
+    pub fn get_command_slice(&self, id: u32) -> Result<&CommandSlice, PresetHandlerError> {
+        self.command_slices
+            .get(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))
+    }
+
+    pub fn command_slices(&self) -> &HashMap<u32, CommandSlice> {
+        &self.command_slices
     }
 }

@@ -1,4 +1,7 @@
-use crate::{fixture::error::FixtureError, parser::nodes::fixture_selector::FixtureSelectorError};
+use crate::{
+    fixture::error::FixtureError,
+    parser::nodes::{action::error::ActionRunError, fixture_selector::FixtureSelectorError},
+};
 
 #[derive(Debug)]
 pub enum PresetHandlerError {
@@ -6,6 +9,7 @@ pub enum PresetHandlerError {
     PresetNotFound(u32),
     FixtureError(FixtureError),
     FixtureSelectorError(Box<FixtureSelectorError>),
+    MacroExecutionError(Box<ActionRunError>),
 }
 
 impl std::fmt::Display for PresetHandlerError {
@@ -19,6 +23,7 @@ impl std::fmt::Display for PresetHandlerError {
             }
             PresetHandlerError::FixtureError(err) => write!(f, "{}", err),
             PresetHandlerError::FixtureSelectorError(err) => write!(f, "{}", err),
+            PresetHandlerError::MacroExecutionError(err) => write!(f, "{}", err),
         }
     }
 }

@@ -25,11 +25,15 @@ impl<'a> Parser<'a> {
     }
 
     fn current_token(&self) -> Result<&Token, ParseError> {
-        if self.current_token_idx >= self.tokens.len() {
+        if !self.has_next_token() {
             Err(ParseError::UnexpectedEndOfInput)
         } else {
             Ok(&self.tokens[self.current_token_idx])
         }
+    }
+
+    fn has_next_token(&self) -> bool {
+        self.current_token_idx < self.tokens.len()
     }
 
     fn advance(&mut self) {
@@ -535,18 +539,54 @@ impl<'a> Parser<'a> {
                 }
             }
 
-            Token::Eof => {
+            _ => {
                 self.advance();
                 Ok(Action::FixtureSelector(fixture_select))
             }
-            _ => Err(ParseError::UnknownAction(format!(
-                "{:?}",
-                self.current_token()
-            ))),
         }
     }
 
     pub fn parse(&mut self) -> Result<Action, ParseError> {
-        self.parse_action()
+        let action = self.parse_action()?;
+
+        if !self.has_next_token() {
+            return Ok(action);
+        }
+
+        if let Token::KeywordRecord = self.current_token()? {
+            self.advance();
+            let token = self.current_token()?.clone();
+
+            if let Token::KeywordMacro = token {
+                self.advance();
+
+                let token = self.current_token()?.clone();
+
+                if let Token::Numeral(i) = token {
+                    self.advance();
+
+                    return Ok(Action::RecordMacro(Box::new(action), i));
+                } else {
+                    return Err(ParseError::UnexpectedToken(
+                        token,
+                        "Expected numeral".to_string(),
+                    ));
+                }
+            } else {
+                return Err(ParseError::UnexpectedToken(
+                    token,
+                    "Expected \"macro\"".to_string(),
+                ));
+            }
+        };
+
+        if !matches!(self.current_token()?, Token::Eof) {
+            return Err(ParseError::UnexpectedToken(
+                self.current_token()?.clone(),
+                "Expected end of input".to_string(),
+            ));
+        }
+
+        Ok(action)
     }
 }

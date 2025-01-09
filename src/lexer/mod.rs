@@ -78,6 +78,10 @@ impl<'a> Lexer<'a> {
                     tokens.push(Token::KeywordRecord);
                 } else if keyword == "group" || keyword == "g" {
                     tokens.push(Token::KeywordGroup);
+                } else if keyword == "macro" {
+                    tokens.push(Token::KeywordMacro);
+                } else if keyword == "commandslice" {
+                    tokens.push(Token::KeywordCommandSlice);
                 } else if keyword == "rename" {
                     tokens.push(Token::KeywordRename);
                 } else if keyword == "clear" {

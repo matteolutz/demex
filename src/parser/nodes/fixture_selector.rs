@@ -141,7 +141,7 @@ impl FixtureSelector {
         context: FixtureSelectorContext,
     ) -> Result<Self, FixtureSelectorError> {
         match self {
-            Self::Atomic(f) => f.flatten(preset_handler, context).map(|f| Self::Atomic(f)),
+            Self::Atomic(f) => f.flatten(preset_handler, context).map(Self::Atomic),
             Self::Additive(a, b) => {
                 let a = a.flatten(preset_handler, context.clone())?;
                 let b = b.flatten(preset_handler, context)?;

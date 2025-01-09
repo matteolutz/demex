@@ -1,6 +1,9 @@
 use itertools::Itertools;
 
-use crate::{lexer::token::Token, ui::DemexUiContext};
+use crate::{
+    lexer::token::Token, parser::nodes::fixture_selector::FixtureSelectorContext,
+    ui::DemexUiContext,
+};
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     eframe::egui::Grid::new("preset_grid").show(ui, |ui| {
@@ -127,6 +130,88 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         + 1,
                 ),
             ])
+        }
+
+        ui.end_row();
+        ui.end_row();
+
+        // Macros
+        ui.add_sized(
+            [80.0, 80.0],
+            eframe::egui::Button::new("Macros")
+                .stroke(eframe::egui::Stroke::new(
+                    1.0,
+                    eframe::egui::Color32::YELLOW,
+                ))
+                .sense(eframe::egui::Sense {
+                    click: false,
+                    drag: false,
+                    focusable: false,
+                }),
+        );
+
+        for (_, preset) in context
+            .preset_handler
+            .macros()
+            .clone() // i hate myself for doing this
+            .iter()
+            .sorted_by(|a, b| a.0.cmp(b.0))
+        {
+            let preset_button =
+                ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
+            if preset_button.clicked() {
+                let macro_run_result = preset.run(
+                    &mut context.fixture_handler,
+                    &mut context.preset_handler,
+                    FixtureSelectorContext::new(&context.global_fixture_select),
+                );
+                println!("Macro run result: {:?}", macro_run_result);
+            }
+        }
+
+        let add_position_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
+        if add_position_button.clicked() {
+            context.command.extend(vec![
+                Token::KeywordRecord,
+                Token::KeywordMacro,
+                Token::Numeral(*context.preset_handler.macros().keys().max().unwrap_or(&0) + 1),
+            ])
+        }
+
+        ui.end_row();
+        ui.end_row();
+
+        // Command Slices
+        ui.add_sized(
+            [80.0, 80.0],
+            eframe::egui::Button::new("Command Slices")
+                .stroke(eframe::egui::Stroke::new(
+                    1.0,
+                    eframe::egui::Color32::LIGHT_YELLOW,
+                ))
+                .sense(eframe::egui::Sense {
+                    click: false,
+                    drag: false,
+                    focusable: false,
+                }),
+        );
+
+        for (_, preset) in context
+            .preset_handler
+            .command_slices()
+            .iter()
+            .sorted_by(|a, b| a.0.cmp(b.0))
+        {
+            let preset_button =
+                ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
+            if preset_button.clicked() {
+                context.command.extend(preset.command().clone());
+            }
+        }
+
+        let add_position_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
+        if add_position_button.clicked() {
+            // TODO: add command slices command
         }
 
         ui.end_row();
