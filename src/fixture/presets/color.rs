@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    fixture::{
-        channel::{color::FixtureColorValue, FIXTURE_CHANNEL_COLOR_ID},
-        handler::FixtureHandler,
-    },
+    fixture::{channel::FIXTURE_CHANNEL_COLOR_ID, handler::FixtureHandler},
     parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 
@@ -40,12 +37,7 @@ impl FixtureColorPreset {
 
                 let fixture_color = fixture.color().map_err(PresetHandlerError::FixtureError)?;
 
-                let rgbw = match fixture_color {
-                    FixtureColorValue::Rgbw(rgbw) => rgbw,
-                    FixtureColorValue::Preset(preset_id) => preset_handler
-                        .get_color_for_fixture(preset_id, fixture_id)
-                        .unwrap_or([0.0, 0.0, 0.0, 0.0]),
-                };
+                let rgbw = fixture_color.to_rgbw(preset_handler, fixture_id);
 
                 color.insert(fixture_id, rgbw);
             }

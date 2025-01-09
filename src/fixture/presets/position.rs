@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    fixture::{
-        channel::{position::FixturePositionValue, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID},
-        handler::FixtureHandler,
-    },
+    fixture::{channel::FIXTURE_CHANNEL_POSITION_PAN_TILT_ID, handler::FixtureHandler},
     parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 
@@ -45,17 +42,7 @@ impl FixturePositionPreset {
                     .position_pan_tilt()
                     .map_err(PresetHandlerError::FixtureError)?;
 
-                let pan_tilt = match fixture_position {
-                    FixturePositionValue::PanTilt(pan_tilt) => pan_tilt,
-                    FixturePositionValue::Preset(preset_id) => {
-                        let preset = preset_handler.get_position(preset_id);
-                        if let Ok(preset) = preset {
-                            *preset.position(fixture_id).unwrap_or(&[0.0, 0.0])
-                        } else {
-                            [0.0, 0.0]
-                        }
-                    }
-                };
+                let pan_tilt = fixture_position.to_pan_tilt(preset_handler, fixture_id);
 
                 position.insert(fixture_id, pan_tilt);
             }

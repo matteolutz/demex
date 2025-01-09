@@ -13,7 +13,11 @@ use crate::{
     fixture::{
         channel::FixtureChannel,
         presets::{command_slice::CommandSlice, PresetHandler},
-        sequence::{cue::Cue, runtime::SequenceRuntime, Sequence},
+        sequence::{
+            cue::{Cue, CueTrigger},
+            runtime::SequenceRuntime,
+            Sequence,
+        },
     },
     lexer::token::Token,
     parser::nodes::{
@@ -142,22 +146,42 @@ fn get_test_preset_handler() -> PresetHandler {
 
     // Sequences
     let mut seq = Sequence::new(1);
-    seq.add_cue(Cue::new(HashMap::from([(
-        1,
-        vec![FixtureChannel::Intensity(true, 1.0)],
-    )])));
-    seq.add_cue(Cue::new(HashMap::from([(
-        2,
-        vec![FixtureChannel::Intensity(true, 1.0)],
-    )])));
-    seq.add_cue(Cue::new(HashMap::from([(
-        1,
-        vec![FixtureChannel::Intensity(true, 0.0)],
-    )])));
-    seq.add_cue(Cue::new(HashMap::from([(
-        2,
-        vec![FixtureChannel::Intensity(true, 0.0)],
-    )])));
+    seq.add_cue(Cue::new(
+        HashMap::from([(1, vec![FixtureChannel::Intensity(true, 1.0).into()])]),
+        2.0,
+        None,
+        0.0,
+        None,
+        0.0,
+        CueTrigger::Manual,
+    ));
+    seq.add_cue(Cue::new(
+        HashMap::from([(2, vec![FixtureChannel::Intensity(true, 1.0).into()])]),
+        2.0,
+        None,
+        0.0,
+        None,
+        0.0,
+        CueTrigger::Manual,
+    ));
+    seq.add_cue(Cue::new(
+        HashMap::from([(1, vec![FixtureChannel::Intensity(true, 0.0).into()])]),
+        2.0,
+        None,
+        0.0,
+        None,
+        0.0,
+        CueTrigger::Manual,
+    ));
+    seq.add_cue(Cue::new(
+        HashMap::from([(2, vec![FixtureChannel::Intensity(true, 0.0).into()])]),
+        2.0,
+        None,
+        0.0,
+        None,
+        0.0,
+        CueTrigger::Manual,
+    ));
 
     ph.add_sequence(seq);
 
@@ -239,6 +263,7 @@ impl DemexUiApp {
                             .unwrap()
                             .next_cue();
                     }
+                    "stop" => self.context.sequence_runtimes.last_mut().unwrap().stop(),
                     _ => {}
                 }
                 self.context.preset_handler.sequence(1).unwrap();

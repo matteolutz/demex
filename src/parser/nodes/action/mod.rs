@@ -197,7 +197,7 @@ impl Action {
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
                 if let Ok(color_ref) = f.color_ref() {
-                    *color_ref = FixtureColorValue::Preset(preset.id())
+                    *color_ref = FixtureColorValue::Preset(preset.id(), 1.0)
                 }
             }
         }
@@ -247,7 +247,7 @@ impl Action {
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
                 if let Ok(position_ref) = f.position_pan_tilt_ref() {
-                    *position_ref = FixturePositionValue::Preset(preset.id())
+                    *position_ref = FixturePositionValue::Preset(preset.id(), 1.0)
                 }
             }
         }

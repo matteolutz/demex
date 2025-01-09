@@ -131,6 +131,26 @@ impl FixtureChannel {
         }
     }
 
+    pub fn multiply(&self, a: f32) -> FixtureChannel {
+        match self {
+            FixtureChannel::Intensity(is_fine, value) => {
+                FixtureChannel::Intensity(*is_fine, *value * a)
+            }
+            FixtureChannel::Strobe(value) => FixtureChannel::Strobe(*value * a),
+            FixtureChannel::Zoom(is_fine, value) => FixtureChannel::Zoom(*is_fine, *value * a),
+            FixtureChannel::ColorRGB(is_fine, color) => {
+                FixtureChannel::ColorRGB(*is_fine, color.multiply(a))
+            }
+            FixtureChannel::PositionPanTilt(is_fine, position) => {
+                FixtureChannel::PositionPanTilt(*is_fine, position.multiply(a))
+            }
+            FixtureChannel::Maintenance(name, id, value) => {
+                FixtureChannel::Maintenance(name.to_owned(), *id, *value)
+            }
+            _ => self.clone(),
+        }
+    }
+
     pub fn type_id(&self) -> u16 {
         match self {
             FixtureChannel::Intensity(_, _) => FIXTURE_CHANNEL_INTENSITY_ID,
@@ -187,12 +207,7 @@ impl FixtureChannel {
                 }
             }
             FixtureChannel::ColorRGB(is_fine, color) => {
-                let [f_r, f_g, f_b, _] = match color {
-                    FixtureColorValue::Rgbw([r, g, b, _]) => [*r, *g, *b, 0.0],
-                    FixtureColorValue::Preset(preset_id) => preset_handler
-                        .get_color_for_fixture(*preset_id, fixture_id)
-                        .unwrap_or([0.0, 0.0, 0.0, 0.0]),
-                };
+                let [f_r, f_g, f_b, _] = color.to_rgbw(preset_handler, fixture_id);
 
                 let (r, r_fine) = Self::float_to_coarse_and_fine(f_r);
                 let (g, g_fine) = Self::float_to_coarse_and_fine(f_g);
@@ -207,7 +222,7 @@ impl FixtureChannel {
             FixtureChannel::PositionPanTilt(is_fine, position) => {
                 let [pan_f, tilt_f] = match position {
                     FixturePositionValue::PanTilt([pan, tilt]) => [*pan, *tilt],
-                    FixturePositionValue::Preset(preset_id) => preset_handler
+                    FixturePositionValue::Preset(preset_id, _) => preset_handler
                         .get_position_for_fixture(*preset_id, fixture_id)
                         .unwrap_or([0.0, 0.0]),
                 };

@@ -173,6 +173,7 @@ impl<'a> Parser<'a> {
             let token = self.current_token()?.clone();
 
             if let Token::String(str) = token {
+                self.advance();
                 return Ok(Action::Test(str));
             } else {
                 return Err(ParseError::UnexpectedToken(

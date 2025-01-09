@@ -98,7 +98,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         let rgb_color = match fixture_color {
                             FixtureColorValue::Rgbw(rgbw) => [rgbw[0], rgbw[1], rgbw[2]],
-                            FixtureColorValue::Preset(preset_id) => context
+                            FixtureColorValue::Preset(preset_id, _) => context
                                 .preset_handler
                                 .get_color_for_fixture(preset_id, selected_fixtures[0])
                                 .map(|color| [color[0], color[1], color[2]])
@@ -155,7 +155,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                                 let pos = match pos_val {
                                     FixturePositionValue::PanTilt(pos) => pos,
-                                    FixturePositionValue::Preset(preset_id) => context
+                                    FixturePositionValue::Preset(preset_id, _) => context
                                         .preset_handler
                                         .get_position_for_fixture(preset_id, selected_fixtures[0])
                                         .unwrap_or([0.0, 0.0]),
