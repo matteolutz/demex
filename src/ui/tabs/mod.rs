@@ -18,6 +18,7 @@ pub enum DemexTab {
 
 pub struct DemexTabViewer<'a> {
     context: &'a mut DemexUiContext,
+    #[allow(dead_code)]
     egui_ctx: &'a eframe::egui::Context,
 }
 
