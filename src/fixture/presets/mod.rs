@@ -1,30 +1,37 @@
 use std::collections::HashMap;
 
-use color::FixtureColorPreset;
 use command_slice::CommandSlice;
 use error::PresetHandlerError;
 use group::FixtureGroup;
 use mmacro::MMacro;
-use position::FixturePositionPreset;
+use preset::FixturePreset;
 
 use crate::parser::nodes::{
     action::{result::ActionRunResult, Action},
     fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 
-use super::{handler::FixtureHandler, sequence::Sequence};
+use super::{
+    channel::{
+        value::FixtureChannelDiscreteValue, FIXTURE_CHANNEL_COLOR_ID,
+        FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+    },
+    handler::FixtureHandler,
+    sequence::Sequence,
+};
 
-pub mod color;
 pub mod command_slice;
 pub mod error;
 pub mod group;
 pub mod mmacro;
-pub mod position;
+pub mod preset;
 
 pub struct PresetHandler {
     groups: HashMap<u32, FixtureGroup>,
-    colors: HashMap<u32, FixtureColorPreset>,
-    positions: HashMap<u32, FixturePositionPreset>,
+
+    colors: HashMap<u32, FixturePreset>,
+    positions: HashMap<u32, FixturePreset>,
+
     sequences: HashMap<u32, Sequence>,
     macros: HashMap<u32, MMacro>,
     command_slices: HashMap<u32, CommandSlice>,
@@ -79,111 +86,92 @@ impl PresetHandler {
     }
 }
 
-// Colors
 impl PresetHandler {
-    pub fn record_color(
+    pub fn record_preset(
         &mut self,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         id: u32,
         fixture_handler: &FixtureHandler,
+        channel_type: u16,
     ) -> Result<(), PresetHandlerError> {
-        if self.colors.contains_key(&id) {
+        if self.presets_mut(channel_type).contains_key(&id) {
             return Err(PresetHandlerError::PresetAlreadyExists(id));
         }
 
-        let color = FixtureColorPreset::new(
+        let preset = FixturePreset::new(
             id,
             fixture_selector,
             fixture_selector_context,
+            channel_type,
             self,
             fixture_handler,
         )?;
-        self.colors.insert(id, color);
+
+        self.presets_mut(channel_type).insert(id, preset);
         Ok(())
     }
 
-    pub fn get_color(&self, id: u32) -> Result<&FixtureColorPreset, PresetHandlerError> {
-        self.colors
-            .get(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))
-    }
-
-    pub fn get_color_for_fixture(&self, preset_id: u32, fixture_id: u32) -> Option<[f32; 4]> {
-        let color = self.get_color(preset_id);
-
-        if let Ok(color) = color {
-            color.color(fixture_id).copied()
-        } else {
-            None
+    pub fn presets_mut(&mut self, channel_type: u16) -> &mut HashMap<u32, FixturePreset> {
+        match channel_type {
+            FIXTURE_CHANNEL_COLOR_ID => &mut self.colors,
+            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => &mut self.positions,
+            _ => todo!("not implemented"),
         }
     }
 
-    pub fn rename_color(&mut self, id: u32, new_name: String) -> Result<(), PresetHandlerError> {
-        let color = self
-            .colors
-            .get_mut(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))?;
-        *color.name_mut() = new_name;
-        Ok(())
+    pub fn presets(&self, channel_type: u16) -> &HashMap<u32, FixturePreset> {
+        match channel_type {
+            FIXTURE_CHANNEL_COLOR_ID => &self.colors,
+            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => &self.positions,
+            _ => todo!("not implemented"),
+        }
     }
 
-    pub fn colors(&self) -> &HashMap<u32, FixtureColorPreset> {
-        &self.colors
-    }
-}
-
-// Positions
-impl PresetHandler {
-    pub fn record_position(
+    pub fn rename_preset(
         &mut self,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        id: u32,
-        fixture_handler: &FixtureHandler,
+        preset_id: u32,
+        channel_type: u16,
+        new_name: String,
     ) -> Result<(), PresetHandlerError> {
-        if self.positions.contains_key(&id) {
-            return Err(PresetHandlerError::PresetAlreadyExists(id));
-        }
-
-        let position = FixturePositionPreset::new(
-            id,
-            fixture_selector,
-            fixture_selector_context,
-            self,
-            fixture_handler,
-        )?;
-        self.positions.insert(id, position);
+        let preset = self.get_preset_mut(preset_id, channel_type)?;
+        *preset.name_mut() = new_name;
         Ok(())
     }
 
-    pub fn get_position(&self, id: u32) -> Result<&FixturePositionPreset, PresetHandlerError> {
-        self.positions
-            .get(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))
+    pub fn get_preset(
+        &self,
+        preset_id: u32,
+        channel_type: u16,
+    ) -> Result<&FixturePreset, PresetHandlerError> {
+        self.presets(channel_type)
+            .get(&preset_id)
+            .ok_or(PresetHandlerError::PresetNotFound(preset_id))
     }
 
-    pub fn get_position_for_fixture(&self, preset_id: u32, fixture_id: u32) -> Option<[f32; 2]> {
-        let pos = self.get_position(preset_id);
+    pub fn get_preset_mut(
+        &mut self,
+        preset_id: u32,
+        channel_type: u16,
+    ) -> Result<&mut FixturePreset, PresetHandlerError> {
+        self.presets_mut(channel_type)
+            .get_mut(&preset_id)
+            .ok_or(PresetHandlerError::PresetNotFound(preset_id))
+    }
 
-        if let Ok(pos) = pos {
-            pos.position(fixture_id).copied()
+    pub fn get_preset_for_fixture(
+        &self,
+        preset_id: u32,
+        channel_type: u16,
+        fixture_id: u32,
+    ) -> Option<FixtureChannelDiscreteValue> {
+        let preset = self.get_preset(preset_id, channel_type);
+
+        if let Ok(preset) = preset {
+            preset.value(fixture_id).cloned()
         } else {
             None
         }
-    }
-
-    pub fn rename_position(&mut self, id: u32, new_name: String) -> Result<(), PresetHandlerError> {
-        let position = self
-            .positions
-            .get_mut(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))?;
-        *position.name_mut() = new_name;
-        Ok(())
-    }
-
-    pub fn positions(&self) -> &HashMap<u32, FixturePositionPreset> {
-        &self.positions
     }
 }
 

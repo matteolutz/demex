@@ -3,7 +3,10 @@ use egui::color_picker::color_picker_color32;
 use crate::{
     fixture::{
         self,
-        channel::{color::FixtureColorValue, position::FixturePositionValue, FixtureChannel},
+        channel::{
+            value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait},
+            FixtureChannel, FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+        },
     },
     parser::nodes::fixture_selector::FixtureSelectorContext,
     ui::components::position_selector::PositionSelector,
@@ -64,13 +67,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                         ui.add(eframe::egui::Slider::from_get_set(0.0..=1.0, |val| {
                             if let Some(val) = val {
                                 for fixture_id in selected_fixtures.iter() {
-                                    let intens = context
+                                    context
                                         .fixture_handler
                                         .fixture(*fixture_id)
                                         .unwrap()
-                                        .channel_single_value_ref(channel_type)
+                                        .set_channel_single_value(channel_type, val as f32)
                                         .expect("");
-                                    *intens = val as f32;
                                 }
 
                                 val
@@ -79,7 +81,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     .fixture_handler
                                     .fixture(selected_fixtures[0])
                                     .unwrap()
-                                    .channel_single_value(channel_type)
+                                    .channel_single_value(channel_type, &context.preset_handler)
                                     .expect("") as f64
                             }
                         }));
@@ -96,14 +98,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             .color()
                             .expect("");
 
-                        let rgb_color = match fixture_color {
-                            FixtureColorValue::Rgbw(rgbw) => [rgbw[0], rgbw[1], rgbw[2]],
-                            FixtureColorValue::Preset(preset_id, _) => context
-                                .preset_handler
-                                .get_color_for_fixture(preset_id, selected_fixtures[0])
-                                .map(|color| [color[0], color[1], color[2]])
-                                .unwrap_or([0.0, 0.0, 0.0]),
-                        };
+                        let rgb_color = fixture_color
+                            // TODO: change this, to use the corresponding fixture
+                            .as_quadruple(
+                                &context.preset_handler,
+                                selected_fixtures[0],
+                                FIXTURE_CHANNEL_COLOR_ID,
+                            )
+                            .map(|val| [val[0], val[1], val[2]])
+                            .expect("todo: rgb color error handling");
 
                         let mut color = eframe::egui::Color32::from_rgb(
                             (rgb_color[0] * 255.0) as u8,
@@ -113,18 +116,19 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         if color_picker_color32(ui, &mut color, egui::color_picker::Alpha::Opaque) {
                             for fixture_id in selected_fixtures.iter() {
-                                let f_color = context
+                                context
                                     .fixture_handler
                                     .fixture(*fixture_id)
                                     .unwrap()
-                                    .color_ref()
+                                    .set_color(FixtureChannelValue::Discrete(
+                                        FixtureChannelDiscreteValue::Quadruple([
+                                            color.r() as f32 / 255.0,
+                                            color.g() as f32 / 255.0,
+                                            color.b() as f32 / 255.0,
+                                            0.0,
+                                        ]),
+                                    ))
                                     .expect("");
-
-                                *f_color = FixtureColorValue::from_rgb([
-                                    color.r() as f32 / 255.0,
-                                    color.g() as f32 / 255.0,
-                                    color.b() as f32 / 255.0,
-                                ]);
                             }
                         }
                     });
@@ -135,13 +139,14 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                         ui.add(PositionSelector::new(|val| {
                             if let Some(val) = val {
                                 for fixture_id in selected_fixtures.iter() {
-                                    let position = context
+                                    context
                                         .fixture_handler
                                         .fixture(*fixture_id)
                                         .unwrap()
-                                        .position_pan_tilt_ref()
+                                        .set_position_pan_tilt(FixtureChannelValue::Discrete(
+                                            FixtureChannelDiscreteValue::Pair(val.into()),
+                                        ))
                                         .expect("");
-                                    *position = FixturePositionValue::PanTilt(val.into());
                                 }
 
                                 Some(eframe::egui::vec2(0.0, 0.0))
@@ -153,13 +158,14 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     .position_pan_tilt()
                                     .expect("");
 
-                                let pos = match pos_val {
-                                    FixturePositionValue::PanTilt(pos) => pos,
-                                    FixturePositionValue::Preset(preset_id, _) => context
-                                        .preset_handler
-                                        .get_position_for_fixture(preset_id, selected_fixtures[0])
-                                        .unwrap_or([0.0, 0.0]),
-                                };
+                                let pos = pos_val
+                                    // TODO: change this, to use the corresponding fixture
+                                    .as_pair(
+                                        &context.preset_handler,
+                                        selected_fixtures[0],
+                                        FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+                                    )
+                                    .expect("");
 
                                 Some(eframe::egui::vec2(pos[0], pos[1]))
                             }

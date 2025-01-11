@@ -1,5 +1,8 @@
 use crate::fixture::{
-    channel::{color::FixtureColorValue, position::FixturePositionValue},
+    channel::{
+        value::{FixtureChannelDiscreteValue, FixtureChannelValue},
+        FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+    },
     handler::FixtureHandler,
     presets::PresetHandler,
 };
@@ -170,8 +173,10 @@ impl Action {
 
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
-                let intens = f.intensity_ref().map_err(ActionRunError::FixtureError)?;
-                *intens = intensity / 100.0;
+                f.set_intensity(FixtureChannelValue::Discrete(
+                    FixtureChannelDiscreteValue::Single(intensity / 100.0),
+                ))
+                .map_err(ActionRunError::FixtureError)?;
             }
         }
 
@@ -191,14 +196,13 @@ impl Action {
             .map_err(ActionRunError::FixtureSelectorError)?;
 
         let preset = preset_handler
-            .get_color(preset_id)
+            .get_preset(preset_id, FIXTURE_CHANNEL_COLOR_ID)
             .map_err(ActionRunError::PresetHandlerError)?;
 
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
-                if let Ok(color_ref) = f.color_ref() {
-                    *color_ref = FixtureColorValue::Preset(preset.id(), 1.0)
-                }
+                f.set_color(FixtureChannelValue::Preset(preset.id()))
+                    .map_err(ActionRunError::FixtureError)?;
             }
         }
 
@@ -219,9 +223,10 @@ impl Action {
 
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
-                if let Ok(color_ref) = f.color_ref() {
-                    *color_ref = FixtureColorValue::Rgbw(color);
-                }
+                f.set_color(FixtureChannelValue::Discrete(
+                    FixtureChannelDiscreteValue::Quadruple(color),
+                ))
+                .map_err(ActionRunError::FixtureError)?;
             }
         }
 
@@ -241,14 +246,13 @@ impl Action {
             .map_err(ActionRunError::FixtureSelectorError)?;
 
         let preset = preset_handler
-            .get_position(preset_id)
+            .get_preset(preset_id, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID)
             .map_err(ActionRunError::PresetHandlerError)?;
 
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
-                if let Ok(position_ref) = f.position_pan_tilt_ref() {
-                    *position_ref = FixturePositionValue::Preset(preset.id(), 1.0)
-                }
+                f.set_position_pan_tilt(FixtureChannelValue::Preset(preset.id()))
+                    .map_err(ActionRunError::FixtureError)?;
             }
         }
 
@@ -269,9 +273,10 @@ impl Action {
 
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
-                if let Ok(position_ref) = f.position_pan_tilt_ref() {
-                    *position_ref = FixturePositionValue::PanTilt(position);
-                }
+                f.set_position_pan_tilt(FixtureChannelValue::Discrete(
+                    FixtureChannelDiscreteValue::Pair(position),
+                ))
+                .map_err(ActionRunError::FixtureError)?;
             }
         }
 
@@ -293,10 +298,13 @@ impl Action {
 
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
-                let maintanence = f
-                    .maintenance_ref(channel_name)
-                    .map_err(ActionRunError::FixtureError)?;
-                *maintanence = ((channel_value / 100.0) * 255.0) as u8;
+                f.set_mainenance(
+                    channel_name,
+                    FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(
+                        channel_value / 100.0,
+                    )),
+                )
+                .map_err(ActionRunError::FixtureError)?;
             }
         }
 
@@ -342,7 +350,7 @@ impl Action {
         preset_handler: &mut PresetHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
-            .rename_color(id, new_name.to_owned())
+            .rename_preset(id, FIXTURE_CHANNEL_COLOR_ID, new_name.to_owned())
             .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())
@@ -355,7 +363,11 @@ impl Action {
         preset_handler: &mut PresetHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
-            .rename_position(id, new_name.to_owned())
+            .rename_preset(
+                id,
+                FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+                new_name.to_owned(),
+            )
             .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())
@@ -370,15 +382,14 @@ impl Action {
         fixture_handler: &mut FixtureHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
-            .record_color(
+            .record_preset(
                 fixture_selector,
                 fixture_selector_context,
                 id,
                 fixture_handler,
+                FIXTURE_CHANNEL_COLOR_ID,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
-
-        println!("{:?}", preset_handler.colors());
 
         Ok(ActionRunResult::new())
     }
@@ -392,11 +403,12 @@ impl Action {
         fixture_handler: &mut FixtureHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
-            .record_position(
+            .record_preset(
                 fixture_selector,
                 fixture_selector_context,
                 id,
                 fixture_handler,
+                FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 

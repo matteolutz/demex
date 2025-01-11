@@ -1,8 +1,10 @@
 use std::collections::BTreeSet;
 
 use channel::{
-    color::FixtureColorValue, error::FixtureChannelError, position::FixturePositionValue,
-    FixtureId, FIXTURE_CHANNEL_COLOR_ID,
+    error::FixtureChannelError,
+    value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait},
+    FixtureId, FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
+    FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
 };
 use presets::PresetHandler;
 
@@ -122,18 +124,32 @@ impl Fixture {
         self.patch.iter().all(|c| c.is_home())
     }
 
-    pub fn intensity(&self) -> Result<f32, FixtureError> {
+    pub fn intensity(&self) -> Result<FixtureChannelValue, FixtureError> {
         match self
             .patch
             .iter()
             .find(|c| matches!(c, FixtureChannel::Intensity(_, _)))
         {
-            Some(FixtureChannel::Intensity(_, intens)) => Ok(*intens),
+            Some(FixtureChannel::Intensity(_, intens)) => Ok(intens.clone()),
             _ => Err(FixtureError::ChannelNotFound(Some("Intensity".to_string()))),
         }
     }
 
-    pub fn color(&self) -> Result<FixtureColorValue, FixtureError> {
+    pub fn set_intensity(&mut self, value: FixtureChannelValue) -> Result<(), FixtureError> {
+        match self
+            .patch
+            .iter_mut()
+            .find(|c| matches!(c, FixtureChannel::Intensity(_, _)))
+        {
+            Some(FixtureChannel::Intensity(_, intens)) => {
+                *intens = value;
+                Ok(())
+            }
+            _ => Err(FixtureError::ChannelNotFound(Some("Intensity".to_string()))),
+        }
+    }
+
+    pub fn color(&self) -> Result<FixtureChannelValue, FixtureError> {
         match self
             .patch
             .iter()
@@ -144,7 +160,21 @@ impl Fixture {
         }
     }
 
-    pub fn position_pan_tilt(&self) -> Result<FixturePositionValue, FixtureError> {
+    pub fn set_color(&mut self, value: FixtureChannelValue) -> Result<(), FixtureError> {
+        match self
+            .patch
+            .iter_mut()
+            .find(|c| matches!(c, FixtureChannel::ColorRGB(_, _)))
+        {
+            Some(FixtureChannel::ColorRGB(_, color)) => {
+                *color = value;
+                Ok(())
+            }
+            _ => Err(FixtureError::ChannelNotFound(Some("Color".to_string()))),
+        }
+    }
+
+    pub fn position_pan_tilt(&self) -> Result<FixtureChannelValue, FixtureError> {
         match self
             .patch
             .iter()
@@ -157,21 +187,142 @@ impl Fixture {
         }
     }
 
-    pub fn maintenance(&self, name: &str) -> Result<u8, FixtureError> {
+    pub fn set_position_pan_tilt(
+        &mut self,
+        value: FixtureChannelValue,
+    ) -> Result<(), FixtureError> {
+        match self
+            .patch
+            .iter_mut()
+            .find(|c| matches!(c, FixtureChannel::PositionPanTilt(_, _)))
+        {
+            Some(FixtureChannel::PositionPanTilt(_, position)) => {
+                *position = value;
+                Ok(())
+            }
+            _ => Err(FixtureError::ChannelNotFound(Some(
+                "PositionPanTilt".to_string(),
+            ))),
+        }
+    }
+
+    pub fn maintenance(&self, name: &str) -> Result<FixtureChannelValue, FixtureError> {
         match self.patch.iter().find(|c| match c {
             FixtureChannel::Maintenance(n, _, _) => n == name,
             _ => false,
         }) {
-            Some(FixtureChannel::Maintenance(_, _, value)) => Ok(*value),
+            Some(FixtureChannel::Maintenance(_, _, value)) => Ok(value.clone()),
             _ => Err(FixtureError::ChannelNotFound(Some(name.to_string()))),
         }
     }
 
-    pub fn channel_single_value(&self, channel_id: u16) -> Result<f32, FixtureError> {
+    pub fn set_mainenance(
+        &mut self,
+        name: &str,
+        value: FixtureChannelValue,
+    ) -> Result<(), FixtureError> {
+        match self.patch.iter_mut().find(|c| match c {
+            FixtureChannel::Maintenance(n, _, _) => n == name,
+            _ => false,
+        }) {
+            Some(FixtureChannel::Maintenance(_, _, val)) => {
+                *val = value;
+                Ok(())
+            }
+            _ => Err(FixtureError::ChannelNotFound(Some(name.to_string()))),
+        }
+    }
+
+    pub fn channel_value(&self, channel_id: u16) -> Result<FixtureChannelValue, FixtureError> {
         match self.patch.iter().find(|c| c.type_id() == channel_id) {
-            Some(FixtureChannel::Intensity(_, intens)) => Ok(*intens),
-            Some(FixtureChannel::Strobe(strobe)) => Ok(*strobe),
-            Some(FixtureChannel::Zoom(_, zoom)) => Ok(*zoom),
+            Some(channel) => match channel {
+                FixtureChannel::Intensity(_, intens) => Ok(intens.clone()),
+                FixtureChannel::Strobe(strobe) => Ok(strobe.clone()),
+                FixtureChannel::Zoom(_, zoom) => Ok(zoom.clone()),
+                FixtureChannel::ColorRGB(_, value) => Ok(value.clone()),
+                FixtureChannel::PositionPanTilt(_, value) => Ok(value.clone()),
+                FixtureChannel::Maintenance(_, _, value) => Ok(value.clone()),
+                FixtureChannel::ToggleFlags(_, value) => Ok(value.clone()),
+            },
+            None => Err(FixtureError::ChannelNotFound(None)),
+        }
+    }
+
+    pub fn set_channel_value(
+        &mut self,
+        channel_id: u16,
+        value: FixtureChannelValue,
+    ) -> Result<(), FixtureError> {
+        match self.patch.iter_mut().find(|c| c.type_id() == channel_id) {
+            Some(FixtureChannel::Intensity(_, intens)) => {
+                *intens = value;
+                Ok(())
+            }
+            Some(FixtureChannel::Strobe(strobe)) => {
+                *strobe = value;
+                Ok(())
+            }
+            Some(FixtureChannel::Zoom(_, zoom)) => {
+                *zoom = value;
+                Ok(())
+            }
+            Some(FixtureChannel::ColorRGB(_, color)) => {
+                *color = value;
+                Ok(())
+            }
+            Some(FixtureChannel::PositionPanTilt(_, position)) => {
+                *position = value;
+                Ok(())
+            }
+            Some(FixtureChannel::Maintenance(_, _, maint)) => {
+                *maint = value;
+                Ok(())
+            }
+            Some(FixtureChannel::ToggleFlags(_, flags)) => {
+                *flags = value;
+                Ok(())
+            }
+            _ => Err(FixtureError::ChannelNotFound(None)),
+        }
+    }
+
+    pub fn channel_single_value(
+        &self,
+        channel_id: u16,
+        preset_handler: &PresetHandler,
+    ) -> Result<f32, FixtureError> {
+        match self.patch.iter().find(|c| c.type_id() == channel_id) {
+            Some(FixtureChannel::Intensity(_, value)) => Ok(value
+                .as_single(preset_handler, self.id)
+                .map_err(FixtureError::FixtureChannelError)?),
+            Some(FixtureChannel::Strobe(value)) => Ok(value
+                .as_single(preset_handler, self.id)
+                .map_err(FixtureError::FixtureChannelError)?),
+            Some(FixtureChannel::Zoom(_, value)) => Ok(value
+                .as_single(preset_handler, self.id)
+                .map_err(FixtureError::FixtureChannelError)?),
+            _ => Err(FixtureError::ChannelNotFound(None)),
+        }
+    }
+
+    pub fn set_channel_single_value(
+        &mut self,
+        channel_id: u16,
+        value: f32,
+    ) -> Result<(), FixtureError> {
+        match self.patch.iter_mut().find(|c| c.type_id() == channel_id) {
+            Some(FixtureChannel::Intensity(_, intens)) => {
+                *intens = FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(value));
+                Ok(())
+            }
+            Some(FixtureChannel::Strobe(strobe)) => {
+                *strobe = FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(value));
+                Ok(())
+            }
+            Some(FixtureChannel::Zoom(_, zoom)) => {
+                *zoom = FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(value));
+                Ok(())
+            }
             _ => Err(FixtureError::ChannelNotFound(None)),
         }
     }
@@ -184,58 +335,15 @@ impl Fixture {
         Ok(())
     }
 
-    pub fn intensity_ref(&mut self) -> Result<&mut f32, FixtureError> {
-        match self
-            .patch
-            .iter_mut()
-            .find(|c| matches!(c, FixtureChannel::Intensity(_, _)))
-        {
-            Some(FixtureChannel::Intensity(_, intens)) => Ok(intens),
-            _ => Err(FixtureError::ChannelNotFound(Some("Intensity".to_string()))),
-        }
-    }
-
-    pub fn color_ref(&mut self) -> Result<&mut FixtureColorValue, FixtureError> {
-        match self
-            .patch
-            .iter_mut()
-            .find(|c| c.type_id() == FIXTURE_CHANNEL_COLOR_ID)
-        {
-            Some(FixtureChannel::ColorRGB(_, color)) => Ok(color),
-            _ => Err(FixtureError::ChannelNotFound(Some("Color".to_string()))),
-        }
-    }
-
-    pub fn position_pan_tilt_ref(&mut self) -> Result<&mut FixturePositionValue, FixtureError> {
-        match self
-            .patch
-            .iter_mut()
-            .find(|c| matches!(c, FixtureChannel::PositionPanTilt(_, _)))
-        {
-            Some(FixtureChannel::PositionPanTilt(_, position)) => Ok(position),
-            _ => Err(FixtureError::ChannelNotFound(Some(
-                "PositionPanTilt".to_string(),
-            ))),
-        }
-    }
-
-    pub fn maintenance_ref(&mut self, name: &str) -> Result<&mut u8, FixtureError> {
-        match self.patch.iter_mut().find(|c| match c {
-            FixtureChannel::Maintenance(n, _, _) => n == name,
-            _ => false,
-        }) {
-            Some(FixtureChannel::Maintenance(_, _, value_ref)) => Ok(value_ref),
-            _ => Err(FixtureError::ChannelNotFound(Some(name.to_string()))),
-        }
-    }
-
     pub fn set_toggle_flag(&mut self, flag_name: &str) -> Result<(), FixtureError> {
         match self.patch.iter_mut().find(|c| match c {
             FixtureChannel::ToggleFlags(flags, _) => flags.contains_key(flag_name),
             _ => false,
         }) {
             Some(FixtureChannel::ToggleFlags(_, value)) => {
-                *value = Some(flag_name.to_owned());
+                *value = FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::ToggleFlag(
+                    Some(flag_name.to_owned()),
+                ));
                 Ok(())
             }
             _ => Err(FixtureError::ChannelNotFound(Some(flag_name.to_string()))),
@@ -245,20 +353,11 @@ impl Fixture {
     pub fn unset_toggle_flags(&mut self) -> Result<(), FixtureError> {
         self.patch.iter_mut().for_each(|c| {
             if let FixtureChannel::ToggleFlags(_, value) = c {
-                *value = None;
+                *value = FixtureChannelValue::toggle_flag_default()
             }
         });
 
         Ok(())
-    }
-
-    pub fn channel_single_value_ref(&mut self, type_id: u16) -> Result<&mut f32, FixtureError> {
-        match self.patch.iter_mut().find(|c| c.type_id() == type_id) {
-            Some(FixtureChannel::Intensity(_, intens)) => Ok(intens),
-            Some(FixtureChannel::Strobe(strobe)) => Ok(strobe),
-            Some(FixtureChannel::Zoom(_, zoom)) => Ok(zoom),
-            _ => Err(FixtureError::ChannelNotFound(None)),
-        }
     }
 
     pub fn channel_name(&self, type_id: u16) -> Result<String, FixtureError> {
@@ -270,48 +369,30 @@ impl Fixture {
 }
 
 impl Fixture {
-    pub fn update_channel(&mut self, channel: &FixtureChannel) -> Result<(), FixtureError> {
-        for c in self.patch.iter_mut() {
-            if c.type_id() == channel.type_id() {
-                *c = channel.clone();
-                return Ok(());
-            }
-        }
-
-        Err(FixtureError::ChannelNotFound(Some(format!(
-            "Channel with ID {}",
-            channel.type_id()
-        ))))
-    }
-
-    pub fn update_channels<'a, I>(&mut self, channels: I) -> Result<(), FixtureError>
-    where
-        I: IntoIterator<Item = &'a FixtureChannel>,
-    {
-        for channel in channels.into_iter() {
-            self.update_channel(channel)?;
-        }
-
-        Ok(())
-    }
-}
-
-impl Fixture {
     pub fn to_string(&self, preset_handler: &PresetHandler) -> String {
         let mut state = String::new();
 
-        if let Ok(intens) = self.intensity() {
-            state.push_str(format!("{}%", intens * 100.0).as_str());
+        if let Ok(intens) = self
+            .intensity()
+            .map(|value| value.to_string(preset_handler, FIXTURE_CHANNEL_INTENSITY_ID))
+        {
+            state.push_str(intens.as_str());
         }
 
-        if let Ok(color) = self.color() {
+        if let Ok(color) = self
+            .color()
+            .map(|value| value.to_string(preset_handler, FIXTURE_CHANNEL_COLOR_ID))
+        {
             state.push('\n');
-            state.push_str(color.to_string(preset_handler).as_str());
+            state.push_str(color.as_str());
         }
 
-        if let Ok(position) = self.position_pan_tilt() {
+        if let Ok(position) = self
+            .position_pan_tilt()
+            .map(|value| value.to_string(preset_handler, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID))
+        {
             state.push('\n');
-            state.push_str(&position.to_string(preset_handler));
+            state.push_str(position.as_str());
         }
 
         format!(

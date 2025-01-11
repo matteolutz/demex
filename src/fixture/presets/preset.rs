@@ -1,30 +1,38 @@
 use std::collections::HashMap;
 
 use crate::{
-    fixture::{channel::FIXTURE_CHANNEL_POSITION_PAN_TILT_ID, handler::FixtureHandler},
+    fixture::{
+        channel::{
+            value::FixtureChannelDiscreteValue, FixtureChannel,
+            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+        },
+        handler::FixtureHandler,
+    },
     parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 
 use super::{error::PresetHandlerError, PresetHandler};
 
 #[derive(Debug)]
-pub struct FixturePositionPreset {
+pub struct FixturePreset {
     id: u32,
     name: String,
-    position: HashMap<u32, [f32; 2]>,
+    channel_type: u16,
+    values: HashMap<u32, FixtureChannelDiscreteValue>,
 }
 
-impl FixturePositionPreset {
+impl FixturePreset {
     pub fn new(
         id: u32,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
+        channel_type: u16,
         preset_handler: &PresetHandler,
         fixture_handler: &FixtureHandler,
     ) -> Result<Self, PresetHandlerError> {
-        let name = format!("Position Preset {}", id);
+        let name = format!("{} Preset {}", FixtureChannel::name_by_id(channel_type), id);
 
-        let mut position = HashMap::new();
+        let mut values = HashMap::new();
         for fixture_id in fixture_selector
             .get_fixtures(preset_handler, fixture_selector_context)
             .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?
@@ -39,16 +47,19 @@ impl FixturePositionPreset {
                 }
 
                 let fixture_position = fixture
-                    .position_pan_tilt()
+                    .channel_value(channel_type)
                     .map_err(PresetHandlerError::FixtureError)?;
 
-                let pan_tilt = fixture_position.to_pan_tilt(preset_handler, fixture_id);
-
-                position.insert(fixture_id, pan_tilt);
+                values.insert(fixture_id, fixture_position.to_discrete());
             }
         }
 
-        Ok(Self { id, name, position })
+        Ok(Self {
+            id,
+            name,
+            channel_type,
+            values,
+        })
     }
 
     pub fn id(&self) -> u32 {
@@ -63,7 +74,11 @@ impl FixturePositionPreset {
         &mut self.name
     }
 
-    pub fn position(&self, fixture_id: u32) -> Option<&[f32; 2]> {
-        self.position.get(&fixture_id)
+    pub fn channel_type(&self) -> u16 {
+        self.channel_type
+    }
+
+    pub fn value(&self, fixture_id: u32) -> Option<&FixtureChannelDiscreteValue> {
+        self.values.get(&fixture_id)
     }
 }

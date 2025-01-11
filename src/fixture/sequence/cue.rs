@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::fixture::channel::{FixtureChannel, FixtureId};
+use crate::fixture::channel::{value::FixtureChannelValue, FixtureId};
 
 #[derive(Debug, Clone)]
 pub enum CueTrigger {
@@ -13,27 +13,27 @@ pub enum CueTrigger {
 }
 
 #[derive(Debug, Clone)]
-pub struct CueFixtureChannel {
-    channel: FixtureChannel,
+pub struct CueFixtureChannelValue {
+    value: FixtureChannelValue,
+    channel_type: u16,
     snap: bool,
 }
 
-impl From<FixtureChannel> for CueFixtureChannel {
-    fn from(channel: FixtureChannel) -> Self {
-        return Self {
-            channel,
-            snap: false,
-        };
-    }
-}
-
-impl CueFixtureChannel {
-    pub fn new(channel: FixtureChannel, snap: bool) -> Self {
-        Self { channel, snap }
+impl CueFixtureChannelValue {
+    pub fn new(value: FixtureChannelValue, channel_type: u16, snap: bool) -> Self {
+        Self {
+            value,
+            channel_type,
+            snap,
+        }
     }
 
-    pub fn channel(&self) -> &FixtureChannel {
-        &self.channel
+    pub fn value(&self) -> &FixtureChannelValue {
+        &self.value
+    }
+
+    pub fn channel_type(&self) -> u16 {
+        self.channel_type
     }
 
     pub fn snap(&self) -> bool {
@@ -43,7 +43,7 @@ impl CueFixtureChannel {
 
 #[derive(Debug, Clone)]
 pub struct Cue {
-    data: HashMap<FixtureId, Vec<CueFixtureChannel>>,
+    data: HashMap<FixtureId, Vec<CueFixtureChannelValue>>,
 
     // Time, to fade into the cue
     in_fade: f32,
@@ -65,7 +65,7 @@ pub struct Cue {
 
 impl Cue {
     pub fn new(
-        data: HashMap<FixtureId, Vec<CueFixtureChannel>>,
+        data: HashMap<FixtureId, Vec<CueFixtureChannelValue>>,
         in_fade: f32,
         out_fade: Option<f32>,
         in_delay: f32,
@@ -84,7 +84,7 @@ impl Cue {
         }
     }
 
-    pub fn data(&self) -> &HashMap<FixtureId, Vec<CueFixtureChannel>> {
+    pub fn data(&self) -> &HashMap<FixtureId, Vec<CueFixtureChannelValue>> {
         &self.data
     }
 
@@ -112,7 +112,7 @@ impl Cue {
         &self.trigger
     }
 
-    pub fn data_for_fixture(&self, fixture_id: FixtureId) -> Option<&Vec<CueFixtureChannel>> {
+    pub fn data_for_fixture(&self, fixture_id: FixtureId) -> Option<&Vec<CueFixtureChannelValue>> {
         self.data.get(&fixture_id)
     }
 }

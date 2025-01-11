@@ -1,7 +1,9 @@
 use itertools::Itertools;
 
 use crate::{
-    lexer::token::Token, parser::nodes::fixture_selector::FixtureSelectorContext,
+    fixture::channel::{FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID},
+    lexer::token::Token,
+    parser::nodes::fixture_selector::FixtureSelectorContext,
     ui::DemexUiContext,
 };
 
@@ -59,7 +61,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
         for (_, preset) in context
             .preset_handler
-            .colors()
+            .presets(FIXTURE_CHANNEL_COLOR_ID)
             .iter()
             .sorted_by(|a, b| a.0.cmp(b.0))
         {
@@ -79,7 +81,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             context.command.extend(vec![
                 Token::KeywordRecord,
                 Token::KeywordColor,
-                Token::Numeral(*context.preset_handler.colors().keys().max().unwrap_or(&0) + 1),
+                Token::Numeral(
+                    *context
+                        .preset_handler
+                        .presets(FIXTURE_CHANNEL_COLOR_ID)
+                        .keys()
+                        .max()
+                        .unwrap_or(&0)
+                        + 1,
+                ),
             ])
         }
 
@@ -100,7 +110,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
         for (_, preset) in context
             .preset_handler
-            .positions()
+            .presets(FIXTURE_CHANNEL_POSITION_PAN_TILT_ID)
             .iter()
             .sorted_by(|a, b| a.0.cmp(b.0))
         {
@@ -123,7 +133,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 Token::Numeral(
                     *context
                         .preset_handler
-                        .positions()
+                        .presets(FIXTURE_CHANNEL_POSITION_PAN_TILT_ID)
                         .keys()
                         .max()
                         .unwrap_or(&0)

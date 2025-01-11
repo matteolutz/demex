@@ -11,10 +11,13 @@ use crate::{
 };
 use crate::{
     fixture::{
-        channel::FixtureChannel,
+        channel::{
+            value::{FixtureChannelDiscreteValue, FixtureChannelValue},
+            FixtureChannel, FIXTURE_CHANNEL_INTENSITY_ID,
+        },
         presets::{command_slice::CommandSlice, PresetHandler},
         sequence::{
-            cue::{Cue, CueTrigger},
+            cue::{Cue, CueFixtureChannelValue, CueTrigger},
             runtime::SequenceRuntime,
             Sequence,
         },
@@ -144,10 +147,21 @@ fn get_test_preset_handler() -> PresetHandler {
     .expect("");
     ph.rename_command_slice(1, "@ Full".to_owned()).expect("");
 
+    ph.record_command_slice(CommandSlice::new(2, vec![Token::KeywordFixturesSelected]))
+        .expect("");
+    ph.rename_command_slice(2, "~".to_owned()).expect("");
+
     // Sequences
     let mut seq = Sequence::new(1);
     seq.add_cue(Cue::new(
-        HashMap::from([(1, vec![FixtureChannel::Intensity(true, 1.0).into()])]),
+        HashMap::from([(
+            1,
+            vec![CueFixtureChannelValue::new(
+                FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(1.0)),
+                FIXTURE_CHANNEL_INTENSITY_ID,
+                false,
+            )],
+        )]),
         2.0,
         None,
         0.0,
@@ -156,7 +170,14 @@ fn get_test_preset_handler() -> PresetHandler {
         CueTrigger::Manual,
     ));
     seq.add_cue(Cue::new(
-        HashMap::from([(2, vec![FixtureChannel::Intensity(true, 1.0).into()])]),
+        HashMap::from([(
+            2,
+            vec![CueFixtureChannelValue::new(
+                FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(1.0)),
+                FIXTURE_CHANNEL_INTENSITY_ID,
+                false,
+            )],
+        )]),
         2.0,
         None,
         0.0,
@@ -165,7 +186,14 @@ fn get_test_preset_handler() -> PresetHandler {
         CueTrigger::Manual,
     ));
     seq.add_cue(Cue::new(
-        HashMap::from([(1, vec![FixtureChannel::Intensity(true, 0.0).into()])]),
+        HashMap::from([(
+            1,
+            vec![CueFixtureChannelValue::new(
+                FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(0.0)),
+                FIXTURE_CHANNEL_INTENSITY_ID,
+                false,
+            )],
+        )]),
         2.0,
         None,
         0.0,
@@ -174,7 +202,14 @@ fn get_test_preset_handler() -> PresetHandler {
         CueTrigger::Manual,
     ));
     seq.add_cue(Cue::new(
-        HashMap::from([(2, vec![FixtureChannel::Intensity(true, 0.0).into()])]),
+        HashMap::from([(
+            2,
+            vec![CueFixtureChannelValue::new(
+                FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(0.0)),
+                FIXTURE_CHANNEL_INTENSITY_ID,
+                false,
+            )],
+        )]),
         2.0,
         None,
         0.0,

@@ -1,6 +1,6 @@
 use std::time;
 
-use crate::fixture::{channel::FixtureChannel, handler::FixtureHandler, presets::PresetHandler};
+use crate::fixture::{handler::FixtureHandler, presets::PresetHandler};
 
 use super::Sequence;
 
@@ -39,25 +39,28 @@ impl SequenceRuntime {
 
         let current_cue = self.sequence.cue(self.current_cue);
 
-        for (fixture_id, fixture_channels) in current_cue.data().iter() {
-            let mult = (delta / current_cue.in_fade()).min(1.0);
+        for (fixture_id, fixture_channel_values) in current_cue.data().iter() {
+            let _mult = (delta / current_cue.in_fade()).min(1.0);
 
-            let multiplied_channels = fixture_channels
-                .iter()
-                .map(|c| {
-                    if c.snap() {
-                        return c.channel().clone();
-                    }
+            /*let multiplied_channels = fixture_channels
+            .iter()
+            .map(|c| {
+                if c.snap() {
+                    return c.channel().clone();
+                }
 
-                    c.channel().multiply(mult)
-                })
-                .collect::<Vec<FixtureChannel>>();
+                // TODO
+                c.channel().clone()
+            })
+            .collect::<Vec<FixtureChannel>>();*/
 
-            fixture_handler
-                .fixture(*fixture_id)
-                .unwrap()
-                .update_channels(multiplied_channels.iter())
-                .expect("");
+            for value in fixture_channel_values {
+                fixture_handler
+                    .fixture(*fixture_id)
+                    .unwrap()
+                    .set_channel_value(value.channel_type(), value.value().clone())
+                    .expect("todo: error handling for sequence cue update");
+            }
         }
     }
 

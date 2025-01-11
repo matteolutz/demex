@@ -7,9 +7,7 @@ use crate::utils::hash;
 
 use super::presets::PresetHandler;
 
-pub mod color;
 pub mod error;
-pub mod position;
 pub mod value;
 
 pub const FIXTURE_CHANNEL_INTENSITY_ID: u16 = 0;
@@ -199,7 +197,8 @@ impl FixtureChannel {
                 }
             }
             FixtureChannel::ColorRGB(is_fine, color) => {
-                let [f_r, f_g, f_b, _] = color.as_quadruple(preset_handler, fixture_id)?;
+                let [f_r, f_g, f_b, _] =
+                    color.as_quadruple(preset_handler, fixture_id, FIXTURE_CHANNEL_COLOR_ID)?;
 
                 let (r, r_fine) = Self::float_to_coarse_and_fine(f_r);
                 let (g, g_fine) = Self::float_to_coarse_and_fine(f_g);
@@ -212,7 +211,11 @@ impl FixtureChannel {
                 }
             }
             FixtureChannel::PositionPanTilt(is_fine, position) => {
-                let [pan_f, tilt_f] = position.as_pair(preset_handler, fixture_id)?;
+                let [pan_f, tilt_f] = position.as_pair(
+                    preset_handler,
+                    fixture_id,
+                    FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+                )?;
 
                 let (pan, pan_fine) = Self::float_to_coarse_and_fine(pan_f);
                 let (tilt, tilt_fine) = Self::float_to_coarse_and_fine(tilt_f);

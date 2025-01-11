@@ -1,4 +1,7 @@
-use crate::parser::nodes::fixture_selector::FixtureSelectorContext;
+use crate::{
+    fixture::channel::value::FixtureChannelValueTrait,
+    parser::nodes::fixture_selector::FixtureSelectorContext,
+};
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let fixture_card_size = eframe::egui::vec2(75.0 * 1.5, 100.0 * 1.5);
@@ -31,7 +34,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     {
                         ui.horizontal(|ui| {
                             for f in fixture_chunk {
-                                let fixture_intenstiy = f.intensity().expect("");
+                                let fixture_intenstiy = f
+                                    .intensity()
+                                    .expect("")
+                                    .as_single(&context.preset_handler, f.id())
+                                    .expect("todo: error handling for intensity");
 
                                 let (rect, response) = ui.allocate_exact_size(
                                     fixture_card_size,
