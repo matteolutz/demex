@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use std::collections::HashMap;
-use tabs::DemexTabs;
+use tabs::{layout_view_tab::LayoutViewContext, DemexTabs};
 
 #[allow(unused_imports)]
 use crate::{
@@ -41,6 +41,7 @@ pub struct DemexUiContext {
     global_fixture_select: Option<FixtureSelector>,
     command: Vec<Token>,
     sequence_runtimes: Vec<SequenceRuntime>,
+    layout_view_context: LayoutViewContext,
 }
 
 pub struct DemexUiApp {
@@ -239,6 +240,7 @@ impl Default for DemexUiApp {
                 global_fixture_select: None,
                 command: Vec::new(),
                 sequence_runtimes: Vec::new(),
+                layout_view_context: LayoutViewContext::default(),
             },
             global_error: None,
             max_update_time: None,
