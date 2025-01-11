@@ -1,4 +1,4 @@
-use crate::fixture::error::FixtureError;
+use crate::fixture::{channel::error::FixtureChannelError, error::FixtureError};
 
 #[derive(Debug)]
 pub enum FixtureHandlerError {
@@ -7,6 +7,7 @@ pub enum FixtureHandlerError {
     FixtureHandlerUpdateError(Box<dyn std::error::Error>),
     FixtureError(FixtureError),
     FixtureAddressOverlap(u16, u16, u16),
+    FixtureChannelError(FixtureChannelError),
 }
 
 impl std::fmt::Display for FixtureHandlerError {
@@ -26,6 +27,9 @@ impl std::fmt::Display for FixtureHandlerError {
                     "Fixture address overlap (U{}): {} - {}",
                     universe, start, end
                 )
+            }
+            FixtureHandlerError::FixtureChannelError(e) => {
+                write!(f, "Fixture channel error: {}", e)
             }
         }
     }

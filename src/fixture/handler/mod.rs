@@ -119,8 +119,11 @@ impl FixtureHandler {
         for f in &self.fixtures {
             let fixture_universe_offset = f.start_address() - 1;
 
-            let fixture_data = f
+            let data_packet = f
                 .generate_data_packet(preset_handler)
+                .map_err(FixtureHandlerError::FixtureChannelError)?;
+
+            let fixture_data = data_packet
                 .iter()
                 .map(|p| (*p as f32 * (self.grand_master as f32 / 255.0)) as u8)
                 .collect::<Vec<u8>>();

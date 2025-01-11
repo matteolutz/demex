@@ -1,7 +1,8 @@
 use std::collections::BTreeSet;
 
 use channel::{
-    color::FixtureColorValue, position::FixturePositionValue, FixtureId, FIXTURE_CHANNEL_COLOR_ID,
+    color::FixtureColorValue, error::FixtureChannelError, position::FixturePositionValue,
+    FixtureId, FIXTURE_CHANNEL_COLOR_ID,
 };
 use presets::PresetHandler;
 
@@ -102,11 +103,17 @@ impl Fixture {
             .collect()
     }
 
-    pub fn generate_data_packet(&self, preset_handler: &PresetHandler) -> Vec<u8> {
-        self.patch
-            .iter()
-            .flat_map(|channel| channel.generate_data_packet(self.id, preset_handler))
-            .collect()
+    pub fn generate_data_packet(
+        &self,
+        preset_handler: &PresetHandler,
+    ) -> Result<Vec<u8>, FixtureChannelError> {
+        let mut data = Vec::new();
+
+        for channel in &self.patch {
+            data.extend(channel.generate_data_packet(self.id, preset_handler)?);
+        }
+
+        Ok(data)
     }
 }
 
