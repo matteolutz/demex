@@ -80,18 +80,19 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     }
 
     for fixture in &context.layout_view_context.fixture_layout {
+        let is_selected = global_fixture_select_fixtures
+            .iter()
+            .any(|id| *id == fixture.fixture_id);
+
         let (pos, size) = fixture.get_pos_and_size(rect);
-        let stroke_width = 2.0;
+        let stroke_width = if is_selected { 4.0 } else { 2.0 };
 
         painter.rect_stroke(
             Rect::from_min_size(pos, size),
             0.0,
             (
                 stroke_width,
-                if global_fixture_select_fixtures
-                    .iter()
-                    .any(|id| *id == fixture.fixture_id)
-                {
+                if is_selected {
                     egui::Color32::GREEN
                 } else {
                     egui::Color32::WHITE

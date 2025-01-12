@@ -5,7 +5,7 @@ use crate::{
         self,
         channel::{
             value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait},
-            FixtureChannel, FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+            FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
         },
     },
     parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -52,18 +52,25 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
     ui.style_mut().spacing.item_spacing = [0.0, 20.0].into();
 
-    ui.heading("fixture control");
+    ui.heading("Fixture Control");
 
     ui.horizontal(|ui| {
         ui.style_mut().spacing.item_spacing = [20.0, 0.0].into();
 
         for channel_type in mutual_channel_types {
+            let channel_name = context
+                .fixture_handler
+                .fixture(selected_fixtures[0])
+                .unwrap()
+                .channel_name(channel_type)
+                .unwrap();
+
             match channel_type {
                 fixture::channel::FIXTURE_CHANNEL_INTENSITY_ID
                 | fixture::channel::FIXTURE_CHANNEL_STROBE
                 | fixture::channel::FIXTURE_CHANNEL_ZOOM => {
                     ui.vertical(|ui| {
-                        ui.label(FixtureChannel::name_by_id(channel_type));
+                        ui.label(channel_name);
                         ui.add(eframe::egui::Slider::from_get_set(0.0..=1.0, |val| {
                             if let Some(val) = val {
                                 for fixture_id in selected_fixtures.iter() {
@@ -89,7 +96,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 }
                 fixture::channel::FIXTURE_CHANNEL_COLOR_ID => {
                     ui.vertical(|ui| {
-                        ui.label("Color RGB");
+                        ui.label(channel_name);
 
                         let fixture_color = context
                             .fixture_handler
@@ -135,7 +142,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 }
                 fixture::channel::FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => {
                     ui.vertical(|ui| {
-                        ui.label("Pan/Tilt");
+                        ui.label(channel_name);
                         ui.add(PositionSelector::new(|val| {
                             if let Some(val) = val {
                                 for fixture_id in selected_fixtures.iter() {
@@ -177,7 +184,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     ui.style_mut().wrap_mode = Some(eframe::egui::TextWrapMode::Extend);
 
                     ui.vertical(|ui| {
-                        ui.label("Toggle flags");
+                        ui.label(channel_name);
 
                         let unset_button = ui.button("Unset");
                         if unset_button.clicked() {
@@ -226,7 +233,31 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     });
                 }
                 _ => {
-                    ui.label("Not supported");
+                    ui.vertical(|ui| {
+                        ui.label(channel_name);
+
+                        ui.add(eframe::egui::Slider::from_get_set(0.0..=1.0, |val| {
+                            if let Some(val) = val {
+                                for fixture_id in selected_fixtures.iter() {
+                                    context
+                                        .fixture_handler
+                                        .fixture(*fixture_id)
+                                        .unwrap()
+                                        .set_channel_single_value(channel_type, val as f32)
+                                        .expect("");
+                                }
+
+                                val
+                            } else {
+                                context
+                                    .fixture_handler
+                                    .fixture(selected_fixtures[0])
+                                    .unwrap()
+                                    .channel_single_value(channel_type, &context.preset_handler)
+                                    .expect("") as f64
+                            }
+                        }));
+                    });
                 }
             }
 

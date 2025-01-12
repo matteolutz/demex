@@ -9,7 +9,7 @@ use ui::DemexUiApp;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let options = eframe::NativeOptions {
-        viewport: eframe::egui::ViewportBuilder::default().with_inner_size([1120.0, 720.0]),
+        viewport: eframe::egui::ViewportBuilder::default().with_maximized(true),
         ..Default::default()
     };
 

@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use channel::{
     error::FixtureChannelError,
     value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait},
@@ -70,7 +68,7 @@ pub struct Fixture {
     universe: u16,
     start_address: u16,
     address_bandwith: u16,
-    channel_types: BTreeSet<u16>,
+    channel_types: Vec<u16>,
 }
 
 impl Serialize for Fixture {
@@ -105,14 +103,14 @@ impl Fixture {
         }
 
         // check, that each channel type is unique
-        let mut channel_types = BTreeSet::new();
+        let mut channel_types = Vec::with_capacity(patch.len());
 
         for channel in &patch {
             if channel_types.contains(&channel.type_id()) {
                 return Err(FixtureError::DuplicateChannelType);
             }
 
-            channel_types.insert(channel.type_id());
+            channel_types.push(channel.type_id());
         }
 
         Ok(Self {
@@ -152,7 +150,7 @@ impl Fixture {
         self.address_bandwith
     }
 
-    pub fn channel_types(&self) -> &BTreeSet<u16> {
+    pub fn channel_types(&self) -> &Vec<u16> {
         &self.channel_types
     }
 
@@ -214,23 +212,30 @@ impl Fixture {
     }
 
     pub fn color(&self) -> Result<FixtureChannelValue, FixtureError> {
-        match self
-            .patch
-            .iter()
-            .find(|c| matches!(c, FixtureChannel::ColorRGB(_, _)))
-        {
+        match self.patch.iter().find(|c| {
+            matches!(
+                c,
+                FixtureChannel::ColorRGB(_, _) | FixtureChannel::ColorRGBW(_, _)
+            )
+        }) {
             Some(FixtureChannel::ColorRGB(_, color)) => Ok(color.clone()),
+            Some(FixtureChannel::ColorRGBW(_, color)) => Ok(color.clone()),
             _ => Err(FixtureError::ChannelNotFound(Some("Color".to_string()))),
         }
     }
 
     pub fn set_color(&mut self, value: FixtureChannelValue) -> Result<(), FixtureError> {
-        match self
-            .patch
-            .iter_mut()
-            .find(|c| matches!(c, FixtureChannel::ColorRGB(_, _)))
-        {
+        match self.patch.iter_mut().find(|c| {
+            matches!(
+                c,
+                FixtureChannel::ColorRGB(_, _) | FixtureChannel::ColorRGBW(_, _)
+            )
+        }) {
             Some(FixtureChannel::ColorRGB(_, color)) => {
+                *color = value;
+                Ok(())
+            }
+            Some(FixtureChannel::ColorRGBW(_, color)) => {
                 *color = value;
                 Ok(())
             }
@@ -303,7 +308,9 @@ impl Fixture {
                 FixtureChannel::Intensity(_, intens) => Ok(intens.clone()),
                 FixtureChannel::Strobe(strobe) => Ok(strobe.clone()),
                 FixtureChannel::Zoom(_, zoom) => Ok(zoom.clone()),
-                FixtureChannel::ColorRGB(_, value) => Ok(value.clone()),
+                FixtureChannel::ColorRGB(_, value) | FixtureChannel::ColorRGBW(_, value) => {
+                    Ok(value.clone())
+                }
                 FixtureChannel::PositionPanTilt(_, value) => Ok(value.clone()),
                 FixtureChannel::Maintenance(_, _, value) => Ok(value.clone()),
                 FixtureChannel::ToggleFlags(_, value) => Ok(value.clone()),
@@ -365,6 +372,9 @@ impl Fixture {
             Some(FixtureChannel::Zoom(_, value)) => Ok(value
                 .as_single(preset_handler, self.id)
                 .map_err(FixtureError::FixtureChannelError)?),
+            Some(FixtureChannel::Maintenance(_, _, value)) => Ok(value
+                .as_single(preset_handler, self.id)
+                .map_err(FixtureError::FixtureChannelError)?),
             _ => Err(FixtureError::ChannelNotFound(None)),
         }
     }
@@ -385,6 +395,11 @@ impl Fixture {
             }
             Some(FixtureChannel::Zoom(_, zoom)) => {
                 *zoom = FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(value));
+                Ok(())
+            }
+            Some(FixtureChannel::Maintenance(_, _, m_value)) => {
+                *m_value =
+                    FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(value));
                 Ok(())
             }
             _ => Err(FixtureError::ChannelNotFound(None)),

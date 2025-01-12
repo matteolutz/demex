@@ -26,6 +26,7 @@ pub enum SerializableFixtureChannelPatch {
     Strobe,
     Zoom(bool),
     ColorRGB(bool),
+    ColorRGBW(bool),
     PositionPanTilt(bool),
     Maintenance(String),
     ToggleFlags(HashMap<String, u8>),
@@ -41,6 +42,9 @@ impl From<FixtureChannel> for SerializableFixtureChannelPatch {
             FixtureChannel::Zoom(is_fine, _) => SerializableFixtureChannelPatch::Zoom(is_fine),
             FixtureChannel::ColorRGB(is_fine, _) => {
                 SerializableFixtureChannelPatch::ColorRGB(is_fine)
+            }
+            FixtureChannel::ColorRGBW(is_fine, _) => {
+                SerializableFixtureChannelPatch::ColorRGBW(is_fine)
             }
             FixtureChannel::PositionPanTilt(is_fine, _) => {
                 SerializableFixtureChannelPatch::PositionPanTilt(is_fine)
@@ -66,6 +70,9 @@ impl From<SerializableFixtureChannelPatch> for FixtureChannel {
             SerializableFixtureChannelPatch::ColorRGB(is_fine) => {
                 FixtureChannel::color_rgb(is_fine)
             }
+            SerializableFixtureChannelPatch::ColorRGBW(is_fine) => {
+                FixtureChannel::color_rgbw(is_fine)
+            }
             SerializableFixtureChannelPatch::PositionPanTilt(is_fine) => {
                 FixtureChannel::position_pan_tilt(is_fine)
             }
@@ -85,6 +92,7 @@ pub enum FixtureChannel {
     Strobe(FixtureChannelValue),
     Zoom(bool, FixtureChannelValue),
     ColorRGB(bool, FixtureChannelValue),
+    ColorRGBW(bool, FixtureChannelValue),
     PositionPanTilt(bool, FixtureChannelValue),
     Maintenance(String, u16, FixtureChannelValue),
     ToggleFlags(HashMap<String, u8>, FixtureChannelValue),
@@ -125,6 +133,10 @@ impl FixtureChannel {
         FixtureChannel::ColorRGB(is_fine, FixtureChannelValue::quadruple_default())
     }
 
+    pub fn color_rgbw(is_fine: bool) -> Self {
+        FixtureChannel::ColorRGBW(is_fine, FixtureChannelValue::quadruple_default())
+    }
+
     pub fn position_pan_tilt(is_fine: bool) -> Self {
         FixtureChannel::PositionPanTilt(is_fine, FixtureChannelValue::pair_default())
     }
@@ -149,6 +161,7 @@ impl FixtureChannel {
             FixtureChannel::Strobe(strobe) => *strobe = FixtureChannelValue::single_default(),
             FixtureChannel::Zoom(_, zoom) => *zoom = FixtureChannelValue::single_default(),
             FixtureChannel::ColorRGB(_, rgb) => *rgb = FixtureChannelValue::quadruple_default(),
+            FixtureChannel::ColorRGBW(_, rgbw) => *rgbw = FixtureChannelValue::quadruple_default(),
             FixtureChannel::PositionPanTilt(_, position) => {
                 *position = FixtureChannelValue::pair_default()
             }
@@ -166,7 +179,9 @@ impl FixtureChannel {
             FixtureChannel::Intensity(_, intens) => intens.is_home(),
             FixtureChannel::Strobe(strobe) => strobe.is_home(),
             FixtureChannel::Zoom(_, zoom) => zoom.is_home(),
-            FixtureChannel::ColorRGB(_, color) => color.is_home(),
+            FixtureChannel::ColorRGB(_, color) | FixtureChannel::ColorRGBW(_, color) => {
+                color.is_home()
+            }
             FixtureChannel::PositionPanTilt(_, position) => position.is_home(),
             FixtureChannel::Maintenance(_, _, value) => value.is_home(),
             FixtureChannel::ToggleFlags(_, value) => value.is_home(),
@@ -199,6 +214,13 @@ impl FixtureChannel {
                     3
                 }
             }
+            FixtureChannel::ColorRGBW(is_fine, _) => {
+                if *is_fine {
+                    8
+                } else {
+                    4
+                }
+            }
             FixtureChannel::PositionPanTilt(is_fine, _) => {
                 if *is_fine {
                     4
@@ -216,7 +238,9 @@ impl FixtureChannel {
             FixtureChannel::Intensity(_, _) => FIXTURE_CHANNEL_INTENSITY_ID,
             FixtureChannel::Strobe(_) => FIXTURE_CHANNEL_STROBE,
             FixtureChannel::Zoom(_, _) => FIXTURE_CHANNEL_ZOOM,
-            FixtureChannel::ColorRGB(_, _) => FIXTURE_CHANNEL_COLOR_ID,
+            FixtureChannel::ColorRGB(_, _) | FixtureChannel::ColorRGBW(_, _) => {
+                FIXTURE_CHANNEL_COLOR_ID
+            }
             FixtureChannel::PositionPanTilt(_, _) => FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
             FixtureChannel::Maintenance(_, id, _) => *id,
             FixtureChannel::ToggleFlags(_, _) => FIXTURE_CHANNEL_TOGGLE_FLAGS,
@@ -224,7 +248,10 @@ impl FixtureChannel {
     }
 
     pub fn name(&self) -> String {
-        Self::name_by_id(self.type_id())
+        match self {
+            FixtureChannel::Maintenance(name, _, _) => name.clone(),
+            _ => Self::name_by_id(self.type_id()),
+        }
     }
 
     pub fn name_by_id(id: u16) -> String {
@@ -232,7 +259,7 @@ impl FixtureChannel {
             FIXTURE_CHANNEL_INTENSITY_ID => "Intensity".to_owned(),
             FIXTURE_CHANNEL_STROBE => "Strobe".to_owned(),
             FIXTURE_CHANNEL_ZOOM => "Zoom".to_owned(),
-            FIXTURE_CHANNEL_COLOR_ID => "ColorRGB".to_owned(),
+            FIXTURE_CHANNEL_COLOR_ID => "Color".to_owned(),
             FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => "PositionPanTilt".to_owned(),
             FIXTURE_CHANNEL_TOGGLE_FLAGS => "ToggleFlags".to_owned(),
             _ => "Unknown".to_owned(),
@@ -286,6 +313,21 @@ impl FixtureChannel {
                     Ok(vec![r, r_fine, g, g_fine, b, b_fine])
                 } else {
                     Ok(vec![r, g, b])
+                }
+            }
+            FixtureChannel::ColorRGBW(is_fine, color) => {
+                let [f_r, f_g, f_b, f_w] =
+                    color.as_quadruple(preset_handler, fixture_id, FIXTURE_CHANNEL_COLOR_ID)?;
+
+                let (r, r_fine) = Self::float_to_coarse_and_fine(f_r);
+                let (g, g_fine) = Self::float_to_coarse_and_fine(f_g);
+                let (b, b_fine) = Self::float_to_coarse_and_fine(f_b);
+                let (w, w_fine) = Self::float_to_coarse_and_fine(f_w);
+
+                if *is_fine {
+                    Ok(vec![r, r_fine, g, g_fine, b, b_fine, w, w_fine])
+                } else {
+                    Ok(vec![r, g, b, w])
                 }
             }
             FixtureChannel::PositionPanTilt(is_fine, position) => {
