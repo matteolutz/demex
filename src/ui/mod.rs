@@ -13,8 +13,9 @@ use crate::{
     fixture::{
         channel::{
             value::{FixtureChannelDiscreteValue, FixtureChannelValue},
-            FixtureChannel, FIXTURE_CHANNEL_INTENSITY_ID,
+            FIXTURE_CHANNEL_INTENSITY_ID,
         },
+        patch::Patch,
         presets::{command_slice::CommandSlice, PresetHandler},
         sequence::{
             cue::{Cue, CueFixtureChannelValue, CueTrigger},
@@ -56,7 +57,7 @@ pub struct DemexUiApp {
 }
 
 fn get_test_fixture_handler() -> FixtureHandler {
-    let mut fixtures = Vec::new();
+    /*let mut fixtures = Vec::new();
     fixtures.extend((1..=2).map(|id| {
         Fixture::new(
             id,
@@ -96,7 +97,10 @@ fn get_test_fixture_handler() -> FixtureHandler {
             )
             .unwrap(),
         )
-    }
+    }*/
+    let patch: Patch =
+        serde_json::from_reader(std::fs::File::open("test_data/patch.json").unwrap()).unwrap();
+    let fixtures = patch.into();
 
     FixtureHandler::new(
         vec![

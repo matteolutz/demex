@@ -1,6 +1,7 @@
 use egui::Rect;
 
 use crate::{
+    fixture::channel::{value::FixtureChannelValueTrait, FIXTURE_CHANNEL_COLOR_ID},
     parser::nodes::fixture_selector::{
         AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
     },
@@ -50,14 +51,17 @@ impl Default for LayoutViewContext {
             fixture_layout: vec![
                 FixtureLayoutEntry::new(1, egui::pos2(0.2, 0.5), egui::vec2(0.05, 0.05)),
                 FixtureLayoutEntry::new(2, egui::pos2(0.8, 0.5), egui::vec2(0.05, 0.05)),
+                FixtureLayoutEntry::new(3, egui::pos2(0.4, 0.5), egui::vec2(0.025, 0.025)),
             ],
         }
     }
 }
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
-    let size = ui.available_size_before_wrap();
-    let rect = Rect::from_min_size((0.0, 0.0).into(), size);
+    ui.heading("Layout View");
+
+    let rect = ui.available_rect_before_wrap();
+    let size = rect.size();
 
     let (response, painter) = ui.allocate_painter(size, egui::Sense::click_and_drag());
 
@@ -77,21 +81,63 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
     for fixture in &context.layout_view_context.fixture_layout {
         let (pos, size) = fixture.get_pos_and_size(rect);
+        let stroke_width = 2.0;
 
         painter.rect_stroke(
             Rect::from_min_size(pos, size),
             0.0,
             (
-                2.0,
+                stroke_width,
                 if global_fixture_select_fixtures
                     .iter()
                     .any(|id| *id == fixture.fixture_id)
                 {
-                    egui::Color32::YELLOW
+                    egui::Color32::GREEN
                 } else {
                     egui::Color32::WHITE
                 },
             ),
+        );
+
+        let intensity = context
+            .fixture_handler
+            .fixture(fixture.fixture_id)
+            .expect("todo: error handling")
+            .intensity()
+            .expect("error handling")
+            .as_single(&context.preset_handler, fixture.fixture_id)
+            .expect("error handling");
+
+        let rect_color = if let Ok(color) = context
+            .fixture_handler
+            .fixture(fixture.fixture_id)
+            .unwrap()
+            .color()
+        {
+            let color = color
+                .as_quadruple(
+                    &context.preset_handler,
+                    fixture.fixture_id,
+                    FIXTURE_CHANNEL_COLOR_ID,
+                )
+                .unwrap();
+            egui::Color32::from_rgba_unmultiplied(
+                (color[0] * 255.0) as u8,
+                (color[1] * 255.0) as u8,
+                (color[2] * 255.0) as u8,
+                (intensity * 255.0) as u8,
+            )
+        } else {
+            egui::Color32::from_rgba_unmultiplied(255, 255, 255, (intensity * 255.0) as u8)
+        };
+
+        painter.rect_filled(
+            Rect::from_min_size(
+                pos + egui::vec2(stroke_width, stroke_width),
+                size - egui::vec2(2.0 * stroke_width, 2.0 * stroke_width),
+            ),
+            0.0,
+            rect_color,
         );
     }
 
@@ -108,7 +154,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 egui::Color32::from_rgba_unmultiplied(255, 255, 255, 50),
             );
         }
-    } else if context.layout_view_context.mouse_pos.is_some() {
+    } else if context.layout_view_context.mouse_pos.is_some() && response.hover_pos().is_some() {
         let select_rect = Rect::from_two_pos(
             context.layout_view_context.mouse_pos.unwrap(),
             response.hover_pos().unwrap(),

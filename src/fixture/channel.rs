@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use error::FixtureChannelError;
+use serde::{Deserialize, Serialize};
 use value::{FixtureChannelValue, FixtureChannelValueTrait};
 
 use crate::utils::hash;
@@ -19,6 +20,65 @@ pub const FIXTURE_CHANNEL_TOGGLE_FLAGS: u16 = 30;
 
 pub type FixtureId = u32;
 
+#[derive(Serialize, Deserialize)]
+pub enum SerializableFixtureChannelPatch {
+    Intensity(bool),
+    Strobe,
+    Zoom(bool),
+    ColorRGB(bool),
+    PositionPanTilt(bool),
+    Maintenance(String),
+    ToggleFlags(HashMap<String, u8>),
+}
+
+impl From<FixtureChannel> for SerializableFixtureChannelPatch {
+    fn from(value: FixtureChannel) -> Self {
+        match value {
+            FixtureChannel::Intensity(is_fine, _) => {
+                SerializableFixtureChannelPatch::Intensity(is_fine)
+            }
+            FixtureChannel::Strobe(_) => SerializableFixtureChannelPatch::Strobe,
+            FixtureChannel::Zoom(is_fine, _) => SerializableFixtureChannelPatch::Zoom(is_fine),
+            FixtureChannel::ColorRGB(is_fine, _) => {
+                SerializableFixtureChannelPatch::ColorRGB(is_fine)
+            }
+            FixtureChannel::PositionPanTilt(is_fine, _) => {
+                SerializableFixtureChannelPatch::PositionPanTilt(is_fine)
+            }
+            FixtureChannel::Maintenance(name, _, _) => {
+                SerializableFixtureChannelPatch::Maintenance(name)
+            }
+            FixtureChannel::ToggleFlags(flags, _) => {
+                SerializableFixtureChannelPatch::ToggleFlags(flags)
+            }
+        }
+    }
+}
+
+impl From<SerializableFixtureChannelPatch> for FixtureChannel {
+    fn from(value: SerializableFixtureChannelPatch) -> Self {
+        match value {
+            SerializableFixtureChannelPatch::Intensity(is_fine) => {
+                FixtureChannel::intensity(is_fine)
+            }
+            SerializableFixtureChannelPatch::Strobe => FixtureChannel::strobe(),
+            SerializableFixtureChannelPatch::Zoom(is_fine) => FixtureChannel::zoom(is_fine),
+            SerializableFixtureChannelPatch::ColorRGB(is_fine) => {
+                FixtureChannel::color_rgb(is_fine)
+            }
+            SerializableFixtureChannelPatch::PositionPanTilt(is_fine) => {
+                FixtureChannel::position_pan_tilt(is_fine)
+            }
+            SerializableFixtureChannelPatch::Maintenance(name) => {
+                FixtureChannel::maintenance(&name)
+            }
+            SerializableFixtureChannelPatch::ToggleFlags(flags) => {
+                FixtureChannel::toggle_flags(flags)
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum FixtureChannel {
     Intensity(bool, FixtureChannelValue),
@@ -28,6 +88,24 @@ pub enum FixtureChannel {
     PositionPanTilt(bool, FixtureChannelValue),
     Maintenance(String, u16, FixtureChannelValue),
     ToggleFlags(HashMap<String, u8>, FixtureChannelValue),
+}
+
+impl Serialize for FixtureChannel {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        Into::<SerializableFixtureChannelPatch>::into(self.clone()).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for FixtureChannel {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        SerializableFixtureChannelPatch::deserialize(deserializer).map(Into::<FixtureChannel>::into)
+    }
 }
 
 impl FixtureChannel {

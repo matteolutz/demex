@@ -1,0 +1,100 @@
+[
+  {
+    "id": 1,
+    "name": "WASH 1",
+    "patch": [
+      { "PositionPanTilt": true },
+      { "Intensity": true },
+      "Strobe",
+      { "ColorRGB": true },
+      { "Maintenance": "White" },
+      { "Maintenance": "WhiteFine" },
+      { "Maintenance": "ColorTemp" },
+      { "Maintenance": "ColorTint" },
+      { "Maintenance": "ColorMacro" },
+      { "Maintenance": "ColorMacroCrossfade" },
+      { "Zoom": true },
+      { "Maintenance": "PanTiltSpeed" },
+      { "ToggleFlags": { "Turn On": 131, "Turn Off": 231 } }
+    ],
+    "universe": 1,
+    "start_address": 411
+  },
+  {
+    "id": 2,
+    "name": "WASH 2",
+    "patch": [
+      { "PositionPanTilt": true },
+      { "Intensity": true },
+      "Strobe",
+      { "ColorRGB": true },
+      { "Maintenance": "White" },
+      { "Maintenance": "WhiteFine" },
+      { "Maintenance": "ColorTemp" },
+      { "Maintenance": "ColorTint" },
+      { "Maintenance": "ColorMacro" },
+      { "Maintenance": "ColorMacroCrossfade" },
+      { "Zoom": true },
+      { "Maintenance": "PanTiltSpeed" },
+      { "ToggleFlags": { "Turn On": 131, "Turn Off": 231 } }
+    ],
+    "universe": 1,
+    "start_address": 451
+  },
+  {
+    "id": 3,
+    "name": "PAR 2",
+    "patch": [{ "Intensity": false }],
+    "universe": 1,
+    "start_address": 8
+  },
+  {
+    "id": 4,
+    "name": "PAR 3",
+    "patch": [{ "Intensity": false }],
+    "universe": 1,
+    "start_address": 7
+  },
+  {
+    "id": 5,
+    "name": "PAR 4",
+    "patch": [{ "Intensity": false }],
+    "universe": 1,
+    "start_address": 6
+  },
+  {
+    "id": 6,
+    "name": "PAR 5",
+    "patch": [{ "Intensity": false }],
+    "universe": 1,
+    "start_address": 5
+  },
+  {
+    "id": 7,
+    "name": "PAR 6",
+    "patch": [{ "Intensity": false }],
+    "universe": 1,
+    "start_address": 4
+  },
+  {
+    "id": 8,
+    "name": "PAR 7",
+    "patch": [{ "Intensity": false }],
+    "universe": 1,
+    "start_address": 3
+  },
+  {
+    "id": 9,
+    "name": "PAR 8",
+    "patch": [{ "Intensity": false }],
+    "universe": 1,
+    "start_address": 2
+  },
+  {
+    "id": 10,
+    "name": "PAR 9",
+    "patch": [{ "Intensity": false }],
+    "universe": 1,
+    "start_address": 1
+  }
+]

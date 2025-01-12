@@ -1,3 +1,5 @@
+use egui::RichText;
+
 use crate::{
     fixture::channel::value::FixtureChannelValueTrait,
     parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -11,7 +13,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
         eframe::egui::Layout::top_down(eframe::egui::Align::LEFT),
         |ui| {
             eframe::egui::ScrollArea::vertical()
-                .max_height(ui.available_height() - 60.0)
+                .max_height(ui.available_height())
+                .max_width(ui.available_width())
                 .show(ui, |ui| {
                     ui.heading("Fixtures");
 
@@ -74,7 +77,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                             255,
                                             255 - (fixture_intenstiy * 255.0) as u8,
                                         ),
-                                        f.to_string(&context.preset_handler),
+                                        RichText::from(f.to_string(&context.preset_handler))
+                                            .strong(),
                                     )
                                 });
                             }

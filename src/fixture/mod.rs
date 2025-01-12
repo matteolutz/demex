@@ -3,20 +3,66 @@ use std::collections::BTreeSet;
 use channel::{
     error::FixtureChannelError,
     value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait},
-    FixtureId, FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
-    FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+    FixtureId, SerializableFixtureChannelPatch, FIXTURE_CHANNEL_COLOR_ID,
+    FIXTURE_CHANNEL_INTENSITY_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
 };
 use presets::PresetHandler;
+use serde::{Deserialize, Serialize};
 
 use self::{channel::FixtureChannel, error::FixtureError};
 
 pub mod channel;
 pub mod error;
 pub mod handler;
+pub mod patch;
 pub mod presets;
 pub mod sequence;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize)]
+pub struct SerializableFixturePatch {
+    id: FixtureId,
+    name: String,
+    patch: Vec<SerializableFixtureChannelPatch>,
+    universe: u16,
+    start_address: u16,
+}
+
+impl From<Fixture> for SerializableFixturePatch {
+    fn from(value: Fixture) -> Self {
+        return Self {
+            id: value.id,
+            name: value.name,
+            patch: value
+                .patch
+                .iter()
+                .map(|channel| channel.clone().into())
+                .collect(),
+            universe: value.universe,
+            start_address: value.start_address,
+        };
+    }
+}
+
+impl From<SerializableFixturePatch> for Fixture {
+    fn from(value: SerializableFixturePatch) -> Self {
+        let patch = value
+            .patch
+            .into_iter()
+            .map(|channel| channel.into())
+            .collect();
+
+        Self::new(
+            value.id,
+            value.name,
+            patch,
+            value.universe,
+            value.start_address,
+        )
+        .unwrap()
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Fixture {
     id: FixtureId,
     name: String,
@@ -25,6 +71,24 @@ pub struct Fixture {
     start_address: u16,
     address_bandwith: u16,
     channel_types: BTreeSet<u16>,
+}
+
+impl Serialize for Fixture {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        Into::<SerializableFixturePatch>::into(self.clone()).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Fixture {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        SerializableFixturePatch::deserialize(deserializer).map(Into::<Fixture>::into)
+    }
 }
 
 impl Fixture {
