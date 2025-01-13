@@ -31,6 +31,7 @@ use crate::{
 };
 
 pub mod components;
+pub mod graphics;
 pub mod tabs;
 
 const DEMEX_FIXED_UPDATE_RATE: u32 = 60;
