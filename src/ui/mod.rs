@@ -37,11 +37,40 @@ pub mod tabs;
 const DEMEX_FIXED_UPDATE_RATE: u32 = 60;
 const DEMEX_RUN_WITH_FIXED_UPDATE: bool = false;
 
+#[derive(Debug, Default)]
+pub struct DemexUiStats {
+    dt: f64,
+    max_dt: f64,
+
+    fixed_update: f64,
+    max_fixed_update: f64,
+}
+
+impl DemexUiStats {
+    pub fn dt(&self) -> f64 {
+        self.dt
+    }
+
+    pub fn max_dt(&self) -> f64 {
+        self.max_dt
+    }
+
+    pub fn fixed_update(&self) -> f64 {
+        self.fixed_update
+    }
+
+    pub fn max_fixed_update(&self) -> f64 {
+        self.max_fixed_update
+    }
+}
+
 pub struct DemexUiContext {
+    patch: Patch,
     fixture_handler: FixtureHandler,
     preset_handler: PresetHandler,
     global_fixture_select: Option<FixtureSelector>,
     command: Vec<Token>,
+    stats: DemexUiStats,
     sequence_runtimes: Vec<SequenceRuntime>,
     layout_view_context: LayoutViewContext,
 }
@@ -52,12 +81,11 @@ pub struct DemexUiApp {
     gm_slider_val: u8,
     context: DemexUiContext,
     global_error: Option<Box<dyn std::error::Error>>,
-    max_update_time: Option<std::time::Duration>,
     last_update: std::time::Instant,
     tabs: DemexTabs,
 }
 
-fn get_test_fixture_handler() -> FixtureHandler {
+fn get_test_fixture_handler() -> (FixtureHandler, Patch) {
     /*let mut fixtures = Vec::new();
     fixtures.extend((1..=2).map(|id| {
         Fixture::new(
@@ -101,18 +129,21 @@ fn get_test_fixture_handler() -> FixtureHandler {
     }*/
     let patch: Patch =
         serde_json::from_reader(std::fs::File::open("test_data/patch.json").unwrap()).unwrap();
-    let fixtures = patch.into();
+    let fixtures = patch.clone().into();
 
-    FixtureHandler::new(
-        vec![
-            Box::new(DebugDummyOutput::new(true)),
-            /*Box::new(
-            DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ").expect("this shouldn't happen"),
-            )*/
-        ],
-        fixtures,
+    (
+        FixtureHandler::new(
+            vec![
+                Box::new(DebugDummyOutput::new(true)),
+                /*Box::new(
+                DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ").expect("this shouldn't happen"),
+                )*/
+            ],
+            fixtures,
+        )
+        .expect(""),
+        patch,
     )
-    .expect("")
 }
 
 fn get_test_preset_handler() -> PresetHandler {
@@ -143,8 +174,18 @@ fn get_test_preset_handler() -> PresetHandler {
     .expect("");
     ph.rename_macro(1, "~ @ Full".to_owned()).expect("");
 
-    ph.record_macro(2, Box::new(Action::GoHomeAll)).expect("");
-    ph.rename_macro(2, "Home".to_owned()).expect("");
+    ph.record_macro(
+        2,
+        Box::new(Action::SetIntensity(
+            FixtureSelector::Atomic(AtomicFixtureSelector::CurrentFixturesSelected),
+            0.0,
+        )),
+    )
+    .expect("");
+    ph.rename_macro(2, "~ @ Out".to_owned()).expect("");
+
+    ph.record_macro(3, Box::new(Action::GoHomeAll)).expect("");
+    ph.rename_macro(3, "Home".to_owned()).expect("");
 
     ph.record_command_slice(CommandSlice::new(
         1,
@@ -153,9 +194,16 @@ fn get_test_preset_handler() -> PresetHandler {
     .expect("");
     ph.rename_command_slice(1, "@ Full".to_owned()).expect("");
 
-    ph.record_command_slice(CommandSlice::new(2, vec![Token::KeywordFixturesSelected]))
+    ph.record_command_slice(CommandSlice::new(
+        2,
+        vec![Token::KeywordIntens, Token::KeywordOut],
+    ))
+    .expect("");
+    ph.rename_command_slice(2, "@ Out".to_owned()).expect("");
+
+    ph.record_command_slice(CommandSlice::new(3, vec![Token::KeywordFixturesSelected]))
         .expect("");
-    ph.rename_command_slice(2, "~".to_owned()).expect("");
+    ph.rename_command_slice(3, "~".to_owned()).expect("");
 
     // Sequences
     let mut seq = Sequence::new(1);
@@ -231,7 +279,7 @@ fn get_test_preset_handler() -> PresetHandler {
 
 impl Default for DemexUiApp {
     fn default() -> Self {
-        let fh = get_test_fixture_handler();
+        let (fh, patch) = get_test_fixture_handler();
         let ph = get_test_preset_handler();
 
         Self {
@@ -240,6 +288,8 @@ impl Default for DemexUiApp {
             gm_slider_val: fh.grand_master(),
             last_update: std::time::Instant::now(),
             context: DemexUiContext {
+                patch,
+                stats: DemexUiStats::default(),
                 fixture_handler: fh,
                 preset_handler: ph,
                 global_fixture_select: None,
@@ -248,8 +298,7 @@ impl Default for DemexUiApp {
                 layout_view_context: LayoutViewContext::default(),
             },
             global_error: None,
-            max_update_time: None,
-            tabs: DemexTabs::new(),
+            tabs: DemexTabs::default(),
         }
     }
 }
@@ -347,6 +396,10 @@ impl DemexUiApp {
         };
 
         let delta_time = elapsed.as_secs_f64();
+        self.context.stats.dt = delta_time;
+        if delta_time > self.context.stats.max_dt {
+            self.context.stats.max_dt = delta_time;
+        }
 
         // update fixture handler
         let _ = self
@@ -375,9 +428,10 @@ impl eframe::App for DemexUiApp {
 
         let elapsed = now.elapsed();
 
-        if self.max_update_time.is_none() || (self.max_update_time.unwrap() < elapsed) {
-            self.max_update_time = Some(elapsed);
-            println!("New max: {:?}", elapsed);
+        self.context.stats.fixed_update = elapsed.as_secs_f64();
+        if self.context.stats.max_fixed_update < self.context.stats.fixed_update {
+            self.context.stats.max_fixed_update = self.context.stats.fixed_update;
+            println!("New max fixed update: {:?}", elapsed);
         }
 
         eframe::egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -389,6 +443,12 @@ impl eframe::App for DemexUiApp {
 
                 if slider.changed() {
                     *self.context.fixture_handler.grand_master_mut() = self.gm_slider_val;
+                }
+
+                ui.separator();
+
+                if ui.button("Clear Selection").clicked() {
+                    self.context.global_fixture_select = None;
                 }
             });
 

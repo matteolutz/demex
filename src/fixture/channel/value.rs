@@ -124,12 +124,15 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
 
     fn to_string(&self, _: &PresetHandler, _: u16) -> String {
         match self {
-            FixtureChannelDiscreteValue::Single(value) => format!("{}%", value * 100.0),
+            FixtureChannelDiscreteValue::Single(value) => format!("{:.0}%", value * 100.0),
             FixtureChannelDiscreteValue::Pair(values) => {
-                format!("{}, {}", values[0], values[1])
+                format!("{:.2}, {:.2}", values[0], values[1])
             }
             FixtureChannelDiscreteValue::Quadruple(values) => {
-                format!("{}, {}, {}, {}", values[0], values[1], values[2], values[3])
+                format!(
+                    "{:.2}, {:.2}, {:.2}, {:.2}",
+                    values[0], values[1], values[2], values[3]
+                )
             }
             FixtureChannelDiscreteValue::Multiple(values) => values
                 .iter()

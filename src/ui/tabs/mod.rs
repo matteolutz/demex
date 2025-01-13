@@ -3,6 +3,7 @@ use egui_dock::{DockArea, DockState, Style, TabViewer};
 
 use super::DemexUiContext;
 
+pub mod debug_tab;
 pub mod fixture_controls_tab;
 pub mod fixture_list_tab;
 pub mod layout_view_tab;
@@ -14,6 +15,7 @@ pub enum DemexTab {
     FixtureList,
     PresetGrid,
     FixtureControls,
+    Debug,
 }
 
 pub struct DemexTabViewer<'a> {
@@ -35,6 +37,7 @@ impl<'a> TabViewer for DemexTabViewer<'a> {
             DemexTab::FixtureList => fixture_list_tab::ui(ui, self.context),
             DemexTab::PresetGrid => preset_grid_tab::ui(ui, self.context),
             DemexTab::FixtureControls => fixture_controls_tab::ui(ui, self.context),
+            DemexTab::Debug => debug_tab::ui(ui, self.context),
         }
     }
 
@@ -52,19 +55,25 @@ pub struct DemexTabs {
     dock_state: DockState<DemexTab>,
 }
 
-impl DemexTabs {
-    pub fn new() -> Self {
-        let tabs = vec![
-            DemexTab::FixtureList,
-            DemexTab::PresetGrid,
-            DemexTab::LayoutView,
-            DemexTab::FixtureControls,
-        ];
+impl Default for DemexTabs {
+    fn default() -> Self {
+        let mut dock_state = DockState::new(vec![DemexTab::FixtureList, DemexTab::Debug]);
 
-        let dock_state = DockState::new(tabs);
+        let surface = dock_state.main_surface_mut();
+        let [old_node, new_node] = surface.split_left(
+            egui_dock::NodeIndex::root(),
+            0.65,
+            vec![DemexTab::FixtureControls],
+        );
+
+        surface.split_below(new_node, 0.5, vec![DemexTab::LayoutView]);
+        surface.split_above(old_node, 0.5, vec![DemexTab::PresetGrid]);
+
         Self { dock_state }
     }
+}
 
+impl DemexTabs {
     pub fn ui(
         &mut self,
         ui: &mut Ui,

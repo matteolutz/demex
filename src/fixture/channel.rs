@@ -20,7 +20,7 @@ pub const FIXTURE_CHANNEL_TOGGLE_FLAGS: u16 = 30;
 
 pub type FixtureId = u32;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SerializableFixtureChannelPatch {
     Intensity(bool),
     Strobe,

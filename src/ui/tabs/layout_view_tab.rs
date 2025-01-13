@@ -1,51 +1,62 @@
-use egui::Rect;
+use egui::{
+    epaint::{PathShape, PathStroke},
+    Rect, Stroke,
+};
 
 use crate::{
-    fixture::channel::{value::FixtureChannelValueTrait, FIXTURE_CHANNEL_COLOR_ID},
+    fixture::{
+        channel::{
+            value::FixtureChannelValueTrait, FIXTURE_CHANNEL_COLOR_ID,
+            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+        },
+        layout::{FixtureLayoutDecoration, FixtureLayoutEntry, FixtureLayoutEntryType},
+    },
     parser::nodes::fixture_selector::{
         AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
     },
     ui::{graphics::layout_projection::LayoutProjection, DemexUiContext},
 };
 
-#[derive(Debug)]
-pub enum FixtureLayoutEntryType {
-    Rect,
-    Circle,
-}
+impl FixtureLayoutDecoration {
+    pub fn get_pos(&self, projection: &LayoutProjection, rect: &Rect) -> egui::Pos2 {
+        let pos = match self {
+            Self::Label {
+                pos,
+                text: _,
+                font_size: _,
+            } => pos,
+        };
+        projection.project(pos, rect)
+    }
 
-#[derive(Debug)]
-pub struct FixtureLayoutEntry {
-    fixture_id: u32,
-    // offset to center
-    position: egui::Pos2,
-    // size
-    size: egui::Vec2,
-    entry_type: FixtureLayoutEntryType,
+    pub fn draw(&self, projection: &LayoutProjection, screen: &Rect, painter: &egui::Painter) {
+        let pos = self.get_pos(projection, screen);
+        match self {
+            Self::Label {
+                pos: _,
+                text,
+                font_size,
+            } => {
+                painter.text(
+                    pos,
+                    egui::Align2::CENTER_CENTER,
+                    text,
+                    egui::FontId::proportional(font_size * projection.zoom()),
+                    egui::Color32::WHITE,
+                );
+            }
+        }
+    }
 }
 
 impl FixtureLayoutEntry {
-    pub fn new(
-        fixture_id: u32,
-        position: egui::Pos2,
-        size: egui::Vec2,
-        entry_type: FixtureLayoutEntryType,
-    ) -> Self {
-        Self {
-            fixture_id,
-            position,
-            size,
-            entry_type,
-        }
-    }
-
     pub fn get_pos_and_size(
         &self,
         projection: &LayoutProjection,
         rect: &Rect,
     ) -> (egui::Pos2, egui::Vec2) {
-        let size = projection.scale(&self.size);
-        let pos = projection.project(&self.position, rect);
+        let size = projection.scale(self.size());
+        let pos = projection.project(self.position(), rect);
 
         (pos, size)
     }
@@ -56,13 +67,14 @@ impl FixtureLayoutEntry {
         screen: &Rect,
         painter: &egui::Painter,
         fixture_color: egui::Color32,
+        fixture_direction: Option<egui::Vec2>,
         is_selected: bool,
         label: impl ToString,
     ) {
         let (pos, size) = self.get_pos_and_size(projection, screen);
-        let stroke_width = if is_selected { 4.0 } else { 2.0 };
+        let stroke_width = (if is_selected { 0.5 } else { 0.25 }) * projection.zoom();
 
-        match self.entry_type {
+        match self.entry_type() {
             FixtureLayoutEntryType::Rect => {
                 let top_left = pos - (size / 2.0);
                 painter.rect_stroke(
@@ -71,7 +83,7 @@ impl FixtureLayoutEntry {
                     (
                         stroke_width,
                         if is_selected {
-                            egui::Color32::GREEN
+                            egui::Color32::DARK_GREEN
                         } else {
                             egui::Color32::WHITE
                         },
@@ -88,20 +100,50 @@ impl FixtureLayoutEntry {
                 );
             }
             FixtureLayoutEntryType::Circle => {
+                let radius = size.x.min(size.y) / 2.0;
+
                 painter.circle_stroke(
                     pos,
-                    size.x / 2.0,
+                    radius,
                     (
                         stroke_width,
                         if is_selected {
-                            egui::Color32::GREEN
+                            egui::Color32::DARK_GREEN
                         } else {
                             egui::Color32::WHITE
                         },
                     ),
                 );
 
-                painter.circle_filled(pos, size.x / 2.0 - stroke_width, fixture_color);
+                painter.circle_filled(pos, radius - stroke_width, fixture_color);
+            }
+            FixtureLayoutEntryType::Triangle => {
+                let triangle_height = size.x.min(size.y);
+                let side_length = triangle_height * (2.0 / f32::sqrt(3.0));
+
+                let points_outer = vec![
+                    pos + egui::vec2(-side_length / 2.0, triangle_height / 2.0),
+                    pos + egui::vec2(side_length / 2.0, triangle_height / 2.0),
+                    pos + egui::vec2(0.0, -triangle_height / 2.0),
+                ];
+
+                painter.add(PathShape::convex_polygon(
+                    points_outer.clone(),
+                    fixture_color,
+                    PathStroke::NONE,
+                ));
+
+                painter.add(PathShape::closed_line(
+                    points_outer,
+                    (
+                        stroke_width,
+                        if is_selected {
+                            egui::Color32::DARK_GREEN
+                        } else {
+                            egui::Color32::WHITE
+                        },
+                    ),
+                ));
             }
         }
 
@@ -116,6 +158,19 @@ impl FixtureLayoutEntry {
                 egui::Color32::WHITE
             },
         );
+
+        if let Some(mut fixture_direction) = fixture_direction {
+            let line_len = 7.5 * projection.zoom();
+
+            if fixture_direction.length() > 1.0 {
+                fixture_direction = fixture_direction.normalized();
+            }
+
+            painter.line_segment(
+                [pos, pos + (fixture_direction * line_len)],
+                Stroke::new(2.0, egui::Color32::YELLOW),
+            );
+        }
     }
 }
 
@@ -126,7 +181,6 @@ pub struct LayoutViewDragContext {
 
 pub struct LayoutViewContext {
     drag_context: Option<LayoutViewDragContext>,
-    fixture_layout: Vec<FixtureLayoutEntry>,
     layout_projection: LayoutProjection,
 }
 
@@ -134,75 +188,13 @@ impl Default for LayoutViewContext {
     fn default() -> Self {
         Self {
             drag_context: None,
-            fixture_layout: vec![
-                FixtureLayoutEntry::new(
-                    3,
-                    egui::pos2(-100.0, 0.0),
-                    egui::vec2(2.5, 2.5),
-                    FixtureLayoutEntryType::Circle,
-                ),
-                FixtureLayoutEntry::new(
-                    4,
-                    egui::pos2(-80.0, 0.0),
-                    egui::vec2(2.5, 2.5),
-                    FixtureLayoutEntryType::Circle,
-                ),
-                FixtureLayoutEntry::new(
-                    5,
-                    egui::pos2(-60.0, 0.0),
-                    egui::vec2(2.5, 2.5),
-                    FixtureLayoutEntryType::Circle,
-                ),
-                FixtureLayoutEntry::new(
-                    1,
-                    egui::pos2(-40.0, 0.0),
-                    egui::vec2(5.0, 5.0),
-                    FixtureLayoutEntryType::Rect,
-                ),
-                FixtureLayoutEntry::new(
-                    6,
-                    egui::pos2(-20.0, 0.0),
-                    egui::vec2(2.5, 2.5),
-                    FixtureLayoutEntryType::Circle,
-                ),
-                // CENTER
-                FixtureLayoutEntry::new(
-                    7,
-                    egui::pos2(20.0, 0.0),
-                    egui::vec2(2.0, 2.5),
-                    FixtureLayoutEntryType::Circle,
-                ),
-                FixtureLayoutEntry::new(
-                    2,
-                    egui::pos2(40.0, 0.0),
-                    egui::vec2(5.0, 5.0),
-                    FixtureLayoutEntryType::Rect,
-                ),
-                FixtureLayoutEntry::new(
-                    8,
-                    egui::pos2(60.0, 0.0),
-                    egui::vec2(2.5, 2.5),
-                    FixtureLayoutEntryType::Circle,
-                ),
-                FixtureLayoutEntry::new(
-                    9,
-                    egui::pos2(80.0, 0.0),
-                    egui::vec2(2.5, 2.5),
-                    FixtureLayoutEntryType::Circle,
-                ),
-                FixtureLayoutEntry::new(
-                    10,
-                    egui::pos2(100.0, 0.0),
-                    egui::vec2(2.5, 2.5),
-                    FixtureLayoutEntryType::Circle,
-                ),
-            ],
             layout_projection: LayoutProjection::default(),
         }
     }
 }
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
+    let fixture_layout = context.patch.layout();
     ui.heading("Layout View");
 
     ui.with_layout(
@@ -210,21 +202,49 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         |ui| {
             ui.add(egui::Slider::new(
                 context.layout_view_context.layout_projection.zoom_mut(),
-                1.0..=50.0,
+                1.0..=20.0,
             ));
 
             ui.label(format!(
                 "Zoom: {}, Center: {}",
                 context.layout_view_context.layout_projection.zoom(),
                 context.layout_view_context.layout_projection.center()
-            ))
+            ));
         },
     );
 
     let rect = ui.available_rect_before_wrap();
     let size = rect.size();
 
+    ui.input(|state| {
+        if state.pointer.hover_pos().is_none() || !rect.contains(state.pointer.hover_pos().unwrap())
+        {
+            return;
+        }
+
+        let zoom_delta = state.zoom_delta();
+        if zoom_delta != 1.0 && state.pointer.hover_pos().is_some() {
+            let hover_pos = state.pointer.hover_pos().unwrap();
+            let center_delta: egui::Vec2 = (hover_pos - (rect.min + rect.size() / 2.0))
+                / context.layout_view_context.layout_projection.zoom();
+
+            let zoom_amount = zoom_delta - 1.0;
+
+            *context.layout_view_context.layout_projection.zoom_mut() += zoom_amount;
+            *context.layout_view_context.layout_projection.center_mut() -=
+                center_delta * ((zoom_amount / 2.0).min(1.0));
+        } else if state.raw_scroll_delta != egui::Vec2::ZERO {
+            let offset =
+                state.raw_scroll_delta / context.layout_view_context.layout_projection.zoom();
+            *context.layout_view_context.layout_projection.center_mut() += offset;
+        }
+    });
+
     let (response, painter) = ui.allocate_painter(size, egui::Sense::click_and_drag());
+
+    if response.hovered() {
+        ui.output_mut(|o| o.cursor_icon = egui::CursorIcon::Crosshair);
+    }
 
     painter.rect_filled(rect, 0.0, egui::Color32::BLACK);
 
@@ -240,14 +260,22 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         );
     }
 
-    for fixture_layout_entry in &context.layout_view_context.fixture_layout {
+    for decoration in fixture_layout.decorations() {
+        decoration.draw(
+            &context.layout_view_context.layout_projection,
+            &rect,
+            &painter,
+        );
+    }
+
+    for fixture_layout_entry in fixture_layout.fixtures() {
         let is_selected = global_fixture_select_fixtures
             .iter()
-            .any(|id| *id == fixture_layout_entry.fixture_id);
+            .any(|id| *id == fixture_layout_entry.fixture_id());
 
         let fixture = context
             .fixture_handler
-            .fixture(fixture_layout_entry.fixture_id)
+            .fixture(fixture_layout_entry.fixture_id())
             .expect("todo: error handling");
 
         let intensity = fixture
@@ -274,11 +302,25 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             egui::Color32::from_rgba_unmultiplied(255, 255, 255, (intensity * 255.0) as u8)
         };
 
+        let position: Option<egui::Vec2> = fixture
+            .position_pan_tilt()
+            .map(|val| {
+                val.as_pair(
+                    &context.preset_handler,
+                    fixture.id(),
+                    FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+                )
+                .unwrap()
+            })
+            .map(|val| Into::<egui::Vec2>::into(val) - egui::vec2(0.5, 0.5))
+            .ok();
+
         fixture_layout_entry.draw(
             &context.layout_view_context.layout_projection,
             &rect,
             &painter,
             rect_color,
+            position,
             is_selected,
             fixture.name(),
         );
@@ -304,21 +346,33 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 0.0,
                 egui::Color32::from_rgba_unmultiplied(255, 255, 255, 50),
             );
-        } else if response.dragged_by(egui::PointerButton::Secondary) {
-            let world_point = context
-                .layout_view_context
-                .layout_projection
-                .unproject(response.hover_pos().as_ref().unwrap(), &rect);
-
-            let world_offset = world_point
-                - context
+        } else if response.dragged_by(egui::PointerButton::Middle) {
+            let drag_start_world_point = context.layout_view_context.layout_projection.unproject(
+                &context
                     .layout_view_context
                     .drag_context
                     .as_ref()
                     .unwrap()
-                    .projection_center;
+                    .mouse_pos,
+                &rect,
+            );
 
-            *context.layout_view_context.layout_projection.center_mut() = world_offset.to_vec2();
+            let drag_end_world_point = context
+                .layout_view_context
+                .layout_projection
+                .unproject(response.hover_pos().as_ref().unwrap(), &rect);
+
+            let drag_world_offset: egui::Vec2 = drag_end_world_point - drag_start_world_point;
+
+            let world_offset: egui::Vec2 = context
+                .layout_view_context
+                .drag_context
+                .as_ref()
+                .unwrap()
+                .projection_center
+                + drag_world_offset;
+
+            *context.layout_view_context.layout_projection.center_mut() = world_offset;
         }
     } else if context.layout_view_context.drag_context.is_some() && response.hover_pos().is_some() {
         let select_rect = Rect::from_two_pos(
@@ -331,17 +385,19 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             response.hover_pos().unwrap(),
         );
 
-        let selected_fixture_ids = context
-            .layout_view_context
-            .fixture_layout
+        let selected_fixture_ids = fixture_layout
+            .fixtures()
             .iter()
             .map(|fixture| {
                 let (pos, size) =
                     fixture.get_pos_and_size(&context.layout_view_context.layout_projection, &rect);
                 (fixture, Rect::from_min_size(pos, size))
             })
-            .filter(|(_, fixture_rect)| select_rect.contains_rect(*fixture_rect))
-            .map(|(fixture, _)| fixture.fixture_id)
+            .filter(|(fixture_layout_entry, fixture_rect)| {
+                select_rect.contains_rect(*fixture_rect)
+                    && !global_fixture_select_fixtures.contains(&fixture_layout_entry.fixture_id())
+            })
+            .map(|(fixture, _)| fixture.fixture_id())
             .collect::<Vec<u32>>();
 
         if let Some(global_fixture_select) = context.global_fixture_select.as_mut() {

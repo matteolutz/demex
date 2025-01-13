@@ -3,7 +3,9 @@ use itertools::Itertools;
 use crate::{
     fixture::channel::{FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID},
     lexer::token::Token,
-    parser::nodes::fixture_selector::FixtureSelectorContext,
+    parser::nodes::fixture_selector::{
+        AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
+    },
     ui::DemexUiContext,
 };
 
@@ -32,6 +34,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 context
                     .command
                     .extend(vec![Token::KeywordGroup, Token::Numeral(group.id())])
+            }
+
+            if group_button.double_clicked() {
+                context.command.clear();
+                context.global_fixture_select = Some(FixtureSelector::Atomic(
+                    AtomicFixtureSelector::FixtureGroup(group.id()),
+                ))
             }
         }
 

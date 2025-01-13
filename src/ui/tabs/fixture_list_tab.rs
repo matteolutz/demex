@@ -1,15 +1,216 @@
 use egui::RichText;
+use itertools::Itertools;
 
 use crate::{
-    fixture::channel::value::FixtureChannelValueTrait,
+    fixture::channel::{
+        value::FixtureChannelValueTrait, FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
+        FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+    },
     parser::nodes::fixture_selector::FixtureSelectorContext,
 };
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
-    let fixture_card_size = eframe::egui::vec2(75.0 * 1.5, 100.0 * 1.5);
-    let window_width = ui.available_width();
+    /*let fixture_card_size = eframe::egui::vec2(75.0 * 1.5, 100.0 * 1.5);
+    let window_width = ui.available_width();*/
 
-    ui.with_layout(
+    let available_heigth = ui.available_height();
+
+    let selectd_fixtures = if let Some(fixture_select) = &context.global_fixture_select {
+        fixture_select
+            .get_fixtures(
+                &context.preset_handler,
+                FixtureSelectorContext::new(&context.global_fixture_select),
+            )
+            .unwrap_or(vec![])
+    } else {
+        vec![]
+    };
+
+    egui_extras::TableBuilder::new(ui)
+        .max_scroll_height(available_heigth)
+        .columns(egui_extras::Column::auto(), 6)
+        .column(egui_extras::Column::remainder())
+        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+        .striped(true)
+        .header(20.0, |mut header| {
+            header.col(|ui| {
+                ui.heading("Id");
+            });
+
+            header.col(|ui| {
+                ui.heading("Patch");
+            });
+
+            header.col(|ui| {
+                ui.heading("Name");
+            });
+
+            header.col(|ui| {
+                ui.heading("Intensity");
+            });
+
+            header.col(|ui| {
+                ui.heading("Color");
+            });
+
+            header.col(|ui| {
+                ui.heading("Pos");
+            });
+
+            header.col(|ui| {
+                ui.heading("Other Channels");
+            });
+        })
+        .body(|mut body| {
+            for fixture in context
+                .fixture_handler
+                .fixtures()
+                .iter()
+                .sorted_by(|a, b| a.id().cmp(&b.id()))
+            {
+                body.row(50.0, |mut row| {
+                    row.col(|ui| {
+                        ui.label(fixture.id().to_string());
+                    });
+
+                    row.col(|ui| {
+                        ui.label(format!(
+                            "{}.{}",
+                            fixture.universe(),
+                            fixture.start_address()
+                        ));
+                    });
+
+                    row.col(|ui| {
+                        ui.label(RichText::from(fixture.name()).strong().background_color(
+                            if selectd_fixtures.contains(&fixture.id()) {
+                                egui::Color32::DARK_GREEN
+                            } else {
+                                egui::Color32::TRANSPARENT
+                            },
+                        ));
+                    });
+
+                    // Intens
+                    row.col(|ui| {
+                        if let Ok(intensity) = fixture.intensity() {
+                            ui.label(
+                                RichText::from(intensity.to_string(
+                                    &context.preset_handler,
+                                    FIXTURE_CHANNEL_INTENSITY_ID,
+                                ))
+                                .color(if intensity.is_home() {
+                                    egui::Color32::GRAY
+                                } else {
+                                    egui::Color32::YELLOW
+                                }),
+                            );
+
+                            let intensity_value = intensity
+                                .as_single(&context.preset_handler, fixture.id())
+                                .unwrap();
+
+                            ui.label(RichText::from("     ").background_color(
+                                egui::Color32::from_white_alpha((intensity_value * 255.0) as u8),
+                            ));
+                        } else {
+                            ui.label("-");
+                        }
+                    });
+
+                    // Color
+                    row.col(|ui| {
+                        if let Ok(color) = fixture.color() {
+                            ui.label(
+                                RichText::from(
+                                    color.to_string(
+                                        &context.preset_handler,
+                                        FIXTURE_CHANNEL_COLOR_ID,
+                                    ),
+                                )
+                                .color(if color.is_home() {
+                                    egui::Color32::GRAY
+                                } else {
+                                    egui::Color32::YELLOW
+                                }),
+                            );
+
+                            let value = color
+                                .as_quadruple(
+                                    &context.preset_handler,
+                                    fixture.id(),
+                                    FIXTURE_CHANNEL_COLOR_ID,
+                                )
+                                .unwrap();
+
+                            let color_value = egui::Color32::from_rgb(
+                                (value[0] * 255.0) as u8,
+                                (value[1] * 255.0) as u8,
+                                (value[2] * 255.0) as u8,
+                            );
+
+                            ui.label(RichText::from("     ").background_color(color_value));
+                        } else {
+                            ui.label("-");
+                        }
+                    });
+
+                    // Position
+                    row.col(|ui| {
+                        if let Ok(pos) = fixture.position_pan_tilt() {
+                            ui.label(
+                                RichText::from(pos.to_string(
+                                    &context.preset_handler,
+                                    FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+                                ))
+                                .color(if pos.is_home() {
+                                    egui::Color32::GRAY
+                                } else {
+                                    egui::Color32::YELLOW
+                                }),
+                            );
+                        } else {
+                            ui.label("-");
+                        }
+                    });
+
+                    // Other channels
+                    row.col(|ui| {
+                        for channel_type in fixture.channel_types() {
+                            if *channel_type == FIXTURE_CHANNEL_INTENSITY_ID
+                                || *channel_type == FIXTURE_CHANNEL_COLOR_ID
+                                || *channel_type == FIXTURE_CHANNEL_POSITION_PAN_TILT_ID
+                            {
+                                continue;
+                            }
+
+                            let channel_value = fixture.channel_value(*channel_type);
+                            if channel_value.is_err() {
+                                continue;
+                            }
+
+                            if channel_value.as_ref().unwrap().is_home() {
+                                continue;
+                            }
+
+                            ui.label(
+                                RichText::from(format!(
+                                    "{}({})",
+                                    fixture.channel_name(*channel_type).unwrap(),
+                                    channel_value
+                                        .as_ref()
+                                        .unwrap()
+                                        .to_string(&context.preset_handler, *channel_type)
+                                ))
+                                .color(egui::Color32::YELLOW),
+                            );
+                        }
+                    });
+                });
+            }
+        });
+
+    /*ui.with_layout(
         eframe::egui::Layout::top_down(eframe::egui::Align::LEFT),
         |ui| {
             eframe::egui::ScrollArea::vertical()
@@ -88,5 +289,5 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     ui.add_space(ui.available_height());
                 });
         },
-    );
+    );*/
 }

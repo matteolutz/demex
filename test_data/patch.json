@@ -1,100 +1,272 @@
-[
-  {
-    "id": 1,
-    "name": "WASH 1",
-    "patch": [
-      { "PositionPanTilt": true },
-      { "Intensity": true },
-      "Strobe",
-      { "ColorRGB": true },
-      { "Maintenance": "White" },
-      { "Maintenance": "WhiteFine" },
-      { "Maintenance": "ColorTemp" },
-      { "Maintenance": "ColorTint" },
-      { "Maintenance": "ColorMacro" },
-      { "Maintenance": "ColorMacroCrossfade" },
-      { "Zoom": true },
-      { "Maintenance": "PanTiltSpeed" },
-      { "ToggleFlags": { "Turn On": 131, "Turn Off": 231 } }
+{
+  "fixtures": [
+    {
+      "id": 1,
+      "name": "WASH 1",
+      "patch": [
+        { "PositionPanTilt": true },
+        { "Intensity": true },
+        "Strobe",
+        { "ColorRGB": true },
+        { "Maintenance": "White" },
+        { "Maintenance": "WhiteFine" },
+        { "Maintenance": "ColorTemp" },
+        { "Maintenance": "ColorTint" },
+        { "Maintenance": "ColorMacro" },
+        { "Maintenance": "ColorMacroCrossfade" },
+        { "Zoom": true },
+        { "Maintenance": "PanTiltSpeed" },
+        { "ToggleFlags": { "Turn On": 131, "Turn Off": 231 } }
+      ],
+      "universe": 1,
+      "start_address": 411
+    },
+    {
+      "id": 2,
+      "name": "WASH 2",
+      "patch": [
+        { "PositionPanTilt": true },
+        { "Intensity": true },
+        "Strobe",
+        { "ColorRGB": true },
+        { "Maintenance": "White" },
+        { "Maintenance": "WhiteFine" },
+        { "Maintenance": "ColorTemp" },
+        { "Maintenance": "ColorTint" },
+        { "Maintenance": "ColorMacro" },
+        { "Maintenance": "ColorMacroCrossfade" },
+        { "Zoom": true },
+        { "Maintenance": "PanTiltSpeed" },
+        { "ToggleFlags": { "Turn On": 131, "Turn Off": 231 } }
+      ],
+      "universe": 1,
+      "start_address": 451
+    },
+    {
+      "id": 3,
+      "name": "PAR T1",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 8
+    },
+    {
+      "id": 4,
+      "name": "PAR T2",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 7
+    },
+    {
+      "id": 5,
+      "name": "PAR T3",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 6
+    },
+    {
+      "id": 6,
+      "name": "PAR T4",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 5
+    },
+    {
+      "id": 7,
+      "name": "PAR T5",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 4
+    },
+    {
+      "id": 8,
+      "name": "PAR T6",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 3
+    },
+    {
+      "id": 9,
+      "name": "PAR T7",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 2
+    },
+    {
+      "id": 10,
+      "name": "PAR T8",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 1
+    },
+
+    {
+      "id": 11,
+      "name": "PAR L1",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 21
+    },
+    {
+      "id": 12,
+      "name": "PAR L2",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 22
+    },
+    {
+      "id": 13,
+      "name": "PAR L3",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 23
+    },
+
+    {
+      "id": 14,
+      "name": "PAR R1",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 31
+    },
+    {
+      "id": 15,
+      "name": "PAR R2",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 32
+    },
+    {
+      "id": 16,
+      "name": "PAR R3",
+      "patch": [{ "Intensity": false }],
+      "universe": 1,
+      "start_address": 33
+    }
+  ],
+  "layout": {
+    "decorations": [
+      {
+        "Label": {
+          "pos": { "x": 0.0, "y": -10.0 },
+          "text": "Top Truss",
+          "font_size": 4.0
+        }
+      },
+      {
+        "Label": {
+          "pos": { "x": -100.0, "y": 10.0 },
+          "text": "Left Truss",
+          "font_size": 4.0
+        }
+      },
+      {
+        "Label": {
+          "pos": { "x": 100.0, "y": 10.0 },
+          "text": "Right Truss",
+          "font_size": 4.0
+        }
+      }
     ],
-    "universe": 1,
-    "start_address": 411
-  },
-  {
-    "id": 2,
-    "name": "WASH 2",
-    "patch": [
-      { "PositionPanTilt": true },
-      { "Intensity": true },
-      "Strobe",
-      { "ColorRGB": true },
-      { "Maintenance": "White" },
-      { "Maintenance": "WhiteFine" },
-      { "Maintenance": "ColorTemp" },
-      { "Maintenance": "ColorTint" },
-      { "Maintenance": "ColorMacro" },
-      { "Maintenance": "ColorMacroCrossfade" },
-      { "Zoom": true },
-      { "Maintenance": "PanTiltSpeed" },
-      { "ToggleFlags": { "Turn On": 131, "Turn Off": 231 } }
-    ],
-    "universe": 1,
-    "start_address": 451
-  },
-  {
-    "id": 3,
-    "name": "PAR 2",
-    "patch": [{ "Intensity": false }],
-    "universe": 1,
-    "start_address": 8
-  },
-  {
-    "id": 4,
-    "name": "PAR 3",
-    "patch": [{ "Intensity": false }],
-    "universe": 1,
-    "start_address": 7
-  },
-  {
-    "id": 5,
-    "name": "PAR 4",
-    "patch": [{ "Intensity": false }],
-    "universe": 1,
-    "start_address": 6
-  },
-  {
-    "id": 6,
-    "name": "PAR 5",
-    "patch": [{ "Intensity": false }],
-    "universe": 1,
-    "start_address": 5
-  },
-  {
-    "id": 7,
-    "name": "PAR 6",
-    "patch": [{ "Intensity": false }],
-    "universe": 1,
-    "start_address": 4
-  },
-  {
-    "id": 8,
-    "name": "PAR 7",
-    "patch": [{ "Intensity": false }],
-    "universe": 1,
-    "start_address": 3
-  },
-  {
-    "id": 9,
-    "name": "PAR 8",
-    "patch": [{ "Intensity": false }],
-    "universe": 1,
-    "start_address": 2
-  },
-  {
-    "id": 10,
-    "name": "PAR 9",
-    "patch": [{ "Intensity": false }],
-    "universe": 1,
-    "start_address": 1
+    "fixtures": [
+      {
+        "fixture_id": 3,
+        "position": { "x": -60.0, "y": 0.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+      {
+        "fixture_id": 4,
+        "position": { "x": -40.0, "y": 0.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+      {
+        "fixture_id": 5,
+        "position": { "x": -30.0, "y": 0.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+      {
+        "fixture_id": 1,
+        "position": { "x": -20.0, "y": 0.0 },
+        "size": { "x": 5.0, "y": 5.0 },
+        "entry_type": "Rect"
+      },
+      {
+        "fixture_id": 6,
+        "position": { "x": -10.0, "y": 0.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+
+      {
+        "fixture_id": 7,
+        "position": { "x": 10.0, "y": 0.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+      {
+        "fixture_id": 2,
+        "position": { "x": 20.0, "y": 0.0 },
+        "size": { "x": 5.0, "y": 5.0 },
+        "entry_type": "Rect"
+      },
+      {
+        "fixture_id": 8,
+        "position": { "x": 30.0, "y": 0.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+      {
+        "fixture_id": 9,
+        "position": { "x": 40.0, "y": 0.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+      {
+        "fixture_id": 10,
+        "position": { "x": 60.0, "y": 0.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+
+      {
+        "fixture_id": 11,
+        "position": { "x": -100.0, "y": 20.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+      {
+        "fixture_id": 12,
+        "position": { "x": -100.0, "y": 40.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+      {
+        "fixture_id": 13,
+        "position": { "x": -100.0, "y": 50.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+
+      {
+        "fixture_id": 14,
+        "position": { "x": 100.0, "y": 20.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+      {
+        "fixture_id": 15,
+        "position": { "x": 100.0, "y": 40.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      },
+      {
+        "fixture_id": 16,
+        "position": { "x": 100.0, "y": 50.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Circle"
+      }
+    ]
   }
-]
+}

@@ -12,11 +12,12 @@ use self::{channel::FixtureChannel, error::FixtureError};
 pub mod channel;
 pub mod error;
 pub mod handler;
+pub mod layout;
 pub mod patch;
 pub mod presets;
 pub mod sequence;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerializableFixturePatch {
     id: FixtureId,
     name: String,
