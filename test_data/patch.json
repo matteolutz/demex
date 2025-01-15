@@ -104,21 +104,21 @@
       "name": "PAR L1",
       "patch": [{ "Intensity": false }],
       "universe": 1,
-      "start_address": 21
+      "start_address": 12
     },
     {
       "id": 12,
       "name": "PAR L2",
       "patch": [{ "Intensity": false }],
       "universe": 1,
-      "start_address": 22
+      "start_address": 14
     },
     {
       "id": 13,
       "name": "PAR L3",
       "patch": [{ "Intensity": false }],
       "universe": 1,
-      "start_address": 23
+      "start_address": 16
     },
 
     {
@@ -126,21 +126,21 @@
       "name": "PAR R1",
       "patch": [{ "Intensity": false }],
       "universe": 1,
-      "start_address": 31
+      "start_address": 18
     },
     {
       "id": 15,
       "name": "PAR R2",
       "patch": [{ "Intensity": false }],
       "universe": 1,
-      "start_address": 32
+      "start_address": 20
     },
     {
       "id": 16,
       "name": "PAR R3",
       "patch": [{ "Intensity": false }],
       "universe": 1,
-      "start_address": 33
+      "start_address": 22
     }
   ],
   "layout": {
