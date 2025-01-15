@@ -17,7 +17,7 @@ use super::{
         FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
     },
     handler::FixtureHandler,
-    sequence::Sequence,
+    sequence::runtime::SequenceRuntime,
 };
 
 pub mod command_slice;
@@ -32,7 +32,7 @@ pub struct PresetHandler {
     colors: HashMap<u32, FixturePreset>,
     positions: HashMap<u32, FixturePreset>,
 
-    sequences: HashMap<u32, Sequence>,
+    sequence_runtimes: HashMap<u32, SequenceRuntime>,
     macros: HashMap<u32, MMacro>,
     command_slices: HashMap<u32, CommandSlice>,
 }
@@ -43,7 +43,7 @@ impl PresetHandler {
             groups: HashMap::new(),
             colors: HashMap::new(),
             positions: HashMap::new(),
-            sequences: HashMap::new(),
+            sequence_runtimes: HashMap::new(),
             macros: HashMap::new(),
             command_slices: HashMap::new(),
         }
@@ -175,14 +175,36 @@ impl PresetHandler {
     }
 }
 
-// Sequences
+// Sequence Runtimes
 impl PresetHandler {
-    pub fn add_sequence(&mut self, sequence: Sequence) {
-        self.sequences.insert(sequence.id(), sequence);
+    pub fn add_sequence_runtime(&mut self, runtime: SequenceRuntime) {
+        self.sequence_runtimes.insert(runtime.id(), runtime);
     }
 
-    pub fn sequence(&self, id: u32) -> Option<&Sequence> {
-        self.sequences.get(&id)
+    pub fn sequence_runtime(&self, id: u32) -> Option<&SequenceRuntime> {
+        self.sequence_runtimes.get(&id)
+    }
+
+    pub fn sequence_runtime_mut(&mut self, id: u32) -> Option<&mut SequenceRuntime> {
+        self.sequence_runtimes.get_mut(&id)
+    }
+
+    pub fn sequence_runtimes(&self) -> &HashMap<u32, SequenceRuntime> {
+        &self.sequence_runtimes
+    }
+
+    pub fn sequence_runtime_keys(&self) -> Vec<u32> {
+        self.sequence_runtimes.keys().cloned().collect()
+    }
+
+    pub fn update_sequence_runtimes(
+        &mut self,
+        delta_time: f64,
+        fixture_handler: &mut FixtureHandler,
+    ) {
+        for (_, runtime) in self.sequence_runtimes.iter_mut() {
+            runtime.update(delta_time, fixture_handler);
+        }
     }
 }
 

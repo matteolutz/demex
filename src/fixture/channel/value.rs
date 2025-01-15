@@ -44,6 +44,7 @@ pub enum FixtureChannelDiscreteValue {
     Quadruple([f32; 4]),
     Multiple(Vec<f32>),
     ToggleFlag(Option<String>),
+    AnyHome,
 }
 
 impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
@@ -74,12 +75,14 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
             FixtureChannelDiscreteValue::Quadruple(values) => values.iter().all(|v| *v == 0.0),
             FixtureChannelDiscreteValue::Multiple(values) => values.iter().all(|v| *v == 0.0),
             FixtureChannelDiscreteValue::ToggleFlag(value) => value.is_none(),
+            FixtureChannelDiscreteValue::AnyHome => true,
         }
     }
 
     fn as_single(&self, _: &PresetHandler, _: u32) -> Result<f32, FixtureChannelError> {
         match self {
             FixtureChannelDiscreteValue::Single(value) => Ok(*value),
+            FixtureChannelDiscreteValue::AnyHome => Ok(0.0),
             _ => Err(FixtureChannelError::FixtureChannelValueWrongVariant(
                 "Single".to_owned(),
             )),
@@ -94,6 +97,7 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
     ) -> Result<[f32; 4], FixtureChannelError> {
         match self {
             FixtureChannelDiscreteValue::Quadruple(values) => Ok(*values),
+            FixtureChannelDiscreteValue::AnyHome => Ok([0.0; 4]),
             _ => Err(FixtureChannelError::FixtureChannelValueWrongVariant(
                 "Quadruple".to_owned(),
             )),
@@ -103,6 +107,7 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
     fn as_pair(&self, _: &PresetHandler, _: u32, _: u16) -> Result<[f32; 2], FixtureChannelError> {
         match self {
             FixtureChannelDiscreteValue::Pair(values) => Ok(*values),
+            FixtureChannelDiscreteValue::AnyHome => Ok([0.0, 0.0]),
             _ => Err(FixtureChannelError::FixtureChannelValueWrongVariant(
                 "Pair".to_owned(),
             )),
@@ -116,6 +121,7 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
     ) -> Result<Option<String>, FixtureChannelError> {
         match self {
             FixtureChannelDiscreteValue::ToggleFlag(value) => Ok(value.clone()),
+            FixtureChannelDiscreteValue::AnyHome => Ok(None),
             _ => Err(FixtureChannelError::FixtureChannelValueWrongVariant(
                 "ToggleFlag".to_owned(),
             )),
@@ -143,6 +149,7 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
                 Some(flag) => flag.clone(),
                 None => "None".to_owned(),
             },
+            FixtureChannelDiscreteValue::AnyHome => "AnyHome".to_owned(),
         }
     }
 }
@@ -151,6 +158,11 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
 pub enum FixtureChannelValue {
     Discrete(FixtureChannelDiscreteValue),
     Preset(u32),
+    Mix {
+        a: Box<FixtureChannelValue>,
+        b: Box<FixtureChannelValue>,
+        mix: f32,
+    },
 }
 
 impl FixtureChannelValueTrait for FixtureChannelValue {
@@ -181,7 +193,13 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
     ) -> Result<f32, FixtureChannelError> {
         match self {
             FixtureChannelValue::Discrete(value) => value.as_single(preset_handler, fixture_id),
-            _ => todo!("Preset handling for single"),
+            FixtureChannelValue::Mix { a, b, mix } => {
+                let a = a.as_single(preset_handler, fixture_id)?;
+                let b = b.as_single(preset_handler, fixture_id)?;
+
+                Ok(a * (1.0 - mix) + b * mix)
+            }
+            FixtureChannelValue::Preset(_) => todo!("Preset handling for single"),
         }
     }
 
@@ -205,6 +223,17 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
                             .expect("")
                     })
                     .unwrap_or([0.0, 0.0, 0.0, 0.0]))
+            }
+            FixtureChannelValue::Mix { a, b, mix } => {
+                let a = a.as_quadruple(preset_handler, fixture_id, channel_type)?;
+                let b = b.as_quadruple(preset_handler, fixture_id, channel_type)?;
+
+                Ok([
+                    a[0] * (1.0 - mix) + b[0] * mix,
+                    a[1] * (1.0 - mix) + b[1] * mix,
+                    a[2] * (1.0 - mix) + b[2] * mix,
+                    a[3] * (1.0 - mix) + b[3] * mix,
+                ])
             }
         }
     }
@@ -230,6 +259,15 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
                     })
                     .unwrap_or([0.0, 0.0]))
             }
+            FixtureChannelValue::Mix { a, b, mix } => {
+                let a = a.as_pair(preset_handler, fixture_id, channel_type)?;
+                let b = b.as_pair(preset_handler, fixture_id, channel_type)?;
+
+                Ok([
+                    a[0] * (1.0 - mix) + b[0] * mix,
+                    a[1] * (1.0 - mix) + b[1] * mix,
+                ])
+            }
         }
     }
 
@@ -250,6 +288,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
         match self {
             FixtureChannelValue::Discrete(value) => value.is_home(),
             FixtureChannelValue::Preset(_) => false,
+            FixtureChannelValue::Mix { a, b, mix } => a.is_home() && b.is_home() && *mix == 0.0,
         }
     }
 
@@ -266,6 +305,21 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
                     format!("Preset {}.{}", channel_type, preset_id)
                 }
             }
+            FixtureChannelValue::Mix { a, b, mix } => {
+                if *mix == 0.0 {
+                    a.to_string(preset_handler, channel_type)
+                } else if *mix == 1.0 {
+                    b.to_string(preset_handler, channel_type)
+                } else {
+                    format!(
+                        "{} * {:.2} + {} * {:.2}",
+                        a.to_string(preset_handler, channel_type),
+                        1.0 - mix,
+                        b.to_string(preset_handler, channel_type),
+                        mix
+                    )
+                }
+            }
         }
     }
 }
@@ -275,6 +329,7 @@ impl FixtureChannelValue {
         match self {
             FixtureChannelValue::Discrete(value) => value.clone(),
             FixtureChannelValue::Preset(_) => todo!("Preset handling for to_discrete"),
+            FixtureChannelValue::Mix { a: _, b: _, mix: _ } => todo!(),
         }
     }
 }

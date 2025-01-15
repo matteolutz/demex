@@ -47,7 +47,7 @@ impl FixturePreset {
                 }
 
                 let fixture_position = fixture
-                    .channel_value(channel_type)
+                    .channel_value(channel_type, preset_handler)
                     .map_err(PresetHandlerError::FixtureError)?;
 
                 values.insert(fixture_id, fixture_position.to_discrete());

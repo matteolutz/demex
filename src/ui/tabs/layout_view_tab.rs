@@ -279,12 +279,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             .expect("todo: error handling");
 
         let intensity = fixture
-            .intensity()
+            .intensity(&context.preset_handler)
             .expect("error handling")
             .as_single(&context.preset_handler, fixture.id())
             .expect("error handling");
 
-        let rect_color = if let Ok(color) = fixture.color() {
+        let rect_color = if let Ok(color) = fixture.color(&context.preset_handler) {
             let color = color
                 .as_quadruple(
                     &context.preset_handler,
@@ -303,7 +303,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         };
 
         let position: Option<egui::Vec2> = fixture
-            .position_pan_tilt()
+            .position_pan_tilt(&context.preset_handler)
             .map(|val| {
                 val.as_pair(
                     &context.preset_handler,

@@ -13,7 +13,7 @@ use crate::{
     fixture::{
         channel::{
             value::{FixtureChannelDiscreteValue, FixtureChannelValue},
-            FIXTURE_CHANNEL_INTENSITY_ID,
+            FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
         },
         patch::Patch,
         presets::{command_slice::CommandSlice, PresetHandler},
@@ -71,7 +71,6 @@ pub struct DemexUiContext {
     global_fixture_select: Option<FixtureSelector>,
     command: Vec<Token>,
     stats: DemexUiStats,
-    sequence_runtimes: Vec<SequenceRuntime>,
     layout_view_context: LayoutViewContext,
 }
 
@@ -206,17 +205,45 @@ fn get_test_preset_handler() -> PresetHandler {
     ph.rename_command_slice(3, "~".to_owned()).expect("");
 
     // Sequences
-    let mut seq = Sequence::new(1);
+    let mut seq = Sequence::new();
     seq.add_cue(Cue::new(
-        HashMap::from([(
-            1,
-            vec![CueFixtureChannelValue::new(
-                FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(1.0)),
-                FIXTURE_CHANNEL_INTENSITY_ID,
-                false,
-            )],
-        )]),
-        2.0,
+        HashMap::from([
+            (
+                1,
+                vec![
+                    CueFixtureChannelValue::new(
+                        FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(1.0)),
+                        FIXTURE_CHANNEL_INTENSITY_ID,
+                        false,
+                    ),
+                    CueFixtureChannelValue::new(
+                        FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Quadruple([
+                            1.0, 1.0, 1.0, 0.0,
+                        ])),
+                        FIXTURE_CHANNEL_COLOR_ID,
+                        false,
+                    ),
+                ],
+            ),
+            (
+                2,
+                vec![
+                    CueFixtureChannelValue::new(
+                        FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(1.0)),
+                        FIXTURE_CHANNEL_INTENSITY_ID,
+                        false,
+                    ),
+                    CueFixtureChannelValue::new(
+                        FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Quadruple([
+                            1.0, 1.0, 1.0, 0.0,
+                        ])),
+                        FIXTURE_CHANNEL_COLOR_ID,
+                        false,
+                    ),
+                ],
+            ),
+        ]),
+        0.25,
         None,
         0.0,
         None,
@@ -224,55 +251,17 @@ fn get_test_preset_handler() -> PresetHandler {
         CueTrigger::Manual,
     ));
     seq.add_cue(Cue::new(
-        HashMap::from([(
-            2,
-            vec![CueFixtureChannelValue::new(
-                FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(1.0)),
-                FIXTURE_CHANNEL_INTENSITY_ID,
-                false,
-            )],
-        )]),
-        2.0,
+        HashMap::new(),
+        0.0,
         None,
         0.0,
         None,
         0.0,
-        CueTrigger::Manual,
-    ));
-    seq.add_cue(Cue::new(
-        HashMap::from([(
-            1,
-            vec![CueFixtureChannelValue::new(
-                FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(0.0)),
-                FIXTURE_CHANNEL_INTENSITY_ID,
-                false,
-            )],
-        )]),
-        2.0,
-        None,
-        0.0,
-        None,
-        0.0,
-        CueTrigger::Manual,
-    ));
-    seq.add_cue(Cue::new(
-        HashMap::from([(
-            2,
-            vec![CueFixtureChannelValue::new(
-                FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(0.0)),
-                FIXTURE_CHANNEL_INTENSITY_ID,
-                false,
-            )],
-        )]),
-        2.0,
-        None,
-        0.0,
-        None,
-        0.0,
-        CueTrigger::Manual,
+        CueTrigger::Follow,
     ));
 
-    ph.add_sequence(seq);
+    let runtime = SequenceRuntime::new(1, "Flash Washes".to_owned(), seq);
+    ph.add_sequence_runtime(runtime);
 
     ph
 }
@@ -294,7 +283,6 @@ impl Default for DemexUiApp {
                 preset_handler: ph,
                 global_fixture_select: None,
                 command: Vec::new(),
-                sequence_runtimes: Vec::new(),
                 layout_view_context: LayoutViewContext::default(),
             },
             global_error: None,
@@ -335,30 +323,31 @@ impl DemexUiApp {
             Action::ClearAll => {
                 self.context.global_fixture_select = None;
             }
-            Action::Test(cmd) => {
-                match cmd.as_str() {
-                    "start" => {
-                        println!("starting seq");
-                        let seq = self.context.preset_handler.sequence(1).unwrap().clone();
-                        self.context
-                            .sequence_runtimes
-                            .push(SequenceRuntime::new(seq));
-
-                        self.context.sequence_runtimes.last_mut().unwrap().play();
-                    }
-                    "next" => {
-                        println!("going to next cue");
-                        self.context
-                            .sequence_runtimes
-                            .last_mut()
-                            .unwrap()
-                            .next_cue();
-                    }
-                    "stop" => self.context.sequence_runtimes.last_mut().unwrap().stop(),
-                    _ => {}
+            Action::Test(cmd) => match cmd.as_str() {
+                "start" => {
+                    println!("starting seq");
+                    self.context
+                        .preset_handler
+                        .sequence_runtime_mut(1)
+                        .unwrap()
+                        .start(&mut self.context.fixture_handler);
                 }
-                self.context.preset_handler.sequence(1).unwrap();
-            }
+                "next" => {
+                    println!("going to next cue");
+                    self.context
+                        .preset_handler
+                        .sequence_runtime_mut(1)
+                        .unwrap()
+                        .next_cue();
+                }
+                "stop" => self
+                    .context
+                    .preset_handler
+                    .sequence_runtime_mut(1)
+                    .unwrap()
+                    .stop(&mut self.context.fixture_handler),
+                _ => {}
+            },
             _ => {}
         }
 
@@ -401,20 +390,16 @@ impl DemexUiApp {
             self.context.stats.max_dt = delta_time;
         }
 
+        // update sequence runtimes
+        self.context
+            .preset_handler
+            .update_sequence_runtimes(delta_time, &mut self.context.fixture_handler);
+
         // update fixture handler
         let _ = self
             .context
             .fixture_handler
             .update(&self.context.preset_handler, delta_time);
-
-        // update sequence runtimes
-        for sr in self.context.sequence_runtimes.iter_mut() {
-            sr.update(
-                &mut self.context.fixture_handler,
-                &self.context.preset_handler,
-                delta_time,
-            );
-        }
 
         self.last_update = std::time::Instant::now();
     }

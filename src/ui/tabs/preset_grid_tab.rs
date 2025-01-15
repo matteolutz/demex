@@ -234,5 +234,60 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         }
 
         ui.end_row();
+        ui.end_row();
+
+        // Sequence Runtimes
+        ui.add_sized(
+            [80.0, 80.0],
+            eframe::egui::Button::new("Sequences")
+                .stroke(eframe::egui::Stroke::new(
+                    1.0,
+                    eframe::egui::Color32::LIGHT_GREEN,
+                ))
+                .sense(eframe::egui::Sense {
+                    click: false,
+                    drag: false,
+                    focusable: false,
+                }),
+        );
+
+        for preset_id in context
+            .preset_handler
+            .sequence_runtime_keys()
+            .iter()
+            .sorted_by(|a, b| a.cmp(b))
+        {
+            let is_started = context
+                .preset_handler
+                .sequence_runtime(*preset_id)
+                .unwrap()
+                .is_started();
+
+            let preset_button = ui.add_sized(
+                [80.0, 80.0],
+                eframe::egui::Button::new(
+                    context
+                        .preset_handler
+                        .sequence_runtime(*preset_id)
+                        .unwrap()
+                        .name(),
+                )
+                .stroke(if is_started {
+                    eframe::egui::Stroke::new(1.0, eframe::egui::Color32::RED)
+                } else {
+                    eframe::egui::Stroke::NONE
+                }),
+            );
+
+            if preset_button.clicked() {
+                context
+                    .preset_handler
+                    .sequence_runtime_mut(*preset_id)
+                    .unwrap()
+                    .start(&mut context.fixture_handler);
+            }
+        }
+
+        ui.end_row();
     });
 }

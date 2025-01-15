@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::fixture::channel::{value::FixtureChannelValue, FixtureId};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CueTrigger {
     // Cue is triggered manually
     Manual,
@@ -114,5 +114,26 @@ impl Cue {
 
     pub fn data_for_fixture(&self, fixture_id: FixtureId) -> Option<&Vec<CueFixtureChannelValue>> {
         self.data.get(&fixture_id)
+    }
+
+    pub fn channel_value_for_fixture(
+        &self,
+        fixture_id: u32,
+        channel_id: u16,
+    ) -> Option<&FixtureChannelValue> {
+        self.data.get(&fixture_id).and_then(|values| {
+            values
+                .iter()
+                .find(|v| v.channel_type() == channel_id)
+                .map(|v| v.value())
+        })
+    }
+
+    pub fn in_time(&self) -> f32 {
+        self.in_delay + self.in_fade
+    }
+
+    pub fn out_time(&self) -> f32 {
+        self.out_delay() + self.out_fade()
     }
 }

@@ -1,6 +1,9 @@
+use crate::fixture::error::FixtureError;
+
 #[derive(Debug)]
 pub enum FixtureChannelError {
     FixtureChannelValueWrongVariant(String),
+    FixtureError(FixtureError),
 }
 
 impl std::fmt::Display for FixtureChannelError {
@@ -12,6 +15,9 @@ impl std::fmt::Display for FixtureChannelError {
                     "Fixture channel value has wrong variant, expected {:?}",
                     value
                 )
+            }
+            FixtureChannelError::FixtureError(error) => {
+                write!(f, "Fixture error: {}", error)
             }
         }
     }

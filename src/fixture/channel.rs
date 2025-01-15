@@ -6,7 +6,7 @@ use value::{FixtureChannelValue, FixtureChannelValueTrait};
 
 use crate::utils::hash;
 
-use super::presets::PresetHandler;
+use super::{presets::PresetHandler, Fixture};
 
 pub mod error;
 pub mod value;
@@ -141,10 +141,14 @@ impl FixtureChannel {
         FixtureChannel::PositionPanTilt(is_fine, FixtureChannelValue::pair_default())
     }
 
+    pub fn get_maintenance_id(name: &str) -> u16 {
+        hash::hash(name) as u16
+    }
+
     pub fn maintenance(name: &str) -> Self {
         FixtureChannel::Maintenance(
             name.to_owned(),
-            hash::hash(name) as u16,
+            Self::get_maintenance_id(name),
             FixtureChannelValue::single_default(),
         )
     }
@@ -274,13 +278,20 @@ impl FixtureChannel {
 
     pub fn generate_data_packet(
         &self,
-        fixture_id: u32,
+        fixture: &Fixture,
         preset_handler: &PresetHandler,
     ) -> Result<Vec<u8>, FixtureChannelError> {
+        let fixture_id = fixture.id();
+
         match self {
-            FixtureChannel::Intensity(is_fine, intens) => {
-                let (intens_coarse, intens_fine) =
-                    Self::float_to_coarse_and_fine(intens.as_single(preset_handler, fixture_id)?);
+            FixtureChannel::Intensity(is_fine, _) => {
+                let channel_value = fixture
+                    .channel_value(FIXTURE_CHANNEL_INTENSITY_ID, preset_handler)
+                    .map_err(FixtureChannelError::FixtureError)?;
+
+                let (intens_coarse, intens_fine) = Self::float_to_coarse_and_fine(
+                    channel_value.as_single(preset_handler, fixture.id())?,
+                );
 
                 if *is_fine {
                     Ok(vec![intens_coarse, intens_fine])
@@ -288,12 +299,23 @@ impl FixtureChannel {
                     Ok(vec![intens_coarse])
                 }
             }
-            FixtureChannel::Strobe(strobe) => Ok(vec![
-                (strobe.as_single(preset_handler, fixture_id)? * 255.0) as u8,
-            ]),
-            FixtureChannel::Zoom(is_fine, zoom) => {
-                let (zoom_coarse, zoom_fine) =
-                    Self::float_to_coarse_and_fine(zoom.as_single(preset_handler, fixture_id)?);
+            FixtureChannel::Strobe(_) => {
+                let channel_value = fixture
+                    .channel_value(FIXTURE_CHANNEL_STROBE, preset_handler)
+                    .map_err(FixtureChannelError::FixtureError)?;
+
+                Ok(vec![
+                    (channel_value.as_single(preset_handler, fixture_id)? * 255.0) as u8,
+                ])
+            }
+            FixtureChannel::Zoom(is_fine, _) => {
+                let channel_value = fixture
+                    .channel_value(FIXTURE_CHANNEL_ZOOM, preset_handler)
+                    .map_err(FixtureChannelError::FixtureError)?;
+
+                let (zoom_coarse, zoom_fine) = Self::float_to_coarse_and_fine(
+                    channel_value.as_single(preset_handler, fixture_id)?,
+                );
 
                 if *is_fine {
                     Ok(vec![zoom_coarse, zoom_fine])
@@ -301,9 +323,16 @@ impl FixtureChannel {
                     Ok(vec![zoom_coarse])
                 }
             }
-            FixtureChannel::ColorRGB(is_fine, color) => {
-                let [f_r, f_g, f_b, _] =
-                    color.as_quadruple(preset_handler, fixture_id, FIXTURE_CHANNEL_COLOR_ID)?;
+            FixtureChannel::ColorRGB(is_fine, _) => {
+                let channel_value = fixture
+                    .channel_value(FIXTURE_CHANNEL_COLOR_ID, preset_handler)
+                    .map_err(FixtureChannelError::FixtureError)?;
+
+                let [f_r, f_g, f_b, _] = channel_value.as_quadruple(
+                    preset_handler,
+                    fixture_id,
+                    FIXTURE_CHANNEL_COLOR_ID,
+                )?;
 
                 let (r, r_fine) = Self::float_to_coarse_and_fine(f_r);
                 let (g, g_fine) = Self::float_to_coarse_and_fine(f_g);
@@ -315,9 +344,16 @@ impl FixtureChannel {
                     Ok(vec![r, g, b])
                 }
             }
-            FixtureChannel::ColorRGBW(is_fine, color) => {
-                let [f_r, f_g, f_b, f_w] =
-                    color.as_quadruple(preset_handler, fixture_id, FIXTURE_CHANNEL_COLOR_ID)?;
+            FixtureChannel::ColorRGBW(is_fine, _) => {
+                let channel_value = fixture
+                    .channel_value(FIXTURE_CHANNEL_COLOR_ID, preset_handler)
+                    .map_err(FixtureChannelError::FixtureError)?;
+
+                let [f_r, f_g, f_b, f_w] = channel_value.as_quadruple(
+                    preset_handler,
+                    fixture_id,
+                    FIXTURE_CHANNEL_COLOR_ID,
+                )?;
 
                 let (r, r_fine) = Self::float_to_coarse_and_fine(f_r);
                 let (g, g_fine) = Self::float_to_coarse_and_fine(f_g);
@@ -330,8 +366,12 @@ impl FixtureChannel {
                     Ok(vec![r, g, b, w])
                 }
             }
-            FixtureChannel::PositionPanTilt(is_fine, position) => {
-                let [pan_f, tilt_f] = position.as_pair(
+            FixtureChannel::PositionPanTilt(is_fine, _) => {
+                let channel_value = fixture
+                    .channel_value(FIXTURE_CHANNEL_POSITION_PAN_TILT_ID, preset_handler)
+                    .map_err(FixtureChannelError::FixtureError)?;
+
+                let [pan_f, tilt_f] = channel_value.as_pair(
                     preset_handler,
                     fixture_id,
                     FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
@@ -346,11 +386,21 @@ impl FixtureChannel {
                     Ok(vec![pan, tilt])
                 }
             }
-            FixtureChannel::Maintenance(_, _, value) => Ok(vec![
-                (value.as_single(preset_handler, fixture_id)? * 255.0) as u8,
-            ]),
-            FixtureChannel::ToggleFlags(flags, set_flag) => {
-                let flag_name = set_flag.as_toggle_flag(preset_handler, fixture_id)?;
+            FixtureChannel::Maintenance(_, id, _) => {
+                let channel_value = fixture
+                    .channel_value(*id, preset_handler)
+                    .map_err(FixtureChannelError::FixtureError)?;
+
+                Ok(vec![
+                    (channel_value.as_single(preset_handler, fixture_id)? * 255.0) as u8,
+                ])
+            }
+            FixtureChannel::ToggleFlags(flags, _) => {
+                let channel_value = fixture
+                    .channel_value(FIXTURE_CHANNEL_TOGGLE_FLAGS, preset_handler)
+                    .map_err(FixtureChannelError::FixtureError)?;
+
+                let flag_name = channel_value.as_toggle_flag(preset_handler, fixture_id)?;
 
                 let value: u8 = flag_name.map(|f| *flags.get(&f).unwrap_or(&0)).unwrap_or(0);
 

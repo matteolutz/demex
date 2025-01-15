@@ -28,7 +28,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
     egui_extras::TableBuilder::new(ui)
         .max_scroll_height(available_heigth)
-        .columns(egui_extras::Column::auto(), 6)
+        .columns(egui_extras::Column::auto(), 7)
         .column(egui_extras::Column::remainder())
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
         .striped(true)
@@ -43,6 +43,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
             header.col(|ui| {
                 ui.heading("Name");
+            });
+
+            header.col(|ui| {
+                ui.heading("Sources");
             });
 
             header.col(|ui| {
@@ -91,9 +95,21 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                         ));
                     });
 
+                    row.col(|ui| {
+                        for (idx, source) in fixture.sources().iter().enumerate() {
+                            ui.label(RichText::from(source.to_string()).color(
+                                if idx == fixture.sources().len() - 1 {
+                                    egui::Color32::YELLOW
+                                } else {
+                                    egui::Color32::WHITE
+                                },
+                            ));
+                        }
+                    });
+
                     // Intens
                     row.col(|ui| {
-                        if let Ok(intensity) = fixture.intensity() {
+                        if let Ok(intensity) = fixture.intensity(&context.preset_handler) {
                             ui.label(
                                 RichText::from(intensity.to_string(
                                     &context.preset_handler,
@@ -120,7 +136,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                     // Color
                     row.col(|ui| {
-                        if let Ok(color) = fixture.color() {
+                        if let Ok(color) = fixture.color(&context.preset_handler) {
                             ui.label(
                                 RichText::from(
                                     color.to_string(
@@ -157,7 +173,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                     // Position
                     row.col(|ui| {
-                        if let Ok(pos) = fixture.position_pan_tilt() {
+                        if let Ok(pos) = fixture.position_pan_tilt(&context.preset_handler) {
                             ui.label(
                                 RichText::from(pos.to_string(
                                     &context.preset_handler,
@@ -184,7 +200,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 continue;
                             }
 
-                            let channel_value = fixture.channel_value(*channel_type);
+                            let channel_value =
+                                fixture.channel_value(*channel_type, &context.preset_handler);
                             if channel_value.is_err() {
                                 continue;
                             }

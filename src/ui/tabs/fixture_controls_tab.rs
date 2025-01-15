@@ -88,7 +88,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     .fixture_handler
                                     .fixture(selected_fixtures[0])
                                     .unwrap()
-                                    .channel_single_value(channel_type, &context.preset_handler)
+                                    .channel_single_value_programmer(
+                                        channel_type,
+                                        &context.preset_handler,
+                                    )
                                     .expect("") as f64
                             }
                         }));
@@ -102,7 +105,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             .fixture_handler
                             .fixture(selected_fixtures[0])
                             .unwrap()
-                            .color()
+                            .color_programmer()
                             .expect("");
 
                         let rgb_color = fixture_color
@@ -162,7 +165,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     .fixture_handler
                                     .fixture(selected_fixtures[0])
                                     .unwrap()
-                                    .position_pan_tilt()
+                                    .position_pan_tilt_programmer()
                                     .expect("");
 
                                 let pos = pos_val
@@ -253,7 +256,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     .fixture_handler
                                     .fixture(selected_fixtures[0])
                                     .unwrap()
-                                    .channel_single_value(channel_type, &context.preset_handler)
+                                    .channel_single_value_programmer(
+                                        channel_type,
+                                        &context.preset_handler,
+                                    )
                                     .expect("") as f64
                             }
                         }));
