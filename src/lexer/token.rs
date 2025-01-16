@@ -1,4 +1,6 @@
-#[derive(Debug, Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Token {
     Numeral(u32),
     FloatingPoint(f32),
@@ -12,6 +14,7 @@ pub enum Token {
     KeywordIntens,
     KeywordThru,
     KeywordFull,
+    KeywordHalf,
     KeywordOut,
     KeywordHome,
     KeywordManSet,
@@ -44,6 +47,7 @@ impl std::fmt::Display for Token {
             Token::KeywordIntens => write!(f, "intes"),
             Token::KeywordThru => write!(f, "thru"),
             Token::KeywordFull => write!(f, "full"),
+            Token::KeywordHalf => write!(f, "half"),
             Token::KeywordOut => write!(f, "out"),
             Token::KeywordHome => write!(f, "home"),
             Token::KeywordManSet => write!(f, "manset"),

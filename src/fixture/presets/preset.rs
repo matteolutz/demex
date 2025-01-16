@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
     fixture::{
         channel::{
@@ -13,7 +15,7 @@ use crate::{
 
 use super::{error::PresetHandlerError, PresetHandler};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FixturePreset {
     id: u32,
     name: String,

@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::lexer::token::Token;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CommandSlice {
     id: u32,
     name: String,

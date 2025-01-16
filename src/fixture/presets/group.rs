@@ -1,10 +1,12 @@
+use serde::{Deserialize, Serialize};
+
 use crate::parser::nodes::fixture_selector::{
     FixtureSelector, FixtureSelectorContext, FixtureSelectorError,
 };
 
 use super::PresetHandler;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FixtureGroup {
     id: u32,
     name: String,

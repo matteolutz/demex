@@ -1,7 +1,14 @@
-use itertools::Itertools;
-use std::collections::HashMap;
 use tabs::{layout_view_tab::LayoutViewContext, DemexTabs};
 
+use crate::{
+    dmx::output::debug_dummy::DebugDummyOutputVerbosity,
+    fixture::{patch::Patch, presets::PresetHandler},
+    lexer::token::Token,
+    parser::nodes::{
+        action::Action,
+        fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    },
+};
 #[allow(unused_imports)]
 use crate::{
     dmx::output::{debug_dummy::DebugDummyOutput, dmx_serial::DMXSerialOutput},
@@ -9,30 +16,12 @@ use crate::{
     lexer::Lexer,
     parser::Parser,
 };
-use crate::{
-    fixture::{
-        channel::{
-            value::{FixtureChannelDiscreteValue, FixtureChannelValue},
-            FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
-        },
-        patch::Patch,
-        presets::{command_slice::CommandSlice, PresetHandler},
-        sequence::{
-            cue::{Cue, CueFixtureChannelValue, CueTrigger},
-            runtime::SequenceRuntime,
-            Sequence,
-        },
-    },
-    lexer::token::Token,
-    parser::nodes::{
-        action::Action,
-        fixture_selector::{AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext},
-    },
-};
 
 pub mod components;
 pub mod graphics;
+pub mod iimpl;
 pub mod tabs;
+pub mod traits;
 
 const DEMEX_FIXED_UPDATE_RATE: u32 = 60;
 const DEMEX_RUN_WITH_FIXED_UPDATE: bool = false;
@@ -85,47 +74,6 @@ pub struct DemexUiApp {
 }
 
 fn get_test_fixture_handler() -> (FixtureHandler, Patch) {
-    /*let mut fixtures = Vec::new();
-    fixtures.extend((1..=2).map(|id| {
-        Fixture::new(
-            id,
-            format!("WASH {}", id),
-            vec![
-                FixtureChannel::position_pan_tilt(true),
-                FixtureChannel::intensity(true),
-                FixtureChannel::strobe(),
-                FixtureChannel::color_rgb(true),
-                FixtureChannel::maintenance("White"),
-                FixtureChannel::maintenance("WhiteFine"),
-                FixtureChannel::maintenance("ColorTemp"),
-                FixtureChannel::maintenance("ColorTint"),
-                FixtureChannel::maintenance("ColorMacro"),
-                FixtureChannel::maintenance("ColorMacroCrossfade"),
-                FixtureChannel::zoom(true),
-                FixtureChannel::maintenance("PanTiltSpeed"),
-                FixtureChannel::toggle_flags(HashMap::from([
-                    ("Turn On".to_owned(), 131u8),
-                    ("Turn Off".to_owned(), 231u8),
-                ])),
-            ],
-            1,
-            (id as u16 - 1) * 40 + 411,
-        )
-        .unwrap()
-    }));
-
-    for i in 0..8 {
-        fixtures.push(
-            Fixture::new(
-                i + 3,
-                format!("PAR {}", i + 2),
-                vec![FixtureChannel::intensity(false)],
-                1,
-                8 - i as u16,
-            )
-            .unwrap(),
-        )
-    }*/
     let patch: Patch =
         serde_json::from_reader(std::fs::File::open("test_data/patch.json").unwrap()).unwrap();
     let fixtures = patch.clone().into();
@@ -133,7 +81,7 @@ fn get_test_fixture_handler() -> (FixtureHandler, Patch) {
     (
         FixtureHandler::new(
             vec![
-                Box::new(DebugDummyOutput::new(true)),
+                Box::new(DebugDummyOutput::new(DebugDummyOutputVerbosity::Silent)),
                 /*Box::new(
                 DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ").expect("this shouldn't happen"),
                 )*/
@@ -146,124 +94,7 @@ fn get_test_fixture_handler() -> (FixtureHandler, Patch) {
 }
 
 fn get_test_preset_handler() -> PresetHandler {
-    let mut ph = PresetHandler::new();
-
-    // Groups
-    ph.record_group(
-        FixtureSelector::Atomic(AtomicFixtureSelector::FixtureRange(1, 2)),
-        1,
-    )
-    .expect("");
-    ph.rename_group(1, "Washes".to_owned()).expect("");
-
-    ph.record_group(
-        FixtureSelector::Atomic(AtomicFixtureSelector::FixtureRange(3, 10)),
-        2,
-    )
-    .expect("");
-    ph.rename_group(2, "PARs".to_owned()).expect("");
-
-    ph.record_macro(
-        1,
-        Box::new(Action::SetIntensity(
-            FixtureSelector::Atomic(AtomicFixtureSelector::CurrentFixturesSelected),
-            100.0,
-        )),
-    )
-    .expect("");
-    ph.rename_macro(1, "~ @ Full".to_owned()).expect("");
-
-    ph.record_macro(
-        2,
-        Box::new(Action::SetIntensity(
-            FixtureSelector::Atomic(AtomicFixtureSelector::CurrentFixturesSelected),
-            0.0,
-        )),
-    )
-    .expect("");
-    ph.rename_macro(2, "~ @ Out".to_owned()).expect("");
-
-    ph.record_macro(3, Box::new(Action::GoHomeAll)).expect("");
-    ph.rename_macro(3, "Home".to_owned()).expect("");
-
-    ph.record_command_slice(CommandSlice::new(
-        1,
-        vec![Token::KeywordIntens, Token::KeywordFull],
-    ))
-    .expect("");
-    ph.rename_command_slice(1, "@ Full".to_owned()).expect("");
-
-    ph.record_command_slice(CommandSlice::new(
-        2,
-        vec![Token::KeywordIntens, Token::KeywordOut],
-    ))
-    .expect("");
-    ph.rename_command_slice(2, "@ Out".to_owned()).expect("");
-
-    ph.record_command_slice(CommandSlice::new(3, vec![Token::KeywordFixturesSelected]))
-        .expect("");
-    ph.rename_command_slice(3, "~".to_owned()).expect("");
-
-    // Sequences
-    let mut seq = Sequence::new();
-    seq.add_cue(Cue::new(
-        HashMap::from([
-            (
-                1,
-                vec![
-                    CueFixtureChannelValue::new(
-                        FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(1.0)),
-                        FIXTURE_CHANNEL_INTENSITY_ID,
-                        false,
-                    ),
-                    CueFixtureChannelValue::new(
-                        FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Quadruple([
-                            1.0, 1.0, 1.0, 0.0,
-                        ])),
-                        FIXTURE_CHANNEL_COLOR_ID,
-                        false,
-                    ),
-                ],
-            ),
-            (
-                2,
-                vec![
-                    CueFixtureChannelValue::new(
-                        FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(1.0)),
-                        FIXTURE_CHANNEL_INTENSITY_ID,
-                        false,
-                    ),
-                    CueFixtureChannelValue::new(
-                        FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Quadruple([
-                            1.0, 1.0, 1.0, 0.0,
-                        ])),
-                        FIXTURE_CHANNEL_COLOR_ID,
-                        false,
-                    ),
-                ],
-            ),
-        ]),
-        0.25,
-        None,
-        0.0,
-        None,
-        0.0,
-        CueTrigger::Manual,
-    ));
-    seq.add_cue(Cue::new(
-        HashMap::new(),
-        0.0,
-        None,
-        0.0,
-        None,
-        0.0,
-        CueTrigger::Follow,
-    ));
-
-    let runtime = SequenceRuntime::new(1, "Flash Washes".to_owned(), seq);
-    ph.add_sequence_runtime(runtime);
-
-    ph
+    serde_json::from_reader(std::fs::File::open("test_data/ph.json").unwrap()).unwrap()
 }
 
 impl Default for DemexUiApp {
@@ -413,6 +244,27 @@ impl eframe::App for DemexUiApp {
 
         let elapsed = now.elapsed();
 
+        if self.global_error.is_some() && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            self.global_error = None;
+        }
+
+        if let Some(global_error) = &self.global_error {
+            egui::Window::new("Error")
+                .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+                .collapsible(false)
+                .resizable(false)
+                .interactable(false)
+                .show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.label(
+                            egui::RichText::from(global_error.to_string())
+                                .text_style(egui::TextStyle::Heading)
+                                .color(egui::Color32::LIGHT_RED),
+                        );
+                    });
+                });
+        }
+
         self.context.stats.fixed_update = elapsed.as_secs_f64();
         if self.context.stats.max_fixed_update < self.context.stats.fixed_update {
             self.context.stats.max_fixed_update = self.context.stats.fixed_update;
@@ -438,7 +290,10 @@ impl eframe::App for DemexUiApp {
             });
 
             if let Some(error) = &self.global_error {
-                ui.colored_label(eframe::egui::Color32::RED, format!("Error: {}", error));
+                ui.colored_label(
+                    eframe::egui::Color32::LIGHT_RED,
+                    format!("Error: {}", error),
+                );
             }
         });
 
@@ -455,14 +310,16 @@ impl eframe::App for DemexUiApp {
 
             ui.horizontal(|ui| {
                 if !self.context.command.is_empty() {
-                    ui.label(
-                        eframe::egui::RichText::new(
-                            self.context.command.iter().map(|t| t.to_string()).join(" "),
-                        )
-                        .background_color(eframe::egui::Color32::BLACK)
-                        .color(eframe::egui::Color32::YELLOW)
-                        .font(command_font.clone()),
-                    );
+                    ui.horizontal(|ui| {
+                        for token in &self.context.command {
+                            ui.label(
+                                eframe::egui::RichText::from(token.to_string())
+                                    .background_color(eframe::egui::Color32::BLACK)
+                                    .color(token)
+                                    .font(command_font.clone()),
+                            );
+                        }
+                    });
                 }
 
                 let command_input_field = ui

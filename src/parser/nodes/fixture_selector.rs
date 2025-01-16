@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::fixture::presets::{error::PresetHandlerError, PresetHandler};
 
 #[derive(Debug, Clone)]
@@ -34,7 +36,7 @@ impl std::error::Error for FixtureSelectorError {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AtomicFixtureSelector {
     SingleFixture(u32),
     FixtureRange(u32, u32),
@@ -95,7 +97,7 @@ impl AtomicFixtureSelector {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FixtureSelector {
     Atomic(AtomicFixtureSelector),
     Additive(AtomicFixtureSelector, Box<FixtureSelector>),

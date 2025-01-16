@@ -1,0 +1,267 @@
+{
+  "groups": {
+    "2": {
+      "id": 2,
+      "name": "PARs",
+      "fixture_selector": {
+        "Atomic": {
+          "FixtureRange": [3, 10]
+        }
+      }
+    },
+    "1": {
+      "id": 1,
+      "name": "Washes",
+      "fixture_selector": {
+        "Atomic": {
+          "FixtureRange": [1, 2]
+        }
+      }
+    }
+  },
+  "colors": {},
+  "positions": {},
+  "sequence_runtimes": {
+    "1": {
+      "id": 1,
+      "name": "Flash Washes",
+      "sequence": {
+        "cues": [
+          {
+            "data": {
+              "1": [
+                {
+                  "value": {
+                    "Discrete": {
+                      "Single": 1.0
+                    }
+                  },
+                  "channel_type": 0,
+                  "snap": false
+                },
+                {
+                  "value": {
+                    "Discrete": {
+                      "Quadruple": [1.0, 1.0, 1.0, 0.0]
+                    }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": {
+                    "Discrete": {
+                      "Pair": [0.5, 0.0]
+                    }
+                  },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "2": [
+                {
+                  "value": {
+                    "Discrete": {
+                      "Single": 1.0
+                    }
+                  },
+                  "channel_type": 0,
+                  "snap": false
+                },
+                {
+                  "value": {
+                    "Discrete": {
+                      "Quadruple": [1.0, 1.0, 1.0, 0.0]
+                    }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": {
+                    "Discrete": {
+                      "Pair": [0.5, 0.0]
+                    }
+                  },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.25,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "trigger": "Manual"
+          },
+          {
+            "data": {},
+            "in_fade": 0.0,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "trigger": "Follow"
+          }
+        ]
+      }
+    },
+    "2": {
+      "id": 2,
+      "name": "Wash Color Change",
+      "sequence": {
+        "cues": [
+          {
+            "data": {
+              "2": [
+                {
+                  "value": {
+                    "Discrete": {
+                      "Quadruple": [1.0, 0.0, 0.0, 0.0]
+                    }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": {
+                    "Discrete": {
+                      "Pair": [0.0, 0.0]
+                    }
+                  },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "1": [
+                {
+                  "value": {
+                    "Discrete": {
+                      "Quadruple": [1.0, 0.0, 0.0, 0.0]
+                    }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": {
+                    "Discrete": {
+                      "Pair": [0.0, 0.0]
+                    }
+                  },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 2.0,
+            "out_fade": 0.0,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "trigger": "Follow"
+          },
+          {
+            "data": {
+              "1": [
+                {
+                  "value": {
+                    "Discrete": {
+                      "Quadruple": [0.0, 1.0, 0.0, 0.0]
+                    }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": {
+                    "Discrete": {
+                      "Pair": [1.0, 1.0]
+                    }
+                  },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "2": [
+                {
+                  "value": {
+                    "Discrete": {
+                      "Quadruple": [0.0, 1.0, 0.0, 0.0]
+                    }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": {
+                    "Discrete": {
+                      "Pair": [1.0, 1.0]
+                    }
+                  },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 2.0,
+            "out_fade": 0.0,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "trigger": "Follow"
+          }
+        ]
+      }
+    }
+  },
+  "macros": {
+    "2": {
+      "id": 2,
+      "name": "~ @ Out",
+      "action": {
+        "SetIntensity": [
+          {
+            "Atomic": "CurrentFixturesSelected"
+          },
+          0.0
+        ]
+      }
+    },
+    "3": {
+      "id": 3,
+      "name": "Home",
+      "action": "GoHomeAll"
+    },
+    "1": {
+      "id": 1,
+      "name": "~ @ Full",
+      "action": {
+        "SetIntensity": [
+          {
+            "Atomic": "CurrentFixturesSelected"
+          },
+          100.0
+        ]
+      }
+    }
+  },
+  "command_slices": {
+    "1": {
+      "id": 1,
+      "name": "@ Full",
+      "command": ["KeywordIntens", "KeywordFull"]
+    },
+    "2": {
+      "id": 2,
+      "name": "@ Out",
+      "command": ["KeywordIntens", "KeywordOut"]
+    },
+    "3": {
+      "id": 3,
+      "name": "~",
+      "command": ["KeywordFixturesSelected"]
+    }
+  }
+}

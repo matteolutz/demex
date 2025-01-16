@@ -1,22 +1,33 @@
 use crate::dmx::DMXOutput;
 
 #[derive(Debug)]
+pub enum DebugDummyOutputVerbosity {
+    Verbose,
+    Quiet,
+    Silent,
+}
+
+#[derive(Debug)]
 pub struct DebugDummyOutput {
-    verbose: bool,
+    verbosity: DebugDummyOutputVerbosity,
 }
 
 impl DebugDummyOutput {
-    pub fn new(verbose: bool) -> Self {
-        Self { verbose }
+    pub fn new(verbosity: DebugDummyOutputVerbosity) -> Self {
+        Self { verbosity }
     }
 }
 
 impl DMXOutput for DebugDummyOutput {
     fn send(&mut self, universe: u16, data: &[u8; 512]) -> Result<(), Box<dyn std::error::Error>> {
-        if self.verbose {
-            println!("Sending data on universe {}:\n{:?}", universe, data);
-        } else {
-            println!("Sending data on universe {}", universe);
+        match self.verbosity {
+            DebugDummyOutputVerbosity::Verbose => {
+                println!("Sending data on universe {}:\n{:?}", universe, data);
+            }
+            DebugDummyOutputVerbosity::Quiet => {
+                println!("Sending data on universe {}", universe);
+            }
+            DebugDummyOutputVerbosity::Silent => {}
         }
 
         Ok(())

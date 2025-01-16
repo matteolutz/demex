@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::fixture::{
     channel::{
         value::{FixtureChannelDiscreteValue, FixtureChannelValue},
@@ -14,7 +16,7 @@ use super::fixture_selector::{FixtureSelector, FixtureSelectorContext};
 pub mod error;
 pub mod result;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Action {
     SetIntensity(FixtureSelector, f32),
     SetColor(FixtureSelector, [f32; 4]),

@@ -5,6 +5,7 @@ use error::PresetHandlerError;
 use group::FixtureGroup;
 use mmacro::MMacro;
 use preset::FixturePreset;
+use serde::{Deserialize, Serialize};
 
 use crate::parser::nodes::{
     action::{result::ActionRunResult, Action},
@@ -26,6 +27,7 @@ pub mod group;
 pub mod mmacro;
 pub mod preset;
 
+#[derive(Serialize, Deserialize)]
 pub struct PresetHandler {
     groups: HashMap<u32, FixtureGroup>,
 

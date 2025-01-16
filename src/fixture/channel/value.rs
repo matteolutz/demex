@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::fixture::presets::PresetHandler;
 
 use super::error::FixtureChannelError;
@@ -37,7 +39,7 @@ pub trait FixtureChannelValueTrait {
     fn to_string(&self, preset_handler: &PresetHandler, channel_type: u16) -> String;
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum FixtureChannelDiscreteValue {
     Single(f32),
     Pair([f32; 2]),
@@ -154,7 +156,7 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum FixtureChannelValue {
     Discrete(FixtureChannelDiscreteValue),
     Preset(u32),

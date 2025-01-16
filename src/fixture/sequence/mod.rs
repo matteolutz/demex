@@ -1,4 +1,5 @@
 use cue::Cue;
+use serde::{Deserialize, Serialize};
 
 use super::channel::value::FixtureChannelValue;
 
@@ -25,7 +26,7 @@ impl FadeFixtureChannelValue {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sequence {
     cues: Vec<Cue>,
 }

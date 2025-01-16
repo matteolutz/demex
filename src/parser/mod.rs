@@ -318,6 +318,10 @@ impl<'a> Parser<'a> {
                         self.advance();
                         Ok(100.0)
                     }
+                    Token::KeywordHalf => {
+                        self.advance();
+                        Ok(50.0)
+                    }
                     Token::KeywordOut => {
                         self.advance();
                         Ok(0.0)

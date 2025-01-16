@@ -68,6 +68,8 @@ impl<'a> Lexer<'a> {
                     tokens.push(Token::KeywordThru);
                 } else if keyword == "full" {
                     tokens.push(Token::KeywordFull);
+                } else if keyword == "half" {
+                    tokens.push(Token::KeywordHalf);
                 } else if keyword == "out" {
                     tokens.push(Token::KeywordOut);
                 } else if keyword == "home" {

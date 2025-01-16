@@ -286,6 +286,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     .unwrap()
                     .start(&mut context.fixture_handler);
             }
+
+            if preset_button.secondary_clicked() {
+                println!("stopping sequence");
+                context
+                    .preset_handler
+                    .sequence_runtime_mut(*preset_id)
+                    .unwrap()
+                    .stop(&mut context.fixture_handler);
+            }
         }
 
         ui.end_row();

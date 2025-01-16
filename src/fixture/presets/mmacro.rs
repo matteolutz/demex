@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     fixture::handler::FixtureHandler,
     parser::nodes::{
@@ -8,7 +10,7 @@ use crate::{
 
 use super::PresetHandler;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MMacro {
     id: u32,
     name: String,
