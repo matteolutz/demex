@@ -192,6 +192,7 @@ impl Fixture {
 
 impl Fixture {
     pub fn is_home(&self) -> bool {
+        // TODO: change this
         self.patch.iter().all(|c| c.is_home())
     }
 

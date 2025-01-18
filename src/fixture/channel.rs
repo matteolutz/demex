@@ -118,27 +118,27 @@ impl<'de> Deserialize<'de> for FixtureChannel {
 
 impl FixtureChannel {
     pub fn intensity(is_fine: bool) -> Self {
-        FixtureChannel::Intensity(is_fine, FixtureChannelValue::single_default())
+        FixtureChannel::Intensity(is_fine, FixtureChannelValue::any_home())
     }
 
     pub fn strobe() -> Self {
-        FixtureChannel::Strobe(FixtureChannelValue::single_default())
+        FixtureChannel::Strobe(FixtureChannelValue::any_home())
     }
 
     pub fn zoom(is_fine: bool) -> Self {
-        FixtureChannel::Zoom(is_fine, FixtureChannelValue::single_default())
+        FixtureChannel::Zoom(is_fine, FixtureChannelValue::any_home())
     }
 
     pub fn color_rgb(is_fine: bool) -> Self {
-        FixtureChannel::ColorRGB(is_fine, FixtureChannelValue::quadruple_default())
+        FixtureChannel::ColorRGB(is_fine, FixtureChannelValue::any_home())
     }
 
     pub fn color_rgbw(is_fine: bool) -> Self {
-        FixtureChannel::ColorRGBW(is_fine, FixtureChannelValue::quadruple_default())
+        FixtureChannel::ColorRGBW(is_fine, FixtureChannelValue::any_home())
     }
 
     pub fn position_pan_tilt(is_fine: bool) -> Self {
-        FixtureChannel::PositionPanTilt(is_fine, FixtureChannelValue::pair_default())
+        FixtureChannel::PositionPanTilt(is_fine, FixtureChannelValue::any_home())
     }
 
     pub fn get_maintenance_id(name: &str) -> u16 {
@@ -149,32 +149,28 @@ impl FixtureChannel {
         FixtureChannel::Maintenance(
             name.to_owned(),
             Self::get_maintenance_id(name),
-            FixtureChannelValue::single_default(),
+            FixtureChannelValue::any_home(),
         )
     }
 
     pub fn toggle_flags(flags: HashMap<String, u8>) -> Self {
-        FixtureChannel::ToggleFlags(flags, FixtureChannelValue::toggle_flag_default())
+        FixtureChannel::ToggleFlags(flags, FixtureChannelValue::any_home())
     }
 }
 
 impl FixtureChannel {
     pub fn home(&mut self) {
         match self {
-            FixtureChannel::Intensity(_, intens) => *intens = FixtureChannelValue::single_default(),
-            FixtureChannel::Strobe(strobe) => *strobe = FixtureChannelValue::single_default(),
-            FixtureChannel::Zoom(_, zoom) => *zoom = FixtureChannelValue::single_default(),
-            FixtureChannel::ColorRGB(_, rgb) => *rgb = FixtureChannelValue::quadruple_default(),
-            FixtureChannel::ColorRGBW(_, rgbw) => *rgbw = FixtureChannelValue::quadruple_default(),
+            FixtureChannel::Intensity(_, intens) => *intens = FixtureChannelValue::any_home(),
+            FixtureChannel::Strobe(strobe) => *strobe = FixtureChannelValue::any_home(),
+            FixtureChannel::Zoom(_, zoom) => *zoom = FixtureChannelValue::any_home(),
+            FixtureChannel::ColorRGB(_, rgb) => *rgb = FixtureChannelValue::any_home(),
+            FixtureChannel::ColorRGBW(_, rgbw) => *rgbw = FixtureChannelValue::any_home(),
             FixtureChannel::PositionPanTilt(_, position) => {
-                *position = FixtureChannelValue::pair_default()
+                *position = FixtureChannelValue::any_home()
             }
-            FixtureChannel::Maintenance(_, _, value) => {
-                *value = FixtureChannelValue::single_default()
-            }
-            FixtureChannel::ToggleFlags(_, value) => {
-                *value = FixtureChannelValue::toggle_flag_default()
-            }
+            FixtureChannel::Maintenance(_, _, value) => *value = FixtureChannelValue::any_home(),
+            FixtureChannel::ToggleFlags(_, value) => *value = FixtureChannelValue::any_home(),
         }
     }
 

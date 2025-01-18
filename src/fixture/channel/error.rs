@@ -4,6 +4,7 @@ use crate::fixture::error::FixtureError;
 pub enum FixtureChannelError {
     FixtureChannelValueWrongVariant(String),
     FixtureError(FixtureError),
+    FixtureChannelValueIsUnset,
 }
 
 impl std::fmt::Display for FixtureChannelError {
@@ -18,6 +19,9 @@ impl std::fmt::Display for FixtureChannelError {
             }
             FixtureChannelError::FixtureError(error) => {
                 write!(f, "Fixture error: {}", error)
+            }
+            Self::FixtureChannelValueIsUnset => {
+                write!(f, "Fixture channel value is unset.")
             }
         }
     }

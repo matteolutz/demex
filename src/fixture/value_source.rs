@@ -3,7 +3,7 @@ use std::fmt;
 use itertools::Itertools;
 
 use super::{
-    channel::value::{FixtureChannelDiscreteValue, FixtureChannelValue},
+    channel::value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait},
     error::FixtureError,
     presets::PresetHandler,
     sequence::FadeFixtureChannelValue,
@@ -94,6 +94,10 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
 
         let mut value = FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::AnyHome);
         for v in values {
+            if v.value().is_home() {
+                continue;
+            }
+
             if v.alpha() == 0.0 {
                 continue;
             }

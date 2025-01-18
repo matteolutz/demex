@@ -51,10 +51,10 @@
                 {
                   "value": {
                     "Discrete": {
-                      "Pair": [0.5, 0.0]
+                      "Single": 0.95
                     }
                   },
-                  "channel_type": 20,
+                  "channel_type": 1,
                   "snap": false
                 }
               ],
@@ -80,18 +80,18 @@
                 {
                   "value": {
                     "Discrete": {
-                      "Pair": [0.5, 0.0]
+                      "Single": 0.95
                     }
                   },
-                  "channel_type": 20,
+                  "channel_type": 1,
                   "snap": false
                 }
               ]
             },
-            "in_fade": 0.25,
+            "in_fade": 0.2,
             "out_fade": null,
             "in_delay": 0.0,
-            "out_delay": null,
+            "out_delay": 0.5,
             "snap_percent": 0.0,
             "trigger": "Manual"
           },
@@ -177,7 +177,7 @@
                 {
                   "value": {
                     "Discrete": {
-                      "Pair": [1.0, 1.0]
+                      "Pair": [0.0, 1.0]
                     }
                   },
                   "channel_type": 20,
@@ -197,7 +197,7 @@
                 {
                   "value": {
                     "Discrete": {
-                      "Pair": [1.0, 1.0]
+                      "Pair": [0.0, 1.0]
                     }
                   },
                   "channel_type": 20,

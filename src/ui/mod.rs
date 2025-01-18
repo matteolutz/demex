@@ -83,8 +83,9 @@ fn get_test_fixture_handler() -> (FixtureHandler, Patch) {
             vec![
                 Box::new(DebugDummyOutput::new(DebugDummyOutputVerbosity::Silent)),
                 /*Box::new(
-                DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ").expect("this shouldn't happen"),
-                )*/
+                    DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ")
+                        .expect("this shouldn't happen"),
+                ),*/
             ],
             fixtures,
         )

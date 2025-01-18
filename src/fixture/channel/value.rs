@@ -71,14 +71,7 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
     }
 
     fn is_home(&self) -> bool {
-        match self {
-            FixtureChannelDiscreteValue::Single(value) => *value == 0.0,
-            FixtureChannelDiscreteValue::Pair(values) => values.iter().all(|v| *v == 0.0),
-            FixtureChannelDiscreteValue::Quadruple(values) => values.iter().all(|v| *v == 0.0),
-            FixtureChannelDiscreteValue::Multiple(values) => values.iter().all(|v| *v == 0.0),
-            FixtureChannelDiscreteValue::ToggleFlag(value) => value.is_none(),
-            FixtureChannelDiscreteValue::AnyHome => true,
-        }
+        matches!(self, Self::AnyHome)
     }
 
     fn as_single(&self, _: &PresetHandler, _: u32) -> Result<f32, FixtureChannelError> {
@@ -289,8 +282,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
     fn is_home(&self) -> bool {
         match self {
             FixtureChannelValue::Discrete(value) => value.is_home(),
-            FixtureChannelValue::Preset(_) => false,
-            FixtureChannelValue::Mix { a, b, mix } => a.is_home() && b.is_home() && *mix == 0.0,
+            _ => false,
         }
     }
 
@@ -327,6 +319,10 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
 }
 
 impl FixtureChannelValue {
+    pub fn any_home() -> Self {
+        Self::Discrete(FixtureChannelDiscreteValue::AnyHome)
+    }
+
     pub fn to_discrete(&self) -> FixtureChannelDiscreteValue {
         match self {
             FixtureChannelValue::Discrete(value) => value.clone(),

@@ -141,6 +141,57 @@
       "patch": [{ "Intensity": false }],
       "universe": 1,
       "start_address": 22
+    },
+    {
+      "id": 20,
+      "name": "Spot 1",
+      "patch": [
+        {
+          "PositionPanTilt": false
+        },
+        {
+          "Maintenance": "PanFine"
+        },
+        {
+          "Maintenance": "TiltFine"
+        },
+        {
+          "Maintenance": "PanTiltSpeed"
+        },
+        {
+          "ToggleFlags": { "Turn On": 131, "Turn Off": 231 }
+        },
+        {
+          "Maintenance": "ColorMaro"
+        },
+        {
+          "Maintenance": "NoFunction1"
+        },
+        {
+          "Maintenance": "Prism"
+        },
+        {
+          "Maintenance": "PrismRotation"
+        },
+        {
+          "Maintenance": "RotatingGobos"
+        },
+        {
+          "Maintenance": "GoboRotation"
+        },
+        {
+          "Maintenance": "NoFunction2"
+        },
+        {
+          "Maintenance": "Focus"
+        },
+        "Strobe",
+        {
+          "Intensity": false
+        }
+      ],
+      "universe": 1,
+      "start_address": 270
     }
   ],
   "layout": {
@@ -173,6 +224,12 @@
         "position": { "x": -60.0, "y": 0.0 },
         "size": { "x": 2.5, "y": 2.5 },
         "entry_type": "Circle"
+      },
+      {
+        "fixture_id": 20,
+        "position": { "x": -50.0, "y": 0.0 },
+        "size": { "x": 3.0, "y": 3.0 },
+        "entry_type": "Rect"
       },
       {
         "fixture_id": 4,

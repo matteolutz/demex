@@ -65,12 +65,26 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 .channel_name(channel_type)
                 .unwrap();
 
+            let is_channel_home = context
+                .fixture_handler
+                .fixture(selected_fixtures[0])
+                .unwrap()
+                .channel_value_programmer(channel_type)
+                .map(|v| v.is_home())
+                .unwrap_or(false);
+
             match channel_type {
                 fixture::channel::FIXTURE_CHANNEL_INTENSITY_ID
                 | fixture::channel::FIXTURE_CHANNEL_STROBE
                 | fixture::channel::FIXTURE_CHANNEL_ZOOM => {
                     ui.vertical(|ui| {
-                        ui.label(channel_name);
+                        ui.label(
+                            egui::RichText::from(channel_name).color(if is_channel_home {
+                                egui::Color32::PLACEHOLDER
+                            } else {
+                                egui::Color32::YELLOW
+                            }),
+                        );
                         ui.add(eframe::egui::Slider::from_get_set(0.0..=1.0, |val| {
                             if let Some(val) = val {
                                 for fixture_id in selected_fixtures.iter() {
@@ -99,7 +113,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 }
                 fixture::channel::FIXTURE_CHANNEL_COLOR_ID => {
                     ui.vertical(|ui| {
-                        ui.label(channel_name);
+                        ui.label(
+                            egui::RichText::from(channel_name).color(if is_channel_home {
+                                egui::Color32::PLACEHOLDER
+                            } else {
+                                egui::Color32::YELLOW
+                            }),
+                        );
 
                         let fixture_color = context
                             .fixture_handler
@@ -145,7 +165,14 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 }
                 fixture::channel::FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => {
                     ui.vertical(|ui| {
-                        ui.label(channel_name);
+                        ui.label(
+                            egui::RichText::from(channel_name).color(if is_channel_home {
+                                egui::Color32::PLACEHOLDER
+                            } else {
+                                egui::Color32::YELLOW
+                            }),
+                        );
+
                         ui.add(PositionSelector::new(|val| {
                             if let Some(val) = val {
                                 for fixture_id in selected_fixtures.iter() {
@@ -187,7 +214,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     ui.style_mut().wrap_mode = Some(eframe::egui::TextWrapMode::Extend);
 
                     ui.vertical(|ui| {
-                        ui.label(channel_name);
+                        ui.label(
+                            egui::RichText::from(channel_name).color(if is_channel_home {
+                                egui::Color32::PLACEHOLDER
+                            } else {
+                                egui::Color32::YELLOW
+                            }),
+                        );
 
                         let unset_button = ui.button("Unset");
                         if unset_button.clicked() {
@@ -237,7 +270,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 }
                 _ => {
                     ui.vertical(|ui| {
-                        ui.label(channel_name);
+                        ui.label(
+                            egui::RichText::from(channel_name).color(if is_channel_home {
+                                egui::Color32::PLACEHOLDER
+                            } else {
+                                egui::Color32::YELLOW
+                            }),
+                        );
+
+                        ui.label(egui::RichText::from(channel_type.to_string()).small());
 
                         ui.add(eframe::egui::Slider::from_get_set(0.0..=1.0, |val| {
                             if let Some(val) = val {
