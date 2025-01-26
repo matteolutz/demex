@@ -11,6 +11,7 @@ use value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait};
 use self::{channel::FixtureChannel, error::FixtureError};
 
 pub mod channel;
+pub mod effect;
 pub mod error;
 pub mod handler;
 pub mod layout;

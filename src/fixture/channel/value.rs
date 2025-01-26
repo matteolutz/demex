@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::presets::PresetHandler;
+use crate::fixture::{effect::FixtureChannelEffect, presets::PresetHandler};
 
 use super::error::FixtureChannelError;
 
@@ -158,6 +158,7 @@ pub enum FixtureChannelValue {
         b: Box<FixtureChannelValue>,
         mix: f32,
     },
+    Effect(FixtureChannelEffect),
 }
 
 impl FixtureChannelValueTrait for FixtureChannelValue {
@@ -194,6 +195,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
 
                 Ok(a * (1.0 - mix) + b * mix)
             }
+            FixtureChannelValue::Effect(effect) => effect.as_single(0.0),
             FixtureChannelValue::Preset(_) => todo!("Preset handling for single"),
         }
     }
@@ -230,6 +232,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
                     a[3] * (1.0 - mix) + b[3] * mix,
                 ])
             }
+            FixtureChannelValue::Effect(effect) => effect.as_quadruple(0.0),
         }
     }
 
@@ -263,6 +266,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
                     a[1] * (1.0 - mix) + b[1] * mix,
                 ])
             }
+            FixtureChannelValue::Effect(effect) => effect.as_pair(0.0),
         }
     }
 
@@ -314,6 +318,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
                     )
                 }
             }
+            FixtureChannelValue::Effect(effect) => format!("{}", effect),
         }
     }
 }
@@ -328,6 +333,7 @@ impl FixtureChannelValue {
             FixtureChannelValue::Discrete(value) => value.clone(),
             FixtureChannelValue::Preset(_) => todo!("Preset handling for to_discrete"),
             FixtureChannelValue::Mix { a: _, b: _, mix: _ } => todo!(),
+            FixtureChannelValue::Effect(_) => todo!(),
         }
     }
 }
