@@ -69,12 +69,12 @@ pub struct DemexUiContext {
     command: Vec<Token>,
     stats: DemexUiStats,
     layout_view_context: LayoutViewContext,
+    gm_slider_val: u8,
 }
 
 pub struct DemexUiApp {
     command_input: String,
     is_command_input_empty: bool,
-    gm_slider_val: u8,
     context: DemexUiContext,
     global_error: Option<Box<dyn std::error::Error>>,
     last_update: std::time::Instant,
@@ -117,11 +117,11 @@ impl Default for DemexUiApp {
         Self {
             command_input: String::new(),
             is_command_input_empty: true,
-            gm_slider_val: fh.grand_master(),
             last_update: std::time::Instant::now(),
             context: DemexUiContext {
                 patch,
                 stats: DemexUiStats::default(),
+                gm_slider_val: fh.grand_master(),
                 fixture_handler: fh,
                 preset_handler: ph,
                 global_fixture_select: None,
@@ -290,11 +290,13 @@ impl eframe::App for DemexUiApp {
             ui.horizontal(|ui| {
                 ui.heading("demex");
                 ui.separator();
-                let slider =
-                    ui.add(eframe::egui::Slider::new(&mut self.gm_slider_val, 0..=255).text("GM"));
+
+                let slider = ui.add(
+                    eframe::egui::Slider::new(&mut self.context.gm_slider_val, 0..=255).text("GM"),
+                );
 
                 if slider.changed() {
-                    *self.context.fixture_handler.grand_master_mut() = self.gm_slider_val;
+                    *self.context.fixture_handler.grand_master_mut() = self.context.gm_slider_val;
                 }
 
                 ui.separator();
@@ -363,7 +365,14 @@ impl eframe::App for DemexUiApp {
                         .ctx
                         .input(|i| i.key_pressed(eframe::egui::Key::Backspace))
                 {
-                    self.context.command.pop();
+                    if command_input_field
+                        .ctx
+                        .input(|i| i.modifiers.ctrl || i.modifiers.mac_cmd)
+                    {
+                        self.context.command.clear();
+                    } else {
+                        self.context.command.pop();
+                    }
                 }
 
                 self.is_command_input_empty = self.command_input.is_empty();

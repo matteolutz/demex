@@ -49,9 +49,19 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             context.preset_handler.fader(*id).unwrap().value() as f64
                         }
                     })
-                    .orientation(egui::SliderOrientation::Vertical),
+                    .vertical(),
                 );
             });
         }
+
+        ui.add_space(25.0);
+        ui.separator();
+
+        // Grand master
+        ui.vertical(|ui| {
+            ui.set_min_width(100.0);
+            ui.label(egui::RichText::from("Grandmaster").color(egui::Color32::LIGHT_RED));
+            ui.add(eframe::egui::Slider::new(&mut context.gm_slider_val, 0..=255).vertical());
+        });
     });
 }

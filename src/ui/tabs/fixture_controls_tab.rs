@@ -114,7 +114,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                             as f64
                                     }
                                 })
-                                .orientation(egui::SliderOrientation::Vertical),
+                                .vertical(),
                             );
                         });
                     }
@@ -321,7 +321,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                             as f64
                                     }
                                 })
-                                .orientation(egui::SliderOrientation::Vertical),
+                                .vertical(),
                             );
                         });
                     }
