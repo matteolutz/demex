@@ -14,6 +14,7 @@ use crate::{
         action::Action,
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
+    show::DemexShow,
 };
 #[allow(unused_imports)]
 use crate::{
@@ -102,7 +103,10 @@ fn get_test_fixture_handler() -> (FixtureHandler, Patch) {
 }
 
 fn get_test_preset_handler() -> PresetHandler {
-    serde_json::from_reader(std::fs::File::open("test_data/ph.json").unwrap()).unwrap()
+    let show: DemexShow =
+        serde_json::from_reader(std::fs::File::open("test_data/show.json").unwrap()).unwrap();
+
+    show.preset_handler
 }
 
 impl Default for DemexUiApp {
@@ -308,10 +312,6 @@ impl eframe::App for DemexUiApp {
             }
         });
 
-        eframe::egui::CentralPanel::default().show(ctx, |ui| {
-            self.tabs.ui(ui, &mut self.context, ctx);
-        });
-
         eframe::egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
             ui.add_space(10.0);
 
@@ -393,6 +393,10 @@ impl eframe::App for DemexUiApp {
                     }
                 }
             });
+        });
+
+        eframe::egui::CentralPanel::default().show(ctx, |ui| {
+            self.tabs.ui(ui, &mut self.context, ctx);
         });
 
         ctx.request_repaint();

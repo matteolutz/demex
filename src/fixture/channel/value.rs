@@ -141,7 +141,7 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
                 .collect::<Vec<String>>()
                 .join(", "),
             FixtureChannelDiscreteValue::ToggleFlag(value) => value.clone(),
-            FixtureChannelDiscreteValue::AnyHome => "AnyHome".to_owned(),
+            FixtureChannelDiscreteValue::AnyHome => "Home".to_owned(),
         }
     }
 }

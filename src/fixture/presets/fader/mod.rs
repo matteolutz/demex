@@ -68,6 +68,19 @@ impl DemexFader {
         self.value = 0.0;
     }
 
+    pub fn is_active(&self, preset_handler: &PresetHandler) -> bool {
+        match self.config {
+            DemexFaderConfig::Submaster { fixtures: _ } => self.value != 0.0,
+            DemexFaderConfig::SequenceRuntime {
+                fixtures: _,
+                runtime_id,
+            } => preset_handler
+                .sequence_runtime(runtime_id)
+                .unwrap()
+                .is_started(),
+        }
+    }
+
     pub fn activate(
         &self,
         fixture_handler: &mut FixtureHandler,

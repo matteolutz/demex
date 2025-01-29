@@ -6,7 +6,20 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
             ui.vertical(|ui| {
                 ui.set_min_width(100.0);
 
-                ui.label(context.preset_handler.fader(*id).unwrap().name());
+                ui.label(
+                    egui::RichText::from(context.preset_handler.fader(*id).unwrap().name()).color(
+                        if context
+                            .preset_handler
+                            .fader(*id)
+                            .unwrap()
+                            .is_active(&context.preset_handler)
+                        {
+                            egui::Color32::YELLOW
+                        } else {
+                            egui::Color32::PLACEHOLDER
+                        },
+                    ),
+                );
                 ui.label(
                     egui::RichText::from(format!(
                         "{}",
