@@ -131,6 +131,18 @@ impl Cue {
         })
     }
 
+    pub fn should_snap_channel_value_for_fixture(&self, fixture_id: u32, channel_id: u16) -> bool {
+        self.data
+            .get(&fixture_id)
+            .and_then(|values| {
+                values
+                    .iter()
+                    .find(|v| v.channel_type() == channel_id)
+                    .map(|v| v.snap())
+            })
+            .unwrap_or(false)
+    }
+
     pub fn in_time(&self) -> f32 {
         self.in_delay + self.in_fade
     }

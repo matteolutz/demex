@@ -405,7 +405,7 @@ impl Fixture {
         }) {
             Some(FixtureChannel::ToggleFlags(_, value)) => {
                 *value = FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::ToggleFlag(
-                    Some(flag_name.to_owned()),
+                    flag_name.to_owned(),
                 ));
                 Ok(())
             }
@@ -416,7 +416,7 @@ impl Fixture {
     pub fn unset_toggle_flags(&mut self) -> Result<(), FixtureError> {
         self.patch.iter_mut().for_each(|c| {
             if let FixtureChannel::ToggleFlags(_, value) = c {
-                *value = FixtureChannelValue::toggle_flag_default()
+                *value = FixtureChannelValue::any_home()
             }
         });
 

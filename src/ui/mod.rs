@@ -1,8 +1,14 @@
+use error::DemexUiError;
 use tabs::{layout_view_tab::LayoutViewContext, DemexTabs};
 
 use crate::{
     dmx::output::debug_dummy::DebugDummyOutputVerbosity,
-    fixture::{patch::Patch, presets::PresetHandler},
+    fixture::{
+        channel::{value::FixtureChannelValue, FIXTURE_CHANNEL_INTENSITY_ID},
+        effect::FixtureChannelEffect,
+        patch::Patch,
+        presets::PresetHandler,
+    },
     lexer::token::Token,
     parser::nodes::{
         action::Action,
@@ -18,6 +24,7 @@ use crate::{
 };
 
 pub mod components;
+pub mod error;
 pub mod graphics;
 pub mod iimpl;
 pub mod tabs;
@@ -155,30 +162,33 @@ impl DemexUiApp {
             Action::ClearAll => {
                 self.context.global_fixture_select = None;
             }
+            Action::GoHomeAll => {
+                self.context.preset_handler.sequence_runtimes_stop_all();
+                self.context.preset_handler.faders_home_all();
+            }
             Action::Test(cmd) => match cmd.as_str() {
-                "start" => {
-                    println!("starting seq");
-                    self.context
-                        .preset_handler
-                        .sequence_runtime_mut(1)
+                "effect" => {
+                    let _ = self
+                        .context
+                        .fixture_handler
+                        .fixture(1)
                         .unwrap()
-                        .start(&mut self.context.fixture_handler);
+                        .set_channel_value(
+                            FIXTURE_CHANNEL_INTENSITY_ID,
+                            FixtureChannelValue::Effect(FixtureChannelEffect::SingleSine {
+                                a: 1.0,
+                                b: 20.0,
+                                c: 1.0,
+                                d: 1.0,
+                            }),
+                        );
                 }
-                "next" => {
-                    println!("going to next cue");
-                    self.context
-                        .preset_handler
-                        .sequence_runtime_mut(1)
-                        .unwrap()
-                        .next_cue();
+                _ => {
+                    self.global_error = Some(Box::new(DemexUiError::RuntimeError(format!(
+                        "Unknown test command: \"{}\"",
+                        cmd
+                    ))))
                 }
-                "stop" => self
-                    .context
-                    .preset_handler
-                    .sequence_runtime_mut(1)
-                    .unwrap()
-                    .stop(&mut self.context.fixture_handler),
-                _ => {}
             },
             _ => {}
         }

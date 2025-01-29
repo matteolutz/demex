@@ -4,6 +4,7 @@ use egui_dock::{DockArea, DockState, Style, TabViewer};
 use super::DemexUiContext;
 
 pub mod debug_tab;
+pub mod faders_tab;
 pub mod fixture_controls_tab;
 pub mod fixture_list_tab;
 pub mod layout_view_tab;
@@ -15,6 +16,7 @@ pub enum DemexTab {
     FixtureList,
     PresetGrid,
     FixtureControls,
+    Faders,
     Debug,
 }
 
@@ -37,6 +39,7 @@ impl<'a> TabViewer for DemexTabViewer<'a> {
             DemexTab::FixtureList => fixture_list_tab::ui(ui, self.context),
             DemexTab::PresetGrid => preset_grid_tab::ui(ui, self.context),
             DemexTab::FixtureControls => fixture_controls_tab::ui(ui, self.context),
+            DemexTab::Faders => faders_tab::ui(ui, self.context),
             DemexTab::Debug => debug_tab::ui(ui, self.context),
         }
     }
@@ -63,7 +66,7 @@ impl Default for DemexTabs {
         let [old_node, new_node] = surface.split_left(
             egui_dock::NodeIndex::root(),
             0.65,
-            vec![DemexTab::FixtureControls],
+            vec![DemexTab::FixtureControls, DemexTab::Faders],
         );
 
         surface.split_below(new_node, 0.5, vec![DemexTab::LayoutView]);

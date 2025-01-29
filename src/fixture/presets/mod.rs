@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use command_slice::CommandSlice;
 use error::PresetHandlerError;
+use fader::DemexFader;
 use group::FixtureGroup;
 use mmacro::MMacro;
 use preset::FixturePreset;
@@ -23,6 +24,7 @@ use super::{
 
 pub mod command_slice;
 pub mod error;
+pub mod fader;
 pub mod group;
 pub mod mmacro;
 pub mod preset;
@@ -37,6 +39,8 @@ pub struct PresetHandler {
     sequence_runtimes: HashMap<u32, SequenceRuntime>,
     macros: HashMap<u32, MMacro>,
     command_slices: HashMap<u32, CommandSlice>,
+
+    faders: HashMap<u32, DemexFader>,
 }
 
 impl PresetHandler {
@@ -48,6 +52,7 @@ impl PresetHandler {
             sequence_runtimes: HashMap::new(),
             macros: HashMap::new(),
             command_slices: HashMap::new(),
+            faders: HashMap::new(),
         }
     }
 }
@@ -195,6 +200,12 @@ impl PresetHandler {
         &self.sequence_runtimes
     }
 
+    pub fn sequence_runtimes_stop_all(&mut self) {
+        for (_, sr) in self.sequence_runtimes.iter_mut() {
+            sr.silent_stop();
+        }
+    }
+
     pub fn sequence_runtime_keys(&self) -> Vec<u32> {
         self.sequence_runtimes.keys().cloned().collect()
     }
@@ -284,5 +295,43 @@ impl PresetHandler {
 
     pub fn command_slices(&self) -> &HashMap<u32, CommandSlice> {
         &self.command_slices
+    }
+}
+
+// Faders
+impl PresetHandler {
+    pub fn add_fader(&mut self, fader: DemexFader) -> Result<(), PresetHandlerError> {
+        if self.faders.contains_key(&fader.id()) {
+            return Err(PresetHandlerError::PresetAlreadyExists(fader.id()));
+        }
+
+        self.faders.insert(fader.id(), fader);
+        Ok(())
+    }
+
+    pub fn fader(&self, id: u32) -> Result<&DemexFader, PresetHandlerError> {
+        self.faders
+            .get(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))
+    }
+
+    pub fn fader_mut(&mut self, id: u32) -> Result<&mut DemexFader, PresetHandlerError> {
+        self.faders
+            .get_mut(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))
+    }
+
+    pub fn faders(&self) -> &HashMap<u32, DemexFader> {
+        &self.faders
+    }
+
+    pub fn faders_home_all(&mut self) {
+        for (_, fader) in self.faders.iter_mut() {
+            fader.home();
+        }
+    }
+
+    pub fn fader_ids(&self) -> Vec<u32> {
+        self.faders.keys().cloned().collect()
     }
 }

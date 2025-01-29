@@ -73,6 +73,7 @@ impl SequenceRuntime {
         &self,
         fixture_id: u32,
         channel_id: u16,
+        speed_multiplier: f32,
     ) -> Option<FadeFixtureChannelValue> {
         if !self.started {
             return None;
@@ -83,29 +84,40 @@ impl SequenceRuntime {
 
         let delta = time::Instant::now()
             .duration_since(self.cue_update.unwrap())
-            .as_secs_f32();
+            .as_secs_f32()
+            * speed_multiplier;
+
+        let should_snap = cue.should_snap_channel_value_for_fixture(fixture_id, channel_id);
 
         // its the first cue, so we want to fade in from black
         // TODO: this wont work like this
         if self.first_cue {
-            let fade = if delta < cue.in_delay() {
+            let mut fade = if delta < cue.in_delay() {
                 0.0
             } else {
                 ((delta - cue.in_delay()) / cue.in_fade()).min(1.0)
             };
+
+            if should_snap {
+                fade = if fade >= cue.snap_percent() { 1.0 } else { 0.0 };
+            }
 
             cue.channel_value_for_fixture(fixture_id, channel_id)
                 .map(|v| FadeFixtureChannelValue::new(v.clone(), fade))
         } else if prev_cue_idx.is_some() {
             let prev_cue = self.sequence.cue(prev_cue_idx.unwrap());
 
-            let mix = if delta < (prev_cue.out_delay() + cue.in_delay()) {
+            let mut mix = if delta < (prev_cue.out_delay() + cue.in_delay()) {
                 0.0
             } else {
                 ((delta - (cue.in_delay() + prev_cue.out_delay()))
                     / (cue.in_fade() + prev_cue.out_fade()))
                 .min(1.0)
             };
+
+            if should_snap {
+                mix = if mix >= cue.snap_percent() { 1.0 } else { 0.0 };
+            }
 
             let current_cue_value =
                 cue.channel_value_for_fixture(fixture_id, channel_id)
@@ -170,11 +182,15 @@ impl SequenceRuntime {
         }
     }
 
-    pub fn start(&mut self, fixture_handler: &mut FixtureHandler) {
+    pub fn silent_start(&mut self) {
         self.started = true;
         self.current_cue = 0;
         self.cue_update = Some(time::Instant::now());
         self.first_cue = true;
+    }
+
+    pub fn start(&mut self, fixture_handler: &mut FixtureHandler) {
+        self.silent_start();
 
         for fixture_id in self
             .sequence
@@ -192,10 +208,14 @@ impl SequenceRuntime {
         }
     }
 
-    pub fn stop(&mut self, fixture_handler: &mut FixtureHandler) {
+    pub fn silent_stop(&mut self) {
         self.started = false;
         self.cue_update = None;
         self.first_cue = true;
+    }
+
+    pub fn stop(&mut self, fixture_handler: &mut FixtureHandler) {
+        self.silent_stop();
 
         for fixture_id in self
             .sequence

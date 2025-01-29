@@ -1,6 +1,7 @@
 use std::fmt;
 
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
 use super::{
     channel::value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait},
@@ -10,15 +11,17 @@ use super::{
     Fixture,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FixtureChannelValuePriority {
     LTP,
+    Super,
 }
 
 impl FixtureChannelValuePriority {
     pub fn priority_value(&self) -> u8 {
         match self {
             Self::LTP => 0,
+            Self::Super => 10,
         }
     }
 }
@@ -48,14 +51,17 @@ pub trait FixtureChannelValueSourceTrait {
 pub enum FixtureChannelValueSource {
     Programmer,
     SequenceRuntime { runtime_id: u32 },
+    Fader { fader_id: u32 },
 }
 
 impl FixtureChannelValueSource {
     pub fn priority(&self) -> FixtureChannelValuePriority {
         match self {
             Self::Programmer => FixtureChannelValuePriority::LTP,
-            // TODO
+            // TODO add sequence priority setting
             Self::SequenceRuntime { runtime_id: _ } => FixtureChannelValuePriority::LTP,
+            // TODO: add fader priority setting
+            Self::Fader { fader_id: _ } => FixtureChannelValuePriority::LTP,
         }
     }
 }
@@ -79,8 +85,17 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
 
                     if let Some(runtime) = runtime {
                         runtime
-                            .channel_value(fixture.id(), channel_id)
+                            .channel_value(fixture.id(), channel_id, 1.0)
                             .ok_or(FixtureError::ChannelValueNotFound(channel_id))
+                    } else {
+                        Err(FixtureError::ChannelValueNotFound(channel_id))
+                    }
+                }
+                FixtureChannelValueSource::Fader { fader_id: id } => {
+                    let fader = preset_handler.fader(*id);
+
+                    if let Ok(fader) = fader {
+                        fader.get_channel_value(fixture, channel_id, preset_handler)
                     } else {
                         Err(FixtureError::ChannelValueNotFound(channel_id))
                     }
@@ -123,6 +138,7 @@ impl fmt::Display for FixtureChannelValueSource {
         match self {
             Self::Programmer => write!(f, "PRG"),
             Self::SequenceRuntime { runtime_id } => write!(f, "SR({})", runtime_id),
+            Self::Fader { fader_id } => write!(f, "FDR({})", fader_id),
         }
     }
 }

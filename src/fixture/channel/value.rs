@@ -45,7 +45,7 @@ pub enum FixtureChannelDiscreteValue {
     Pair([f32; 2]),
     Quadruple([f32; 4]),
     Multiple(Vec<f32>),
-    ToggleFlag(Option<String>),
+    ToggleFlag(String),
     AnyHome,
 }
 
@@ -67,7 +67,7 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
     }
 
     fn toggle_flag_default() -> Self {
-        FixtureChannelDiscreteValue::ToggleFlag(None)
+        unreachable!();
     }
 
     fn is_home(&self) -> bool {
@@ -115,7 +115,7 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
         _: u32,
     ) -> Result<Option<String>, FixtureChannelError> {
         match self {
-            FixtureChannelDiscreteValue::ToggleFlag(value) => Ok(value.clone()),
+            FixtureChannelDiscreteValue::ToggleFlag(value) => Ok(Some(value.clone())),
             FixtureChannelDiscreteValue::AnyHome => Ok(None),
             _ => Err(FixtureChannelError::FixtureChannelValueWrongVariant(
                 "ToggleFlag".to_owned(),
@@ -140,10 +140,7 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
                 .map(|v| v.to_string())
                 .collect::<Vec<String>>()
                 .join(", "),
-            FixtureChannelDiscreteValue::ToggleFlag(value) => match value {
-                Some(flag) => flag.clone(),
-                None => "None".to_owned(),
-            },
+            FixtureChannelDiscreteValue::ToggleFlag(value) => value.clone(),
             FixtureChannelDiscreteValue::AnyHome => "AnyHome".to_owned(),
         }
     }

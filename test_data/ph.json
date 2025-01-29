@@ -1,5 +1,37 @@
 {
+  "faders": {
+    "2": {
+      "id": 2,
+      "name": "Wash Color Change",
+      "priority": "LTP",
+      "config": {
+        "SequenceRuntime": {
+          "fixtures": [1, 2],
+          "runtime_id": 2
+        }
+      }
+    },
+    "1": {
+      "id": 1,
+      "name": "Washes",
+      "priority": "LTP",
+      "config": {
+        "Submaster": {
+          "fixtures": [1, 2]
+        }
+      }
+    }
+  },
   "groups": {
+    "3": {
+      "id": 3,
+      "name": "Spots",
+      "fixture_selector": {
+        "Atomic": {
+          "FixtureRange": [20, 21]
+        }
+      }
+    },
     "2": {
       "id": 2,
       "name": "PARs",
@@ -131,7 +163,7 @@
                     }
                   },
                   "channel_type": 20,
-                  "snap": false
+                  "snap": true
                 }
               ],
               "1": [
@@ -151,7 +183,7 @@
                     }
                   },
                   "channel_type": 20,
-                  "snap": false
+                  "snap": true
                 }
               ]
             },
@@ -181,7 +213,7 @@
                     }
                   },
                   "channel_type": 20,
-                  "snap": false
+                  "snap": true
                 }
               ],
               "2": [
@@ -201,7 +233,7 @@
                     }
                   },
                   "channel_type": 20,
-                  "snap": false
+                  "snap": true
                 }
               ]
             },
