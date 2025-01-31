@@ -1,3 +1,4 @@
+use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{effect::FixtureChannelEffect, presets::PresetHandler};
@@ -39,13 +40,14 @@ pub trait FixtureChannelValueTrait {
     fn to_string(&self, preset_handler: &PresetHandler, channel_type: u16) -> String;
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, EguiProbe, Default)]
 pub enum FixtureChannelDiscreteValue {
     Single(f32),
     Pair([f32; 2]),
     Quadruple([f32; 4]),
     Multiple(Vec<f32>),
     ToggleFlag(String),
+    #[default]
     AnyHome,
 }
 
@@ -146,7 +148,7 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, EguiProbe)]
 pub enum FixtureChannelValue {
     Discrete(FixtureChannelDiscreteValue),
     Preset(u32),
@@ -156,6 +158,12 @@ pub enum FixtureChannelValue {
         mix: f32,
     },
     Effect(FixtureChannelEffect),
+}
+
+impl Default for FixtureChannelValue {
+    fn default() -> Self {
+        Self::any_home()
+    }
 }
 
 impl FixtureChannelValueTrait for FixtureChannelValue {

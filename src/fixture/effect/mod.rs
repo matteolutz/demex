@@ -1,12 +1,24 @@
 use core::fmt;
 
+use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use super::channel::error::FixtureChannelError;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, EguiProbe)]
 pub enum FixtureChannelEffect {
     SingleSine { a: f32, b: f32, c: f32, d: f32 },
+}
+
+impl Default for FixtureChannelEffect {
+    fn default() -> Self {
+        Self::SingleSine {
+            a: 0.0,
+            b: 0.0,
+            c: 0.0,
+            d: 0.0,
+        }
+    }
 }
 
 impl FixtureChannelEffect {

@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
+use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::channel::{value::FixtureChannelValue, FixtureId};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, EguiProbe)]
 pub enum CueTrigger {
     // Cue is triggered manually
+    #[default]
     Manual,
 
     // Cue is automatically triggered, after previous cue finished
@@ -14,7 +16,7 @@ pub enum CueTrigger {
     Follow,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
 pub struct CueFixtureChannelValue {
     value: FixtureChannelValue,
     channel_type: u16,
@@ -43,7 +45,7 @@ impl CueFixtureChannelValue {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, EguiProbe)]
 pub struct Cue {
     data: HashMap<FixtureId, Vec<CueFixtureChannelValue>>,
 

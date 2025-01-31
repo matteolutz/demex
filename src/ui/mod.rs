@@ -1,3 +1,4 @@
+use egui_probe::Probe;
 use error::DemexUiError;
 use tabs::{layout_view_tab::LayoutViewContext, DemexTabs};
 
@@ -167,8 +168,12 @@ impl DemexUiApp {
                 self.context.global_fixture_select = None;
             }
             Action::GoHomeAll => {
-                self.context.preset_handler.sequence_runtimes_stop_all();
-                self.context.preset_handler.faders_home_all();
+                self.context
+                    .preset_handler
+                    .sequence_runtimes_stop_all(&mut self.context.fixture_handler);
+                self.context
+                    .preset_handler
+                    .faders_home_all(&mut self.context.fixture_handler);
             }
             Action::Test(cmd) => match cmd.as_str() {
                 "effect" => {
@@ -241,6 +246,9 @@ impl DemexUiApp {
             .preset_handler
             .update_sequence_runtimes(delta_time, &mut self.context.fixture_handler);
 
+        // update faders
+        self.context.preset_handler.update_faders(delta_time);
+
         // update fixture handler
         let _ = self
             .context
@@ -279,6 +287,10 @@ impl eframe::App for DemexUiApp {
                     });
                 });
         }
+
+        egui::Window::new("Settings").show(ctx, |ui| {
+            Probe::new(self.context.preset_handler.fader_mut(2).unwrap()).show(ui);
+        });
 
         self.context.stats.fixed_update = elapsed.as_secs_f64();
         if self.context.stats.max_fixed_update < self.context.stats.fixed_update {

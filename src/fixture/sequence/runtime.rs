@@ -1,54 +1,36 @@
 use std::time;
 
+use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::{
-    channel::value::{FixtureChannelDiscreteValue, FixtureChannelValue},
-    handler::FixtureHandler,
-    value_source::FixtureChannelValueSource,
-};
+use crate::fixture::channel::{value::FixtureChannelValue, FIXTURE_CHANNEL_INTENSITY_ID};
 
 use super::{cue::CueTrigger, FadeFixtureChannelValue, Sequence};
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SerializableSequenceRuntime {
-    id: u32,
-    name: String,
-    sequence: Sequence,
-}
-
-impl From<&SequenceRuntime> for SerializableSequenceRuntime {
-    fn from(value: &SequenceRuntime) -> Self {
-        Self {
-            id: value.id,
-            name: value.name.clone(),
-            sequence: value.sequence.clone(),
-        }
-    }
-}
-
+#[derive(Debug, Serialize, Deserialize, Clone, Default, EguiProbe)]
 pub struct SequenceRuntime {
-    id: u32,
-    name: String,
     sequence: Sequence,
 
+    #[serde(default, skip_serializing, skip_deserializing)]
+    #[egui_probe(skip)]
     current_cue: usize,
+
+    #[serde(default, skip_serializing, skip_deserializing)]
+    #[egui_probe(skip)]
     cue_update: Option<time::Instant>,
+
+    #[serde(default, skip_serializing, skip_deserializing)]
+    #[egui_probe(skip)]
     started: bool,
+
+    #[serde(default, skip_serializing, skip_deserializing)]
+    #[egui_probe(skip)]
     first_cue: bool,
 }
 
-impl From<SerializableSequenceRuntime> for SequenceRuntime {
-    fn from(value: SerializableSequenceRuntime) -> Self {
-        Self::new(value.id, value.name, value.sequence)
-    }
-}
-
 impl SequenceRuntime {
-    pub fn new(id: u32, name: String, sequence: Sequence) -> Self {
+    pub fn new(sequence: Sequence) -> Self {
         Self {
-            id,
-            name,
             sequence,
             current_cue: 0,
             cue_update: None,
@@ -57,12 +39,8 @@ impl SequenceRuntime {
         }
     }
 
-    pub fn id(&self) -> u32 {
-        self.id
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn sequence(&self) -> &Sequence {
+        &self.sequence
     }
 
     pub fn is_started(&self) -> bool {
@@ -74,6 +52,7 @@ impl SequenceRuntime {
         fixture_id: u32,
         channel_id: u16,
         speed_multiplier: f32,
+        intensity_multiplier: f32,
     ) -> Option<FadeFixtureChannelValue> {
         if !self.started {
             return None;
@@ -102,9 +81,16 @@ impl SequenceRuntime {
                 fade = if fade >= cue.snap_percent() { 1.0 } else { 0.0 };
             }
 
+            if channel_id == FIXTURE_CHANNEL_INTENSITY_ID {
+                fade *= intensity_multiplier;
+            }
+
             cue.channel_value_for_fixture(fixture_id, channel_id)
                 .map(|v| FadeFixtureChannelValue::new(v.clone(), fade))
-        } else if prev_cue_idx.is_some() {
+        }
+        // this isn't the first cue, meaning we should fade between the value of the previous cue
+        // and the value of the current cue
+        else if prev_cue_idx.is_some() {
             let prev_cue = self.sequence.cue(prev_cue_idx.unwrap());
 
             let mut mix = if delta < (prev_cue.out_delay() + cue.in_delay()) {
@@ -119,6 +105,12 @@ impl SequenceRuntime {
                 mix = if mix >= cue.snap_percent() { 1.0 } else { 0.0 };
             }
 
+            let fade = if channel_id == FIXTURE_CHANNEL_INTENSITY_ID {
+                intensity_multiplier
+            } else {
+                1.0
+            };
+
             let current_cue_value =
                 cue.channel_value_for_fixture(fixture_id, channel_id)
                     .map(|v| {
@@ -128,21 +120,19 @@ impl SequenceRuntime {
                                     prev_cue
                                         .channel_value_for_fixture(fixture_id, channel_id)
                                         .cloned()
-                                        .unwrap_or(FixtureChannelValue::Discrete(
-                                            FixtureChannelDiscreteValue::AnyHome,
-                                        )),
+                                        .unwrap_or(FixtureChannelValue::any_home()),
                                 ),
                                 b: Box::new(v.clone()),
                                 mix,
                             },
-                            1.0,
+                            fade,
                         )
                     });
 
             if current_cue_value.is_none() {
                 prev_cue
                     .channel_value_for_fixture(fixture_id, channel_id)
-                    .map(|v| FadeFixtureChannelValue::new(v.clone(), 1.0 - mix))
+                    .map(|v| FadeFixtureChannelValue::new(v.clone(), (1.0 - mix) * fade))
             } else {
                 current_cue_value
             }
@@ -151,14 +141,15 @@ impl SequenceRuntime {
         }
     }
 
-    pub fn update(&mut self, _delta_time: f64, fixture_handler: &mut FixtureHandler) {
+    pub fn update(&mut self, _delta_time: f64, speed_multiplier: f32) -> bool {
         if !self.started {
-            return;
+            return false;
         }
 
         let delta = time::Instant::now()
             .duration_since(self.cue_update.unwrap())
-            .as_secs_f32();
+            .as_secs_f32()
+            * speed_multiplier;
 
         let previous_cue_idx = self.previous_cue_idx();
         let current_cue = self.sequence.cue(self.current_cue);
@@ -177,60 +168,26 @@ impl SequenceRuntime {
                     self.next_cue();
                 }
             } else {
-                self.stop(fixture_handler);
+                self.stop();
+
+                return true;
             }
         }
+
+        false
     }
 
-    pub fn silent_start(&mut self) {
+    pub fn start(&mut self) {
         self.started = true;
         self.current_cue = 0;
         self.cue_update = Some(time::Instant::now());
         self.first_cue = true;
     }
 
-    pub fn start(&mut self, fixture_handler: &mut FixtureHandler) {
-        self.silent_start();
-
-        for fixture_id in self
-            .sequence
-            .cues()
-            .iter()
-            .flat_map(|c| c.data().keys())
-            .collect::<Vec<_>>()
-            .drain(..)
-        {
-            if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                fixture.push_value_source(FixtureChannelValueSource::SequenceRuntime {
-                    runtime_id: self.id,
-                });
-            }
-        }
-    }
-
-    pub fn silent_stop(&mut self) {
+    pub fn stop(&mut self) {
         self.started = false;
         self.cue_update = None;
         self.first_cue = true;
-    }
-
-    pub fn stop(&mut self, fixture_handler: &mut FixtureHandler) {
-        self.silent_stop();
-
-        for fixture_id in self
-            .sequence
-            .cues()
-            .iter()
-            .flat_map(|c| c.data().keys())
-            .collect::<Vec<_>>()
-            .drain(..)
-        {
-            if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                fixture.remove_value_source(FixtureChannelValueSource::SequenceRuntime {
-                    runtime_id: self.id,
-                });
-            }
-        }
     }
 
     pub fn should_auto_restart(&self) -> bool {
@@ -274,25 +231,5 @@ impl SequenceRuntime {
         } else {
             Some(self.current_cue + 1)
         }
-    }
-}
-
-impl Serialize for SequenceRuntime {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        SerializableSequenceRuntime::from(self).serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for SequenceRuntime {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        Ok(SequenceRuntime::from(
-            SerializableSequenceRuntime::deserialize(deserializer)?,
-        ))
     }
 }

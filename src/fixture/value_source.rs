@@ -1,5 +1,6 @@
 use std::fmt;
 
+use egui_probe::EguiProbe;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -11,7 +12,7 @@ use super::{
     Fixture,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, EguiProbe)]
 pub enum FixtureChannelValuePriority {
     LTP,
     Super,
@@ -85,7 +86,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
 
                     if let Some(runtime) = runtime {
                         runtime
-                            .channel_value(fixture.id(), channel_id, 1.0)
+                            .channel_value(fixture.id(), channel_id)
                             .ok_or(FixtureError::ChannelValueNotFound(channel_id))
                     } else {
                         Err(FixtureError::ChannelValueNotFound(channel_id))
@@ -95,7 +96,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                     let fader = preset_handler.fader(*id);
 
                     if let Ok(fader) = fader {
-                        fader.get_channel_value(fixture, channel_id, preset_handler)
+                        fader.get_channel_value(fixture, channel_id)
                     } else {
                         Err(FixtureError::ChannelValueNotFound(channel_id))
                     }
@@ -137,7 +138,7 @@ impl fmt::Display for FixtureChannelValueSource {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Programmer => write!(f, "PRG"),
-            Self::SequenceRuntime { runtime_id } => write!(f, "SR({})", runtime_id),
+            Self::SequenceRuntime { runtime_id } => write!(f, "SEQ({})", runtime_id),
             Self::Fader { fader_id } => write!(f, "FDR({})", fader_id),
         }
     }

@@ -1,9 +1,11 @@
 use cue::Cue;
+use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use super::channel::value::FixtureChannelValue;
 
 pub mod cue;
+pub mod preset;
 pub mod runtime;
 
 #[derive(Debug, Clone)]
@@ -26,7 +28,7 @@ impl FadeFixtureChannelValue {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, EguiProbe)]
 pub struct Sequence {
     cues: Vec<Cue>,
 }

@@ -66,8 +66,10 @@ impl Default for DemexTabs {
         let [old_node, new_node] = surface.split_left(
             egui_dock::NodeIndex::root(),
             0.65,
-            vec![DemexTab::FixtureControls, DemexTab::Faders],
+            vec![DemexTab::FixtureControls],
         );
+
+        surface.split_right(new_node, 0.66, vec![DemexTab::Faders]);
 
         surface.split_below(new_node, 0.5, vec![DemexTab::LayoutView]);
         surface.split_above(old_node, 0.5, vec![DemexTab::PresetGrid]);

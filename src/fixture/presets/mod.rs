@@ -19,7 +19,7 @@ use super::{
         FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
     },
     handler::FixtureHandler,
-    sequence::runtime::SequenceRuntime,
+    sequence::preset::SequenceRuntimePreset,
 };
 
 pub mod command_slice;
@@ -36,7 +36,7 @@ pub struct PresetHandler {
     colors: HashMap<u32, FixturePreset>,
     positions: HashMap<u32, FixturePreset>,
 
-    sequence_runtimes: HashMap<u32, SequenceRuntime>,
+    sequence_runtimes: HashMap<u32, SequenceRuntimePreset>,
     macros: HashMap<u32, MMacro>,
     command_slices: HashMap<u32, CommandSlice>,
 
@@ -184,25 +184,25 @@ impl PresetHandler {
 
 // Sequence Runtimes
 impl PresetHandler {
-    pub fn add_sequence_runtime(&mut self, runtime: SequenceRuntime) {
+    pub fn add_sequence_runtime(&mut self, runtime: SequenceRuntimePreset) {
         self.sequence_runtimes.insert(runtime.id(), runtime);
     }
 
-    pub fn sequence_runtime(&self, id: u32) -> Option<&SequenceRuntime> {
+    pub fn sequence_runtime(&self, id: u32) -> Option<&SequenceRuntimePreset> {
         self.sequence_runtimes.get(&id)
     }
 
-    pub fn sequence_runtime_mut(&mut self, id: u32) -> Option<&mut SequenceRuntime> {
+    pub fn sequence_runtime_mut(&mut self, id: u32) -> Option<&mut SequenceRuntimePreset> {
         self.sequence_runtimes.get_mut(&id)
     }
 
-    pub fn sequence_runtimes(&self) -> &HashMap<u32, SequenceRuntime> {
+    pub fn sequence_runtimes(&self) -> &HashMap<u32, SequenceRuntimePreset> {
         &self.sequence_runtimes
     }
 
-    pub fn sequence_runtimes_stop_all(&mut self) {
+    pub fn sequence_runtimes_stop_all(&mut self, fixture_handler: &mut FixtureHandler) {
         for (_, sr) in self.sequence_runtimes.iter_mut() {
-            sr.silent_stop();
+            sr.stop(fixture_handler);
         }
     }
 
@@ -325,13 +325,19 @@ impl PresetHandler {
         &self.faders
     }
 
-    pub fn faders_home_all(&mut self) {
+    pub fn faders_home_all(&mut self, fixture_handler: &mut FixtureHandler) {
         for (_, fader) in self.faders.iter_mut() {
-            fader.home();
+            fader.home(fixture_handler);
         }
     }
 
     pub fn fader_ids(&self) -> Vec<u32> {
         self.faders.keys().cloned().collect()
+    }
+
+    pub fn update_faders(&mut self, delta_time: f64) {
+        for (_, fader) in self.faders.iter_mut() {
+            fader.update(delta_time);
+        }
     }
 }

@@ -154,7 +154,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     (value[2] * 255.0) as u8,
                                 );
 
-                                ui.label(RichText::from("     ").background_color(color_value));
+                                if !color.is_home() {
+                                    ui.label(RichText::from("     ").background_color(color_value));
+                                }
                             } else {
                                 ui.label("-");
                             }

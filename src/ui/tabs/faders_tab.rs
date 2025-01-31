@@ -8,12 +8,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                 ui.label(
                     egui::RichText::from(context.preset_handler.fader(*id).unwrap().name()).color(
-                        if context
-                            .preset_handler
-                            .fader(*id)
-                            .unwrap()
-                            .is_active(&context.preset_handler)
-                        {
+                        if context.preset_handler.fader(*id).unwrap().is_active() {
                             egui::Color32::YELLOW
                         } else {
                             egui::Color32::PLACEHOLDER
@@ -32,17 +27,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     eframe::egui::Slider::from_get_set(0.0..=1.0, |val| {
                         if let Some(val) = val {
                             // TODO: this is ugly
-                            let fader = context.preset_handler.fader(*id).unwrap().clone();
-                            fader.activate(
-                                &mut context.fixture_handler,
-                                &mut context.preset_handler,
-                            );
 
-                            context
-                                .preset_handler
-                                .fader_mut(*id)
-                                .unwrap()
-                                .set_value(val as f32);
+                            let fader = context.preset_handler.fader_mut(*id).unwrap();
+
+                            fader.activate(&mut context.fixture_handler);
+                            fader.set_value(val as f32);
 
                             val
                         } else {
@@ -51,6 +40,14 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     })
                     .vertical(),
                 );
+
+                if ui.button("Home").clicked() {
+                    context
+                        .preset_handler
+                        .fader_mut(*id)
+                        .unwrap()
+                        .home(&mut context.fixture_handler);
+                }
             });
         }
 
