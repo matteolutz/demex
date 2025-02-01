@@ -4,10 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel::{
-            value::FixtureChannelDiscreteValue, FixtureChannel,
-            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-        },
+        channel::{value::FixtureChannelDiscreteValue, FixtureChannel},
         handler::FixtureHandler,
     },
     parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
@@ -41,10 +38,7 @@ impl FixturePreset {
         {
             let fixture = fixture_handler.fixture_immut(fixture_id);
             if let Some(fixture) = fixture {
-                if !fixture
-                    .channel_types()
-                    .contains(&FIXTURE_CHANNEL_POSITION_PAN_TILT_ID)
-                {
+                if !fixture.channel_types().contains(&channel_type) {
                     continue;
                 }
 

@@ -99,4 +99,8 @@ impl SequenceRuntimePreset {
             }
         }
     }
+
+    pub fn next_cue(&mut self) {
+        self.runtime.next_cue();
+    }
 }

@@ -61,10 +61,13 @@ impl SequenceRuntime {
         let cue = self.sequence.cue(self.current_cue);
         let prev_cue_idx = self.previous_cue_idx();
 
-        let delta = time::Instant::now()
+        let mut delta = time::Instant::now()
             .duration_since(self.cue_update.unwrap())
-            .as_secs_f32()
-            * speed_multiplier;
+            .as_secs_f32();
+
+        delta *= speed_multiplier;
+
+        delta = f32::max(delta - cue.offset_for_fixture(fixture_id), 0.0);
 
         let should_snap = cue.should_snap_channel_value_for_fixture(fixture_id, channel_id);
 
@@ -87,10 +90,9 @@ impl SequenceRuntime {
 
             cue.channel_value_for_fixture(fixture_id, channel_id)
                 .map(|v| FadeFixtureChannelValue::new(v.clone(), fade))
-        }
-        // this isn't the first cue, meaning we should fade between the value of the previous cue
-        // and the value of the current cue
-        else if prev_cue_idx.is_some() {
+        } else if prev_cue_idx.is_some() {
+            // this isn't the first cue, meaning we should fade between the value of the previous cue
+            // and the value of the current cue
             let prev_cue = self.sequence.cue(prev_cue_idx.unwrap());
 
             let mut mix = if delta < (prev_cue.out_delay() + cue.in_delay()) {
@@ -167,9 +169,10 @@ impl SequenceRuntime {
                 if *self.sequence.cue(next_cue_idx).trigger() == CueTrigger::Follow {
                     self.next_cue();
                 }
-            } else {
+            // it's the last cue, so we should wait for the out time of the last cue
+            // and then stop the sequence
+            } else if delta > cue_time + current_cue.out_time() {
                 self.stop();
-
                 return true;
             }
         }

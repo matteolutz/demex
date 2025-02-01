@@ -1,4 +1,3 @@
-use egui_probe::Probe;
 use error::DemexUiError;
 use tabs::{layout_view_tab::LayoutViewContext, DemexTabs};
 
@@ -288,9 +287,9 @@ impl eframe::App for DemexUiApp {
                 });
         }
 
-        egui::Window::new("Settings").show(ctx, |ui| {
+        /*egui::Window::new("Settings").show(ctx, |ui| {
             Probe::new(self.context.preset_handler.fader_mut(2).unwrap()).show(ui);
-        });
+        });*/
 
         self.context.stats.fixed_update = elapsed.as_secs_f64();
         if self.context.stats.max_fixed_update < self.context.stats.fixed_update {

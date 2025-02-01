@@ -280,11 +280,19 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             );
 
             if preset_button.clicked() {
-                context
-                    .preset_handler
-                    .sequence_runtime_mut(*preset_id)
-                    .unwrap()
-                    .start(&mut context.fixture_handler);
+                if is_started {
+                    context
+                        .preset_handler
+                        .sequence_runtime_mut(*preset_id)
+                        .unwrap()
+                        .next_cue();
+                } else {
+                    context
+                        .preset_handler
+                        .sequence_runtime_mut(*preset_id)
+                        .unwrap()
+                        .start(&mut context.fixture_handler);
+                }
             }
 
             if preset_button.secondary_clicked() {
