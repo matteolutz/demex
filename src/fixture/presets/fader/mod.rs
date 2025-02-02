@@ -1,8 +1,12 @@
+use std::collections::HashMap;
+
 use config::{DemexFaderConfig, DemexFaderRuntimeFunction};
 use egui_probe::EguiProbe;
+use overrides::DemexFaderChannelOverride;
 use serde::{Deserialize, Serialize};
 
 pub mod config;
+pub mod overrides;
 
 use crate::fixture::{
     channel::{
@@ -30,6 +34,9 @@ pub struct DemexFader {
     value: f32,
 
     config: DemexFaderConfig,
+
+    #[serde(default)]
+    overrides: HashMap<u16, DemexFaderChannelOverride>,
 }
 
 impl DemexFader {
@@ -40,6 +47,7 @@ impl DemexFader {
             config,
             priority: FixtureChannelValuePriority::LTP,
             value: 0.0,
+            overrides: HashMap::new(),
         }
     }
 
@@ -57,6 +65,10 @@ impl DemexFader {
 
     pub fn config(&self) -> &DemexFaderConfig {
         &self.config
+    }
+
+    pub fn overrides(&self) -> &HashMap<u16, DemexFaderChannelOverride> {
+        &self.overrides
     }
 
     pub fn value(&self) -> f32 {
@@ -145,6 +157,28 @@ impl DemexFader {
         fixture: &Fixture,
         channel_id: u16,
     ) -> Result<FadeFixtureChannelValue, FixtureError> {
+        if !self.is_active() {
+            return Err(FixtureError::ChannelValueNotFound(channel_id));
+        }
+
+        if let Some(channel_override) = self.overrides.get(&channel_id) {
+            return if let Some(from_value) = channel_override.from_value() {
+                Ok(FadeFixtureChannelValue::new(
+                    FixtureChannelValue::Mix {
+                        a: Box::new(from_value.clone()),
+                        b: Box::new(channel_override.to_value().clone()),
+                        mix: self.value,
+                    },
+                    1.0,
+                ))
+            } else {
+                Ok(FadeFixtureChannelValue::new(
+                    channel_override.to_value().clone(),
+                    self.value,
+                ))
+            };
+        }
+
         match &self.config {
             DemexFaderConfig::Submaster { fixtures } => {
                 if !fixtures.contains(&fixture.id()) || channel_id != FIXTURE_CHANNEL_INTENSITY_ID {

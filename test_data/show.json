@@ -5,6 +5,20 @@
         "id": 2,
         "name": "Wash Blink",
         "priority": "LTP",
+        "overrides": {
+          "20": {
+            "from_value": {
+              "Discrete": {
+                "Pair": [0.0, 1.0]
+              }
+            },
+            "to_value": {
+              "Discrete": {
+                "Pair": [0.0, 0.0]
+              }
+            }
+          }
+        },
         "config": {
           "SequenceRuntime": {
             "fixtures": [1, 2],
