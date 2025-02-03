@@ -34,6 +34,10 @@ impl SequenceRuntimePreset {
         &self.name
     }
 
+    pub fn runtime(&self) -> &SequenceRuntime {
+        &self.runtime
+    }
+
     pub fn is_started(&self) -> bool {
         self.runtime.is_started()
     }

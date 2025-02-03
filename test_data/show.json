@@ -214,7 +214,7 @@
                 "snap_percent": 0.0,
                 "timing": {
                   "offset": 0.05,
-                  "direction": "CenterToOutside"
+                  "direction": "LowToHigh"
                 },
                 "trigger": "Manual"
               },

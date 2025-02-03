@@ -81,7 +81,9 @@ impl CueTiming {
             }
             CueTimingOriginDirection::CenterToOutside
             | CueTimingOriginDirection::OutsideToCenter => {
-                f32::ceil(self.offset * (num_fixtures as f32 - 1.0) / 2.0)
+                let half_fixtures = f32::ceil(num_fixtures as f32 / 2.0);
+
+                self.offset * (half_fixtures - 1.0)
             }
         };
 
@@ -95,16 +97,16 @@ impl CueTiming {
                 self.offset * (num_fixtures as f32 - 1.0 - fixture_idx as f32)
             }
             CueTimingOriginDirection::CenterToOutside => {
-                let center = f32::max((num_fixtures as f32 / 2.0) - 0.5, 0.0);
-                let center_offset = f32::ceil(f32::abs(center - fixture_idx as f32));
+                let center = f32::max((num_fixtures as f32 / 2.0) + 0.5, 0.0);
+                let center_offset = f32::floor(f32::abs(center - (fixture_idx + 1) as f32));
 
                 self.offset * center_offset
             }
             CueTimingOriginDirection::OutsideToCenter => {
-                let center = f32::max((num_fixtures as f32 / 2.0) - 0.5, 0.0);
-                let center_offset = f32::ceil(f32::abs(center - fixture_idx as f32));
+                let center = f32::max((num_fixtures as f32 / 2.0) + 0.5, 0.0);
+                let center_offset = f32::floor(f32::abs(center - (fixture_idx + 1) as f32));
 
-                self.offset * (num_fixtures as f32 - 1.0 - center_offset)
+                self.offset * ((num_fixtures / 2) as f32 - 1.0 - center_offset)
             }
         }
     }

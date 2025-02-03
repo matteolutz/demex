@@ -47,6 +47,14 @@ impl SequenceRuntime {
         self.started
     }
 
+    pub fn current_cue(&self) -> usize {
+        self.current_cue
+    }
+
+    pub fn num_cues(&self) -> usize {
+        self.sequence.cues().len()
+    }
+
     pub fn channel_value(
         &self,
         fixture_id: u32,
