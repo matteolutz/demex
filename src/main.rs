@@ -61,24 +61,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let sleep_duration = Duration::from_secs_f64(1.0 / TEST_FUPS);
 
         loop {
-            thread::sleep(sleep_duration);
-
             let elapsed = last_update.elapsed();
 
             let delta_time = elapsed.as_secs_f64();
 
             stats.write().fixed_update(delta_time);
 
-            let mut fixture_handler = fixture_handler.write();
-            let mut preset_handler = preset_handler.write();
+            {
+                let mut preset_handler = preset_handler.write();
+                {
+                    let mut fixture_handler = fixture_handler.write();
+                    preset_handler.update_sequence_runtimes(delta_time, &mut fixture_handler);
+                }
 
-            preset_handler.update_sequence_runtimes(delta_time, &mut fixture_handler);
+                preset_handler.update_faders(delta_time);
+            }
 
-            preset_handler.update_faders(delta_time);
-
-            let _ = fixture_handler.update(&preset_handler, delta_time);
+            {
+                let mut fixture_handler = fixture_handler.write();
+                let _ = fixture_handler.update(&preset_handler.read(), delta_time);
+            }
 
             last_update = time::Instant::now();
+
+            thread::sleep(sleep_duration);
         }
     });
 
