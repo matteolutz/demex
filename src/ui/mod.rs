@@ -89,7 +89,7 @@ impl DemexUiApp {
             context: DemexUiContext {
                 patch,
                 stats,
-                gm_slider_val: 0,
+                gm_slider_val: fixture_handler.clone().read_recursive().grand_master(),
                 fixture_handler,
                 preset_handler,
                 global_fixture_select: None,
