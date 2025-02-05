@@ -194,6 +194,9 @@ impl Default for LayoutViewContext {
 }
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
+    let fixture_handler = context.fixture_handler.read_recursive();
+    let preset_handler = context.preset_handler.read_recursive();
+
     let fixture_layout = context.patch.layout();
     ui.heading("Layout View");
 
@@ -253,7 +256,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         global_fixture_select_fixtures.extend(
             global_fixture_select
                 .get_fixtures(
-                    &context.preset_handler,
+                    &preset_handler,
                     FixtureSelectorContext::new(&context.global_fixture_select),
                 )
                 .expect(""),
@@ -273,24 +276,19 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             .iter()
             .any(|id| *id == fixture_layout_entry.fixture_id());
 
-        let fixture = context
-            .fixture_handler
-            .fixture(fixture_layout_entry.fixture_id())
+        let fixture = fixture_handler
+            .fixture_immut(fixture_layout_entry.fixture_id())
             .expect("todo: error handling");
 
         let intensity = fixture
-            .intensity(&context.preset_handler)
+            .intensity(&preset_handler)
             .expect("error handling")
-            .as_single(&context.preset_handler, fixture.id())
+            .as_single(&preset_handler, fixture.id())
             .expect("error handling");
 
-        let rect_color = if let Ok(color) = fixture.color(&context.preset_handler) {
+        let rect_color = if let Ok(color) = fixture.color(&preset_handler) {
             let color = color
-                .as_quadruple(
-                    &context.preset_handler,
-                    fixture.id(),
-                    FIXTURE_CHANNEL_COLOR_ID,
-                )
+                .as_quadruple(&preset_handler, fixture.id(), FIXTURE_CHANNEL_COLOR_ID)
                 .unwrap();
             egui::Color32::from_rgba_unmultiplied(
                 (color[0] * 255.0) as u8,
@@ -303,10 +301,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         };
 
         let position: Option<egui::Vec2> = fixture
-            .position_pan_tilt(&context.preset_handler)
+            .position_pan_tilt(&preset_handler)
             .map(|val| {
                 val.as_pair(
-                    &context.preset_handler,
+                    &preset_handler,
                     fixture.id(),
                     FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
                 )

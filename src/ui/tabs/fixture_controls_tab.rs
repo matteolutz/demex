@@ -13,6 +13,9 @@ use crate::{
 };
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
+    let mut fixture_handler = context.fixture_handler.write();
+    let preset_handler = context.preset_handler.read_recursive();
+
     if context.global_fixture_select.is_none() {
         ui.centered_and_justified(|ui| ui.label("No fixtures selected"));
         return;
@@ -23,7 +26,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
         .as_ref()
         .unwrap()
         .get_fixtures(
-            &context.preset_handler,
+            &preset_handler,
             FixtureSelectorContext::new(&context.global_fixture_select),
         )
         .expect("fixture selection failed");
@@ -33,17 +36,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
         return;
     }
 
-    let mut mutual_channel_types = context
-        .fixture_handler
-        .fixture(selected_fixtures[0])
+    let mut mutual_channel_types = fixture_handler
+        .fixture_immut(selected_fixtures[0])
         .unwrap()
         .channel_types()
         .clone();
 
     for fixture_id in selected_fixtures.iter().skip(1) {
-        let fixture_channel_types = context
-            .fixture_handler
-            .fixture(*fixture_id)
+        let fixture_channel_types = fixture_handler
+            .fixture_immut(*fixture_id)
             .unwrap()
             .channel_types();
 
@@ -58,15 +59,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
         ui.style_mut().spacing.item_spacing = [20.0, 10.0].into();
 
         for channel_type in mutual_channel_types {
-            let channel_name = context
-                .fixture_handler
+            let channel_name = fixture_handler
                 .fixture(selected_fixtures[0])
                 .unwrap()
                 .channel_name(channel_type)
                 .unwrap();
 
-            let is_channel_home = context
-                .fixture_handler
+            let is_channel_home = fixture_handler
                 .fixture(selected_fixtures[0])
                 .unwrap()
                 .channel_value_programmer(channel_type)
@@ -92,8 +91,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 eframe::egui::Slider::from_get_set(0.0..=1.0, |val| {
                                     if let Some(val) = val {
                                         for fixture_id in selected_fixtures.iter() {
-                                            context
-                                                .fixture_handler
+                                            fixture_handler
                                                 .fixture(*fixture_id)
                                                 .unwrap()
                                                 .set_channel_single_value(channel_type, val as f32)
@@ -102,13 +100,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                                         val
                                     } else {
-                                        context
-                                            .fixture_handler
+                                        fixture_handler
                                             .fixture(selected_fixtures[0])
                                             .unwrap()
                                             .channel_single_value_programmer(
                                                 channel_type,
-                                                &context.preset_handler,
+                                                &preset_handler,
                                             )
                                             .expect("")
                                             as f64
@@ -128,8 +125,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 },
                             ));
 
-                            let fixture_color = context
-                                .fixture_handler
+                            let fixture_color = fixture_handler
                                 .fixture(selected_fixtures[0])
                                 .unwrap()
                                 .color_programmer()
@@ -138,7 +134,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             let rgb_color = fixture_color
                                 // TODO: change this, to use the corresponding fixture
                                 .as_quadruple(
-                                    &context.preset_handler,
+                                    &preset_handler,
                                     selected_fixtures[0],
                                     FIXTURE_CHANNEL_COLOR_ID,
                                 )
@@ -158,8 +154,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 egui::color_picker::Alpha::Opaque,
                             ) {
                                 for fixture_id in selected_fixtures.iter() {
-                                    context
-                                        .fixture_handler
+                                    fixture_handler
                                         .fixture(*fixture_id)
                                         .unwrap()
                                         .set_color(FixtureChannelValue::Discrete(
@@ -188,8 +183,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             ui.add(PositionSelector::new(|val| {
                                 if let Some(val) = val {
                                     for fixture_id in selected_fixtures.iter() {
-                                        context
-                                            .fixture_handler
+                                        fixture_handler
                                             .fixture(*fixture_id)
                                             .unwrap()
                                             .set_position_pan_tilt(FixtureChannelValue::Discrete(
@@ -200,8 +194,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                                     Some(eframe::egui::vec2(0.0, 0.0))
                                 } else {
-                                    let pos_val = context
-                                        .fixture_handler
+                                    let pos_val = fixture_handler
                                         .fixture(selected_fixtures[0])
                                         .unwrap()
                                         .position_pan_tilt_programmer()
@@ -210,7 +203,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     let pos = pos_val
                                         // TODO: change this, to use the corresponding fixture
                                         .as_pair(
-                                            &context.preset_handler,
+                                            &preset_handler,
                                             selected_fixtures[0],
                                             FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
                                         )
@@ -238,8 +231,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             let unset_button = ui.button("Unset");
                             if unset_button.clicked() {
                                 for fixture_id in selected_fixtures.iter() {
-                                    context
-                                        .fixture_handler
+                                    fixture_handler
                                         .fixture(*fixture_id)
                                         .unwrap()
                                         .unset_toggle_flags()
@@ -249,15 +241,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                             ui.separator();
 
-                            let mut mutual_flags = context
-                                .fixture_handler
+                            let mut mutual_flags = fixture_handler
                                 .fixture(selected_fixtures[0])
                                 .unwrap()
                                 .toggle_flags();
                             for f in selected_fixtures.iter().skip(1) {
                                 mutual_flags.retain(|flag| {
-                                    context
-                                        .fixture_handler
+                                    fixture_handler
                                         .fixture(*f)
                                         .unwrap()
                                         .toggle_flags()
@@ -270,8 +260,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                                 if flag_button.clicked() {
                                     for fixture_id in selected_fixtures.iter() {
-                                        context
-                                            .fixture_handler
+                                        fixture_handler
                                             .fixture(*fixture_id)
                                             .unwrap()
                                             .set_toggle_flag(&flag)
@@ -299,8 +288,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 eframe::egui::Slider::from_get_set(0.0..=1.0, |val| {
                                     if let Some(val) = val {
                                         for fixture_id in selected_fixtures.iter() {
-                                            context
-                                                .fixture_handler
+                                            fixture_handler
                                                 .fixture(*fixture_id)
                                                 .unwrap()
                                                 .set_channel_single_value(channel_type, val as f32)
@@ -309,13 +297,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                                         val
                                     } else {
-                                        context
-                                            .fixture_handler
+                                        fixture_handler
                                             .fixture(selected_fixtures[0])
                                             .unwrap()
                                             .channel_single_value_programmer(
                                                 channel_type,
-                                                &context.preset_handler,
+                                                &preset_handler,
                                             )
                                             .expect("")
                                             as f64
@@ -330,8 +317,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 let home_button = ui.button("Home");
                 if home_button.clicked() {
                     for fixture_id in selected_fixtures.iter() {
-                        context
-                            .fixture_handler
+                        fixture_handler
                             .fixture(*fixture_id)
                             .unwrap()
                             .set_channel_value(channel_type, FixtureChannelValue::any_home())

@@ -10,6 +10,9 @@ use crate::{
 };
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
+    let mut preset_handler = context.preset_handler.write();
+    let mut fixture_handler = context.fixture_handler.write();
+
     eframe::egui::Grid::new("preset_grid").show(ui, |ui| {
         // Groups
         ui.add_sized(
@@ -23,8 +26,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 }),
         );
 
-        for (_, group) in context
-            .preset_handler
+        for (_, group) in preset_handler
             .groups()
             .iter()
             .sorted_by(|a, b| a.0.cmp(b.0))
@@ -49,7 +51,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             context.command.extend(vec![
                 Token::KeywordRecord,
                 Token::KeywordGroup,
-                Token::Numeral(*context.preset_handler.groups().keys().max().unwrap_or(&0) + 1),
+                Token::Numeral(preset_handler.groups().keys().max().unwrap_or(&0) + 1),
             ])
         }
 
@@ -68,8 +70,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 }),
         );
 
-        for (_, preset) in context
-            .preset_handler
+        for (_, preset) in preset_handler
             .presets(FIXTURE_CHANNEL_COLOR_ID)
             .iter()
             .sorted_by(|a, b| a.0.cmp(b.0))
@@ -91,8 +92,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 Token::KeywordRecord,
                 Token::KeywordColor,
                 Token::Numeral(
-                    *context
-                        .preset_handler
+                    preset_handler
                         .presets(FIXTURE_CHANNEL_COLOR_ID)
                         .keys()
                         .max()
@@ -117,8 +117,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 }),
         );
 
-        for (_, preset) in context
-            .preset_handler
+        for (_, preset) in preset_handler
             .presets(FIXTURE_CHANNEL_POSITION_PAN_TILT_ID)
             .iter()
             .sorted_by(|a, b| a.0.cmp(b.0))
@@ -140,8 +139,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 Token::KeywordRecord,
                 Token::KeywordPosition,
                 Token::Numeral(
-                    *context
-                        .preset_handler
+                    preset_handler
                         .presets(FIXTURE_CHANNEL_POSITION_PAN_TILT_ID)
                         .keys()
                         .max()
@@ -169,8 +167,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 }),
         );
 
-        for (_, preset) in context
-            .preset_handler
+        for (_, preset) in preset_handler
             .macros()
             .clone() // i hate myself for doing this
             .iter()
@@ -180,8 +177,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
             if preset_button.clicked() {
                 let macro_run_result = preset.run(
-                    &mut context.fixture_handler,
-                    &mut context.preset_handler,
+                    &mut fixture_handler,
+                    &mut preset_handler,
                     FixtureSelectorContext::new(&context.global_fixture_select),
                 );
                 println!("Macro run result: {:?}", macro_run_result);
@@ -193,7 +190,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             context.command.extend(vec![
                 Token::KeywordRecord,
                 Token::KeywordMacro,
-                Token::Numeral(*context.preset_handler.macros().keys().max().unwrap_or(&0) + 1),
+                Token::Numeral(preset_handler.macros().keys().max().unwrap_or(&0) + 1),
             ])
         }
 
@@ -215,8 +212,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 }),
         );
 
-        for (_, preset) in context
-            .preset_handler
+        for (_, preset) in preset_handler
             .command_slices()
             .iter()
             .sorted_by(|a, b| a.0.cmp(b.0))
@@ -251,14 +247,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 }),
         );
 
-        for preset_id in context
-            .preset_handler
+        for preset_id in preset_handler
             .sequence_runtime_keys()
             .iter()
             .sorted_by(|a, b| a.cmp(b))
         {
-            let is_started = context
-                .preset_handler
+            let is_started = preset_handler
                 .sequence_runtime(*preset_id)
                 .unwrap()
                 .is_started();
@@ -267,14 +261,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 [80.0, 80.0],
                 eframe::egui::Button::new(format!(
                     "{}\n{}/{}",
-                    context
-                        .preset_handler
-                        .sequence_runtime(*preset_id)
-                        .unwrap()
-                        .name(),
+                    preset_handler.sequence_runtime(*preset_id).unwrap().name(),
                     if is_started {
-                        (context
-                            .preset_handler
+                        (preset_handler
                             .sequence_runtime(*preset_id)
                             .unwrap()
                             .runtime()
@@ -284,8 +273,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     } else {
                         "-".to_owned()
                     },
-                    context
-                        .preset_handler
+                    preset_handler
                         .sequence_runtime(*preset_id)
                         .unwrap()
                         .runtime()
@@ -300,27 +288,24 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
             if preset_button.clicked() {
                 if is_started {
-                    context
-                        .preset_handler
+                    preset_handler
                         .sequence_runtime_mut(*preset_id)
                         .unwrap()
                         .next_cue();
                 } else {
-                    context
-                        .preset_handler
+                    preset_handler
                         .sequence_runtime_mut(*preset_id)
                         .unwrap()
-                        .start(&mut context.fixture_handler);
+                        .start(&mut fixture_handler);
                 }
             }
 
             if preset_button.secondary_clicked() {
                 println!("stopping sequence");
-                context
-                    .preset_handler
+                preset_handler
                     .sequence_runtime_mut(*preset_id)
                     .unwrap()
-                    .stop(&mut context.fixture_handler);
+                    .stop(&mut fixture_handler);
             }
         }
 

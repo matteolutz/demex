@@ -41,14 +41,14 @@ fn write_universe_data(
 #[derive(Debug)]
 pub struct FixtureHandler {
     fixtures: Vec<Fixture>,
-    outputs: Vec<Box<dyn DMXOutput>>,
+    outputs: Vec<Box<dyn DMXOutput + Send + Sync>>,
     universe_output_data: HashMap<u16, [u8; 512]>,
     grand_master: u8,
 }
 
 impl FixtureHandler {
     pub fn new(
-        outputs: Vec<Box<dyn DMXOutput>>,
+        outputs: Vec<Box<dyn DMXOutput + Sync + Send>>,
         fixtures: Vec<Fixture>,
     ) -> Result<Self, FixtureHandlerError> {
         // check if the fixtures overlap

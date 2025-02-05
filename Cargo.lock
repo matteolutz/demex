@@ -850,6 +850,7 @@ dependencies = [
  "egui_extras",
  "itertools",
  "open_dmx",
+ "parking_lot",
  "rand",
  "ref-map",
  "serde",

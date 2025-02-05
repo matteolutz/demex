@@ -1,8 +1,17 @@
+use std::sync::Arc;
+
 use error::DemexUiError;
+use parking_lot::RwLock;
 use tabs::{layout_view_tab::LayoutViewContext, DemexTabs};
 
+#[allow(unused_imports)]
 use crate::{
-    dmx::output::debug_dummy::DebugDummyOutputVerbosity,
+    dmx::output::{debug_dummy::DebugDummyOutput, dmx_serial::DMXSerialOutput},
+    fixture::{handler::FixtureHandler, Fixture},
+    lexer::Lexer,
+    parser::Parser,
+};
+use crate::{
     fixture::{
         channel::{value::FixtureChannelValue, FIXTURE_CHANNEL_INTENSITY_ID},
         effect::FixtureChannelEffect,
@@ -14,14 +23,6 @@ use crate::{
         action::Action,
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
-    show::DemexShow,
-};
-#[allow(unused_imports)]
-use crate::{
-    dmx::output::{debug_dummy::DebugDummyOutput, dmx_serial::DMXSerialOutput},
-    fixture::{handler::FixtureHandler, Fixture},
-    lexer::Lexer,
-    parser::Parser,
 };
 
 pub mod components;
@@ -31,43 +32,38 @@ pub mod iimpl;
 pub mod tabs;
 pub mod traits;
 
-const DEMEX_FIXED_UPDATE_RATE: u32 = 60;
-const DEMEX_RUN_WITH_FIXED_UPDATE: bool = false;
-
 #[derive(Debug, Default)]
 pub struct DemexUiStats {
-    dt: f64,
-    max_dt: f64,
+    pub ui_dt: f64,
+    pub ui_max_dt: f64,
 
-    fixed_update: f64,
-    max_fixed_update: f64,
+    pub fixed_update_dt: f64,
+    pub fixed_update_max_dt: f64,
 }
 
 impl DemexUiStats {
-    pub fn dt(&self) -> f64 {
-        self.dt
+    pub fn ui(&mut self, dt: f64) {
+        self.ui_dt = dt;
+        self.ui_max_dt = self.ui_max_dt.max(dt);
     }
 
-    pub fn max_dt(&self) -> f64 {
-        self.max_dt
-    }
-
-    pub fn fixed_update(&self) -> f64 {
-        self.fixed_update
-    }
-
-    pub fn max_fixed_update(&self) -> f64 {
-        self.max_fixed_update
+    pub fn fixed_update(&mut self, dt: f64) {
+        self.fixed_update_dt = dt;
+        self.fixed_update_max_dt = self.fixed_update_max_dt.max(dt);
     }
 }
 
 pub struct DemexUiContext {
     patch: Patch,
-    fixture_handler: FixtureHandler,
-    preset_handler: PresetHandler,
+
+    fixture_handler: Arc<RwLock<FixtureHandler>>,
+    preset_handler: Arc<RwLock<PresetHandler>>,
+
     global_fixture_select: Option<FixtureSelector>,
     command: Vec<Token>,
-    stats: DemexUiStats,
+
+    stats: Arc<RwLock<DemexUiStats>>,
+
     layout_view_context: LayoutViewContext,
     gm_slider_val: u8,
 }
@@ -77,53 +73,25 @@ pub struct DemexUiApp {
     is_command_input_empty: bool,
     context: DemexUiContext,
     global_error: Option<Box<dyn std::error::Error>>,
-    last_update: std::time::Instant,
     tabs: DemexTabs,
 }
 
-fn get_test_fixture_handler() -> (FixtureHandler, Patch) {
-    let patch: Patch =
-        serde_json::from_reader(std::fs::File::open("test_data/patch.json").unwrap()).unwrap();
-    let fixtures = patch.clone().into();
-
-    (
-        FixtureHandler::new(
-            vec![
-                Box::new(DebugDummyOutput::new(DebugDummyOutputVerbosity::Silent)),
-                /*Box::new(
-                    DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ")
-                        .expect("this shouldn't happen"),
-                ),*/
-            ],
-            fixtures,
-        )
-        .expect(""),
-        patch,
-    )
-}
-
-fn get_test_preset_handler() -> PresetHandler {
-    let show: DemexShow =
-        serde_json::from_reader(std::fs::File::open("test_data/show.json").unwrap()).unwrap();
-
-    show.preset_handler
-}
-
-impl Default for DemexUiApp {
-    fn default() -> Self {
-        let (fh, patch) = get_test_fixture_handler();
-        let ph = get_test_preset_handler();
-
+impl DemexUiApp {
+    pub fn new(
+        fixture_handler: Arc<RwLock<FixtureHandler>>,
+        preset_handler: Arc<RwLock<PresetHandler>>,
+        patch: Patch,
+        stats: Arc<RwLock<DemexUiStats>>,
+    ) -> Self {
         Self {
             command_input: String::new(),
             is_command_input_empty: true,
-            last_update: std::time::Instant::now(),
             context: DemexUiContext {
                 patch,
-                stats: DemexUiStats::default(),
-                gm_slider_val: fh.grand_master(),
-                fixture_handler: fh,
-                preset_handler: ph,
+                stats,
+                gm_slider_val: 0,
+                fixture_handler,
+                preset_handler,
                 global_fixture_select: None,
                 command: Vec::new(),
                 layout_view_context: LayoutViewContext::default(),
@@ -142,13 +110,13 @@ impl DemexUiApp {
         match &action {
             Action::FixtureSelector(fixture_selector) => {
                 let fixture_selector = fixture_selector.flatten(
-                    &self.context.preset_handler,
+                    &self.context.preset_handler.read_recursive(),
                     FixtureSelectorContext::new(&self.context.global_fixture_select),
                 );
 
                 if let Ok(fixture_selector) = fixture_selector {
                     let selected_fixtures = fixture_selector.get_fixtures(
-                        &self.context.preset_handler,
+                        &self.context.preset_handler.read_recursive(),
                         FixtureSelectorContext::new(&self.context.global_fixture_select),
                     );
 
@@ -167,18 +135,19 @@ impl DemexUiApp {
                 self.context.global_fixture_select = None;
             }
             Action::GoHomeAll => {
-                self.context
-                    .preset_handler
-                    .sequence_runtimes_stop_all(&mut self.context.fixture_handler);
-                self.context
-                    .preset_handler
-                    .faders_home_all(&mut self.context.fixture_handler);
+                let mut preset_handler_lock = self.context.preset_handler.write();
+                let mut fixture_handler_lock = self.context.fixture_handler.write();
+
+                preset_handler_lock.sequence_runtimes_stop_all(&mut fixture_handler_lock);
+
+                preset_handler_lock.faders_home_all(&mut fixture_handler_lock);
             }
             Action::Test(cmd) => match cmd.as_str() {
                 "effect" => {
                     let _ = self
                         .context
                         .fixture_handler
+                        .write()
                         .fixture(1)
                         .unwrap()
                         .set_channel_value(
@@ -204,8 +173,8 @@ impl DemexUiApp {
         let now = std::time::Instant::now();
 
         action.run(
-            &mut self.context.fixture_handler,
-            &mut self.context.preset_handler,
+            &mut self.context.fixture_handler.write(),
+            &mut self.context.preset_handler.write(),
             FixtureSelectorContext::new(&self.context.global_fixture_select),
         )?;
 
@@ -224,47 +193,11 @@ impl DemexUiApp {
 
         self.run_and_handle_action(action)
     }
-
-    pub fn fixed_update(&mut self) {
-        let elapsed = self.last_update.elapsed();
-
-        if DEMEX_RUN_WITH_FIXED_UPDATE
-            && elapsed.as_millis() < 1_000 / DEMEX_FIXED_UPDATE_RATE as u128
-        {
-            return;
-        };
-
-        let delta_time = elapsed.as_secs_f64();
-        self.context.stats.dt = delta_time;
-        if delta_time > self.context.stats.max_dt {
-            self.context.stats.max_dt = delta_time;
-        }
-
-        // update sequence runtimes
-        self.context
-            .preset_handler
-            .update_sequence_runtimes(delta_time, &mut self.context.fixture_handler);
-
-        // update faders
-        self.context.preset_handler.update_faders(delta_time);
-
-        // update fixture handler
-        let _ = self
-            .context
-            .fixture_handler
-            .update(&self.context.preset_handler, delta_time);
-
-        self.last_update = std::time::Instant::now();
-    }
 }
 
 impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         let now = std::time::Instant::now();
-
-        self.fixed_update();
-
-        let elapsed = now.elapsed();
 
         if self.global_error.is_some() && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             self.global_error = None;
@@ -291,12 +224,6 @@ impl eframe::App for DemexUiApp {
             Probe::new(self.context.preset_handler.fader_mut(2).unwrap()).show(ui);
         });*/
 
-        self.context.stats.fixed_update = elapsed.as_secs_f64();
-        if self.context.stats.max_fixed_update < self.context.stats.fixed_update {
-            self.context.stats.max_fixed_update = self.context.stats.fixed_update;
-            println!("New max fixed update: {:?}", elapsed);
-        }
-
         eframe::egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("demex");
@@ -307,7 +234,8 @@ impl eframe::App for DemexUiApp {
                 );
 
                 if slider.changed() {
-                    *self.context.fixture_handler.grand_master_mut() = self.context.gm_slider_val;
+                    *self.context.fixture_handler.write().grand_master_mut() =
+                        self.context.gm_slider_val;
                 }
 
                 ui.separator();
@@ -419,6 +347,7 @@ impl eframe::App for DemexUiApp {
             self.tabs.ui(ui, &mut self.context, ctx);
         });
 
+        self.context.stats.write().ui(now.elapsed().as_secs_f64());
         ctx.request_repaint();
     }
 }

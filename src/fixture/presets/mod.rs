@@ -9,7 +9,7 @@ use preset::FixturePreset;
 use serde::{Deserialize, Serialize};
 
 use crate::parser::nodes::{
-    action::{result::ActionRunResult, Action},
+    action::Action,
     fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 
@@ -239,23 +239,6 @@ impl PresetHandler {
             .ok_or(PresetHandlerError::PresetNotFound(id))?;
         *mmacro.name_mut() = new_name;
         Ok(())
-    }
-
-    pub fn run_macro(
-        &mut self,
-        id: u32,
-        fixture_handler: &mut FixtureHandler,
-        fixture_selector_context: FixtureSelectorContext,
-    ) -> Result<ActionRunResult, PresetHandlerError> {
-        let mmacro = self
-            .macros
-            .get(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))?
-            .clone();
-
-        mmacro
-            .run(fixture_handler, self, fixture_selector_context)
-            .map_err(|err| PresetHandlerError::MacroExecutionError(Box::new(err)))
     }
 
     pub fn macros(&self) -> &HashMap<u32, MMacro> {

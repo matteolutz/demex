@@ -10,11 +10,14 @@ use crate::{
 };
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
+    let preset_handler = context.preset_handler.read_recursive();
+    let fixture_handler = context.fixture_handler.read_recursive();
+
     egui::ScrollArea::horizontal().show(ui, |ui| {
         let selectd_fixtures = if let Some(fixture_select) = &context.global_fixture_select {
             fixture_select
                 .get_fixtures(
-                    &context.preset_handler,
+                    &preset_handler,
                     FixtureSelectorContext::new(&context.global_fixture_select),
                 )
                 .unwrap_or(vec![])
@@ -61,8 +64,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 });
             })
             .body(|mut body| {
-                for fixture in context
-                    .fixture_handler
+                for fixture in fixture_handler
                     .fixtures()
                     .iter()
                     .sorted_by(|a, b| a.id().cmp(&b.id()))
@@ -104,12 +106,16 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // Intens
                         row.col(|ui| {
-                            if let Ok(intensity) = fixture.intensity(&context.preset_handler) {
+                            if let Ok(intensity) =
+                                fixture.intensity(&context.preset_handler.read_recursive())
+                            {
                                 ui.label(
-                                    RichText::from(intensity.to_string(
-                                        &context.preset_handler,
-                                        FIXTURE_CHANNEL_INTENSITY_ID,
-                                    ))
+                                    RichText::from(
+                                        intensity.to_string(
+                                            &preset_handler,
+                                            FIXTURE_CHANNEL_INTENSITY_ID,
+                                        ),
+                                    )
                                     .color(
                                         if intensity.is_home() {
                                             egui::Color32::GRAY
@@ -125,12 +131,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // Color
                         row.col(|ui| {
-                            if let Ok(color) = fixture.color(&context.preset_handler) {
+                            if let Ok(color) = fixture.color(&preset_handler) {
                                 ui.label(
-                                    RichText::from(color.to_string(
-                                        &context.preset_handler,
-                                        FIXTURE_CHANNEL_COLOR_ID,
-                                    ))
+                                    RichText::from(
+                                        color.to_string(&preset_handler, FIXTURE_CHANNEL_COLOR_ID),
+                                    )
                                     .color(
                                         if color.is_home() {
                                             egui::Color32::GRAY
@@ -142,7 +147,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                                 let value = color
                                     .as_quadruple(
-                                        &context.preset_handler,
+                                        &preset_handler,
                                         fixture.id(),
                                         FIXTURE_CHANNEL_COLOR_ID,
                                     )
@@ -164,10 +169,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // Position
                         row.col(|ui| {
-                            if let Ok(pos) = fixture.position_pan_tilt(&context.preset_handler) {
+                            if let Ok(pos) = fixture.position_pan_tilt(&preset_handler) {
                                 ui.label(
                                     RichText::from(pos.to_string(
-                                        &context.preset_handler,
+                                        &preset_handler,
                                         FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
                                     ))
                                     .color(if pos.is_home() {
@@ -192,7 +197,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 }
 
                                 let channel_value =
-                                    fixture.channel_value(*channel_type, &context.preset_handler);
+                                    fixture.channel_value(*channel_type, &preset_handler);
                                 if channel_value.is_err() {
                                     continue;
                                 }
@@ -208,7 +213,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                         channel_value
                                             .as_ref()
                                             .unwrap()
-                                            .to_string(&context.preset_handler, *channel_type)
+                                            .to_string(&preset_handler, *channel_type)
                                     ))
                                     .color(egui::Color32::YELLOW),
                                 );
