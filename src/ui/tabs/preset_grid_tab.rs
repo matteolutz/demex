@@ -12,6 +12,7 @@ use crate::{
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let mut preset_handler = context.preset_handler.write();
     let mut fixture_handler = context.fixture_handler.write();
+    let mut updatable_handler = context.updatable_handler.write();
 
     eframe::egui::Grid::new("preset_grid").show(ui, |ui| {
         // Groups
@@ -180,6 +181,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     &mut fixture_handler,
                     &mut preset_handler,
                     FixtureSelectorContext::new(&context.global_fixture_select),
+                    &updatable_handler,
                 );
                 println!("Macro run result: {:?}", macro_run_result);
             }
@@ -247,12 +249,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 }),
         );
 
-        for preset_id in preset_handler
+        for preset_id in updatable_handler
             .sequence_runtime_keys()
             .iter()
             .sorted_by(|a, b| a.cmp(b))
         {
-            let is_started = preset_handler
+            let is_started = updatable_handler
                 .sequence_runtime(*preset_id)
                 .unwrap()
                 .is_started();
@@ -261,9 +263,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 [80.0, 80.0],
                 eframe::egui::Button::new(format!(
                     "{}\n{}/{}",
-                    preset_handler.sequence_runtime(*preset_id).unwrap().name(),
+                    updatable_handler
+                        .sequence_runtime(*preset_id)
+                        .unwrap()
+                        .name(),
                     if is_started {
-                        (preset_handler
+                        (updatable_handler
                             .sequence_runtime(*preset_id)
                             .unwrap()
                             .runtime()
@@ -273,11 +278,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     } else {
                         "-".to_owned()
                     },
-                    preset_handler
+                    updatable_handler
                         .sequence_runtime(*preset_id)
                         .unwrap()
                         .runtime()
-                        .num_cues(),
+                        .num_cues(&preset_handler),
                 ))
                 .stroke(if is_started {
                     eframe::egui::Stroke::new(1.0, eframe::egui::Color32::RED)
@@ -288,24 +293,23 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
             if preset_button.clicked() {
                 if is_started {
-                    preset_handler
+                    updatable_handler
                         .sequence_runtime_mut(*preset_id)
                         .unwrap()
-                        .next_cue();
+                        .next_cue(&preset_handler);
                 } else {
-                    preset_handler
+                    updatable_handler
                         .sequence_runtime_mut(*preset_id)
                         .unwrap()
-                        .start(&mut fixture_handler);
+                        .start(&mut fixture_handler, &preset_handler);
                 }
             }
 
             if preset_button.secondary_clicked() {
-                println!("stopping sequence");
-                preset_handler
+                updatable_handler
                     .sequence_runtime_mut(*preset_id)
                     .unwrap()
-                    .stop(&mut fixture_handler);
+                    .stop(&mut fixture_handler, &preset_handler);
             }
         }
 

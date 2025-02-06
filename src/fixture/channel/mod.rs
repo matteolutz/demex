@@ -6,7 +6,7 @@ use value::{FixtureChannelValue, FixtureChannelValueTrait};
 
 use crate::utils::hash;
 
-use super::{presets::PresetHandler, Fixture};
+use super::{presets::PresetHandler, updatables::UpdatableHandler, Fixture};
 
 pub mod error;
 pub mod value;
@@ -276,13 +276,18 @@ impl FixtureChannel {
         &self,
         fixture: &Fixture,
         preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<Vec<u8>, FixtureChannelError> {
         let fixture_id = fixture.id();
 
         match self {
             FixtureChannel::Intensity(is_fine, _) => {
                 let channel_value = fixture
-                    .channel_value(FIXTURE_CHANNEL_INTENSITY_ID, preset_handler)
+                    .channel_value(
+                        FIXTURE_CHANNEL_INTENSITY_ID,
+                        preset_handler,
+                        updatable_handler,
+                    )
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 let (intens_coarse, intens_fine) = Self::float_to_coarse_and_fine(
@@ -297,7 +302,7 @@ impl FixtureChannel {
             }
             FixtureChannel::Strobe(_) => {
                 let channel_value = fixture
-                    .channel_value(FIXTURE_CHANNEL_STROBE, preset_handler)
+                    .channel_value(FIXTURE_CHANNEL_STROBE, preset_handler, updatable_handler)
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 Ok(vec![
@@ -306,7 +311,7 @@ impl FixtureChannel {
             }
             FixtureChannel::Zoom(is_fine, _) => {
                 let channel_value = fixture
-                    .channel_value(FIXTURE_CHANNEL_ZOOM, preset_handler)
+                    .channel_value(FIXTURE_CHANNEL_ZOOM, preset_handler, updatable_handler)
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 let (zoom_coarse, zoom_fine) = Self::float_to_coarse_and_fine(
@@ -321,7 +326,7 @@ impl FixtureChannel {
             }
             FixtureChannel::ColorRGB(is_fine, _) => {
                 let channel_value = fixture
-                    .channel_value(FIXTURE_CHANNEL_COLOR_ID, preset_handler)
+                    .channel_value(FIXTURE_CHANNEL_COLOR_ID, preset_handler, updatable_handler)
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 let [f_r, f_g, f_b, _] = channel_value.as_quadruple(
@@ -342,7 +347,7 @@ impl FixtureChannel {
             }
             FixtureChannel::ColorRGBW(is_fine, _) => {
                 let channel_value = fixture
-                    .channel_value(FIXTURE_CHANNEL_COLOR_ID, preset_handler)
+                    .channel_value(FIXTURE_CHANNEL_COLOR_ID, preset_handler, updatable_handler)
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 let [f_r, f_g, f_b, f_w] = channel_value.as_quadruple(
@@ -364,7 +369,11 @@ impl FixtureChannel {
             }
             FixtureChannel::PositionPanTilt(is_fine, _) => {
                 let channel_value = fixture
-                    .channel_value(FIXTURE_CHANNEL_POSITION_PAN_TILT_ID, preset_handler)
+                    .channel_value(
+                        FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+                        preset_handler,
+                        updatable_handler,
+                    )
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 let [pan_f, tilt_f] = channel_value.as_pair(
@@ -384,7 +393,7 @@ impl FixtureChannel {
             }
             FixtureChannel::Maintenance(_, id, _) => {
                 let channel_value = fixture
-                    .channel_value(*id, preset_handler)
+                    .channel_value(*id, preset_handler, updatable_handler)
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 Ok(vec![
@@ -393,7 +402,11 @@ impl FixtureChannel {
             }
             FixtureChannel::ToggleFlags(flags, _) => {
                 let channel_value = fixture
-                    .channel_value(FIXTURE_CHANNEL_TOGGLE_FLAGS, preset_handler)
+                    .channel_value(
+                        FIXTURE_CHANNEL_TOGGLE_FLAGS,
+                        preset_handler,
+                        updatable_handler,
+                    )
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 let flag_name = channel_value.as_toggle_flag(preset_handler, fixture_id)?;

@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use command_slice::CommandSlice;
 use error::PresetHandlerError;
-use fader::DemexFader;
 use group::FixtureGroup;
 use mmacro::MMacro;
 use preset::FixturePreset;
@@ -19,7 +18,8 @@ use super::{
         FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
     },
     handler::FixtureHandler,
-    sequence::preset::SequenceRuntimePreset,
+    sequence::Sequence,
+    updatables::UpdatableHandler,
 };
 
 pub mod command_slice;
@@ -36,11 +36,10 @@ pub struct PresetHandler {
     colors: HashMap<u32, FixturePreset>,
     positions: HashMap<u32, FixturePreset>,
 
-    sequence_runtimes: HashMap<u32, SequenceRuntimePreset>,
     macros: HashMap<u32, MMacro>,
     command_slices: HashMap<u32, CommandSlice>,
 
-    faders: HashMap<u32, DemexFader>,
+    sequences: HashMap<u32, Sequence>,
 }
 
 impl PresetHandler {
@@ -49,10 +48,9 @@ impl PresetHandler {
             groups: HashMap::new(),
             colors: HashMap::new(),
             positions: HashMap::new(),
-            sequence_runtimes: HashMap::new(),
             macros: HashMap::new(),
             command_slices: HashMap::new(),
-            faders: HashMap::new(),
+            sequences: HashMap::new(),
         }
     }
 }
@@ -101,6 +99,7 @@ impl PresetHandler {
         id: u32,
         fixture_handler: &FixtureHandler,
         channel_type: u16,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<(), PresetHandlerError> {
         if self.presets_mut(channel_type).contains_key(&id) {
             return Err(PresetHandlerError::PresetAlreadyExists(id));
@@ -113,6 +112,7 @@ impl PresetHandler {
             channel_type,
             self,
             fixture_handler,
+            updatable_handler,
         )?;
 
         self.presets_mut(channel_type).insert(id, preset);
@@ -182,45 +182,6 @@ impl PresetHandler {
     }
 }
 
-// Sequence Runtimes
-impl PresetHandler {
-    pub fn add_sequence_runtime(&mut self, runtime: SequenceRuntimePreset) {
-        self.sequence_runtimes.insert(runtime.id(), runtime);
-    }
-
-    pub fn sequence_runtime(&self, id: u32) -> Option<&SequenceRuntimePreset> {
-        self.sequence_runtimes.get(&id)
-    }
-
-    pub fn sequence_runtime_mut(&mut self, id: u32) -> Option<&mut SequenceRuntimePreset> {
-        self.sequence_runtimes.get_mut(&id)
-    }
-
-    pub fn sequence_runtimes(&self) -> &HashMap<u32, SequenceRuntimePreset> {
-        &self.sequence_runtimes
-    }
-
-    pub fn sequence_runtimes_stop_all(&mut self, fixture_handler: &mut FixtureHandler) {
-        for (_, sr) in self.sequence_runtimes.iter_mut() {
-            sr.stop(fixture_handler);
-        }
-    }
-
-    pub fn sequence_runtime_keys(&self) -> Vec<u32> {
-        self.sequence_runtimes.keys().cloned().collect()
-    }
-
-    pub fn update_sequence_runtimes(
-        &mut self,
-        delta_time: f64,
-        fixture_handler: &mut FixtureHandler,
-    ) {
-        for (_, runtime) in self.sequence_runtimes.iter_mut() {
-            runtime.update(delta_time, fixture_handler);
-        }
-    }
-}
-
 // Macros
 impl PresetHandler {
     pub fn record_macro(&mut self, id: u32, action: Box<Action>) -> Result<(), PresetHandlerError> {
@@ -281,46 +242,33 @@ impl PresetHandler {
     }
 }
 
-// Faders
+// Sequences
 impl PresetHandler {
-    pub fn add_fader(&mut self, fader: DemexFader) -> Result<(), PresetHandlerError> {
-        if self.faders.contains_key(&fader.id()) {
-            return Err(PresetHandlerError::PresetAlreadyExists(fader.id()));
+    pub fn record_sequence(&mut self, sequence: Sequence) -> Result<(), PresetHandlerError> {
+        if self.sequences.contains_key(&sequence.id()) {
+            return Err(PresetHandlerError::PresetAlreadyExists(sequence.id()));
         }
 
-        self.faders.insert(fader.id(), fader);
+        self.sequences.insert(sequence.id(), sequence);
         Ok(())
     }
 
-    pub fn fader(&self, id: u32) -> Result<&DemexFader, PresetHandlerError> {
-        self.faders
+    pub fn rename_sequence(&mut self, id: u32, new_name: String) -> Result<(), PresetHandlerError> {
+        let sequence = self
+            .sequences
+            .get_mut(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))?;
+        *sequence.name_mut() = new_name;
+        Ok(())
+    }
+
+    pub fn get_sequence(&self, id: u32) -> Result<&Sequence, PresetHandlerError> {
+        self.sequences
             .get(&id)
             .ok_or(PresetHandlerError::PresetNotFound(id))
     }
 
-    pub fn fader_mut(&mut self, id: u32) -> Result<&mut DemexFader, PresetHandlerError> {
-        self.faders
-            .get_mut(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))
-    }
-
-    pub fn faders(&self) -> &HashMap<u32, DemexFader> {
-        &self.faders
-    }
-
-    pub fn faders_home_all(&mut self, fixture_handler: &mut FixtureHandler) {
-        for (_, fader) in self.faders.iter_mut() {
-            fader.home(fixture_handler);
-        }
-    }
-
-    pub fn fader_ids(&self) -> Vec<u32> {
-        self.faders.keys().cloned().collect()
-    }
-
-    pub fn update_faders(&mut self, delta_time: f64) {
-        for (_, fader) in self.faders.iter_mut() {
-            fader.update(delta_time);
-        }
+    pub fn sequences(&self) -> &HashMap<u32, Sequence> {
+        &self.sequences
     }
 }

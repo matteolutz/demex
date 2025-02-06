@@ -13,7 +13,7 @@ record_function:            = "preset" discrete_channel_type fixture_selector [s
                             = "group" fixture_selector [string]
                             = "sequence" integer "cue" integer fixture_selector
 
-create_function:            = "sequence" ("fader" | "button") [string]
+create_function:            = "sequence" [string]
 
 object                      = homeable_object
                             | specific_preset

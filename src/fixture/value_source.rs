@@ -9,6 +9,7 @@ use super::{
     error::FixtureError,
     presets::PresetHandler,
     sequence::FadeFixtureChannelValue,
+    updatables::UpdatableHandler,
     Fixture,
 };
 
@@ -44,6 +45,7 @@ pub trait FixtureChannelValueSourceTrait {
         &self,
         fixture: &Fixture,
         channel_id: u16,
+        updatable_handler: &UpdatableHandler,
         preset_handler: &PresetHandler,
     ) -> Result<FixtureChannelValue, FixtureError>;
 }
@@ -72,6 +74,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
         &self,
         fixture: &Fixture,
         channel_id: u16,
+        updatable_handler: &UpdatableHandler,
         preset_handler: &PresetHandler,
     ) -> Result<FixtureChannelValue, FixtureError> {
         let values = self
@@ -82,21 +85,21 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                     .channel_value_programmer(channel_id)
                     .map(|v| FadeFixtureChannelValue::new(v, 1.0)),
                 FixtureChannelValueSource::SequenceRuntime { runtime_id } => {
-                    let runtime = preset_handler.sequence_runtime(*runtime_id);
+                    let runtime = updatable_handler.sequence_runtime(*runtime_id);
 
                     if let Some(runtime) = runtime {
                         runtime
-                            .channel_value(fixture.id(), channel_id)
+                            .channel_value(fixture.id(), channel_id, preset_handler)
                             .ok_or(FixtureError::ChannelValueNotFound(channel_id))
                     } else {
                         Err(FixtureError::ChannelValueNotFound(channel_id))
                     }
                 }
                 FixtureChannelValueSource::Fader { fader_id: id } => {
-                    let fader = preset_handler.fader(*id);
+                    let fader = updatable_handler.fader(*id);
 
                     if let Ok(fader) = fader {
-                        fader.get_channel_value(fixture, channel_id)
+                        fader.get_channel_value(fixture, channel_id, preset_handler)
                     } else {
                         Err(FixtureError::ChannelValueNotFound(channel_id))
                     }

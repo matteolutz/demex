@@ -11,6 +11,7 @@ use crate::{
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let preset_handler = context.preset_handler.read_recursive();
+    let updatable_handler = context.updatable_handler.read_recursive();
     let fixture_handler = context.fixture_handler.read_recursive();
 
     egui::ScrollArea::horizontal().show(ui, |ui| {
@@ -107,7 +108,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                         // Intens
                         row.col(|ui| {
                             if let Ok(intensity) =
-                                fixture.intensity(&context.preset_handler.read_recursive())
+                                fixture.intensity(&preset_handler, &updatable_handler)
                             {
                                 ui.label(
                                     RichText::from(
@@ -131,7 +132,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // Color
                         row.col(|ui| {
-                            if let Ok(color) = fixture.color(&preset_handler) {
+                            if let Ok(color) = fixture.color(&preset_handler, &updatable_handler) {
                                 ui.label(
                                     RichText::from(
                                         color.to_string(&preset_handler, FIXTURE_CHANNEL_COLOR_ID),
@@ -169,7 +170,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // Position
                         row.col(|ui| {
-                            if let Ok(pos) = fixture.position_pan_tilt(&preset_handler) {
+                            if let Ok(pos) =
+                                fixture.position_pan_tilt(&preset_handler, &updatable_handler)
+                            {
                                 ui.label(
                                     RichText::from(pos.to_string(
                                         &preset_handler,
@@ -196,8 +199,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     continue;
                                 }
 
-                                let channel_value =
-                                    fixture.channel_value(*channel_type, &preset_handler);
+                                let channel_value = fixture.channel_value(
+                                    *channel_type,
+                                    &preset_handler,
+                                    &updatable_handler,
+                                );
                                 if channel_value.is_err() {
                                     continue;
                                 }

@@ -196,6 +196,7 @@ impl Default for LayoutViewContext {
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let fixture_handler = context.fixture_handler.read_recursive();
     let preset_handler = context.preset_handler.read_recursive();
+    let updatable_handler = context.updatable_handler.read_recursive();
 
     let fixture_layout = context.patch.layout();
     ui.heading("Layout View");
@@ -281,12 +282,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             .expect("todo: error handling");
 
         let intensity = fixture
-            .intensity(&preset_handler)
+            .intensity(&preset_handler, &updatable_handler)
             .expect("error handling")
             .as_single(&preset_handler, fixture.id())
             .expect("error handling");
 
-        let rect_color = if let Ok(color) = fixture.color(&preset_handler) {
+        let rect_color = if let Ok(color) = fixture.color(&preset_handler, &updatable_handler) {
             let color = color
                 .as_quadruple(&preset_handler, fixture.id(), FIXTURE_CHANNEL_COLOR_ID)
                 .unwrap();
@@ -301,7 +302,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         };
 
         let position: Option<egui::Vec2> = fixture
-            .position_pan_tilt(&preset_handler)
+            .position_pan_tilt(&preset_handler, &updatable_handler)
             .map(|val| {
                 val.as_pair(
                     &preset_handler,

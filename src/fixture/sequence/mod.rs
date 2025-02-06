@@ -30,12 +30,30 @@ impl FadeFixtureChannelValue {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, EguiProbe)]
 pub struct Sequence {
+    id: u32,
+    name: String,
     cues: Vec<Cue>,
 }
 
 impl Sequence {
-    pub fn new() -> Self {
-        Self { cues: Vec::new() }
+    pub fn new(id: u32, name: String) -> Self {
+        Self {
+            id,
+            name,
+            cues: Vec::new(),
+        }
+    }
+
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn name_mut(&mut self) -> &mut String {
+        &mut self.name
     }
 
     pub fn add_cue(&mut self, cue: Cue) {

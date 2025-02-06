@@ -6,6 +6,7 @@ use crate::{
     fixture::{
         channel::{value::FixtureChannelDiscreteValue, FixtureChannel},
         handler::FixtureHandler,
+        updatables::UpdatableHandler,
     },
     parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
@@ -28,6 +29,7 @@ impl FixturePreset {
         channel_type: u16,
         preset_handler: &PresetHandler,
         fixture_handler: &FixtureHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<Self, PresetHandlerError> {
         let name = format!("{} Preset {}", FixtureChannel::name_by_id(channel_type), id);
 
@@ -43,7 +45,7 @@ impl FixturePreset {
                 }
 
                 let fixture_position = fixture
-                    .channel_value(channel_type, preset_handler)
+                    .channel_value(channel_type, preset_handler, updatable_handler)
                     .map_err(PresetHandlerError::FixtureError)?;
 
                 values.insert(fixture_id, fixture_position.to_discrete());

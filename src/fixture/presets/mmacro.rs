@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fixture::handler::FixtureHandler,
+    fixture::{handler::FixtureHandler, updatables::UpdatableHandler},
     parser::nodes::{
         action::{error::ActionRunError, result::ActionRunResult, Action},
         fixture_selector::FixtureSelectorContext,
@@ -47,8 +47,13 @@ impl MMacro {
         fixture_handler: &mut FixtureHandler,
         preset_handler: &mut PresetHandler,
         fixture_selector_context: FixtureSelectorContext,
+        update_handler: &UpdatableHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
-        self.action
-            .run(fixture_handler, preset_handler, fixture_selector_context)
+        self.action.run(
+            fixture_handler,
+            preset_handler,
+            fixture_selector_context,
+            update_handler,
+        )
     }
 }

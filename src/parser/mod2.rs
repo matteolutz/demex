@@ -9,7 +9,7 @@ use crate::{
 use super::{
     error::ParseError,
     nodes::{
-        action::{Action, SequenceCreationMode},
+        action::Action,
         fixture_selector::{AtomicFixtureSelector, FixtureSelector},
         object::{HomeableObject, Object, ObjectTrait},
     },
@@ -385,26 +385,9 @@ impl<'a> Parser2<'a> {
             Token::KeywordSequence => {
                 self.advance();
 
-                let creation_mode = match self.current_token()? {
-                    Token::KeywordFader => {
-                        self.advance();
-                        SequenceCreationMode::Fader
-                    }
-                    Token::KeywordButton => {
-                        self.advance();
-                        SequenceCreationMode::Button
-                    }
-                    _ => {
-                        return Err(ParseError::UnexpectedToken(
-                            self.current_token()?.clone(),
-                            "Expected \"fader\" or \"button\"".to_string(),
-                        ))
-                    }
-                };
-
                 let sequence_name = self.parse_optional_string()?;
 
-                Ok(Action::CreateSequence(creation_mode, sequence_name))
+                Ok(Action::CreateSequence(sequence_name))
             }
             _ => Err(ParseError::UnexpectedToken(
                 self.current_token()?.clone(),

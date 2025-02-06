@@ -16,10 +16,10 @@ impl std::fmt::Display for PresetHandlerError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             PresetHandlerError::PresetAlreadyExists(id) => {
-                write!(f, "Group with id {} already exists", id)
+                write!(f, "Preset with id {} already exists", id)
             }
             PresetHandlerError::PresetNotFound(id) => {
-                write!(f, "Group with id {} not found", id)
+                write!(f, "Preset with id {} not found", id)
             }
             PresetHandlerError::FixtureError(err) => write!(f, "{}", err),
             PresetHandlerError::FixtureSelectorError(err) => write!(f, "{}", err),

@@ -20,6 +20,8 @@ use crate::fixture::{
     Fixture,
 };
 
+use super::PresetHandler;
+
 #[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
 pub struct DemexFader {
     #[egui_probe(skip)]
@@ -156,6 +158,7 @@ impl DemexFader {
         &self,
         fixture: &Fixture,
         channel_id: u16,
+        preset_handler: &PresetHandler,
     ) -> Result<FadeFixtureChannelValue, FixtureError> {
         if !self.is_active() {
             return Err(FixtureError::ChannelValueNotFound(channel_id));
@@ -216,20 +219,21 @@ impl DemexFader {
                         channel_id,
                         speed_multiplier,
                         intensity_multiplier,
+                        preset_handler,
                     )
                     .ok_or(FixtureError::ChannelValueNotFound(channel_id))
             }
         }
     }
 
-    pub fn update(&mut self, delta_time: f64) {
+    pub fn update(&mut self, delta_time: f64, preset_handler: &PresetHandler) {
         match &mut self.config {
             DemexFaderConfig::SequenceRuntime {
                 fixtures: _,
                 runtime,
                 function: _,
             } => {
-                runtime.update(delta_time, self.value);
+                runtime.update(delta_time, self.value, preset_handler);
             }
             _ => {}
         }

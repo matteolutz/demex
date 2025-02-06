@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time};
 
 use error::DemexUiError;
 use parking_lot::RwLock;
@@ -17,6 +17,7 @@ use crate::{
         effect::FixtureChannelEffect,
         patch::Patch,
         presets::PresetHandler,
+        updatables::UpdatableHandler,
     },
     lexer::token::Token,
     parser::nodes::{
@@ -58,6 +59,7 @@ pub struct DemexUiContext {
 
     fixture_handler: Arc<RwLock<FixtureHandler>>,
     preset_handler: Arc<RwLock<PresetHandler>>,
+    updatable_handler: Arc<RwLock<UpdatableHandler>>,
 
     global_fixture_select: Option<FixtureSelector>,
     command: Vec<Token>,
@@ -74,12 +76,14 @@ pub struct DemexUiApp {
     context: DemexUiContext,
     global_error: Option<Box<dyn std::error::Error>>,
     tabs: DemexTabs,
+    last_update: std::time::Instant,
 }
 
 impl DemexUiApp {
     pub fn new(
         fixture_handler: Arc<RwLock<FixtureHandler>>,
         preset_handler: Arc<RwLock<PresetHandler>>,
+        updatable_handler: Arc<RwLock<UpdatableHandler>>,
         patch: Patch,
         stats: Arc<RwLock<DemexUiStats>>,
     ) -> Self {
@@ -92,12 +96,14 @@ impl DemexUiApp {
                 gm_slider_val: fixture_handler.clone().read_recursive().grand_master(),
                 fixture_handler,
                 preset_handler,
+                updatable_handler,
                 global_fixture_select: None,
                 command: Vec::new(),
                 layout_view_context: LayoutViewContext::default(),
             },
             global_error: None,
             tabs: DemexTabs::default(),
+            last_update: time::Instant::now(),
         }
     }
 }
@@ -135,12 +141,14 @@ impl DemexUiApp {
                 self.context.global_fixture_select = None;
             }
             Action::GoHomeAll => {
-                let mut preset_handler_lock = self.context.preset_handler.write();
+                let mut updatable_handler_lock = self.context.updatable_handler.write();
                 let mut fixture_handler_lock = self.context.fixture_handler.write();
+                let preset_handler_lock = self.context.preset_handler.read_recursive();
 
-                preset_handler_lock.sequence_runtimes_stop_all(&mut fixture_handler_lock);
+                updatable_handler_lock
+                    .sequence_runtimes_stop_all(&mut fixture_handler_lock, &preset_handler_lock);
 
-                preset_handler_lock.faders_home_all(&mut fixture_handler_lock);
+                updatable_handler_lock.faders_home_all(&mut fixture_handler_lock);
             }
             Action::Test(cmd) => match cmd.as_str() {
                 "effect" => {
@@ -176,6 +184,7 @@ impl DemexUiApp {
             &mut self.context.fixture_handler.write(),
             &mut self.context.preset_handler.write(),
             FixtureSelectorContext::new(&self.context.global_fixture_select),
+            &self.context.updatable_handler.read_recursive(),
         )?;
 
         println!(
@@ -197,8 +206,6 @@ impl DemexUiApp {
 
 impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        let now = std::time::Instant::now();
-
         if self.global_error.is_some() && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             self.global_error = None;
         }
@@ -347,7 +354,13 @@ impl eframe::App for DemexUiApp {
             self.tabs.ui(ui, &mut self.context, ctx);
         });
 
-        self.context.stats.write().ui(now.elapsed().as_secs_f64());
-        ctx.request_repaint();
+        let elapsed = self.last_update.elapsed();
+
+        self.context.stats.write().ui(elapsed.as_secs_f64());
+
+        let diff = f64::max((1.0 / 60.0) - elapsed.as_secs_f64(), 0.0);
+        ctx.request_repaint_after(time::Duration::from_secs_f64(diff));
+
+        self.last_update = time::Instant::now();
     }
 }

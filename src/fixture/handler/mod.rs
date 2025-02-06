@@ -4,7 +4,7 @@ use crate::dmx::DMXOutput;
 
 use self::error::FixtureHandlerError;
 
-use super::{presets::PresetHandler, Fixture};
+use super::{presets::PresetHandler, updatables::UpdatableHandler, Fixture};
 
 pub mod error;
 
@@ -112,6 +112,7 @@ impl FixtureHandler {
     pub fn update(
         &mut self,
         preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
         _delta_time: f64,
     ) -> Result<(), FixtureHandlerError> {
         let mut dirty_universes: BTreeSet<u16> = BTreeSet::new();
@@ -120,7 +121,7 @@ impl FixtureHandler {
             let fixture_universe_offset = f.start_address() - 1;
 
             let data_packet = f
-                .generate_data_packet(preset_handler)
+                .generate_data_packet(preset_handler, updatable_handler)
                 .map_err(FixtureHandlerError::FixtureChannelError)?;
 
             let fixture_data = data_packet

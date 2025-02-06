@@ -20,13 +20,11 @@ use ui::{DemexUiApp, DemexUiStats};
 
 const TEST_SHOW_FILE: &str = "test_data/show.json";
 const TEST_PATCH_FILE: &str = "test_data/patch.json";
-const TEST_FUPS: f64 = 1000.0;
+const TEST_FUPS: f64 = 200.0;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let show: DemexShow =
         serde_json::from_reader(std::fs::File::open(TEST_SHOW_FILE).unwrap()).unwrap();
-
-    let ph = show.preset_handler;
 
     let patch: Patch =
         serde_json::from_reader(std::fs::File::open(TEST_PATCH_FILE).unwrap()).unwrap();
@@ -45,13 +43,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap(),
     ));
 
-    let preset_handler = Arc::new(RwLock::new(ph));
+    let preset_handler = Arc::new(RwLock::new(show.preset_handler));
+    let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));
 
     let stats = Arc::new(RwLock::new(DemexUiStats::default()));
 
     let ui_app_state = DemexUiApp::new(
         fixture_handler.clone(),
         preset_handler.clone(),
+        updatable_handler.clone(),
         patch,
         stats.clone(),
     );
@@ -68,18 +68,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             stats.write().fixed_update(delta_time);
 
             {
-                let mut preset_handler = preset_handler.write();
+                let preset_handler = preset_handler.read();
+
                 {
-                    let mut fixture_handler = fixture_handler.write();
-                    preset_handler.update_sequence_runtimes(delta_time, &mut fixture_handler);
+                    let mut updatable_handler = updatable_handler.write();
+
+                    {
+                        let mut fixture_handler = fixture_handler.write();
+                        updatable_handler.update_sequence_runtimes(
+                            delta_time,
+                            &mut fixture_handler,
+                            &preset_handler,
+                        );
+                    }
+
+                    updatable_handler.update_faders(delta_time, &preset_handler);
                 }
 
-                preset_handler.update_faders(delta_time);
-            }
-
-            {
-                let mut fixture_handler = fixture_handler.write();
-                let _ = fixture_handler.update(&preset_handler.read(), delta_time);
+                {
+                    let mut fixture_handler = fixture_handler.write();
+                    let _ = fixture_handler.update(
+                        &preset_handler,
+                        &updatable_handler.read(),
+                        delta_time,
+                    );
+                }
             }
 
             last_update = time::Instant::now();

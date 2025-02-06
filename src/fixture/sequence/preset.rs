@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::{handler::FixtureHandler, value_source::FixtureChannelValueSource};
+use crate::fixture::{
+    handler::FixtureHandler, presets::PresetHandler, value_source::FixtureChannelValueSource,
+};
 
-use super::{runtime::SequenceRuntime, FadeFixtureChannelValue, Sequence};
+use super::{runtime::SequenceRuntime, FadeFixtureChannelValue};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SequenceRuntimePreset {
@@ -18,11 +20,11 @@ pub struct SequenceRuntimePreset {
 }
 
 impl SequenceRuntimePreset {
-    pub fn new(id: u32, name: String, sequence: Sequence) -> Self {
+    pub fn new(id: u32, name: String, sequence_id: u32) -> Self {
         Self {
             id,
             name,
-            runtime: SequenceRuntime::new(sequence),
+            runtime: SequenceRuntime::new(sequence_id),
         }
     }
 
@@ -46,13 +48,20 @@ impl SequenceRuntimePreset {
         &self,
         fixture_id: u32,
         channel_id: u16,
+        preset_handler: &PresetHandler,
     ) -> Option<FadeFixtureChannelValue> {
-        self.runtime.channel_value(fixture_id, channel_id, 1.0, 1.0)
+        self.runtime
+            .channel_value(fixture_id, channel_id, 1.0, 1.0, preset_handler)
     }
 
-    pub fn update(&mut self, delta_time: f64, fixture_handler: &mut FixtureHandler) {
-        if self.runtime.update(delta_time, 1.0) {
-            self.stop(fixture_handler);
+    pub fn update(
+        &mut self,
+        delta_time: f64,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+    ) {
+        if self.runtime.update(delta_time, 1.0, preset_handler) {
+            self.stop(fixture_handler, preset_handler);
         }
     }
 
@@ -60,12 +69,12 @@ impl SequenceRuntimePreset {
         self.runtime.start();
     }
 
-    pub fn start(&mut self, fixture_handler: &mut FixtureHandler) {
+    pub fn start(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
         self.silent_start();
 
-        for fixture_id in self
-            .runtime
-            .sequence()
+        for fixture_id in preset_handler
+            .get_sequence(self.runtime.sequence_id())
+            .unwrap()
             .cues()
             .iter()
             .flat_map(|c| c.data().keys())
@@ -84,12 +93,12 @@ impl SequenceRuntimePreset {
         self.runtime.stop();
     }
 
-    pub fn stop(&mut self, fixture_handler: &mut FixtureHandler) {
+    pub fn stop(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
         self.silent_stop();
 
-        for fixture_id in self
-            .runtime
-            .sequence()
+        for fixture_id in preset_handler
+            .get_sequence(self.runtime.sequence_id())
+            .unwrap()
             .cues()
             .iter()
             .flat_map(|c| c.data().keys())
@@ -104,7 +113,7 @@ impl SequenceRuntimePreset {
         }
     }
 
-    pub fn next_cue(&mut self) {
-        self.runtime.next_cue();
+    pub fn next_cue(&mut self, preset_handler: &PresetHandler) {
+        self.runtime.next_cue(preset_handler);
     }
 }

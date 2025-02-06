@@ -7,6 +7,7 @@ use crate::fixture::{
     },
     handler::FixtureHandler,
     presets::PresetHandler,
+    updatables::UpdatableHandler,
 };
 
 use self::{error::ActionRunError, result::ActionRunResult};
@@ -18,12 +19,6 @@ use super::{
 
 pub mod error;
 pub mod result;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum SequenceCreationMode {
-    Fader,
-    Button,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Action {
@@ -48,7 +43,7 @@ pub enum Action {
     RenameGroup(u32, String),
     RenameColorPreset(u32, String),
     RenamePositionPreset(u32, String),
-    CreateSequence(SequenceCreationMode, Option<String>),
+    CreateSequence(Option<String>),
     FixtureSelector(FixtureSelector),
     ClearAll,
     Test(String),
@@ -60,6 +55,7 @@ impl Action {
         fixture_handler: &mut FixtureHandler,
         preset_handler: &mut PresetHandler,
         fixture_selector_context: FixtureSelectorContext,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
             Self::SetIntensity(fixture_selector, intensity) => self.run_set_intensity(
@@ -131,6 +127,7 @@ impl Action {
                 *id,
                 preset_handler,
                 fixture_handler,
+                updatable_handler,
             ),
             Self::RecordPosition(fixture_selector, id) => self.run_record_position(
                 fixture_selector,
@@ -138,6 +135,7 @@ impl Action {
                 *id,
                 preset_handler,
                 fixture_handler,
+                updatable_handler,
             ),
             Self::RecordMacro(action, id) => self.run_record_macro(*id, action, preset_handler),
             Self::ClearAll => Ok(ActionRunResult::new()),
@@ -398,7 +396,8 @@ impl Action {
         fixture_selector_context: FixtureSelectorContext,
         id: u32,
         preset_handler: &mut PresetHandler,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &FixtureHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
             .record_preset(
@@ -407,6 +406,7 @@ impl Action {
                 id,
                 fixture_handler,
                 FIXTURE_CHANNEL_COLOR_ID,
+                updatable_handler,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 
@@ -419,7 +419,8 @@ impl Action {
         fixture_selector_context: FixtureSelectorContext,
         id: u32,
         preset_handler: &mut PresetHandler,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &FixtureHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
             .record_preset(
@@ -428,6 +429,7 @@ impl Action {
                 id,
                 fixture_handler,
                 FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+                updatable_handler,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 

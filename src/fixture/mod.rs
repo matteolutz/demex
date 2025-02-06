@@ -6,6 +6,7 @@ use channel::{
 };
 use presets::PresetHandler;
 use serde::{Deserialize, Serialize};
+use updatables::UpdatableHandler;
 use value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait};
 
 use self::{channel::FixtureChannel, error::FixtureError};
@@ -18,6 +19,7 @@ pub mod layout;
 pub mod patch;
 pub mod presets;
 pub mod sequence;
+pub mod updatables;
 pub mod value_source;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -176,11 +178,12 @@ impl Fixture {
     pub fn generate_data_packet(
         &self,
         preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<Vec<u8>, FixtureChannelError> {
         let mut data = Vec::new();
 
         for channel in &self.patch {
-            data.extend(channel.generate_data_packet(self, preset_handler)?);
+            data.extend(channel.generate_data_packet(self, preset_handler, updatable_handler)?);
         }
 
         Ok(data)
@@ -213,8 +216,13 @@ impl Fixture {
     pub fn intensity(
         &self,
         preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<FixtureChannelValue, FixtureError> {
-        self.channel_value(FIXTURE_CHANNEL_INTENSITY_ID, preset_handler)
+        self.channel_value(
+            FIXTURE_CHANNEL_INTENSITY_ID,
+            preset_handler,
+            updatable_handler,
+        )
     }
 
     pub fn set_intensity(&mut self, value: FixtureChannelValue) -> Result<(), FixtureError> {
@@ -228,8 +236,9 @@ impl Fixture {
     pub fn color(
         &self,
         preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<FixtureChannelValue, FixtureError> {
-        self.channel_value(FIXTURE_CHANNEL_COLOR_ID, preset_handler)
+        self.channel_value(FIXTURE_CHANNEL_COLOR_ID, preset_handler, updatable_handler)
     }
 
     pub fn set_color(&mut self, value: FixtureChannelValue) -> Result<(), FixtureError> {
@@ -243,8 +252,13 @@ impl Fixture {
     pub fn position_pan_tilt(
         &self,
         preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<FixtureChannelValue, FixtureError> {
-        self.channel_value(FIXTURE_CHANNEL_POSITION_PAN_TILT_ID, preset_handler)
+        self.channel_value(
+            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+            preset_handler,
+            updatable_handler,
+        )
     }
 
     pub fn set_position_pan_tilt(
@@ -262,8 +276,13 @@ impl Fixture {
         &self,
         name: &str,
         preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<FixtureChannelValue, FixtureError> {
-        self.channel_value(FixtureChannel::get_maintenance_id(name), preset_handler)
+        self.channel_value(
+            FixtureChannel::get_maintenance_id(name),
+            preset_handler,
+            updatable_handler,
+        )
     }
 
     pub fn set_mainenance(
@@ -300,9 +319,10 @@ impl Fixture {
         &self,
         channel_id: u16,
         preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<FixtureChannelValue, FixtureError> {
         self.sources
-            .get_channel_value(self, channel_id, preset_handler)
+            .get_channel_value(self, channel_id, updatable_handler, preset_handler)
     }
 
     pub fn set_channel_value(
@@ -362,8 +382,9 @@ impl Fixture {
         &self,
         channel_id: u16,
         preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<f32, FixtureError> {
-        self.channel_value(channel_id, preset_handler)?
+        self.channel_value(channel_id, preset_handler, updatable_handler)?
             .as_single(preset_handler, self.id)
             .map_err(|err| FixtureError::FixtureChannelError(Box::new(err)))
     }
@@ -425,18 +446,22 @@ impl Fixture {
 }
 
 impl Fixture {
-    pub fn to_string(&self, preset_handler: &PresetHandler) -> String {
+    pub fn to_string(
+        &self,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+    ) -> String {
         let mut state = String::new();
 
         if let Ok(intens) = self
-            .intensity(preset_handler)
+            .intensity(preset_handler, updatable_handler)
             .map(|value| value.to_string(preset_handler, FIXTURE_CHANNEL_INTENSITY_ID))
         {
             state.push_str(intens.as_str());
         }
 
         if let Ok(color) = self
-            .color(preset_handler)
+            .color(preset_handler, updatable_handler)
             .map(|value| value.to_string(preset_handler, FIXTURE_CHANNEL_COLOR_ID))
         {
             state.push('\n');
@@ -444,7 +469,7 @@ impl Fixture {
         }
 
         if let Ok(position) = self
-            .position_pan_tilt(preset_handler)
+            .position_pan_tilt(preset_handler, updatable_handler)
             .map(|value| value.to_string(preset_handler, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID))
         {
             state.push('\n');
