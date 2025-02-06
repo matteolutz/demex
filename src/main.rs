@@ -17,12 +17,19 @@ use fixture::{handler::FixtureHandler, patch::Patch};
 use parking_lot::RwLock;
 use show::DemexShow;
 use ui::{DemexUiApp, DemexUiStats};
+use utils::deadlock::start_deadlock_checking_thread;
 
 const TEST_SHOW_FILE: &str = "test_data/show.json";
 const TEST_PATCH_FILE: &str = "test_data/patch.json";
 const TEST_FUPS: f64 = 200.0;
 
+const DEADLOCK_TEST: bool = true;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if DEADLOCK_TEST {
+        start_deadlock_checking_thread();
+    }
+
     let show: DemexShow =
         serde_json::from_reader(std::fs::File::open(TEST_SHOW_FILE).unwrap()).unwrap();
 
