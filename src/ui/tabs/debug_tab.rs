@@ -1,5 +1,5 @@
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
-    let stats = context.stats.read_recursive();
+    let stats = context.stats.read();
 
     ui.label(format!("dt: {}s", stats.ui_dt));
     ui.label(format!("fps: {}", 1.0 / stats.ui_dt));

@@ -21,7 +21,9 @@ use utils::deadlock::start_deadlock_checking_thread;
 
 const TEST_SHOW_FILE: &str = "test_data/show.json";
 const TEST_PATCH_FILE: &str = "test_data/patch.json";
-const TEST_FUPS: f64 = 200.0;
+
+const TEST_FUPS: f64 = 60.0;
+const TEST_FPS: f64 = 60.0;
 
 const DEADLOCK_TEST: bool = true;
 
@@ -61,6 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         updatable_handler.clone(),
         patch,
         stats.clone(),
+        TEST_FPS,
     );
 
     thread::spawn(move || {
@@ -76,30 +79,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             {
                 let preset_handler = preset_handler.read();
+                let mut fixture_handler = fixture_handler.write();
 
                 {
                     let mut updatable_handler = updatable_handler.write();
 
-                    {
-                        let mut fixture_handler = fixture_handler.write();
-                        updatable_handler.update_sequence_runtimes(
-                            delta_time,
-                            &mut fixture_handler,
-                            &preset_handler,
-                        );
-                    }
-
                     updatable_handler.update_faders(delta_time, &preset_handler);
-                }
-
-                {
-                    let mut fixture_handler = fixture_handler.write();
-                    let _ = fixture_handler.update(
-                        &preset_handler,
-                        &updatable_handler.read(),
+                    updatable_handler.update_sequence_runtimes(
                         delta_time,
+                        &mut fixture_handler,
+                        &preset_handler,
                     );
                 }
+
+                let _ =
+                    fixture_handler.update(&preset_handler, &updatable_handler.read(), delta_time);
             }
 
             last_update = time::Instant::now();

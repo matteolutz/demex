@@ -14,7 +14,7 @@ use crate::{
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
-    let preset_handler = context.preset_handler.read_recursive();
+    let preset_handler = context.preset_handler.read();
 
     if context.global_fixture_select.is_none() {
         ui.centered_and_justified(|ui| ui.label("No fixtures selected"));

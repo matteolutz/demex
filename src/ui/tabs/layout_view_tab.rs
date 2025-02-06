@@ -194,9 +194,9 @@ impl Default for LayoutViewContext {
 }
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
-    let fixture_handler = context.fixture_handler.read_recursive();
-    let preset_handler = context.preset_handler.read_recursive();
-    let updatable_handler = context.updatable_handler.read_recursive();
+    let fixture_handler = context.fixture_handler.read();
+    let preset_handler = context.preset_handler.read();
+    let updatable_handler = context.updatable_handler.read();
 
     let fixture_layout = context.patch.layout();
     ui.heading("Layout View");

@@ -2,7 +2,6 @@ use itertools::Itertools;
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
-    // let mut preset_handler = context.preset_handler.write();
     let mut updatable_handler = context.updatable_handler.write();
 
     ui.horizontal(|ui| {
