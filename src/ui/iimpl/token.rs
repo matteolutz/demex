@@ -5,7 +5,7 @@ impl IntoEguiColor32 for &Token {}
 impl Into<eframe::egui::Color32> for &Token {
     fn into(self) -> eframe::egui::Color32 {
         match self {
-            Token::Numeral(_)
+            Token::Integer(_)
             | Token::FloatingPoint(_)
             | Token::KeywordFixturesSelected
             | Token::KeywordFull
@@ -27,8 +27,14 @@ impl Into<eframe::egui::Color32> for &Token {
             | Token::KeywordIntens
             | Token::KeywordColor
             | Token::KeywordPosition
+            | Token::KeywordStrobe
+            | Token::KeywordMaintenance
             | Token::KeywordMacro
+            | Token::KeywordCreate
             | Token::KeywordCommandSlice
+            | Token::KeywordSequence
+            | Token::KeywordFader
+            | Token::KeywordButton
             | Token::KeywordTest => eframe::egui::Color32::GOLD,
             // Other keywords
             Token::KeywordGroup | Token::KeywordThru | Token::KeywordPreset => {

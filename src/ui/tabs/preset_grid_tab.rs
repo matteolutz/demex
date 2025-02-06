@@ -35,7 +35,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             if group_button.clicked() {
                 context
                     .command
-                    .extend(vec![Token::KeywordGroup, Token::Numeral(group.id())])
+                    .extend(vec![Token::KeywordGroup, Token::Integer(group.id())])
             }
 
             if group_button.double_clicked() {
@@ -51,7 +51,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             context.command.extend(vec![
                 Token::KeywordRecord,
                 Token::KeywordGroup,
-                Token::Numeral(preset_handler.groups().keys().max().unwrap_or(&0) + 1),
+                Token::Integer(preset_handler.groups().keys().max().unwrap_or(&0) + 1),
             ])
         }
 
@@ -81,7 +81,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 context.command.extend(vec![
                     Token::KeywordColor,
                     Token::KeywordPreset,
-                    Token::Numeral(preset.id()),
+                    Token::Integer(preset.id()),
                 ])
             }
         }
@@ -91,7 +91,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             context.command.extend(vec![
                 Token::KeywordRecord,
                 Token::KeywordColor,
-                Token::Numeral(
+                Token::Integer(
                     preset_handler
                         .presets(FIXTURE_CHANNEL_COLOR_ID)
                         .keys()
@@ -128,7 +128,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 context.command.extend(vec![
                     Token::KeywordPosition,
                     Token::KeywordPreset,
-                    Token::Numeral(preset.id()),
+                    Token::Integer(preset.id()),
                 ])
             }
         }
@@ -138,7 +138,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             context.command.extend(vec![
                 Token::KeywordRecord,
                 Token::KeywordPosition,
-                Token::Numeral(
+                Token::Integer(
                     preset_handler
                         .presets(FIXTURE_CHANNEL_POSITION_PAN_TILT_ID)
                         .keys()
@@ -190,7 +190,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             context.command.extend(vec![
                 Token::KeywordRecord,
                 Token::KeywordMacro,
-                Token::Numeral(preset_handler.macros().keys().max().unwrap_or(&0) + 1),
+                Token::Integer(preset_handler.macros().keys().max().unwrap_or(&0) + 1),
             ])
         }
 

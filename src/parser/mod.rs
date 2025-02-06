@@ -9,6 +9,7 @@ use self::{
 };
 
 pub mod error;
+pub mod mod2;
 pub mod nodes;
 
 pub struct Parser<'a> {
@@ -47,7 +48,7 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Ok(AtomicFixtureSelector::CurrentFixturesSelected)
             }
-            Token::Numeral(i1) => {
+            Token::Integer(i1) => {
                 self.advance();
                 let token = self.current_token()?.clone();
 
@@ -57,7 +58,7 @@ impl<'a> Parser<'a> {
                         let token = self.current_token()?.clone();
 
                         match token {
-                            Token::Numeral(i2) => {
+                            Token::Integer(i2) => {
                                 self.advance();
                                 Ok(AtomicFixtureSelector::FixtureRange(i1, i2))
                             }
@@ -92,7 +93,7 @@ impl<'a> Parser<'a> {
                 let token = self.current_token()?.clone();
 
                 match token {
-                    Token::Numeral(i) => {
+                    Token::Integer(i) => {
                         self.advance();
                         Ok(AtomicFixtureSelector::FixtureGroup(i))
                     }
@@ -137,7 +138,7 @@ impl<'a> Parser<'a> {
                         self.advance();
                         let current_token = self.current_token()?.clone();
                         match current_token {
-                            Token::Numeral(d) => {
+                            Token::Integer(d) => {
                                 self.advance();
                                 Ok(FixtureSelector::Modulus(atomic_selector, d, true))
                             }
@@ -147,7 +148,7 @@ impl<'a> Parser<'a> {
                             )),
                         }
                     }
-                    Token::Numeral(d) => {
+                    Token::Integer(d) => {
                         self.advance();
                         Ok(FixtureSelector::Modulus(atomic_selector, d, false))
                     }
@@ -199,7 +200,7 @@ impl<'a> Parser<'a> {
 
                     let token = self.current_token()?.clone();
 
-                    if let Token::Numeral(group) = token {
+                    if let Token::Integer(group) = token {
                         self.advance();
 
                         let token = self.current_token()?.clone();
@@ -228,7 +229,7 @@ impl<'a> Parser<'a> {
 
                         let token = self.current_token()?.clone();
 
-                        if let Token::Numeral(group) = token {
+                        if let Token::Integer(group) = token {
                             self.advance();
 
                             let token = self.current_token()?.clone();
@@ -263,7 +264,7 @@ impl<'a> Parser<'a> {
 
                         let token = self.current_token()?.clone();
 
-                        if let Token::Numeral(group) = token {
+                        if let Token::Integer(group) = token {
                             self.advance();
 
                             let token = self.current_token()?.clone();
@@ -306,7 +307,7 @@ impl<'a> Parser<'a> {
                 let token = self.current_token()?.clone();
 
                 let intensity = match token {
-                    Token::Numeral(i) => {
+                    Token::Integer(i) => {
                         self.advance();
                         Ok(i as f32)
                     }
@@ -339,9 +340,9 @@ impl<'a> Parser<'a> {
 
                 let token = self.current_token()?.clone();
 
-                if matches!(token, Token::Numeral(_) | Token::FloatingPoint(_)) {
+                if matches!(token, Token::Integer(_) | Token::FloatingPoint(_)) {
                     let pan = (match token {
-                        Token::Numeral(i) => i as f32,
+                        Token::Integer(i) => i as f32,
                         Token::FloatingPoint(f) => f,
                         _ => unreachable!(),
                     }) / 255.0;
@@ -350,9 +351,9 @@ impl<'a> Parser<'a> {
 
                     let token = self.current_token()?.clone();
 
-                    if matches!(token, Token::Numeral(_) | Token::FloatingPoint(_)) {
+                    if matches!(token, Token::Integer(_) | Token::FloatingPoint(_)) {
                         let tilt = (match token {
-                            Token::Numeral(i) => i as f32,
+                            Token::Integer(i) => i as f32,
                             Token::FloatingPoint(f) => f,
                             _ => unreachable!(),
                         }) / 255.0;
@@ -372,7 +373,7 @@ impl<'a> Parser<'a> {
                             let token = self.current_token()?.clone();
 
                             match token {
-                                Token::Numeral(preset_id) => {
+                                Token::Integer(preset_id) => {
                                     self.advance();
                                     Ok(Action::SetPositionPreset(fixture_select, preset_id))
                                 }
@@ -395,9 +396,9 @@ impl<'a> Parser<'a> {
                 let token = self.current_token()?.clone();
 
                 // if token is numeral or floating point
-                if matches!(token, Token::Numeral(_) | Token::FloatingPoint(_)) {
+                if matches!(token, Token::Integer(_) | Token::FloatingPoint(_)) {
                     let red = (match token {
-                        Token::Numeral(i) => i as f32,
+                        Token::Integer(i) => i as f32,
                         Token::FloatingPoint(f) => f,
                         _ => unreachable!(),
                     }) / 255.0;
@@ -409,7 +410,7 @@ impl<'a> Parser<'a> {
                         let token = self.current_token()?.clone();
 
                         let component = match token {
-                            Token::Numeral(i) => Ok(i as f32),
+                            Token::Integer(i) => Ok(i as f32),
                             Token::FloatingPoint(f) => Ok(f),
                             _ => Err(ParseError::UnexpectedToken(
                                 token,
@@ -433,7 +434,7 @@ impl<'a> Parser<'a> {
                             let token = self.current_token()?.clone();
 
                             match token {
-                                Token::Numeral(preset_id) => {
+                                Token::Integer(preset_id) => {
                                     self.advance();
                                     Ok(Action::SetColorPreset(fixture_select, preset_id))
                                 }
@@ -466,7 +467,7 @@ impl<'a> Parser<'a> {
                                 self.advance();
                                 Ok(Action::ManSet(fixture_select, channel_name, i))
                             }
-                            Token::Numeral(i) => {
+                            Token::Integer(i) => {
                                 self.advance();
                                 Ok(Action::ManSet(fixture_select, channel_name, i as f32))
                             }
@@ -497,7 +498,7 @@ impl<'a> Parser<'a> {
 
                         let token = self.current_token()?.clone();
 
-                        if let Token::Numeral(group) = token {
+                        if let Token::Integer(group) = token {
                             self.advance();
                             Ok(Action::RecordGroup(fixture_select, group))
                         } else {
@@ -512,7 +513,7 @@ impl<'a> Parser<'a> {
 
                         let token = self.current_token()?.clone();
 
-                        if let Token::Numeral(group) = token {
+                        if let Token::Integer(group) = token {
                             self.advance();
                             Ok(Action::RecordColor(fixture_select, group))
                         } else {
@@ -527,7 +528,7 @@ impl<'a> Parser<'a> {
 
                         let token = self.current_token()?.clone();
 
-                        if let Token::Numeral(group) = token {
+                        if let Token::Integer(group) = token {
                             self.advance();
                             Ok(Action::RecordPosition(fixture_select, group))
                         } else {
@@ -567,7 +568,7 @@ impl<'a> Parser<'a> {
 
                 let token = self.current_token()?.clone();
 
-                if let Token::Numeral(i) = token {
+                if let Token::Integer(i) = token {
                     self.advance();
 
                     return Ok(Action::RecordMacro(Box::new(action), i));

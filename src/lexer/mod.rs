@@ -54,7 +54,7 @@ impl<'a> Lexer<'a> {
                     continue;
                 }
 
-                tokens.push(Token::Numeral(num.parse().unwrap()));
+                tokens.push(Token::Integer(num.parse().unwrap()));
             } else if self.peek().is_alphabetic() {
                 let mut keyword = String::new();
 
@@ -96,6 +96,18 @@ impl<'a> Lexer<'a> {
                     tokens.push(Token::KeywordPreset);
                 } else if keyword == "test" {
                     tokens.push(Token::KeywordTest);
+                } else if keyword == "strobe" {
+                    tokens.push(Token::KeywordStrobe);
+                } else if keyword == "maintenance" {
+                    tokens.push(Token::KeywordMaintenance);
+                } else if keyword == "create" {
+                    tokens.push(Token::KeywordCreate);
+                } else if keyword == "sequence" {
+                    tokens.push(Token::KeywordSequence);
+                } else if keyword == "fader" {
+                    tokens.push(Token::KeywordFader);
+                } else if keyword == "button" {
+                    tokens.push(Token::KeywordButton);
                 } else {
                     return Err(TokenizationError::UnknownKeyword(keyword));
                 }

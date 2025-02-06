@@ -1,0 +1,57 @@
+commands                    = command+
+
+command                     = function
+                            | object
+
+
+function                    = fixture_selector channel_type (discrete_value_single | specific_preset)
+                            = "home" [homeable_object]
+                            = "record" record_function
+                            = "create" create_function
+
+record_function:            = "preset" discrete_channel_type fixture_selector [string]
+                            = "group" fixture_selector [string]
+                            = "sequence" integer "cue" integer fixture_selector
+
+create_function:            = "sequence" ("fader" | "button") [string]
+
+object                      = homeable_object
+                            | specific_preset
+
+homeable_object             = fixture_selector
+
+specific_preset             = "preset" integer
+
+discrete_value_single       = float
+                            | "full"
+                            | "half"
+                            | "out"
+
+
+channel_type                = discrete_channel_type
+                            | "maintenance" string
+
+discrete_channel_type       = "intensity"
+                            | "color"
+                            | "position"
+                            | "strobe"
+
+fixture_selector            = atomic_fixture_selector
+                            | atomic_fixture_selector "+" atomic_fixture_selector
+                            | atomic_fixture_selector "-" atomic_fixture_selector
+                            | atomic_fixture_selector "%" integer
+
+atomic_fixture_selector     = integer
+                            | integer "thru" integer
+                            | "group" integer
+                            | "(" fixture_selector ")"
+                            | "~"
+
+integer                     = digit+
+float                       = digit+ ["." digit+]
+digit                       = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "0"
+
+string                      = '"' letter+ '"'
+letter                      = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z"
+                            | "~" | "@" | "#" | "%" | "_" | "$" | "&" | "'" | "-" | "+" | "/" | " "
+                            | digit

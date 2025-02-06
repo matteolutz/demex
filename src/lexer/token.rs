@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Token {
-    Numeral(u32),
+    Integer(u32),
     FloatingPoint(f32),
     String(String),
     Plus,
@@ -11,7 +11,13 @@ pub enum Token {
     Exclamation,
     ParenOpen,
     ParenClose,
+
     KeywordIntens,
+    KeywordColor,
+    KeywordPosition,
+    KeywordStrobe,
+    KeywordMaintenance,
+
     KeywordThru,
     KeywordFull,
     KeywordHalf,
@@ -19,23 +25,26 @@ pub enum Token {
     KeywordHome,
     KeywordManSet,
     KeywordRecord,
+    KeywordCreate,
     KeywordGroup,
     KeywordMacro,
     KeywordCommandSlice,
+    KeywordSequence,
+    KeywordFader,
+    KeywordButton,
     KeywordRename,
     KeywordClear,
-    KeywordColor,
-    KeywordPosition,
     KeywordPreset,
     KeywordTest,
     KeywordFixturesSelected,
+
     Eof,
 }
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Token::Numeral(n) => write!(f, "{}", n),
+            Token::Integer(n) => write!(f, "{}", n),
             Token::FloatingPoint(n) => write!(f, "{}", n),
             Token::String(s) => write!(f, "\"{}\"", s),
             Token::Plus => write!(f, "+"),
@@ -59,9 +68,15 @@ impl std::fmt::Display for Token {
             Token::KeywordClear => write!(f, "clear"),
             Token::KeywordColor => write!(f, "color"),
             Token::KeywordPosition => write!(f, "position"),
+            Token::KeywordStrobe => write!(f, "strobe"),
+            Token::KeywordMaintenance => write!(f, "maintenance"),
             Token::KeywordPreset => write!(f, "preset"),
             Token::KeywordTest => write!(f, "test"),
             Token::KeywordFixturesSelected => write!(f, "~"),
+            Token::KeywordCreate => write!(f, "create"),
+            Token::KeywordSequence => write!(f, "sequence"),
+            Token::KeywordFader => write!(f, "fader"),
+            Token::KeywordButton => write!(f, "button"),
             Token::Eof => write!(f, "Eof"),
         }
     }

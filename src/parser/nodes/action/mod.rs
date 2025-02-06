@@ -11,10 +11,19 @@ use crate::fixture::{
 
 use self::{error::ActionRunError, result::ActionRunResult};
 
-use super::fixture_selector::{FixtureSelector, FixtureSelectorContext};
+use super::{
+    fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    object::HomeableObject,
+};
 
 pub mod error;
 pub mod result;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SequenceCreationMode {
+    Fader,
+    Button,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Action {
@@ -23,9 +32,15 @@ pub enum Action {
     SetColorPreset(FixtureSelector, u32),
     SetPosition(FixtureSelector, [f32; 2]),
     SetPositionPreset(FixtureSelector, u32),
+    SetChannelValue(FixtureSelector, u16, f32),
+    SetChannelValuePreset(FixtureSelector, u16, u32),
+    Home(HomeableObject),
+    HomeAll,
     GoHome(FixtureSelector),
     GoHomeAll,
     ManSet(FixtureSelector, String, f32),
+    RecordPreset(u16, FixtureSelector, Option<String>),
+    RecordGroup2(FixtureSelector, Option<String>),
     RecordGroup(FixtureSelector, u32),
     RecordColor(FixtureSelector, u32),
     RecordPosition(FixtureSelector, u32),
@@ -33,6 +48,7 @@ pub enum Action {
     RenameGroup(u32, String),
     RenameColorPreset(u32, String),
     RenamePositionPreset(u32, String),
+    CreateSequence(SequenceCreationMode, Option<String>),
     FixtureSelector(FixtureSelector),
     ClearAll,
     Test(String),
@@ -127,6 +143,7 @@ impl Action {
             Self::ClearAll => Ok(ActionRunResult::new()),
             Self::FixtureSelector(_) => Ok(ActionRunResult::new()),
             Self::Test(_) => Ok(ActionRunResult::new()),
+            _ => todo!(),
         }
     }
 
