@@ -70,7 +70,7 @@ pub struct DemexUiContext {
 
     stats: Arc<RwLock<DemexUiStats>>,
 
-    dialogs: Vec<DemexGlobalDialog>,
+    dialogs: Vec<DemexGlobalDialogEntry>,
 
     macro_execution_queue: Vec<Action>,
 
@@ -103,12 +103,12 @@ impl DemexUiContext {
                     } else if let Err(fixture_selector_err) = selected_fixtures {
                         self.global_fixture_select = None;
                         self.dialogs
-                            .push(DemexGlobalDialog::Error(Box::new(fixture_selector_err)));
+                            .push(DemexGlobalDialogEntry::error(&fixture_selector_err));
                     }
                 } else if let Err(fixture_selector_err) = fixture_selector {
                     self.global_fixture_select = None;
                     self.dialogs
-                        .push(DemexGlobalDialog::Error(Box::new(fixture_selector_err)));
+                        .push(DemexGlobalDialogEntry::error(&fixture_selector_err));
                 }
             }
             Action::ClearAll => {
@@ -136,33 +136,35 @@ impl DemexUiContext {
 
                 let save_result = (self.save_show)(show);
                 if let Err(e) = save_result {
-                    self.dialogs.push(DemexGlobalDialog::Error(e));
+                    self.dialogs.push(DemexGlobalDialogEntry::error(e.as_ref()));
                 } else {
                     self.dialogs
-                        .push(DemexGlobalDialog::Info("Show saved".to_string()));
+                        .push(DemexGlobalDialogEntry::info("Show saved"));
                 }
             }
-            Action::Test(cmd) => match cmd.as_str() {
-                "effect" => {
-                    let _ = self
-                        .fixture_handler
-                        .write()
-                        .fixture(1)
-                        .unwrap()
-                        .set_channel_value(
-                            FIXTURE_CHANNEL_INTENSITY_ID,
-                            FixtureChannelValue::Effect(FixtureChannelEffect::SingleSine {
-                                a: 1.0,
-                                b: 20.0,
-                                c: 1.0,
-                                d: 1.0,
-                            }),
-                        );
+            Action::Test(cmd) => {
+                match cmd.as_str() {
+                    "effect" => {
+                        let _ = self
+                            .fixture_handler
+                            .write()
+                            .fixture(1)
+                            .unwrap()
+                            .set_channel_value(
+                                FIXTURE_CHANNEL_INTENSITY_ID,
+                                FixtureChannelValue::Effect(FixtureChannelEffect::SingleSine {
+                                    a: 1.0,
+                                    b: 20.0,
+                                    c: 1.0,
+                                    d: 1.0,
+                                }),
+                            );
+                    }
+                    _ => self.dialogs.push(DemexGlobalDialogEntry::error(
+                        &DemexUiError::RuntimeError(format!("Unknown test command: \"{}\"", cmd)),
+                    )),
                 }
-                _ => self.dialogs.push(DemexGlobalDialog::Error(Box::new(
-                    DemexUiError::RuntimeError(format!("Unknown test command: \"{}\"", cmd)),
-                ))),
-            },
+            }
             _ => {}
         }
 
@@ -183,10 +185,12 @@ impl DemexUiContext {
 
         match result {
             ActionRunResult::Warn(warn) => {
-                self.dialogs.push(DemexGlobalDialog::Warn(warn));
+                self.dialogs
+                    .push(DemexGlobalDialogEntry::warn(warn.as_str()));
             }
             ActionRunResult::Info(info) => {
-                self.dialogs.push(DemexGlobalDialog::Info(info));
+                self.dialogs
+                    .push(DemexGlobalDialogEntry::info(info.as_str()));
             }
             _ => {}
         }
@@ -195,37 +199,76 @@ impl DemexUiContext {
     }
 }
 
-pub enum DemexGlobalDialog {
-    Error(Box<dyn std::error::Error>),
-    Warn(String),
-    Info(String),
+#[derive(Debug, PartialEq, Eq)]
+pub enum DemexGlobalDialogEntryType {
+    Error,
+    Warn,
+    Info,
 }
 
-impl DemexGlobalDialog {
+impl DemexGlobalDialogEntryType {
     pub fn title(&self) -> &str {
         match self {
-            Self::Error(_) => "Error",
-            Self::Warn(_) => "Warning",
-            Self::Info(_) => "Info",
+            Self::Error => "Error",
+            Self::Warn => "Warning",
+            Self::Info => "Info",
         }
     }
 
     pub fn color(&self) -> egui::Color32 {
         match self {
-            Self::Error(_) => egui::Color32::LIGHT_RED,
-            Self::Warn(_) => egui::Color32::YELLOW,
-            Self::Info(_) => egui::Color32::LIGHT_BLUE,
+            Self::Error => egui::Color32::LIGHT_RED,
+            Self::Warn => egui::Color32::YELLOW,
+            Self::Info => egui::Color32::LIGHT_BLUE,
         }
     }
 }
 
-impl fmt::Display for DemexGlobalDialog {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Error(e) => write!(f, "Error: {}", e),
-            Self::Warn(w) => write!(f, "Warning: {}", w),
-            Self::Info(i) => write!(f, "Info: {}", i),
+pub struct DemexGlobalDialogEntry {
+    entry_type: DemexGlobalDialogEntryType,
+    message: String,
+    time: chrono::DateTime<chrono::Local>,
+}
+
+impl DemexGlobalDialogEntry {
+    pub fn new(entry_type: DemexGlobalDialogEntryType, message: String) -> Self {
+        Self {
+            entry_type,
+            message,
+            time: chrono::offset::Local::now(),
         }
+    }
+
+    pub fn color(&self) -> egui::Color32 {
+        self.entry_type.color()
+    }
+
+    pub fn time(&self) -> chrono::DateTime<chrono::Local> {
+        self.time
+    }
+
+    pub fn error(error: &dyn std::error::Error) -> Self {
+        Self::new(DemexGlobalDialogEntryType::Error, error.to_string())
+    }
+
+    pub fn warn(warn: &str) -> Self {
+        Self::new(DemexGlobalDialogEntryType::Warn, warn.to_string())
+    }
+
+    pub fn info(info: &str) -> Self {
+        Self::new(DemexGlobalDialogEntryType::Info, info.to_string())
+    }
+}
+
+impl fmt::Display for DemexGlobalDialogEntry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "[{}] {}: {}",
+            self.time.format("%H:%M:%S"),
+            self.entry_type.title(),
+            self.message
+        )
     }
 }
 
@@ -290,7 +333,9 @@ impl eframe::App for DemexUiApp {
 
             if let Err(e) = self.context.run_and_handle_action(&action) {
                 eprintln!("{}", e);
-                self.context.dialogs.push(DemexGlobalDialog::Error(e));
+                self.context
+                    .dialogs
+                    .push(DemexGlobalDialogEntry::error(e.as_ref()));
             }
         }
 
@@ -343,20 +388,18 @@ impl eframe::App for DemexUiApp {
                 }
             });
 
-            let num_of_type = |dialogs: &Vec<DemexGlobalDialog>, dialog_type: &str| {
-                dialogs
-                    .iter()
-                    .filter(|d| match d {
-                        DemexGlobalDialog::Error(_) => dialog_type == "Error",
-                        DemexGlobalDialog::Warn(_) => dialog_type == "Warn",
-                        DemexGlobalDialog::Info(_) => dialog_type == "Info",
-                    })
-                    .count()
-            };
+            let num_of_type =
+                |dialogs: &Vec<DemexGlobalDialogEntry>, dialog_type: DemexGlobalDialogEntryType| {
+                    dialogs
+                        .iter()
+                        .filter(|d| d.entry_type == dialog_type)
+                        .count()
+                };
 
-            let num_of_errors = num_of_type(&self.context.dialogs, "Error");
-            let num_of_warns = num_of_type(&self.context.dialogs, "Warn");
-            let num_of_infos = num_of_type(&self.context.dialogs, "Info");
+            let num_of_errors =
+                num_of_type(&self.context.dialogs, DemexGlobalDialogEntryType::Error);
+            let num_of_warns = num_of_type(&self.context.dialogs, DemexGlobalDialogEntryType::Warn);
+            let num_of_infos = num_of_type(&self.context.dialogs, DemexGlobalDialogEntryType::Info);
 
             let dialog_summary = format!(
                 "Errors: {}, Warns: {}, Infos: {}",
@@ -447,7 +490,9 @@ impl eframe::App for DemexUiApp {
 
                         if let Err(e) = self.run_cmd() {
                             eprintln!("{}", e);
-                            self.context.dialogs.push(DemexGlobalDialog::Error(e));
+                            self.context
+                                .dialogs
+                                .push(DemexGlobalDialogEntry::error(e.as_ref()));
                         }
 
                         self.context.command.clear();

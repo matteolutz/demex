@@ -1,526 +1,20 @@
 {
-  "updatable_handler": {
-    "faders": {
-      "2": {
-        "id": 2,
-        "name": "Wash Blink",
-        "priority": "LTP",
-        "overrides": {
-          "20": {
-            "from_value": {
-              "Discrete": {
-                "Pair": [0.0, 1.0]
-              }
-            },
-            "to_value": {
-              "Discrete": {
-                "Pair": [0.0, 0.0]
-              }
-            }
-          }
-        },
-        "config": {
-          "SequenceRuntime": {
-            "fixtures": [1, 2],
-            "function": "Speed",
-            "runtime": {
-              "sequence_id": 1
-            }
-          }
-        }
-      },
-      "1": {
-        "id": 1,
-        "name": "Washes",
-        "priority": "LTP",
-        "config": {
-          "Submaster": {
-            "fixtures": [1, 2]
-          }
-        }
-      }
-    },
-    "executors": {
-      "3": {
-        "id": 3,
-        "runtime": {
-          "sequence_id": 2
-        }
-      },
-      "1": {
-        "id": 1,
-        "runtime": {
-          "sequence_id": 3
-        }
-      },
-      "2": {
-        "id": 2,
-        "runtime": {
-          "sequence_id": 4
-        }
-      }
-    }
-  },
   "preset_handler": {
-    "sequences": {
-      "1": {
-        "id": 1,
-        "name": "Wash Blink",
-        "cues": [
-          {
-            "data": {
-              "2": [
-                {
-                  "value": {
-                    "Discrete": {
-                      "Single": 0.0
-                    }
-                  },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "1": [
-                {
-                  "value": {
-                    "Discrete": {
-                      "Single": 0.0
-                    }
-                  },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ]
-            },
-            "in_fade": 0.1,
-            "out_fade": 0.0,
-            "in_delay": 0.0,
-            "out_delay": null,
-            "snap_percent": 0.0,
-            "offset": 0.05,
-            "trigger": "Follow"
-          },
-          {
-            "data": {
-              "2": [
-                {
-                  "value": {
-                    "Discrete": {
-                      "Single": 1.0
-                    }
-                  },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "1": [
-                {
-                  "value": {
-                    "Discrete": {
-                      "Single": 1.0
-                    }
-                  },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ]
-            },
-            "in_fade": 0.1,
-            "out_fade": 0.0,
-            "in_delay": 0.0,
-            "out_delay": null,
-            "snap_percent": 0.0,
-            "offset": 0.05,
-            "trigger": "Follow"
-          }
-        ]
-      },
-      "2": {
-        "id": 2,
-        "name": "Flash Top PARs",
-        "cues": [
-          {
-            "data": {
-              "3": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "4": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "5": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-
-              "6": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "7": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "8": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "9": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "10": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ]
-            },
-            "in_fade": 0.2,
-            "out_fade": 0.2,
-            "in_delay": 0.0,
-            "out_delay": 0.0,
-            "snap_percent": 0.0,
-            "timing": {
-              "offset": 0.05,
-              "direction": "LowToHigh"
-            },
-            "trigger": "Manual"
-          },
-          {
-            "data": {},
-            "in_fade": 0.0,
-            "out_fade": null,
-            "in_delay": 0.0,
-            "out_delay": null,
-            "snap_percent": 0.0,
-            "trigger": "Follow"
-          },
-          {
-            "data": {
-              "3": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "4": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "5": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-
-              "6": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "7": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "8": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "9": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ],
-              "10": [
-                {
-                  "value": { "Discrete": { "Single": 1.0 } },
-                  "channel_type": 0,
-                  "snap": false
-                }
-              ]
-            },
-            "in_fade": 0.2,
-            "out_fade": 0.2,
-            "in_delay": 0.0,
-            "out_delay": 0.0,
-            "snap_percent": 0.0,
-            "timing": {
-              "offset": 0.05,
-              "direction": "OutsideToCenter"
-            },
-            "trigger": "Manual"
-          },
-          {
-            "data": {},
-            "in_fade": 0.0,
-            "out_fade": null,
-            "in_delay": 0.0,
-            "out_delay": null,
-            "snap_percent": 0.0,
-            "trigger": "Follow"
-          }
-        ]
-      },
-      "3": {
-        "id": 3,
-        "name": "Flash Washes",
-        "cues": [
-          {
-            "data": {
-              "1": [
-                {
-                  "value": {
-                    "Discrete": {
-                      "Single": 1.0
-                    }
-                  },
-                  "channel_type": 0,
-                  "snap": false
-                },
-                {
-                  "value": {
-                    "Discrete": {
-                      "Quadruple": [1.0, 1.0, 1.0, 0.0]
-                    }
-                  },
-                  "channel_type": 10,
-                  "snap": false
-                },
-                {
-                  "value": {
-                    "Discrete": {
-                      "Single": 0.95
-                    }
-                  },
-                  "channel_type": 1,
-                  "snap": false
-                }
-              ],
-              "2": [
-                {
-                  "value": {
-                    "Discrete": {
-                      "Single": 1.0
-                    }
-                  },
-                  "channel_type": 0,
-                  "snap": false
-                },
-                {
-                  "value": {
-                    "Discrete": {
-                      "Quadruple": [1.0, 1.0, 1.0, 0.0]
-                    }
-                  },
-                  "channel_type": 10,
-                  "snap": false
-                },
-                {
-                  "value": {
-                    "Discrete": {
-                      "Single": 0.95
-                    }
-                  },
-                  "channel_type": 1,
-                  "snap": false
-                }
-              ]
-            },
-            "in_fade": 0.2,
-            "out_fade": null,
-            "in_delay": 0.0,
-            "out_delay": 0.5,
-            "snap_percent": 0.0,
-            "offset": 0.1,
-            "trigger": "Manual"
-          },
-          {
-            "data": {},
-            "in_fade": 0.0,
-            "out_fade": null,
-            "in_delay": 0.0,
-            "out_delay": null,
-            "snap_percent": 0.0,
-            "trigger": "Follow"
-          }
-        ]
-      },
-      "4": {
-        "id": 4,
-        "name": "Wash Color Change",
-        "cues": [
-          {
-            "data": {
-              "2": [
-                {
-                  "value": {
-                    "Discrete": {
-                      "Quadruple": [1.0, 0.0, 0.0, 0.0]
-                    }
-                  },
-                  "channel_type": 10,
-                  "snap": false
-                },
-                {
-                  "value": {
-                    "Discrete": {
-                      "Pair": [0.0, 0.0]
-                    }
-                  },
-                  "channel_type": 20,
-                  "snap": false
-                }
-              ],
-              "1": [
-                {
-                  "value": {
-                    "Discrete": {
-                      "Quadruple": [1.0, 0.0, 0.0, 0.0]
-                    }
-                  },
-                  "channel_type": 10,
-                  "snap": false
-                },
-                {
-                  "value": {
-                    "Discrete": {
-                      "Pair": [0.0, 0.0]
-                    }
-                  },
-                  "channel_type": 20,
-                  "snap": false
-                }
-              ]
-            },
-            "in_fade": 2.0,
-            "out_fade": 0.0,
-            "in_delay": 0.0,
-            "out_delay": null,
-            "snap_percent": 0.0,
-            "offset": 1.0,
-            "trigger": "Follow"
-          },
-          {
-            "data": {
-              "1": [
-                {
-                  "value": {
-                    "Discrete": {
-                      "Quadruple": [0.0, 1.0, 0.0, 0.0]
-                    }
-                  },
-                  "channel_type": 10,
-                  "snap": false
-                },
-                {
-                  "value": {
-                    "Discrete": {
-                      "Pair": [0.0, 1.0]
-                    }
-                  },
-                  "channel_type": 20,
-                  "snap": false
-                }
-              ],
-              "2": [
-                {
-                  "value": {
-                    "Discrete": {
-                      "Quadruple": [0.0, 1.0, 0.0, 0.0]
-                    }
-                  },
-                  "channel_type": 10,
-                  "snap": false
-                },
-                {
-                  "value": {
-                    "Discrete": {
-                      "Pair": [0.0, 1.0]
-                    }
-                  },
-                  "channel_type": 20,
-                  "snap": false
-                }
-              ]
-            },
-            "in_fade": 2.0,
-            "out_fade": 0.0,
-            "in_delay": 0.0,
-            "out_delay": null,
-            "snap_percent": 0.0,
-            "offset": 1.0,
-            "trigger": "Follow"
-          }
-        ]
-      }
-    },
     "groups": {
       "3": {
         "id": 3,
         "name": "Spots",
-        "fixture_selector": {
-          "Atomic": {
-            "FixtureRange": [20, 21]
-          }
-        }
+        "fixture_selector": { "Atomic": { "FixtureRange": [20, 21] } }
       },
       "2": {
         "id": 2,
         "name": "PARs",
-        "fixture_selector": {
-          "Atomic": {
-            "FixtureRange": [3, 10]
-          }
-        }
+        "fixture_selector": { "Atomic": { "FixtureRange": [3, 10] } }
       },
       "1": {
         "id": 1,
         "name": "Washes",
-        "fixture_selector": {
-          "Atomic": {
-            "FixtureRange": [1, 2]
-          }
-        }
+        "fixture_selector": { "Atomic": { "FixtureRange": [1, 2] } }
       }
     },
     "dimmers": {},
@@ -531,29 +25,16 @@
         "id": 2,
         "name": "~ @ Out",
         "action": {
-          "SetIntensity": [
-            {
-              "Atomic": "CurrentFixturesSelected"
-            },
-            0.0
-          ]
+          "SetIntensity": [{ "Atomic": "CurrentFixturesSelected" }, 0.0]
         }
       },
-      "3": {
-        "id": 3,
-        "name": "Home",
-        "action": "GoHomeAll"
-      },
+      "4": { "id": 4, "name": "Nuzul", "action": "Nuzul" },
+      "3": { "id": 3, "name": "Home", "action": "GoHomeAll" },
       "1": {
         "id": 1,
         "name": "~ @ Full",
         "action": {
-          "SetIntensity": [
-            {
-              "Atomic": "CurrentFixturesSelected"
-            },
-            100.0
-          ]
+          "SetIntensity": [{ "Atomic": "CurrentFixturesSelected" }, 100.0]
         }
       }
     },
@@ -568,10 +49,407 @@
         "name": "@ Out",
         "command": ["KeywordIntens", "KeywordOut"]
       },
+      "3": { "id": 3, "name": "~", "command": ["KeywordFixturesSelected"] }
+    },
+    "sequences": {
+      "4": {
+        "id": 4,
+        "name": "Wash Color Change",
+        "cues": [
+          {
+            "data": {
+              "1": [
+                {
+                  "value": {
+                    "Discrete": { "Quadruple": [1.0, 0.0, 0.0, 0.0] }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": { "Discrete": { "Pair": [0.0, 0.0] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "2": [
+                {
+                  "value": {
+                    "Discrete": { "Quadruple": [1.0, 0.0, 0.0, 0.0] }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": { "Discrete": { "Pair": [0.0, 0.0] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 2.0,
+            "out_fade": 0.0,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          },
+          {
+            "data": {
+              "2": [
+                {
+                  "value": {
+                    "Discrete": { "Quadruple": [0.0, 1.0, 0.0, 0.0] }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": { "Discrete": { "Pair": [0.0, 1.0] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "1": [
+                {
+                  "value": {
+                    "Discrete": { "Quadruple": [0.0, 1.0, 0.0, 0.0] }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": { "Discrete": { "Pair": [0.0, 1.0] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 2.0,
+            "out_fade": 0.0,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          }
+        ]
+      },
       "3": {
         "id": 3,
-        "name": "~",
-        "command": ["KeywordFixturesSelected"]
+        "name": "Flash Washes",
+        "cues": [
+          {
+            "data": {
+              "2": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                },
+                {
+                  "value": {
+                    "Discrete": { "Quadruple": [1.0, 1.0, 1.0, 0.0] }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": { "Discrete": { "Single": 0.95 } },
+                  "channel_type": 1,
+                  "snap": false
+                }
+              ],
+              "1": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                },
+                {
+                  "value": {
+                    "Discrete": { "Quadruple": [1.0, 1.0, 1.0, 0.0] }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": { "Discrete": { "Single": 0.95 } },
+                  "channel_type": 1,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.2,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": 0.5,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Manual"
+          },
+          {
+            "data": {},
+            "in_fade": 0.0,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          }
+        ]
+      },
+      "2": {
+        "id": 2,
+        "name": "Flash Top PARs",
+        "cues": [
+          {
+            "data": {
+              "5": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "6": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "9": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "8": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "3": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "4": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "7": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "10": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.2,
+            "out_fade": 0.2,
+            "in_delay": 0.0,
+            "out_delay": 0.0,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.05, "direction": "LowToHigh" },
+            "trigger": "Manual"
+          },
+          {
+            "data": {},
+            "in_fade": 0.0,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          },
+          {
+            "data": {
+              "10": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "8": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "6": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "7": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "4": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "5": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "9": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "3": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.2,
+            "out_fade": 0.2,
+            "in_delay": 0.0,
+            "out_delay": 0.0,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.05, "direction": "OutsideToCenter" },
+            "trigger": "Manual"
+          },
+          {
+            "data": {},
+            "in_fade": 0.0,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          }
+        ]
+      },
+      "1": {
+        "id": 1,
+        "name": "Wash Blink",
+        "cues": [
+          {
+            "data": {
+              "2": [
+                {
+                  "value": { "Discrete": { "Single": 0.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "1": [
+                {
+                  "value": { "Discrete": { "Single": 0.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.1,
+            "out_fade": 0.0,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          },
+          {
+            "data": {
+              "2": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "1": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.1,
+            "out_fade": 0.0,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          }
+        ]
+      }
+    }
+  },
+  "updatable_handler": {
+    "executors": {
+      "3": { "id": 3, "runtime": { "sequence_id": 2 } },
+      "2": { "id": 2, "runtime": { "sequence_id": 4 } },
+      "1": { "id": 1, "runtime": { "sequence_id": 3 } }
+    },
+    "faders": {
+      "1": {
+        "id": 1,
+        "name": "Washes",
+        "priority": "LTP",
+        "config": { "Submaster": { "fixtures": [1, 2] } },
+        "overrides": {}
+      },
+      "2": {
+        "id": 2,
+        "name": "Wash Blink",
+        "priority": "LTP",
+        "config": {
+          "SequenceRuntime": {
+            "fixtures": [1, 2],
+            "runtime": { "sequence_id": 1 },
+            "function": "Speed"
+          }
+        },
+        "overrides": {
+          "20": {
+            "from_value": { "Discrete": { "Pair": [0.0, 1.0] } },
+            "to_value": { "Discrete": { "Pair": [0.0, 0.0] } }
+          }
+        }
       }
     }
   }
