@@ -21,11 +21,11 @@ renane_function             = "preset" discrete_channel_type integer "to" string
                             | "sequence" integer "to" string
 
 
-record_function:            = "preset" discrete_channel_type integer "for" fixture_selector ["as" string]
+record_function             = "preset" discrete_channel_type integer "for" fixture_selector ["as" string]
                             | "group" integer "for" fixture_selector ["as" string]
                             | "sequence" integer "cue" integer "for" fixture_selector ["with" (channel_type_list | "active" | "all")]
 
-create_function:            = "sequence" integer ["as" string]
+create_function             = "sequence" integer ["as" string]
                             | "executor" integer "for" ("sequence" integer) ["as" string]
                             | "macro" integer "with" command ["as" string]
 
