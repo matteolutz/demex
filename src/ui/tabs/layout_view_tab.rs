@@ -7,7 +7,7 @@ use crate::{
     fixture::{
         channel::{
             value::FixtureChannelValueTrait, FIXTURE_CHANNEL_COLOR_ID,
-            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+            FIXTURE_CHANNEL_INTENSITY_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
         },
         layout::{FixtureLayoutDecoration, FixtureLayoutEntry, FixtureLayoutEntryType},
     },
@@ -284,7 +284,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         let intensity = fixture
             .intensity(&preset_handler, &updatable_handler)
             .expect("error handling")
-            .as_single(&preset_handler, fixture.id())
+            .as_single(&preset_handler, fixture.id(), FIXTURE_CHANNEL_INTENSITY_ID)
             .expect("error handling");
 
         let rect_color = if let Ok(color) = fixture.color(&preset_handler, &updatable_handler) {

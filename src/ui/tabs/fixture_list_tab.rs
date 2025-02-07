@@ -37,7 +37,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 });
 
                 header.col(|ui| {
-                    ui.heading("Ptc");
+                    ui.heading("Addr");
                 });
 
                 header.col(|ui| {
@@ -49,7 +49,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 });
 
                 header.col(|ui| {
-                    ui.heading("Int.");
+                    ui.heading("Int");
                 });
 
                 header.col(|ui| {

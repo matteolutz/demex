@@ -14,7 +14,7 @@ use crate::parser::nodes::{
 
 use super::{
     channel::{
-        value::FixtureChannelDiscreteValue, FIXTURE_CHANNEL_COLOR_ID,
+        value::FixtureChannelDiscreteValue, FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
         FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
     },
     handler::FixtureHandler,
@@ -33,6 +33,7 @@ pub mod preset;
 pub struct PresetHandler {
     groups: HashMap<u32, FixtureGroup>,
 
+    dimmers: HashMap<u32, FixturePreset>,
     colors: HashMap<u32, FixturePreset>,
     positions: HashMap<u32, FixturePreset>,
 
@@ -46,6 +47,7 @@ impl PresetHandler {
     pub fn new() -> Self {
         PresetHandler {
             groups: HashMap::new(),
+            dimmers: HashMap::new(),
             colors: HashMap::new(),
             positions: HashMap::new(),
             macros: HashMap::new(),
@@ -124,6 +126,7 @@ impl PresetHandler {
 
     pub fn presets_mut(&mut self, channel_type: u16) -> &mut HashMap<u32, FixturePreset> {
         match channel_type {
+            FIXTURE_CHANNEL_INTENSITY_ID => &mut self.dimmers,
             FIXTURE_CHANNEL_COLOR_ID => &mut self.colors,
             FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => &mut self.positions,
             _ => todo!("not implemented"),
@@ -132,6 +135,7 @@ impl PresetHandler {
 
     pub fn presets(&self, channel_type: u16) -> &HashMap<u32, FixturePreset> {
         match channel_type {
+            FIXTURE_CHANNEL_INTENSITY_ID => &self.dimmers,
             FIXTURE_CHANNEL_COLOR_ID => &self.colors,
             FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => &self.positions,
             _ => todo!("not implemented"),
@@ -258,7 +262,7 @@ impl PresetHandler {
 
         self.sequences.insert(
             id,
-            Sequence::new(id, name.unwrap_or(format!("Sequence {}", id + 1))),
+            Sequence::new(id, name.unwrap_or(format!("Sequence {}", id))),
         );
         Ok(())
     }

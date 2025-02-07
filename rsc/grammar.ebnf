@@ -4,7 +4,7 @@ command                     = function
                             | object
 
 
-function                    = fixture_selector channel_type (discrete_value_single | specific_preset)
+function                    = fixture_selector ((channel_type value_single) | specific_preset)
                             = "home" [homeable_object]
                             = "record" record_function
                             = "create" create_function
@@ -18,22 +18,27 @@ renane_function             = "preset" discrete_channel_type integer "to" string
 
 record_function:            = "preset" discrete_channel_type integer "for" fixture_selector ["as" string]
                             = "group" integer "for" fixture_selector ["as" string]
-                            = "sequence" integer "cue" integer "for" fixture_selector
+                            = "sequence" integer "cue" integer "for" fixture_selector ["with" (channel_type+ | "active" | "all")]
 
 create_function:            = "sequence" integer ["as" string]
+                            = "executor" integer "for" ("sequence" integer) ["as" string]
 
 object                      = homeable_object
                             | specific_preset
 
 homeable_object             = fixture_selector
 
-specific_preset             = "preset" integer
+specific_preset             = "preset" discrete_channel_type integer
+
+value_single                = discrete_value_single
+                            | discrete_value_single "thru" discrete_value_single
 
 discrete_value_single       = float
                             | "full"
                             | "half"
                             | "out"
 
+channel_type_list           = "(" channel_type ("," channel_type)* ")"
 
 channel_type                = discrete_channel_type
                             | "maintenance" string

@@ -152,7 +152,7 @@ impl DemexUiApp {
                 let preset_handler_lock = self.context.preset_handler.read();
 
                 updatable_handler_lock
-                    .sequence_runtimes_stop_all(&mut fixture_handler_lock, &preset_handler_lock);
+                    .executors_stop_all(&mut fixture_handler_lock, &preset_handler_lock);
 
                 updatable_handler_lock.faders_home_all(&mut fixture_handler_lock);
             }
@@ -190,7 +190,7 @@ impl DemexUiApp {
             &mut self.context.fixture_handler.write(),
             &mut self.context.preset_handler.write(),
             FixtureSelectorContext::new(&self.context.global_fixture_select),
-            &self.context.updatable_handler.read(),
+            &mut self.context.updatable_handler.write(),
         )?;
 
         println!(

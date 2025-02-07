@@ -2,6 +2,7 @@
 pub enum TokenizationError {
     UnknownKeyword(String),
     UnterminatedString,
+    UnknownCharacter(char),
 }
 
 impl std::fmt::Display for TokenizationError {
@@ -9,6 +10,7 @@ impl std::fmt::Display for TokenizationError {
         match self {
             TokenizationError::UnknownKeyword(kw) => write!(f, "Unknown keyword: {}", kw),
             TokenizationError::UnterminatedString => write!(f, "Unterminated string"),
+            TokenizationError::UnknownCharacter(c) => write!(f, "Unknown character: {}", c),
         }
     }
 }

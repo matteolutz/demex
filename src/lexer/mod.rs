@@ -56,66 +56,49 @@ impl<'a> Lexer<'a> {
 
                 tokens.push(Token::Integer(num.parse().unwrap()));
             } else if self.peek().is_alphabetic() {
-                let mut keyword = String::new();
+                let mut keyword_str = String::new();
 
                 while self.peek().is_alphabetic() {
-                    keyword.push(self.consume());
+                    keyword_str.push(self.consume());
                 }
 
-                if keyword == "intens" {
-                    tokens.push(Token::KeywordIntens);
-                } else if keyword == "thru" {
-                    tokens.push(Token::KeywordThru);
-                } else if keyword == "full" {
-                    tokens.push(Token::KeywordFull);
-                } else if keyword == "half" {
-                    tokens.push(Token::KeywordHalf);
-                } else if keyword == "out" {
-                    tokens.push(Token::KeywordOut);
-                } else if keyword == "home" {
-                    tokens.push(Token::KeywordHome);
-                } else if keyword == "manset" {
-                    tokens.push(Token::KeywordManSet);
-                } else if keyword == "record" {
-                    tokens.push(Token::KeywordRecord);
-                } else if keyword == "group" || keyword == "g" {
-                    tokens.push(Token::KeywordGroup);
-                } else if keyword == "macro" {
-                    tokens.push(Token::KeywordMacro);
-                } else if keyword == "commandslice" {
-                    tokens.push(Token::KeywordCommandSlice);
-                } else if keyword == "rename" {
-                    tokens.push(Token::KeywordRename);
-                } else if keyword == "clear" {
-                    tokens.push(Token::KeywordClear);
-                } else if keyword == "color" {
-                    tokens.push(Token::KeywordColor);
-                } else if keyword == "position" {
-                    tokens.push(Token::KeywordPosition);
-                } else if keyword == "preset" {
-                    tokens.push(Token::KeywordPreset);
-                } else if keyword == "test" {
-                    tokens.push(Token::KeywordTest);
-                } else if keyword == "strobe" {
-                    tokens.push(Token::KeywordStrobe);
-                } else if keyword == "maintenance" {
-                    tokens.push(Token::KeywordMaintenance);
-                } else if keyword == "create" {
-                    tokens.push(Token::KeywordCreate);
-                } else if keyword == "sequence" || keyword == "seq" {
-                    tokens.push(Token::KeywordSequence);
-                } else if keyword == "fader" {
-                    tokens.push(Token::KeywordFader);
-                } else if keyword == "button" {
-                    tokens.push(Token::KeywordButton);
-                } else if keyword == "as" {
-                    tokens.push(Token::KeywordAs);
-                } else if keyword == "for" {
-                    tokens.push(Token::KeywordFor);
-                } else if keyword == "to" {
-                    tokens.push(Token::KeywordTo);
+                let keyword = match keyword_str.as_str() {
+                    "intens" => Some(Token::KeywordIntens),
+                    "thru" => Some(Token::KeywordThru),
+                    "full" => Some(Token::KeywordFull),
+                    "half" => Some(Token::KeywordHalf),
+                    "out" => Some(Token::KeywordOut),
+                    "home" => Some(Token::KeywordHome),
+                    "manset" => Some(Token::KeywordManSet),
+                    "record" | "rec" => Some(Token::KeywordRecord),
+                    "group" | "g" => Some(Token::KeywordGroup),
+                    "macro" => Some(Token::KeywordMacro),
+                    "commandslice" => Some(Token::KeywordCommandSlice),
+                    "rename" | "ren" => Some(Token::KeywordRename),
+                    "clear" => Some(Token::KeywordClear),
+                    "color" => Some(Token::KeywordColor),
+                    "position" => Some(Token::KeywordPosition),
+                    "preset" => Some(Token::KeywordPreset),
+                    "test" => Some(Token::KeywordTest),
+                    "strobe" => Some(Token::KeywordStrobe),
+                    "maintenance" => Some(Token::KeywordMaintenance),
+                    "create" => Some(Token::KeywordCreate),
+                    "sequence" | "seq" => Some(Token::KeywordSequence),
+                    "fader" => Some(Token::KeywordFader),
+                    "executor" | "exec" => Some(Token::KeywordExecutor),
+                    "as" => Some(Token::KeywordAs),
+                    "for" => Some(Token::KeywordFor),
+                    "to" => Some(Token::KeywordTo),
+                    "cue" => Some(Token::KeywordCue),
+                    "with" => Some(Token::KeywordWith),
+                    "all" => Some(Token::KeywordAll),
+                    _ => None,
+                };
+
+                if let Some(keyword) = keyword {
+                    tokens.push(keyword);
                 } else {
-                    return Err(TokenizationError::UnknownKeyword(keyword));
+                    return Err(TokenizationError::UnknownKeyword(keyword_str));
                 }
             } else if self.peek() == '@' {
                 self.consume();
@@ -157,8 +140,13 @@ impl<'a> Lexer<'a> {
             } else if self.peek() == '~' {
                 self.consume();
                 tokens.push(Token::KeywordFixturesSelected);
+            } else if self.peek() == ',' {
+                self.consume();
+                tokens.push(Token::Comma);
             } else if self.peek().is_whitespace() {
                 self.consume();
+            } else {
+                return Err(TokenizationError::UnknownCharacter(self.peek()));
             }
         }
 

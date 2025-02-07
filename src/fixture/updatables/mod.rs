@@ -6,56 +6,66 @@ use serde::{Deserialize, Serialize};
 use super::{
     handler::FixtureHandler,
     presets::{fader::DemexFader, PresetHandler},
-    sequence::preset::SequenceRuntimePreset,
+    sequence::executor::SequenceRuntimeExecutor,
 };
 
 pub mod error;
 
 #[derive(Serialize, Deserialize)]
 pub struct UpdatableHandler {
-    sequence_runtimes: HashMap<u32, SequenceRuntimePreset>,
+    executors: HashMap<u32, SequenceRuntimeExecutor>,
     faders: HashMap<u32, DemexFader>,
 }
 
-// Sequence Runtimes
+// Executors
 impl UpdatableHandler {
-    pub fn add_sequence_runtime(&mut self, runtime: SequenceRuntimePreset) {
-        self.sequence_runtimes.insert(runtime.id(), runtime);
+    pub fn create_executor(
+        &mut self,
+        id: u32,
+        sequence_id: u32,
+    ) -> Result<(), UpdatableHandlerError> {
+        if self.executors.contains_key(&id) {
+            return Err(UpdatableHandlerError::UpdatableAlreadyExists(id));
+        }
+
+        self.executors
+            .insert(id, SequenceRuntimeExecutor::new(id, sequence_id));
+        Ok(())
     }
 
-    pub fn sequence_runtime(&self, id: u32) -> Option<&SequenceRuntimePreset> {
-        self.sequence_runtimes.get(&id)
+    pub fn executor(&self, id: u32) -> Option<&SequenceRuntimeExecutor> {
+        self.executors.get(&id)
     }
 
-    pub fn sequence_runtime_mut(&mut self, id: u32) -> Option<&mut SequenceRuntimePreset> {
-        self.sequence_runtimes.get_mut(&id)
+    pub fn executor_mut(&mut self, id: u32) -> Option<&mut SequenceRuntimeExecutor> {
+        self.executors.get_mut(&id)
     }
 
-    pub fn sequence_runtimes(&self) -> &HashMap<u32, SequenceRuntimePreset> {
-        &self.sequence_runtimes
+    pub fn executors(&self) -> &HashMap<u32, SequenceRuntimeExecutor> {
+        &self.executors
     }
 
-    pub fn sequence_runtimes_stop_all(
+    pub fn executors_stop_all(
         &mut self,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
     ) {
-        for (_, sr) in self.sequence_runtimes.iter_mut() {
+        for (_, sr) in self.executors.iter_mut() {
             sr.stop(fixture_handler, preset_handler);
         }
     }
 
-    pub fn sequence_runtime_keys(&self) -> Vec<u32> {
-        self.sequence_runtimes.keys().cloned().collect()
+    pub fn executor_keys(&self) -> Vec<u32> {
+        self.executors.keys().cloned().collect()
     }
 
-    pub fn update_sequence_runtimes(
+    pub fn update_executors(
         &mut self,
         delta_time: f64,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
     ) {
-        for (_, runtime) in self.sequence_runtimes.iter_mut() {
+        for (_, runtime) in self.executors.iter_mut() {
             runtime.update(delta_time, fixture_handler, preset_handler);
         }
     }

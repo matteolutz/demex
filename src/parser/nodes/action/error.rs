@@ -1,17 +1,21 @@
 use crate::{
     fixture::{
         error::FixtureError, handler::error::FixtureHandlerError,
-        presets::error::PresetHandlerError,
+        presets::error::PresetHandlerError, updatables::error::UpdatableHandlerError,
     },
     parser::nodes::fixture_selector::FixtureSelectorError,
 };
+
+use super::Action;
 
 #[derive(Debug)]
 pub enum ActionRunError {
     FixtureHandlerError(FixtureHandlerError),
     FixtureError(FixtureError),
     PresetHandlerError(PresetHandlerError),
+    UpdatableHandlerError(UpdatableHandlerError),
     FixtureSelectorError(FixtureSelectorError),
+    UnimplementedAction(Action),
 }
 
 impl std::fmt::Display for ActionRunError {
@@ -20,7 +24,13 @@ impl std::fmt::Display for ActionRunError {
             ActionRunError::FixtureHandlerError(e) => write!(f, "Fixture handler error: {}", e),
             ActionRunError::FixtureError(e) => write!(f, "Fixture error: {}", e),
             ActionRunError::PresetHandlerError(e) => write!(f, "Preset handler error: {}", e),
+            ActionRunError::UpdatableHandlerError(e) => {
+                write!(f, "Updatable handler error: {}", e)
+            }
             ActionRunError::FixtureSelectorError(e) => write!(f, "Fixture selector error: {}", e),
+            ActionRunError::UnimplementedAction(action) => {
+                write!(f, "Unimplemented action: {:?}", action)
+            }
         }
     }
 }

@@ -18,6 +18,19 @@ pub mod error;
 pub mod result;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ChannelTypeSelector {
+    All,
+    Active,
+    Channels(Vec<u16>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ChannelValueSingleActionData {
+    Single(f32),
+    Thru(f32, f32),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Action {
     SetIntensity(FixtureSelector, f32),      // depr
     SetColor(FixtureSelector, [f32; 4]),     // depr
@@ -25,7 +38,7 @@ pub enum Action {
     SetPosition(FixtureSelector, [f32; 2]),  // depr
     SetPositionPreset(FixtureSelector, u32), // depr
 
-    SetChannelValue(FixtureSelector, u16, f32),
+    SetChannelValue(FixtureSelector, u16, ChannelValueSingleActionData),
     SetChannelValuePreset(FixtureSelector, u16, u32),
 
     Home(HomeableObject),
@@ -38,6 +51,7 @@ pub enum Action {
 
     RecordPreset(u16, u32, FixtureSelector, Option<String>),
     RecordGroup2(u32, FixtureSelector, Option<String>),
+    RecordSequenceCue(u32, usize, FixtureSelector, ChannelTypeSelector),
 
     RecordGroup(FixtureSelector, u32), // depr
 
@@ -54,6 +68,7 @@ pub enum Action {
     RenamePositionPreset(u32, String), // depr
 
     CreateSequence(u32, Option<String>),
+    CreateExecutor(u32, u32),
 
     FixtureSelector(FixtureSelector),
     ClearAll,
@@ -66,7 +81,7 @@ impl Action {
         fixture_handler: &mut FixtureHandler,
         preset_handler: &mut PresetHandler,
         fixture_selector_context: FixtureSelectorContext,
-        updatable_handler: &UpdatableHandler,
+        updatable_handler: &mut UpdatableHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
             Self::SetChannelValue(fixture_selector, channel_type, value) => self
@@ -76,7 +91,7 @@ impl Action {
                     fixture_selector,
                     fixture_selector_context,
                     *channel_type,
-                    *value,
+                    value,
                 ),
             Self::SetChannelValuePreset(fixture_selector, channel_type, preset_id) => self
                 .run_set_channel_value_preset(
@@ -120,12 +135,17 @@ impl Action {
                 self.run_rename_sequence(preset_handler, *id, new_name)
             }
             Self::CreateSequence(id, name) => self.run_create_sequence(preset_handler, *id, name),
+            Self::CreateExecutor(id, sequence_id) => {
+                self.run_create_executor(updatable_handler, *id, *sequence_id)
+            }
 
             Self::RecordMacro(action, id) => self.run_record_macro(*id, action, preset_handler),
             Self::ClearAll => Ok(ActionRunResult::new()),
             Self::FixtureSelector(_) => Ok(ActionRunResult::new()),
             Self::Test(_) => Ok(ActionRunResult::new()),
-            _ => todo!(),
+            unimplemented_action => Err(ActionRunError::UnimplementedAction(
+                unimplemented_action.clone(),
+            )),
         }
     }
 
@@ -136,17 +156,28 @@ impl Action {
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         channel_type: u16,
-        value: f32,
+        value: &ChannelValueSingleActionData,
     ) -> Result<ActionRunResult, ActionRunError> {
         let fixtures = fixture_selector
             .get_fixtures(preset_handler, fixture_selector_context)
             .map_err(ActionRunError::FixtureSelectorError)?;
 
-        for fixture in fixtures {
-            if let Some(f) = fixture_handler.fixture(fixture) {
+        for (idx, fixture) in fixtures.iter().enumerate() {
+            let discrete_value = match value {
+                ChannelValueSingleActionData::Single(value) => *value,
+                ChannelValueSingleActionData::Thru(start, end) => {
+                    let range = end - start;
+                    let step = range / (fixtures.len() - 1) as f32;
+                    start + step * idx as f32
+                }
+            };
+
+            if let Some(f) = fixture_handler.fixture(*fixture) {
                 f.set_channel_value(
                     channel_type,
-                    FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(value)),
+                    FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(
+                        discrete_value,
+                    )),
                 )
                 .map_err(ActionRunError::FixtureError)?;
             }
@@ -313,6 +344,19 @@ impl Action {
         preset_handler
             .create_sequence(id, name.clone())
             .map_err(ActionRunError::PresetHandlerError)?;
+
+        Ok(ActionRunResult::new())
+    }
+
+    fn run_create_executor(
+        &self,
+        updatable_handler: &mut UpdatableHandler,
+        id: u32,
+        sequence_id: u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        updatable_handler
+            .create_executor(id, sequence_id)
+            .map_err(ActionRunError::UpdatableHandlerError)?;
 
         Ok(ActionRunResult::new())
     }

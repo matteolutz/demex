@@ -53,7 +53,7 @@ pub trait FixtureChannelValueSourceTrait {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FixtureChannelValueSource {
     Programmer,
-    SequenceRuntime { runtime_id: u32 },
+    Executor { executor_id: u32 },
     Fader { fader_id: u32 },
 }
 
@@ -62,7 +62,7 @@ impl FixtureChannelValueSource {
         match self {
             Self::Programmer => FixtureChannelValuePriority::LTP,
             // TODO add sequence priority setting
-            Self::SequenceRuntime { runtime_id: _ } => FixtureChannelValuePriority::LTP,
+            Self::Executor { executor_id: _ } => FixtureChannelValuePriority::LTP,
             // TODO: add fader priority setting
             Self::Fader { fader_id: _ } => FixtureChannelValuePriority::LTP,
         }
@@ -84,8 +84,10 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                 FixtureChannelValueSource::Programmer => fixture
                     .channel_value_programmer(channel_id)
                     .map(|v| FadeFixtureChannelValue::new(v, 1.0)),
-                FixtureChannelValueSource::SequenceRuntime { runtime_id } => {
-                    let runtime = updatable_handler.sequence_runtime(*runtime_id);
+                FixtureChannelValueSource::Executor {
+                    executor_id: runtime_id,
+                } => {
+                    let runtime = updatable_handler.executor(*runtime_id);
 
                     if let Some(runtime) = runtime {
                         runtime
@@ -140,9 +142,11 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
 impl fmt::Display for FixtureChannelValueSource {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Programmer => write!(f, "PRG"),
-            Self::SequenceRuntime { runtime_id } => write!(f, "SEQ({})", runtime_id),
-            Self::Fader { fader_id } => write!(f, "FDR({})", fader_id),
+            Self::Programmer => write!(f, "Prg"),
+            Self::Executor {
+                executor_id: runtime_id,
+            } => write!(f, "Exe({})", runtime_id),
+            Self::Fader { fader_id } => write!(f, "Fdr({})", fader_id),
         }
     }
 }

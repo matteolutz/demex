@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::channel::value::FixtureChannelValue;
 
 pub mod cue;
-pub mod preset;
+pub mod executor;
 pub mod runtime;
 
 #[derive(Debug, Clone)]

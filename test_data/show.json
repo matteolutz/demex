@@ -40,24 +40,21 @@
         }
       }
     },
-    "sequence_runtimes": {
+    "executors": {
       "3": {
         "id": 3,
-        "name": "Flash Top PARs",
         "runtime": {
           "sequence_id": 2
         }
       },
       "1": {
         "id": 1,
-        "name": "Flash Washes",
         "runtime": {
           "sequence_id": 3
         }
       },
       "2": {
         "id": 2,
-        "name": "Wash Color Change",
         "runtime": {
           "sequence_id": 4
         }
@@ -526,6 +523,7 @@
         }
       }
     },
+    "dimmers": {},
     "colors": {},
     "positions": {},
     "macros": {

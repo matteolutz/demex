@@ -290,9 +290,12 @@ impl FixtureChannel {
                     )
                     .map_err(FixtureChannelError::FixtureError)?;
 
-                let (intens_coarse, intens_fine) = Self::float_to_coarse_and_fine(
-                    channel_value.as_single(preset_handler, fixture.id())?,
-                );
+                let (intens_coarse, intens_fine) =
+                    Self::float_to_coarse_and_fine(channel_value.as_single(
+                        preset_handler,
+                        fixture.id(),
+                        FIXTURE_CHANNEL_INTENSITY_ID,
+                    )?);
 
                 if *is_fine {
                     Ok(vec![intens_coarse, intens_fine])
@@ -306,7 +309,8 @@ impl FixtureChannel {
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 Ok(vec![
-                    (channel_value.as_single(preset_handler, fixture_id)? * 255.0) as u8,
+                    (channel_value.as_single(preset_handler, fixture_id, FIXTURE_CHANNEL_STROBE)?
+                        * 255.0) as u8,
                 ])
             }
             FixtureChannel::Zoom(is_fine, _) => {
@@ -315,7 +319,7 @@ impl FixtureChannel {
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 let (zoom_coarse, zoom_fine) = Self::float_to_coarse_and_fine(
-                    channel_value.as_single(preset_handler, fixture_id)?,
+                    channel_value.as_single(preset_handler, fixture_id, FIXTURE_CHANNEL_ZOOM)?,
                 );
 
                 if *is_fine {
@@ -397,7 +401,7 @@ impl FixtureChannel {
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 Ok(vec![
-                    (channel_value.as_single(preset_handler, fixture_id)? * 255.0) as u8,
+                    (channel_value.as_single(preset_handler, fixture_id, *id)? * 255.0) as u8,
                 ])
             }
             FixtureChannel::ToggleFlags(flags, _) => {

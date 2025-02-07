@@ -4,18 +4,19 @@ use crate::{
         FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
     },
     lexer::token::Token,
+    parser::nodes::action::ChannelTypeSelector,
 };
 
 use super::{
     error::ParseError,
     nodes::{
-        action::Action,
+        action::{Action, ChannelValueSingleActionData},
         fixture_selector::{AtomicFixtureSelector, FixtureSelector},
         object::{HomeableObject, Object, ObjectTrait},
     },
 };
 
-macro_rules! expect_token {
+macro_rules! expect_and_consume_token {
     ($self:ident, $pattern:pat $(if $guard:expr)? $(,)?, $expected:literal) => {
         match $self.current_token()? {
             $pattern $(if $guard)? => $self.advance(),
@@ -273,28 +274,38 @@ impl<'a> Parser2<'a> {
         }
     }
 
-    fn parse_specific_preset(&mut self) -> Result<u32, ParseError> {
-        match self.current_token()? {
-            Token::KeywordPreset => {
-                self.advance();
+    fn parse_channel_type_list(&mut self) -> Result<Vec<u16>, ParseError> {
+        expect_and_consume_token!(self, Token::ParenOpen, "(");
 
-                match self.current_token()? {
-                    &Token::Integer(preset_id) => {
-                        self.advance();
+        let mut channel_types = Vec::new();
 
-                        Ok(preset_id)
-                    }
-                    unexpected_token => Err(ParseError::UnexpectedToken(
-                        unexpected_token.clone(),
-                        "Expected integer".to_owned(),
-                    )),
-                }
-            }
-            unexpected_token => Err(ParseError::UnexpectedToken(
-                unexpected_token.clone(),
-                "Expected preset".to_owned(),
-            )),
+        if matches!(self.current_token()?, Token::ParenClose) {
+            self.advance();
+            return Ok(channel_types);
         }
+
+        loop {
+            let channel_type = self.parse_channel_type()?;
+            channel_types.push(channel_type);
+
+            if matches!(self.current_token()?, Token::ParenClose) {
+                self.advance();
+                break;
+            }
+
+            expect_and_consume_token!(self, Token::Comma, ",");
+        }
+
+        Ok(channel_types)
+    }
+
+    fn parse_specific_preset(&mut self) -> Result<(u16, u32), ParseError> {
+        expect_and_consume_token!(self, Token::KeywordPreset, "\"preset\"");
+
+        let channel_type = self.parse_discrete_channel_type()?;
+        let preset_id = self.parse_integer()?;
+
+        Ok((channel_type, preset_id))
     }
 
     fn parse_discrete_channel_value_single(&mut self) -> Result<f32, ParseError> {
@@ -322,33 +333,46 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_channel_value_single(&mut self) -> Result<ChannelValueSingleActionData, ParseError> {
+        let value_a = self.parse_discrete_channel_value_single()?;
+
+        if matches!(self.current_token()?, Token::KeywordThru) {
+            self.advance();
+            let value_b = self.parse_discrete_channel_value_single()?;
+
+            Ok(ChannelValueSingleActionData::Thru(value_a, value_b))
+        } else {
+            Ok(ChannelValueSingleActionData::Single(value_a))
+        }
+    }
+
     fn parse_set_function(
         &mut self,
         fixture_selector: FixtureSelector,
     ) -> Result<Action, ParseError> {
-        let channel_type = self.parse_channel_type()?;
-
         let preset = self.try_parse(Self::parse_specific_preset);
-        if let Ok(preset) = preset {
+        if let Ok((channel_type, preset_id)) = preset {
             return Ok(Action::SetChannelValuePreset(
                 fixture_selector,
                 channel_type,
-                preset,
+                preset_id,
             ));
         }
 
-        let discrete_value = self.try_parse(Self::parse_discrete_channel_value_single);
-        if let Ok(discrete_value) = discrete_value {
+        let channel_type = self.parse_channel_type()?;
+
+        let value = self.try_parse(Self::parse_channel_value_single);
+        if let Ok(value) = value {
             return Ok(Action::SetChannelValue(
                 fixture_selector,
                 channel_type,
-                discrete_value,
+                value,
             ));
         }
 
         Err(ParseError::UnexpectedVariant(
             "Expected \"preset <id>\" or discrete channel value".to_owned(),
-            vec![preset.err().unwrap(), discrete_value.err().unwrap()],
+            vec![preset.err().unwrap(), value.err().unwrap()],
         ))
     }
 
@@ -377,7 +401,7 @@ impl<'a> Parser2<'a> {
     }
 
     fn parse_as(&mut self) -> Result<String, ParseError> {
-        expect_token!(self, Token::KeywordAs, "\"as\"");
+        expect_and_consume_token!(self, Token::KeywordAs, "\"as\"");
         let name = self.parse_string()?;
         Ok(name)
     }
@@ -403,7 +427,7 @@ impl<'a> Parser2<'a> {
                 let discrete_channel_type = self.parse_discrete_channel_type()?;
                 let id = self.parse_integer()?;
 
-                expect_token!(self, Token::KeywordFor, "\"for\"");
+                expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
 
                 let fixture_selector = self.parse_fixture_selector()?;
 
@@ -421,13 +445,46 @@ impl<'a> Parser2<'a> {
 
                 let id = self.parse_integer()?;
 
-                expect_token!(self, Token::KeywordFor, "\"for\"");
+                expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
 
                 let fixture_selector = self.parse_fixture_selector()?;
 
                 let group_name = self.try_parse(Self::parse_as).ok();
 
                 Ok(Action::RecordGroup2(id, fixture_selector, group_name))
+            }
+            Token::KeywordSequence => {
+                self.advance();
+
+                let sequence_id = self.parse_integer()?;
+
+                expect_and_consume_token!(self, Token::KeywordCue, "\"cue\"");
+
+                let cue_idx = self.parse_integer()?;
+
+                expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
+
+                let fixture_selector = self.parse_fixture_selector()?;
+
+                let channel_type_selector = if matches!(self.current_token()?, Token::KeywordWith) {
+                    self.advance();
+
+                    if matches!(self.current_token()?, Token::KeywordAll) {
+                        self.advance();
+                        ChannelTypeSelector::All
+                    } else {
+                        ChannelTypeSelector::Channels(self.parse_channel_type_list()?)
+                    }
+                } else {
+                    ChannelTypeSelector::Active
+                };
+
+                Ok(Action::RecordSequenceCue(
+                    sequence_id,
+                    cue_idx as usize,
+                    fixture_selector,
+                    channel_type_selector,
+                ))
             }
             unexpected_token => Err(ParseError::UnexpectedToken(
                 unexpected_token.clone(),
@@ -444,7 +501,7 @@ impl<'a> Parser2<'a> {
                 let discrete_channel_type = self.parse_discrete_channel_type()?;
                 let id = self.parse_integer()?;
 
-                expect_token!(self, Token::KeywordTo, "\"to\"");
+                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
                 let preset_name = self.parse_string()?;
 
@@ -455,7 +512,7 @@ impl<'a> Parser2<'a> {
 
                 let id = self.parse_integer()?;
 
-                expect_token!(self, Token::KeywordTo, "\"to\"");
+                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
                 let group_name = self.parse_string()?;
 
@@ -466,7 +523,7 @@ impl<'a> Parser2<'a> {
 
                 let id = self.parse_integer()?;
 
-                expect_token!(self, Token::KeywordTo, "\"to\"");
+                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
                 let seq_name = self.parse_string()?;
 
@@ -490,9 +547,21 @@ impl<'a> Parser2<'a> {
 
                 Ok(Action::CreateSequence(sequence_id, sequence_name))
             }
+            Token::KeywordExecutor => {
+                self.advance();
+
+                let executor_id = self.parse_integer()?;
+
+                expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
+                expect_and_consume_token!(self, Token::KeywordSequence, "\"sequence\"");
+
+                let sequence_id = self.parse_integer()?;
+
+                Ok(Action::CreateExecutor(executor_id, sequence_id))
+            }
             _ => Err(ParseError::UnexpectedToken(
                 self.current_token()?.clone(),
-                "Expected \"sequence\"".to_string(),
+                "Expected \"sequence\" or \"executor\"".to_string(),
             )),
         }
     }

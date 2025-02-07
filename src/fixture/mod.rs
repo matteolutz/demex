@@ -374,7 +374,7 @@ impl Fixture {
         preset_handler: &PresetHandler,
     ) -> Result<f32, FixtureError> {
         self.channel_value_programmer(channel_id)?
-            .as_single(preset_handler, self.id)
+            .as_single(preset_handler, self.id, channel_id)
             .map_err(|err| FixtureError::FixtureChannelError(Box::new(err)))
     }
 
@@ -385,7 +385,7 @@ impl Fixture {
         updatable_handler: &UpdatableHandler,
     ) -> Result<f32, FixtureError> {
         self.channel_value(channel_id, preset_handler, updatable_handler)?
-            .as_single(preset_handler, self.id)
+            .as_single(preset_handler, self.id, channel_id)
             .map_err(|err| FixtureError::FixtureChannelError(Box::new(err)))
     }
 

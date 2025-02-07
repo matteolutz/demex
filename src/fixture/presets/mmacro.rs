@@ -47,7 +47,7 @@ impl MMacro {
         fixture_handler: &mut FixtureHandler,
         preset_handler: &mut PresetHandler,
         fixture_selector_context: FixtureSelectorContext,
-        update_handler: &UpdatableHandler,
+        update_handler: &mut UpdatableHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         self.action.run(
             fixture_handler,

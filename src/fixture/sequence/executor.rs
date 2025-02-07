@@ -7,23 +7,16 @@ use crate::fixture::{
 use super::{runtime::SequenceRuntime, FadeFixtureChannelValue};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SequenceRuntimePreset {
+pub struct SequenceRuntimeExecutor {
     id: u32,
-    name: String,
-    /*sequence: Sequence,
 
-    current_cue: usize,
-    cue_update: Option<time::Instant>,
-    started: bool,
-    first_cue: bool,*/
     runtime: SequenceRuntime,
 }
 
-impl SequenceRuntimePreset {
-    pub fn new(id: u32, name: String, sequence_id: u32) -> Self {
+impl SequenceRuntimeExecutor {
+    pub fn new(id: u32, sequence_id: u32) -> Self {
         Self {
             id,
-            name,
             runtime: SequenceRuntime::new(sequence_id),
         }
     }
@@ -32,8 +25,12 @@ impl SequenceRuntimePreset {
         self.id
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn name(&self, preset_handler: &PresetHandler) -> String {
+        preset_handler
+            .get_sequence(self.runtime.sequence_id())
+            .unwrap()
+            .name()
+            .to_owned()
     }
 
     pub fn runtime(&self) -> &SequenceRuntime {
@@ -82,8 +79,8 @@ impl SequenceRuntimePreset {
             .drain(..)
         {
             if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                fixture.push_value_source(FixtureChannelValueSource::SequenceRuntime {
-                    runtime_id: self.id,
+                fixture.push_value_source(FixtureChannelValueSource::Executor {
+                    executor_id: self.id,
                 });
             }
         }
@@ -106,8 +103,8 @@ impl SequenceRuntimePreset {
             .drain(..)
         {
             if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                fixture.remove_value_source(FixtureChannelValueSource::SequenceRuntime {
-                    runtime_id: self.id,
+                fixture.remove_value_source(FixtureChannelValueSource::Executor {
+                    executor_id: self.id,
                 });
             }
         }

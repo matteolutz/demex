@@ -18,6 +18,7 @@ pub trait FixtureChannelValueTrait {
         &self,
         preset_handler: &PresetHandler,
         fixture_id: u32,
+        channel_type: u16,
     ) -> Result<f32, FixtureChannelError>;
     fn as_quadruple(
         &self,
@@ -76,7 +77,7 @@ impl FixtureChannelValueTrait for FixtureChannelDiscreteValue {
         matches!(self, Self::AnyHome)
     }
 
-    fn as_single(&self, _: &PresetHandler, _: u32) -> Result<f32, FixtureChannelError> {
+    fn as_single(&self, _: &PresetHandler, _: u32, _: u16) -> Result<f32, FixtureChannelError> {
         match self {
             FixtureChannelDiscreteValue::Single(value) => Ok(*value),
             FixtureChannelDiscreteValue::AnyHome => Ok(0.0),
@@ -191,17 +192,30 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
         &self,
         preset_handler: &PresetHandler,
         fixture_id: u32,
+        channel_type: u16,
     ) -> Result<f32, FixtureChannelError> {
         match self {
-            FixtureChannelValue::Discrete(value) => value.as_single(preset_handler, fixture_id),
+            FixtureChannelValue::Discrete(value) => {
+                value.as_single(preset_handler, fixture_id, channel_type)
+            }
             FixtureChannelValue::Mix { a, b, mix } => {
-                let a = a.as_single(preset_handler, fixture_id)?;
-                let b = b.as_single(preset_handler, fixture_id)?;
+                let a = a.as_single(preset_handler, fixture_id, channel_type)?;
+                let b = b.as_single(preset_handler, fixture_id, channel_type)?;
 
                 Ok(a * (1.0 - mix) + b * mix)
             }
             FixtureChannelValue::Effect(effect) => effect.as_single(0.0),
-            FixtureChannelValue::Preset(_) => todo!("Preset handling for single"),
+            FixtureChannelValue::Preset(preset_id) => {
+                let preset =
+                    preset_handler.get_preset_for_fixture(*preset_id, channel_type, fixture_id);
+
+                Ok(preset
+                    .map(|p| {
+                        p.as_single(preset_handler, fixture_id, channel_type)
+                            .expect("")
+                    })
+                    .unwrap_or(0.0))
+            }
         }
     }
 

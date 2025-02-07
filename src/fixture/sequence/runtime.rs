@@ -76,6 +76,10 @@ impl SequenceRuntime {
 
         let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
+        if sequence.cues().len() == 0 {
+            return None;
+        }
+
         let cue = sequence.cue(self.current_cue);
         let prev_cue_idx = self.previous_cue_idx(preset_handler);
 
@@ -172,6 +176,10 @@ impl SequenceRuntime {
         }
 
         let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
+
+        if sequence.cues().len() == 0 {
+            return false;
+        }
 
         let delta = time::Instant::now()
             .duration_since(self.cue_update.unwrap())

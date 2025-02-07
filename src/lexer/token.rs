@@ -1,6 +1,20 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TokenType {
+    Literal,
+    Operator,
+
+    ActionKeyword,
+    ObjectKeyword,
+    ChannelTypeKeyword,
+    ValueKeyword,
+    OtherKeyword,
+
+    Eof,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Token {
     Integer(u32),
     FloatingPoint(f32),
@@ -11,6 +25,7 @@ pub enum Token {
     Exclamation,
     ParenOpen,
     ParenClose,
+    Comma,
 
     KeywordIntens,
     KeywordColor,
@@ -31,7 +46,7 @@ pub enum Token {
     KeywordCommandSlice,
     KeywordSequence,
     KeywordFader,
-    KeywordButton,
+    KeywordExecutor,
     KeywordFor,
     KeywordAs,
     KeywordTo,
@@ -40,8 +55,66 @@ pub enum Token {
     KeywordPreset,
     KeywordTest,
     KeywordFixturesSelected,
+    KeywordCue,
+    KeywordWith,
+    KeywordAll,
 
     Eof,
+}
+
+impl Token {
+    pub fn token_type(&self) -> TokenType {
+        match self {
+            Token::Integer(_) => TokenType::Literal,
+            Token::FloatingPoint(_) => TokenType::Literal,
+            Token::String(_) => TokenType::Literal,
+            Token::KeywordFixturesSelected => TokenType::Literal,
+
+            Token::Plus => TokenType::Operator,
+            Token::Minus => TokenType::Operator,
+            Token::Percent => TokenType::Operator,
+            Token::Exclamation => TokenType::Operator,
+            Token::ParenOpen => TokenType::Operator,
+            Token::ParenClose => TokenType::Operator,
+            Token::Comma => TokenType::Operator,
+
+            Token::KeywordIntens => TokenType::ChannelTypeKeyword,
+            Token::KeywordColor => TokenType::ChannelTypeKeyword,
+            Token::KeywordPosition => TokenType::ChannelTypeKeyword,
+            Token::KeywordStrobe => TokenType::ChannelTypeKeyword,
+            Token::KeywordMaintenance => TokenType::ChannelTypeKeyword,
+
+            Token::KeywordFull => TokenType::ValueKeyword,
+            Token::KeywordHalf => TokenType::ValueKeyword,
+            Token::KeywordOut => TokenType::ValueKeyword,
+
+            Token::KeywordHome => TokenType::ActionKeyword,
+            Token::KeywordManSet => TokenType::ActionKeyword,
+            Token::KeywordRecord => TokenType::ActionKeyword,
+            Token::KeywordRename => TokenType::ActionKeyword,
+            Token::KeywordClear => TokenType::ActionKeyword,
+            Token::KeywordTest => TokenType::ActionKeyword,
+            Token::KeywordCreate => TokenType::ActionKeyword,
+
+            Token::KeywordGroup => TokenType::ObjectKeyword,
+            Token::KeywordMacro => TokenType::ObjectKeyword,
+            Token::KeywordCommandSlice => TokenType::ObjectKeyword,
+            Token::KeywordPreset => TokenType::ObjectKeyword,
+            Token::KeywordSequence => TokenType::ObjectKeyword,
+            Token::KeywordFader => TokenType::ObjectKeyword,
+            Token::KeywordExecutor => TokenType::ObjectKeyword,
+            Token::KeywordCue => TokenType::ObjectKeyword,
+
+            Token::KeywordThru => TokenType::OtherKeyword,
+            Token::KeywordFor => TokenType::OtherKeyword,
+            Token::KeywordAs => TokenType::OtherKeyword,
+            Token::KeywordTo => TokenType::OtherKeyword,
+            Token::KeywordWith => TokenType::OtherKeyword,
+            Token::KeywordAll => TokenType::OtherKeyword,
+
+            Token::Eof => TokenType::Eof,
+        }
+    }
 }
 
 impl std::fmt::Display for Token {
@@ -56,6 +129,7 @@ impl std::fmt::Display for Token {
             Token::Exclamation => write!(f, "!"),
             Token::ParenOpen => write!(f, "("),
             Token::ParenClose => write!(f, ")"),
+            Token::Comma => write!(f, ","),
             Token::KeywordIntens => write!(f, "intes"),
             Token::KeywordThru => write!(f, "thru"),
             Token::KeywordFull => write!(f, "full"),
@@ -79,10 +153,13 @@ impl std::fmt::Display for Token {
             Token::KeywordCreate => write!(f, "create"),
             Token::KeywordSequence => write!(f, "sequence"),
             Token::KeywordFader => write!(f, "fader"),
-            Token::KeywordButton => write!(f, "button"),
+            Token::KeywordExecutor => write!(f, "executor"),
             Token::KeywordFor => write!(f, "for"),
             Token::KeywordAs => write!(f, "as"),
             Token::KeywordTo => write!(f, "to"),
+            Token::KeywordCue => write!(f, "cue"),
+            Token::KeywordWith => write!(f, "with"),
+            Token::KeywordAll => write!(f, "all"),
             Token::Eof => write!(f, "Eof"),
         }
     }

@@ -85,7 +85,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let mut updatable_handler = updatable_handler.write();
 
                     updatable_handler.update_faders(delta_time, &preset_handler);
-                    updatable_handler.update_sequence_runtimes(
+                    updatable_handler.update_executors(
                         delta_time,
                         &mut fixture_handler,
                         &preset_handler,
