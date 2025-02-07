@@ -1,4 +1,4 @@
-![demex](./assets/LogoV1-Wide.png)
+![demex](./assets/LogoV1-Wide-Title.png)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/a5327de0b1c14145ab6c275f1d3b1431)](https://app.codacy.com/gh/matteolutz/demex/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 ## What is demex?
