@@ -102,12 +102,18 @@ impl<'a> Lexer<'a> {
                     tokens.push(Token::KeywordMaintenance);
                 } else if keyword == "create" {
                     tokens.push(Token::KeywordCreate);
-                } else if keyword == "sequence" {
+                } else if keyword == "sequence" || keyword == "seq" {
                     tokens.push(Token::KeywordSequence);
                 } else if keyword == "fader" {
                     tokens.push(Token::KeywordFader);
                 } else if keyword == "button" {
                     tokens.push(Token::KeywordButton);
+                } else if keyword == "as" {
+                    tokens.push(Token::KeywordAs);
+                } else if keyword == "for" {
+                    tokens.push(Token::KeywordFor);
+                } else if keyword == "to" {
+                    tokens.push(Token::KeywordTo);
                 } else {
                     return Err(TokenizationError::UnknownKeyword(keyword));
                 }

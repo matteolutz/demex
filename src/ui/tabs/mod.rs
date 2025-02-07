@@ -9,6 +9,7 @@ pub mod fixture_controls_tab;
 pub mod fixture_list_tab;
 pub mod layout_view_tab;
 pub mod preset_grid_tab;
+pub mod sequences_list_tab;
 
 #[derive(Debug, PartialEq)]
 pub enum DemexTab {
@@ -17,6 +18,7 @@ pub enum DemexTab {
     PresetGrid,
     FixtureControls,
     Faders,
+    SequencesList,
     Debug,
 }
 
@@ -40,6 +42,7 @@ impl<'a> TabViewer for DemexTabViewer<'a> {
             DemexTab::PresetGrid => preset_grid_tab::ui(ui, self.context),
             DemexTab::FixtureControls => fixture_controls_tab::ui(ui, self.context),
             DemexTab::Faders => faders_tab::ui(ui, self.context),
+            DemexTab::SequencesList => sequences_list_tab::ui(ui, self.context),
             DemexTab::Debug => debug_tab::ui(ui, self.context),
         }
     }
@@ -60,7 +63,11 @@ pub struct DemexTabs {
 
 impl Default for DemexTabs {
     fn default() -> Self {
-        let mut dock_state = DockState::new(vec![DemexTab::FixtureList, DemexTab::Debug]);
+        let mut dock_state = DockState::new(vec![
+            DemexTab::FixtureList,
+            DemexTab::SequencesList,
+            DemexTab::Debug,
+        ]);
 
         let surface = dock_state.main_surface_mut();
         let [old_node, new_node] = surface.split_left(

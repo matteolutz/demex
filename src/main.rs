@@ -22,7 +22,7 @@ use utils::deadlock::start_deadlock_checking_thread;
 const TEST_SHOW_FILE: &str = "test_data/show.json";
 const TEST_PATCH_FILE: &str = "test_data/patch.json";
 
-const TEST_FUPS: f64 = 60.0;
+const TEST_FUPS: f64 = 200.0;
 const TEST_FPS: f64 = 60.0;
 
 const DEADLOCK_TEST: bool = true;

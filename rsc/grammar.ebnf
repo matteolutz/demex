@@ -8,12 +8,19 @@ function                    = fixture_selector channel_type (discrete_value_sing
                             = "home" [homeable_object]
                             = "record" record_function
                             = "create" create_function
+                            = "rename" rename_function
+                            = "clear"
 
-record_function:            = "preset" discrete_channel_type fixture_selector [string]
-                            = "group" fixture_selector [string]
-                            = "sequence" integer "cue" integer fixture_selector
+renane_function             = "preset" discrete_channel_type integer "to" string
+                            = "group" integer "to" string
+                            = "sequence" integer "to" string
 
-create_function:            = "sequence" [string]
+
+record_function:            = "preset" discrete_channel_type integer "for" fixture_selector ["as" string]
+                            = "group" integer "for" fixture_selector ["as" string]
+                            = "sequence" integer "cue" integer "for" fixture_selector
+
+create_function:            = "sequence" integer ["as" string]
 
 object                      = homeable_object
                             | specific_preset

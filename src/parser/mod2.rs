@@ -15,6 +15,18 @@ use super::{
     },
 };
 
+macro_rules! expect_token {
+    ($self:ident, $pattern:pat $(if $guard:expr)? $(,)?, $expected:literal) => {
+        match $self.current_token()? {
+            $pattern $(if $guard)? => $self.advance(),
+            unexpected_token => return Err(ParseError::UnexpectedToken(
+                unexpected_token.clone(),
+                format!("Expected {}", $expected)
+            )),
+        }
+    };
+}
+
 pub struct Parser2<'a> {
     tokens: &'a Vec<Token>,
     current_token_idx: usize,
@@ -340,6 +352,20 @@ impl<'a> Parser2<'a> {
         ))
     }
 
+    fn parse_string(&mut self) -> Result<String, ParseError> {
+        match self.current_token()?.clone() {
+            Token::String(name) => {
+                self.advance();
+                Ok(name)
+            }
+            unexpected_token => Err(ParseError::UnexpectedToken(
+                unexpected_token.clone(),
+                "Expected string".to_string(),
+            )),
+        }
+    }
+
+    #[allow(dead_code)]
     fn parse_optional_string(&mut self) -> Result<Option<String>, ParseError> {
         match self.current_token()?.clone() {
             Token::String(name) => {
@@ -350,17 +376,42 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_as(&mut self) -> Result<String, ParseError> {
+        expect_token!(self, Token::KeywordAs, "\"as\"");
+        let name = self.parse_string()?;
+        Ok(name)
+    }
+
+    fn parse_integer(&mut self) -> Result<u32, ParseError> {
+        match self.current_token()? {
+            &Token::Integer(value) => {
+                self.advance();
+                Ok(value)
+            }
+            unexpected_token => Err(ParseError::UnexpectedToken(
+                unexpected_token.clone(),
+                "Expected integer".to_string(),
+            )),
+        }
+    }
+
     fn parse_record_function(&mut self) -> Result<Action, ParseError> {
         match self.current_token()? {
             Token::KeywordPreset => {
                 self.advance();
 
                 let discrete_channel_type = self.parse_discrete_channel_type()?;
+                let id = self.parse_integer()?;
+
+                expect_token!(self, Token::KeywordFor, "\"for\"");
+
                 let fixture_selector = self.parse_fixture_selector()?;
-                let preset_name = self.parse_optional_string()?;
+
+                let preset_name = self.try_parse(Self::parse_as).ok();
 
                 Ok(Action::RecordPreset(
                     discrete_channel_type,
+                    id,
                     fixture_selector,
                     preset_name,
                 ))
@@ -368,10 +419,58 @@ impl<'a> Parser2<'a> {
             Token::KeywordGroup => {
                 self.advance();
 
-                let fixture_selector = self.parse_fixture_selector()?;
-                let group_name = self.parse_optional_string()?;
+                let id = self.parse_integer()?;
 
-                Ok(Action::RecordGroup2(fixture_selector, group_name))
+                expect_token!(self, Token::KeywordFor, "\"for\"");
+
+                let fixture_selector = self.parse_fixture_selector()?;
+
+                let group_name = self.try_parse(Self::parse_as).ok();
+
+                Ok(Action::RecordGroup2(id, fixture_selector, group_name))
+            }
+            unexpected_token => Err(ParseError::UnexpectedToken(
+                unexpected_token.clone(),
+                "Expected \"preset\"".to_string(),
+            )),
+        }
+    }
+
+    fn parse_rename_function(&mut self) -> Result<Action, ParseError> {
+        match self.current_token()? {
+            Token::KeywordPreset => {
+                self.advance();
+
+                let discrete_channel_type = self.parse_discrete_channel_type()?;
+                let id = self.parse_integer()?;
+
+                expect_token!(self, Token::KeywordTo, "\"to\"");
+
+                let preset_name = self.parse_string()?;
+
+                Ok(Action::RenamePreset(discrete_channel_type, id, preset_name))
+            }
+            Token::KeywordGroup => {
+                self.advance();
+
+                let id = self.parse_integer()?;
+
+                expect_token!(self, Token::KeywordTo, "\"to\"");
+
+                let group_name = self.parse_string()?;
+
+                Ok(Action::RenameGroup(id, group_name))
+            }
+            Token::KeywordSequence => {
+                self.advance();
+
+                let id = self.parse_integer()?;
+
+                expect_token!(self, Token::KeywordTo, "\"to\"");
+
+                let seq_name = self.parse_string()?;
+
+                Ok(Action::RenameSequence(id, seq_name))
             }
             unexpected_token => Err(ParseError::UnexpectedToken(
                 unexpected_token.clone(),
@@ -385,9 +484,11 @@ impl<'a> Parser2<'a> {
             Token::KeywordSequence => {
                 self.advance();
 
-                let sequence_name = self.parse_optional_string()?;
+                let sequence_id = self.parse_integer()?;
 
-                Ok(Action::CreateSequence(sequence_name))
+                let sequence_name = self.try_parse(Self::parse_as).ok();
+
+                Ok(Action::CreateSequence(sequence_id, sequence_name))
             }
             _ => Err(ParseError::UnexpectedToken(
                 self.current_token()?.clone(),
@@ -410,6 +511,16 @@ impl<'a> Parser2<'a> {
         if matches!(self.current_token()?, Token::KeywordCreate) {
             self.advance();
             return self.parse_create_function();
+        }
+
+        if matches!(self.current_token()?, Token::KeywordRename) {
+            self.advance();
+            return self.parse_rename_function();
+        }
+
+        if matches!(self.current_token()?, Token::KeywordClear) {
+            self.advance();
+            return Ok(Action::ClearAll);
         }
 
         let fixture_selector = self.try_parse(Self::parse_fixture_selector);

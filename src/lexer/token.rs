@@ -32,6 +32,9 @@ pub enum Token {
     KeywordSequence,
     KeywordFader,
     KeywordButton,
+    KeywordFor,
+    KeywordAs,
+    KeywordTo,
     KeywordRename,
     KeywordClear,
     KeywordPreset,
@@ -77,6 +80,9 @@ impl std::fmt::Display for Token {
             Token::KeywordSequence => write!(f, "sequence"),
             Token::KeywordFader => write!(f, "fader"),
             Token::KeywordButton => write!(f, "button"),
+            Token::KeywordFor => write!(f, "for"),
+            Token::KeywordAs => write!(f, "as"),
+            Token::KeywordTo => write!(f, "to"),
             Token::Eof => write!(f, "Eof"),
         }
     }

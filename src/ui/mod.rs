@@ -20,9 +20,12 @@ use crate::{
         updatables::UpdatableHandler,
     },
     lexer::token::Token,
-    parser::nodes::{
-        action::Action,
-        fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    parser::{
+        mod2::Parser2,
+        nodes::{
+            action::Action,
+            fixture_selector::{FixtureSelector, FixtureSelectorContext},
+        },
     },
 };
 
@@ -200,7 +203,8 @@ impl DemexUiApp {
     }
 
     pub fn run_cmd(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let mut p = Parser::new(&self.context.command);
+        let mut p = Parser2::new(&self.context.command);
+
         let action = p.parse()?;
 
         self.run_and_handle_action(action)

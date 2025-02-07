@@ -24,6 +24,7 @@ pub struct FixturePreset {
 impl FixturePreset {
     pub fn new(
         id: u32,
+        name: Option<String>,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         channel_type: u16,
@@ -31,7 +32,11 @@ impl FixturePreset {
         fixture_handler: &FixtureHandler,
         updatable_handler: &UpdatableHandler,
     ) -> Result<Self, PresetHandlerError> {
-        let name = format!("{} Preset {}", FixtureChannel::name_by_id(channel_type), id);
+        let name = name.unwrap_or(format!(
+            "{} Preset {}",
+            FixtureChannel::name_by_id(channel_type),
+            id
+        ));
 
         let mut values = HashMap::new();
         for fixture_id in fixture_selector

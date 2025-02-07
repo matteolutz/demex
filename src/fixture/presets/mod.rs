@@ -61,12 +61,13 @@ impl PresetHandler {
         &mut self,
         fixture_selector: FixtureSelector,
         id: u32,
+        name: Option<String>,
     ) -> Result<(), PresetHandlerError> {
         if self.groups.contains_key(&id) {
             return Err(PresetHandlerError::PresetAlreadyExists(id));
         }
 
-        let group = FixtureGroup::new(id, fixture_selector);
+        let group = FixtureGroup::new(id, name, fixture_selector);
         self.groups.insert(id, group);
         Ok(())
     }
@@ -97,6 +98,7 @@ impl PresetHandler {
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         id: u32,
+        name: Option<String>,
         fixture_handler: &FixtureHandler,
         channel_type: u16,
         updatable_handler: &UpdatableHandler,
@@ -107,6 +109,7 @@ impl PresetHandler {
 
         let preset = FixturePreset::new(
             id,
+            name,
             fixture_selector,
             fixture_selector_context,
             channel_type,
@@ -244,12 +247,19 @@ impl PresetHandler {
 
 // Sequences
 impl PresetHandler {
-    pub fn record_sequence(&mut self, sequence: Sequence) -> Result<(), PresetHandlerError> {
-        if self.sequences.contains_key(&sequence.id()) {
-            return Err(PresetHandlerError::PresetAlreadyExists(sequence.id()));
+    pub fn create_sequence(
+        &mut self,
+        id: u32,
+        name: Option<String>,
+    ) -> Result<(), PresetHandlerError> {
+        if self.sequences.contains_key(&id) {
+            return Err(PresetHandlerError::PresetAlreadyExists(id));
         }
 
-        self.sequences.insert(sequence.id(), sequence);
+        self.sequences.insert(
+            id,
+            Sequence::new(id, name.unwrap_or(format!("Sequence {}", id + 1))),
+        );
         Ok(())
     }
 

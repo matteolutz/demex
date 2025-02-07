@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
-    channel::{
-        value::{FixtureChannelDiscreteValue, FixtureChannelValue},
-        FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-    },
+    channel::value::{FixtureChannelDiscreteValue, FixtureChannelValue},
     handler::FixtureHandler,
     presets::PresetHandler,
     updatables::UpdatableHandler,
@@ -22,28 +19,42 @@ pub mod result;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Action {
-    SetIntensity(FixtureSelector, f32),
-    SetColor(FixtureSelector, [f32; 4]),
-    SetColorPreset(FixtureSelector, u32),
-    SetPosition(FixtureSelector, [f32; 2]),
-    SetPositionPreset(FixtureSelector, u32),
+    SetIntensity(FixtureSelector, f32),      // depr
+    SetColor(FixtureSelector, [f32; 4]),     // depr
+    SetColorPreset(FixtureSelector, u32),    // depr
+    SetPosition(FixtureSelector, [f32; 2]),  // depr
+    SetPositionPreset(FixtureSelector, u32), // depr
+
     SetChannelValue(FixtureSelector, u16, f32),
     SetChannelValuePreset(FixtureSelector, u16, u32),
+
     Home(HomeableObject),
     HomeAll,
-    GoHome(FixtureSelector),
-    GoHomeAll,
-    ManSet(FixtureSelector, String, f32),
-    RecordPreset(u16, FixtureSelector, Option<String>),
-    RecordGroup2(FixtureSelector, Option<String>),
-    RecordGroup(FixtureSelector, u32),
-    RecordColor(FixtureSelector, u32),
-    RecordPosition(FixtureSelector, u32),
-    RecordMacro(Box<Action>, u32),
+
+    GoHome(FixtureSelector), // depr
+    GoHomeAll,               // depr
+
+    ManSet(FixtureSelector, String, f32), // depr
+
+    RecordPreset(u16, u32, FixtureSelector, Option<String>),
+    RecordGroup2(u32, FixtureSelector, Option<String>),
+
+    RecordGroup(FixtureSelector, u32), // depr
+
+    RecordColor(FixtureSelector, u32),    // depr
+    RecordPosition(FixtureSelector, u32), // depr
+
+    RenamePreset(u16, u32, String),
     RenameGroup(u32, String),
-    RenameColorPreset(u32, String),
-    RenamePositionPreset(u32, String),
-    CreateSequence(Option<String>),
+    RenameSequence(u32, String),
+
+    RecordMacro(Box<Action>, u32),
+
+    RenameColorPreset(u32, String),    // depr
+    RenamePositionPreset(u32, String), // depr
+
+    CreateSequence(u32, Option<String>),
+
     FixtureSelector(FixtureSelector),
     ClearAll,
     Test(String),
@@ -58,85 +69,58 @@ impl Action {
         updatable_handler: &UpdatableHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
-            Self::SetIntensity(fixture_selector, intensity) => self.run_set_intensity(
+            Self::SetChannelValue(fixture_selector, channel_type, value) => self
+                .run_set_channel_value(
+                    preset_handler,
+                    fixture_handler,
+                    fixture_selector,
+                    fixture_selector_context,
+                    *channel_type,
+                    *value,
+                ),
+            Self::SetChannelValuePreset(fixture_selector, channel_type, preset_id) => self
+                .run_set_channel_value_preset(
+                    preset_handler,
+                    fixture_handler,
+                    fixture_selector,
+                    fixture_selector_context,
+                    *channel_type,
+                    *preset_id,
+                ),
+
+            Self::Home(homeable_object) => self.run_home(
                 preset_handler,
                 fixture_handler,
-                fixture_selector,
-                fixture_selector_context,
-                *intensity,
-            ),
-            Self::SetColorPreset(fixture_selector, preset_id) => self.run_set_color_preset(
-                preset_handler,
-                fixture_handler,
-                fixture_selector,
-                fixture_selector_context,
-                *preset_id,
-            ),
-            Self::SetColor(fixture_selector, rgbw) => self.run_set_color(
-                preset_handler,
-                fixture_handler,
-                fixture_selector,
-                fixture_selector_context,
-                *rgbw,
-            ),
-            Self::SetPositionPreset(fixture_selector, preset_id) => self.run_set_position_preset(
-                preset_handler,
-                fixture_handler,
-                fixture_selector,
-                fixture_selector_context,
-                *preset_id,
-            ),
-            Self::SetPosition(fixture_selector, position) => self.run_set_position(
-                preset_handler,
-                fixture_handler,
-                fixture_selector,
-                fixture_selector_context,
-                *position,
-            ),
-            Self::GoHome(fixture_selector) => self.run_go_home(
-                preset_handler,
-                fixture_handler,
-                fixture_selector,
+                homeable_object,
                 fixture_selector_context,
             ),
-            Self::GoHomeAll => self.run_go_home_all(fixture_handler),
-            Self::ManSet(fixture_selector, channel_name, channel_value) => self.run_man_set(
-                preset_handler,
-                fixture_handler,
-                fixture_selector,
-                fixture_selector_context,
-                channel_name,
-                *channel_value,
-            ),
-            Self::RecordGroup(fixture_selector, id) => self.run_record_group(
-                fixture_selector,
-                fixture_selector_context,
-                *id,
-                preset_handler,
-            ),
-            Self::RenameGroup(id, new_name) => self.run_rename_group(*id, new_name, preset_handler),
-            Self::RenameColorPreset(id, new_name) => {
-                self.run_rename_color(*id, new_name, preset_handler)
-            }
-            Self::RenamePositionPreset(id, new_name) => {
-                self.run_rename_position(*id, new_name, preset_handler)
-            }
-            Self::RecordColor(fixture_selector, id) => self.run_record_color(
-                fixture_selector,
-                fixture_selector_context,
-                *id,
+            Self::HomeAll => self.run_home_all(fixture_handler),
+            Self::RecordPreset(channel_type, id, fixture_selector, name) => self.run_record_preset(
                 preset_handler,
                 fixture_handler,
                 updatable_handler,
+                fixture_selector,
+                fixture_selector_context,
+                *channel_type,
+                *id,
+                name,
             ),
-            Self::RecordPosition(fixture_selector, id) => self.run_record_position(
+            Self::RecordGroup2(id, fixture_selector, name) => self.run_record_group(
+                preset_handler,
                 fixture_selector,
                 fixture_selector_context,
                 *id,
-                preset_handler,
-                fixture_handler,
-                updatable_handler,
+                name,
             ),
+            Self::RenamePreset(channel_type, id, new_name) => {
+                self.run_rename_preset(preset_handler, *channel_type, *id, new_name)
+            }
+            Self::RenameGroup(id, new_name) => self.run_rename_group(preset_handler, *id, new_name),
+            Self::RenameSequence(id, new_name) => {
+                self.run_rename_sequence(preset_handler, *id, new_name)
+            }
+            Self::CreateSequence(id, name) => self.run_create_sequence(preset_handler, *id, name),
+
             Self::RecordMacro(action, id) => self.run_record_macro(*id, action, preset_handler),
             Self::ClearAll => Ok(ActionRunResult::new()),
             Self::FixtureSelector(_) => Ok(ActionRunResult::new()),
@@ -145,7 +129,60 @@ impl Action {
         }
     }
 
-    fn run_go_home_all(
+    fn run_set_channel_value(
+        &self,
+        preset_handler: &PresetHandler,
+        fixture_handler: &mut FixtureHandler,
+        fixture_selector: &FixtureSelector,
+        fixture_selector_context: FixtureSelectorContext,
+        channel_type: u16,
+        value: f32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let fixtures = fixture_selector
+            .get_fixtures(preset_handler, fixture_selector_context)
+            .map_err(ActionRunError::FixtureSelectorError)?;
+
+        for fixture in fixtures {
+            if let Some(f) = fixture_handler.fixture(fixture) {
+                f.set_channel_value(
+                    channel_type,
+                    FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(value)),
+                )
+                .map_err(ActionRunError::FixtureError)?;
+            }
+        }
+
+        Ok(ActionRunResult::new())
+    }
+
+    fn run_set_channel_value_preset(
+        &self,
+        preset_handler: &PresetHandler,
+        fixture_handler: &mut FixtureHandler,
+        fixture_selector: &FixtureSelector,
+        fixture_selector_context: FixtureSelectorContext,
+        channel_type: u16,
+        preset_id: u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let fixtures = fixture_selector
+            .get_fixtures(preset_handler, fixture_selector_context)
+            .map_err(ActionRunError::FixtureSelectorError)?;
+
+        let preset = preset_handler
+            .get_preset(preset_id, channel_type)
+            .map_err(ActionRunError::PresetHandlerError)?;
+
+        for fixture in fixtures {
+            if let Some(f) = fixture_handler.fixture(fixture) {
+                f.set_channel_value(channel_type, FixtureChannelValue::Preset(preset.id()))
+                    .map_err(ActionRunError::FixtureError)?;
+            }
+        }
+
+        Ok(ActionRunResult::new())
+    }
+
+    fn run_home_all(
         &self,
         fixture_handler: &mut FixtureHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
@@ -156,184 +193,63 @@ impl Action {
         Ok(ActionRunResult::new())
     }
 
-    fn run_go_home(
+    fn run_home(
         &self,
         preset_handler: &PresetHandler,
         fixture_handler: &mut FixtureHandler,
-        fixture_selector: &FixtureSelector,
+        homeable_object: &HomeableObject,
         fixture_selector_context: FixtureSelectorContext,
     ) -> Result<ActionRunResult, ActionRunError> {
-        let fixtures = fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
+        match homeable_object {
+            HomeableObject::FixtureSelector(fixture_selector) => {
+                let fixtures = fixture_selector
+                    .get_fixtures(preset_handler, fixture_selector_context)
+                    .map_err(ActionRunError::FixtureSelectorError)?;
 
-        for fixture_id in fixtures {
-            if let Some(fixture) = fixture_handler.fixture(fixture_id) {
-                fixture.home().map_err(ActionRunError::FixtureError)?;
+                for fixture_id in fixtures {
+                    if let Some(fixture) = fixture_handler.fixture(fixture_id) {
+                        fixture.home().map_err(ActionRunError::FixtureError)?;
+                    }
+                }
+
+                Ok(ActionRunResult::new())
             }
         }
-
-        Ok(ActionRunResult::new())
     }
 
-    fn run_set_intensity(
+    fn run_record_preset(
         &self,
-        preset_handler: &PresetHandler,
-        fixture_handler: &mut FixtureHandler,
+        preset_handler: &mut PresetHandler,
+        fixture_handler: &FixtureHandler,
+        updatable_handler: &UpdatableHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        intensity: f32,
+        channel_type: u16,
+        id: u32,
+        name: &Option<String>,
     ) -> Result<ActionRunResult, ActionRunError> {
-        let fixtures = fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        for fixture in fixtures {
-            if let Some(f) = fixture_handler.fixture(fixture) {
-                f.set_intensity(FixtureChannelValue::Discrete(
-                    FixtureChannelDiscreteValue::Single(intensity / 100.0),
-                ))
-                .map_err(ActionRunError::FixtureError)?;
-            }
-        }
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_set_color_preset(
-        &self,
-        preset_handler: &PresetHandler,
-        fixture_handler: &mut FixtureHandler,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        preset_id: u32,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let fixtures = fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        let preset = preset_handler
-            .get_preset(preset_id, FIXTURE_CHANNEL_COLOR_ID)
+        preset_handler
+            .record_preset(
+                fixture_selector,
+                fixture_selector_context,
+                id,
+                name.clone(),
+                fixture_handler,
+                channel_type,
+                updatable_handler,
+            )
             .map_err(ActionRunError::PresetHandlerError)?;
-
-        for fixture in fixtures {
-            if let Some(f) = fixture_handler.fixture(fixture) {
-                f.set_color(FixtureChannelValue::Preset(preset.id()))
-                    .map_err(ActionRunError::FixtureError)?;
-            }
-        }
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_set_color(
-        &self,
-        preset_handler: &PresetHandler,
-        fixture_handler: &mut FixtureHandler,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        color: [f32; 4],
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let fixtures = fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        for fixture in fixtures {
-            if let Some(f) = fixture_handler.fixture(fixture) {
-                f.set_color(FixtureChannelValue::Discrete(
-                    FixtureChannelDiscreteValue::Quadruple(color),
-                ))
-                .map_err(ActionRunError::FixtureError)?;
-            }
-        }
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_set_position_preset(
-        &self,
-        preset_handler: &PresetHandler,
-        fixture_handler: &mut FixtureHandler,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        preset_id: u32,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let fixtures = fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        let preset = preset_handler
-            .get_preset(preset_id, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID)
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        for fixture in fixtures {
-            if let Some(f) = fixture_handler.fixture(fixture) {
-                f.set_position_pan_tilt(FixtureChannelValue::Preset(preset.id()))
-                    .map_err(ActionRunError::FixtureError)?;
-            }
-        }
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_set_position(
-        &self,
-        preset_handler: &PresetHandler,
-        fixture_handler: &mut FixtureHandler,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        position: [f32; 2],
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let fixtures = fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        for fixture in fixtures {
-            if let Some(f) = fixture_handler.fixture(fixture) {
-                f.set_position_pan_tilt(FixtureChannelValue::Discrete(
-                    FixtureChannelDiscreteValue::Pair(position),
-                ))
-                .map_err(ActionRunError::FixtureError)?;
-            }
-        }
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_man_set(
-        &self,
-        preset_handler: &PresetHandler,
-        fixture_handler: &mut FixtureHandler,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        channel_name: &str,
-        channel_value: f32,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let fixtures = fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        for fixture in fixtures {
-            if let Some(f) = fixture_handler.fixture(fixture) {
-                f.set_mainenance(
-                    channel_name,
-                    FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(
-                        channel_value / 100.0,
-                    )),
-                )
-                .map_err(ActionRunError::FixtureError)?;
-            }
-        }
 
         Ok(ActionRunResult::new())
     }
 
     fn run_record_group(
         &self,
+        preset_handler: &mut PresetHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         id: u32,
-        preset_handler: &mut PresetHandler,
+        name: &Option<String>,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
             .record_group(
@@ -341,6 +257,7 @@ impl Action {
                     .flatten(preset_handler, fixture_selector_context)
                     .map_err(ActionRunError::FixtureSelectorError)?,
                 id,
+                name.clone(),
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 
@@ -349,9 +266,9 @@ impl Action {
 
     fn run_rename_group(
         &self,
+        preset_handler: &mut PresetHandler,
         id: u32,
         new_name: &str,
-        preset_handler: &mut PresetHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
             .rename_group(id, new_name.to_owned())
@@ -360,77 +277,41 @@ impl Action {
         Ok(ActionRunResult::new())
     }
 
-    fn run_rename_color(
+    fn run_rename_sequence(
         &self,
+        preset_handler: &mut PresetHandler,
         id: u32,
         new_name: &str,
-        preset_handler: &mut PresetHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
-            .rename_preset(id, FIXTURE_CHANNEL_COLOR_ID, new_name.to_owned())
+            .rename_sequence(id, new_name.to_owned())
             .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())
     }
 
-    fn run_rename_position(
+    fn run_rename_preset(
         &self,
+        preset_handler: &mut PresetHandler,
+        channel_type: u16,
         id: u32,
         new_name: &str,
-        preset_handler: &mut PresetHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
-            .rename_preset(
-                id,
-                FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-                new_name.to_owned(),
-            )
+            .rename_preset(id, channel_type, new_name.to_owned())
             .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())
     }
 
-    fn run_record_color(
+    fn run_create_sequence(
         &self,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        id: u32,
         preset_handler: &mut PresetHandler,
-        fixture_handler: &FixtureHandler,
-        updatable_handler: &UpdatableHandler,
+        id: u32,
+        name: &Option<String>,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
-            .record_preset(
-                fixture_selector,
-                fixture_selector_context,
-                id,
-                fixture_handler,
-                FIXTURE_CHANNEL_COLOR_ID,
-                updatable_handler,
-            )
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_record_position(
-        &self,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        id: u32,
-        preset_handler: &mut PresetHandler,
-        fixture_handler: &FixtureHandler,
-        updatable_handler: &UpdatableHandler,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        preset_handler
-            .record_preset(
-                fixture_selector,
-                fixture_selector_context,
-                id,
-                fixture_handler,
-                FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-                updatable_handler,
-            )
+            .create_sequence(id, name.clone())
             .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())

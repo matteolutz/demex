@@ -35,6 +35,9 @@ impl Into<eframe::egui::Color32> for &Token {
             | Token::KeywordSequence
             | Token::KeywordFader
             | Token::KeywordButton
+            | Token::KeywordFor
+            | Token::KeywordAs
+            | Token::KeywordTo
             | Token::KeywordTest => eframe::egui::Color32::GOLD,
             // Other keywords
             Token::KeywordGroup | Token::KeywordThru | Token::KeywordPreset => {

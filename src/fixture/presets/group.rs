@@ -14,7 +14,7 @@ pub struct FixtureGroup {
 }
 
 impl FixtureGroup {
-    pub fn new(id: u32, fixture_selector: FixtureSelector) -> Self {
+    pub fn new(id: u32, name: Option<String>, fixture_selector: FixtureSelector) -> Self {
         assert!(
             fixture_selector.is_flat(),
             "FixtureGroup fixture selector must be flattened"
@@ -22,7 +22,7 @@ impl FixtureGroup {
 
         FixtureGroup {
             id,
-            name: format!("Group {}", id),
+            name: name.unwrap_or(format!("Group {}", id)),
             fixture_selector,
         }
     }
