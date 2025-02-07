@@ -1,4 +1,4 @@
-use std::{sync::Arc, time};
+use std::{fmt, sync::Arc, time};
 
 use error::DemexUiError;
 use parking_lot::RwLock;
@@ -23,10 +23,11 @@ use crate::{
     parser::{
         mod2::Parser2,
         nodes::{
-            action::Action,
+            action::{result::ActionRunResult, Action},
             fixture_selector::{FixtureSelector, FixtureSelectorContext},
         },
     },
+    show::DemexShow,
 };
 
 pub mod components;
@@ -69,97 +70,81 @@ pub struct DemexUiContext {
 
     stats: Arc<RwLock<DemexUiStats>>,
 
+    dialogs: Vec<DemexGlobalDialog>,
+
+    macro_execution_queue: Vec<Action>,
+
+    save_show: fn(DemexShow) -> Result<(), Box<dyn std::error::Error>>,
+
     layout_view_context: LayoutViewContext,
     gm_slider_val: u8,
 }
 
-pub struct DemexUiApp {
-    command_input: String,
-    is_command_input_empty: bool,
-    context: DemexUiContext,
-    global_error: Option<Box<dyn std::error::Error>>,
-    tabs: DemexTabs,
-    last_update: std::time::Instant,
-    fps: f64,
-}
-
-impl DemexUiApp {
-    pub fn new(
-        fixture_handler: Arc<RwLock<FixtureHandler>>,
-        preset_handler: Arc<RwLock<PresetHandler>>,
-        updatable_handler: Arc<RwLock<UpdatableHandler>>,
-        patch: Patch,
-        stats: Arc<RwLock<DemexUiStats>>,
-        fps: f64,
-    ) -> Self {
-        Self {
-            command_input: String::new(),
-            is_command_input_empty: true,
-            context: DemexUiContext {
-                patch,
-                stats,
-                gm_slider_val: fixture_handler.clone().read().grand_master(),
-                fixture_handler,
-                preset_handler,
-                updatable_handler,
-                global_fixture_select: None,
-                command: Vec::new(),
-                layout_view_context: LayoutViewContext::default(),
-            },
-            global_error: None,
-            tabs: DemexTabs::default(),
-            last_update: time::Instant::now(),
-            fps,
-        }
-    }
-}
-
-impl DemexUiApp {
+impl DemexUiContext {
     pub fn run_and_handle_action(
         &mut self,
-        action: Action,
+        action: &Action,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match &action {
             Action::FixtureSelector(fixture_selector) => {
                 let fixture_selector = fixture_selector.flatten(
-                    &self.context.preset_handler.read(),
-                    FixtureSelectorContext::new(&self.context.global_fixture_select),
+                    &self.preset_handler.read(),
+                    FixtureSelectorContext::new(&self.global_fixture_select),
                 );
 
                 if let Ok(fixture_selector) = fixture_selector {
                     let selected_fixtures = fixture_selector.get_fixtures(
-                        &self.context.preset_handler.read(),
-                        FixtureSelectorContext::new(&self.context.global_fixture_select),
+                        &self.preset_handler.read(),
+                        FixtureSelectorContext::new(&self.global_fixture_select),
                     );
 
                     if selected_fixtures.is_ok() {
-                        self.context.global_fixture_select = Some(fixture_selector);
+                        self.global_fixture_select = Some(fixture_selector);
                     } else if let Err(fixture_selector_err) = selected_fixtures {
-                        self.context.global_fixture_select = None;
-                        self.global_error = Some(Box::new(fixture_selector_err));
+                        self.global_fixture_select = None;
+                        self.dialogs
+                            .push(DemexGlobalDialog::Error(Box::new(fixture_selector_err)));
                     }
                 } else if let Err(fixture_selector_err) = fixture_selector {
-                    self.context.global_fixture_select = None;
-                    self.global_error = Some(Box::new(fixture_selector_err))
+                    self.global_fixture_select = None;
+                    self.dialogs
+                        .push(DemexGlobalDialog::Error(Box::new(fixture_selector_err)));
                 }
             }
             Action::ClearAll => {
-                self.context.global_fixture_select = None;
+                self.global_fixture_select = None;
+                self.dialogs.clear();
             }
             Action::GoHomeAll => {
-                let mut updatable_handler_lock = self.context.updatable_handler.write();
-                let mut fixture_handler_lock = self.context.fixture_handler.write();
-                let preset_handler_lock = self.context.preset_handler.read();
+                let mut updatable_handler_lock = self.updatable_handler.write();
+                let mut fixture_handler_lock = self.fixture_handler.write();
+                let preset_handler_lock = self.preset_handler.read();
 
                 updatable_handler_lock
                     .executors_stop_all(&mut fixture_handler_lock, &preset_handler_lock);
 
                 updatable_handler_lock.faders_home_all(&mut fixture_handler_lock);
             }
+            Action::Save => {
+                let updatable_handler_lock = self.updatable_handler.read();
+                let preset_handler_lock = self.preset_handler.read();
+
+                let show = DemexShow {
+                    preset_handler: preset_handler_lock.clone(),
+                    updatable_handler: updatable_handler_lock.clone(),
+                };
+
+                let save_result = (self.save_show)(show);
+                if let Err(e) = save_result {
+                    self.dialogs.push(DemexGlobalDialog::Error(e));
+                } else {
+                    self.dialogs
+                        .push(DemexGlobalDialog::Info("Show saved".to_string()));
+                }
+            }
             Action::Test(cmd) => match cmd.as_str() {
                 "effect" => {
                     let _ = self
-                        .context
                         .fixture_handler
                         .write()
                         .fixture(1)
@@ -174,23 +159,20 @@ impl DemexUiApp {
                             }),
                         );
                 }
-                _ => {
-                    self.global_error = Some(Box::new(DemexUiError::RuntimeError(format!(
-                        "Unknown test command: \"{}\"",
-                        cmd
-                    ))))
-                }
+                _ => self.dialogs.push(DemexGlobalDialog::Error(Box::new(
+                    DemexUiError::RuntimeError(format!("Unknown test command: \"{}\"", cmd)),
+                ))),
             },
             _ => {}
         }
 
         let now = std::time::Instant::now();
 
-        action.run(
-            &mut self.context.fixture_handler.write(),
-            &mut self.context.preset_handler.write(),
-            FixtureSelectorContext::new(&self.context.global_fixture_select),
-            &mut self.context.updatable_handler.write(),
+        let result = action.run(
+            &mut self.fixture_handler.write(),
+            &mut self.preset_handler.write(),
+            FixtureSelectorContext::new(&self.global_fixture_select),
+            &mut self.updatable_handler.write(),
         )?;
 
         println!(
@@ -199,37 +181,139 @@ impl DemexUiApp {
             now.elapsed()
         );
 
+        match result {
+            ActionRunResult::Warn(warn) => {
+                self.dialogs.push(DemexGlobalDialog::Warn(warn));
+            }
+            ActionRunResult::Info(info) => {
+                self.dialogs.push(DemexGlobalDialog::Info(info));
+            }
+            _ => {}
+        }
+
         Ok(())
     }
+}
 
+pub enum DemexGlobalDialog {
+    Error(Box<dyn std::error::Error>),
+    Warn(String),
+    Info(String),
+}
+
+impl DemexGlobalDialog {
+    pub fn title(&self) -> &str {
+        match self {
+            Self::Error(_) => "Error",
+            Self::Warn(_) => "Warning",
+            Self::Info(_) => "Info",
+        }
+    }
+
+    pub fn color(&self) -> egui::Color32 {
+        match self {
+            Self::Error(_) => egui::Color32::LIGHT_RED,
+            Self::Warn(_) => egui::Color32::YELLOW,
+            Self::Info(_) => egui::Color32::LIGHT_BLUE,
+        }
+    }
+}
+
+impl fmt::Display for DemexGlobalDialog {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Error(e) => write!(f, "Error: {}", e),
+            Self::Warn(w) => write!(f, "Warning: {}", w),
+            Self::Info(i) => write!(f, "Info: {}", i),
+        }
+    }
+}
+
+pub struct DemexUiApp {
+    command_input: String,
+    is_command_input_empty: bool,
+    context: DemexUiContext,
+
+    tabs: DemexTabs,
+    last_update: std::time::Instant,
+    fps: f64,
+}
+
+impl DemexUiApp {
+    pub fn new(
+        fixture_handler: Arc<RwLock<FixtureHandler>>,
+        preset_handler: Arc<RwLock<PresetHandler>>,
+        updatable_handler: Arc<RwLock<UpdatableHandler>>,
+        patch: Patch,
+        stats: Arc<RwLock<DemexUiStats>>,
+        fps: f64,
+        save_show: fn(DemexShow) -> Result<(), Box<dyn std::error::Error>>,
+    ) -> Self {
+        Self {
+            command_input: String::new(),
+            is_command_input_empty: true,
+            context: DemexUiContext {
+                patch,
+                stats,
+                gm_slider_val: fixture_handler.clone().read().grand_master(),
+                dialogs: Vec::new(),
+                fixture_handler,
+                preset_handler,
+                updatable_handler,
+                global_fixture_select: None,
+                command: Vec::new(),
+                layout_view_context: LayoutViewContext::default(),
+                macro_execution_queue: Vec::new(),
+                save_show,
+            },
+            tabs: DemexTabs::default(),
+            last_update: time::Instant::now(),
+            fps,
+        }
+    }
+}
+
+impl DemexUiApp {
     pub fn run_cmd(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let mut p = Parser2::new(&self.context.command);
 
         let action = p.parse()?;
 
-        self.run_and_handle_action(action)
+        self.context.run_and_handle_action(&action)
     }
 }
 
 impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        if self.global_error.is_some() && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
-            self.global_error = None;
+        while !self.context.macro_execution_queue.is_empty() {
+            let action = self.context.macro_execution_queue.remove(0);
+
+            if let Err(e) = self.context.run_and_handle_action(&action) {
+                eprintln!("{}", e);
+                self.context.dialogs.push(DemexGlobalDialog::Error(e));
+            }
         }
 
-        if let Some(global_error) = &self.global_error {
-            egui::Window::new("Error")
+        if !self.context.dialogs.is_empty() && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            self.context.dialogs.clear();
+        }
+
+        if !self.context.dialogs.is_empty() {
+            egui::Window::new("demex dialog")
                 .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
                 .collapsible(false)
                 .resizable(false)
                 .interactable(false)
                 .show(ctx, |ui| {
-                    ui.vertical_centered(|ui| {
-                        ui.label(
-                            egui::RichText::from(global_error.to_string())
-                                .text_style(egui::TextStyle::Heading)
-                                .color(egui::Color32::LIGHT_RED),
-                        );
+                    ui.vertical(|ui| {
+                        for dialog in &self.context.dialogs {
+                            ui.label(
+                                egui::RichText::from(dialog.to_string())
+                                    .strong()
+                                    .color(dialog.color()),
+                            );
+                            ui.separator();
+                        }
                     });
                 });
         }
@@ -259,12 +343,27 @@ impl eframe::App for DemexUiApp {
                 }
             });
 
-            if let Some(error) = &self.global_error {
-                ui.colored_label(
-                    eframe::egui::Color32::LIGHT_RED,
-                    format!("Error: {}", error),
-                );
-            }
+            let num_of_type = |dialogs: &Vec<DemexGlobalDialog>, dialog_type: &str| {
+                dialogs
+                    .iter()
+                    .filter(|d| match d {
+                        DemexGlobalDialog::Error(_) => dialog_type == "Error",
+                        DemexGlobalDialog::Warn(_) => dialog_type == "Warn",
+                        DemexGlobalDialog::Info(_) => dialog_type == "Info",
+                    })
+                    .count()
+            };
+
+            let num_of_errors = num_of_type(&self.context.dialogs, "Error");
+            let num_of_warns = num_of_type(&self.context.dialogs, "Warn");
+            let num_of_infos = num_of_type(&self.context.dialogs, "Info");
+
+            let dialog_summary = format!(
+                "Errors: {}, Warns: {}, Infos: {}",
+                num_of_errors, num_of_warns, num_of_infos
+            );
+
+            ui.colored_label(egui::Color32::PLACEHOLDER, dialog_summary);
         });
 
         eframe::egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
@@ -348,7 +447,7 @@ impl eframe::App for DemexUiApp {
 
                         if let Err(e) = self.run_cmd() {
                             eprintln!("{}", e);
-                            self.global_error = Some(e);
+                            self.context.dialogs.push(DemexGlobalDialog::Error(e));
                         }
 
                         self.context.command.clear();

@@ -6,7 +6,7 @@ use crate::parser::nodes::fixture_selector::{
 
 use super::PresetHandler;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FixtureGroup {
     id: u32,
     name: String,

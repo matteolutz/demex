@@ -58,6 +58,13 @@ pub enum Token {
     KeywordCue,
     KeywordWith,
     KeywordAll,
+    KeywordUpdate,
+    KeywordMerge,
+    KeywordOverride,
+    KeywordSave,
+
+    KeywordNuzul,
+    KeywordSueud,
 
     Eof,
 }
@@ -95,6 +102,10 @@ impl Token {
             Token::KeywordClear => TokenType::ActionKeyword,
             Token::KeywordTest => TokenType::ActionKeyword,
             Token::KeywordCreate => TokenType::ActionKeyword,
+            Token::KeywordUpdate => TokenType::ActionKeyword,
+            Token::KeywordNuzul => TokenType::ActionKeyword,
+            Token::KeywordSueud => TokenType::ActionKeyword,
+            Token::KeywordSave => TokenType::ActionKeyword,
 
             Token::KeywordGroup => TokenType::ObjectKeyword,
             Token::KeywordMacro => TokenType::ObjectKeyword,
@@ -111,9 +122,17 @@ impl Token {
             Token::KeywordTo => TokenType::OtherKeyword,
             Token::KeywordWith => TokenType::OtherKeyword,
             Token::KeywordAll => TokenType::OtherKeyword,
+            Token::KeywordMerge => TokenType::OtherKeyword,
+            Token::KeywordOverride => TokenType::OtherKeyword,
 
             Token::Eof => TokenType::Eof,
         }
+    }
+}
+
+impl Token {
+    pub fn quoted(&self) -> String {
+        format!("\"{}\"", self)
     }
 }
 
@@ -160,6 +179,12 @@ impl std::fmt::Display for Token {
             Token::KeywordCue => write!(f, "cue"),
             Token::KeywordWith => write!(f, "with"),
             Token::KeywordAll => write!(f, "all"),
+            Token::KeywordUpdate => write!(f, "update"),
+            Token::KeywordMerge => write!(f, "merge"),
+            Token::KeywordOverride => write!(f, "override"),
+            Token::KeywordNuzul => write!(f, "nuzul"),
+            Token::KeywordSueud => write!(f, "sueud"),
+            Token::KeywordSave => write!(f, "save"),
             Token::Eof => write!(f, "Eof"),
         }
     }

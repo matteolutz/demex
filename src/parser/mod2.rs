@@ -4,13 +4,13 @@ use crate::{
         FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
     },
     lexer::token::Token,
-    parser::nodes::action::ChannelTypeSelector,
+    parser::nodes::action::ChannelTypeSelectorActionData,
 };
 
 use super::{
     error::ParseError,
     nodes::{
-        action::{Action, ChannelValueSingleActionData},
+        action::{Action, ChannelValueSingleActionData, UpdateModeActionData},
         fixture_selector::{AtomicFixtureSelector, FixtureSelector},
         object::{HomeableObject, Object, ObjectTrait},
     },
@@ -132,9 +132,9 @@ impl<'a> Parser2<'a> {
                     )),
                 }
             }
-            unexpected_token => Err(ParseError::UnexpectedToken(
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
-                "Expected numeral or \"thru\"".to_string(),
+                vec!["\"~\"", "integer", "\"(\"", "\"group\""],
             )),
         }
     }
@@ -176,9 +176,9 @@ impl<'a> Parser2<'a> {
                         self.advance();
                         Ok(FixtureSelector::Modulus(atomic_selector, d, inverted))
                     }
-                    unexpected_token => Err(ParseError::UnexpectedToken(
+                    unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                         unexpected_token.clone(),
-                        "Expected integer or \"%\"".to_string(),
+                        vec!["integer", "\"!\""],
                     )),
                 }
             }
@@ -236,9 +236,9 @@ impl<'a> Parser2<'a> {
                 self.advance();
                 Ok(FIXTURE_CHANNEL_COLOR_ID)
             }
-            unexpected_token => Err(ParseError::UnexpectedToken(
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
-                "Expected discrete channel type".to_string(),
+                vec!["\"intens\"", "\"color\"", "\"position\""],
             )),
         }
     }
@@ -326,9 +326,9 @@ impl<'a> Parser2<'a> {
                 self.advance();
                 Ok(value)
             }
-            unexpected_token => Err(ParseError::UnexpectedToken(
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
-                "Expected discrete channel value".to_string(),
+                vec!["\"full\"", "\"half\"", "\"out\"", "floating point value"],
             )),
         }
     }
@@ -370,10 +370,13 @@ impl<'a> Parser2<'a> {
             ));
         }
 
-        Err(ParseError::UnexpectedVariant(
-            "Expected \"preset <id>\" or discrete channel value".to_owned(),
-            vec![preset.err().unwrap(), value.err().unwrap()],
-        ))
+        Err(ParseError::UnexpectedVariant(vec![
+            (
+                "\"preset\" <channel_type> <id>".to_owned(),
+                preset.err().unwrap(),
+            ),
+            ("discrete channel value".to_owned(), value.err().unwrap()),
+        ]))
     }
 
     fn parse_string(&mut self) -> Result<String, ParseError> {
@@ -415,6 +418,23 @@ impl<'a> Parser2<'a> {
             unexpected_token => Err(ParseError::UnexpectedToken(
                 unexpected_token.clone(),
                 "Expected integer".to_string(),
+            )),
+        }
+    }
+
+    fn parse_update_mode(&mut self) -> Result<UpdateModeActionData, ParseError> {
+        match self.current_token()? {
+            Token::KeywordMerge => {
+                self.advance();
+                Ok(UpdateModeActionData::Merge)
+            }
+            Token::KeywordOverride => {
+                self.advance();
+                Ok(UpdateModeActionData::Override)
+            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec!["\"merge\"", "\"override\""],
             )),
         }
     }
@@ -471,12 +491,12 @@ impl<'a> Parser2<'a> {
 
                     if matches!(self.current_token()?, Token::KeywordAll) {
                         self.advance();
-                        ChannelTypeSelector::All
+                        ChannelTypeSelectorActionData::All
                     } else {
-                        ChannelTypeSelector::Channels(self.parse_channel_type_list()?)
+                        ChannelTypeSelectorActionData::Channels(self.parse_channel_type_list()?)
                     }
                 } else {
-                    ChannelTypeSelector::Active
+                    ChannelTypeSelectorActionData::Active
                 };
 
                 Ok(Action::RecordSequenceCue(
@@ -486,9 +506,9 @@ impl<'a> Parser2<'a> {
                     channel_type_selector,
                 ))
             }
-            unexpected_token => Err(ParseError::UnexpectedToken(
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
-                "Expected \"preset\"".to_string(),
+                vec!["\"preset\"", "\"group\"", "\"sequence\""],
             )),
         }
     }
@@ -529,9 +549,9 @@ impl<'a> Parser2<'a> {
 
                 Ok(Action::RenameSequence(id, seq_name))
             }
-            unexpected_token => Err(ParseError::UnexpectedToken(
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
-                "Expected \"preset\"".to_string(),
+                vec!["\"preset\"", "\"group\"", "\"sequence\""],
             )),
         }
     }
@@ -559,9 +579,52 @@ impl<'a> Parser2<'a> {
 
                 Ok(Action::CreateExecutor(executor_id, sequence_id))
             }
-            _ => Err(ParseError::UnexpectedToken(
-                self.current_token()?.clone(),
-                "Expected \"sequence\" or \"executor\"".to_string(),
+            Token::KeywordMacro => {
+                self.advance();
+
+                let macro_id = self.parse_integer()?;
+
+                expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
+
+                let command = self.parse_command()?;
+
+                let macro_name = self.try_parse(Self::parse_as).ok();
+
+                Ok(Action::CreateMacro(macro_id, Box::new(command), macro_name))
+            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec!["\"sequence\"", "\"executor\"", "\"macro\""],
+            )),
+        }
+    }
+
+    fn parse_update_function(&mut self) -> Result<Action, ParseError> {
+        match self.current_token()? {
+            Token::KeywordPreset => {
+                self.advance();
+
+                let preset_channel_type = self.parse_discrete_channel_type()?;
+                let preset_id = self.parse_integer()?;
+
+                expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
+
+                let fixture_selector = self.parse_fixture_selector()?;
+
+                let update_mode = self
+                    .try_parse(Self::parse_update_mode)
+                    .unwrap_or(UpdateModeActionData::Merge);
+
+                Ok(Action::UpdatePreset(
+                    preset_channel_type,
+                    preset_id,
+                    fixture_selector,
+                    update_mode,
+                ))
+            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec!["\"preset\""],
             )),
         }
     }
@@ -587,9 +650,24 @@ impl<'a> Parser2<'a> {
             return self.parse_rename_function();
         }
 
+        if matches!(self.current_token()?, Token::KeywordUpdate) {
+            self.advance();
+            return self.parse_update_function();
+        }
+
         if matches!(self.current_token()?, Token::KeywordClear) {
             self.advance();
             return Ok(Action::ClearAll);
+        }
+
+        if matches!(self.current_token()?, Token::KeywordNuzul) {
+            self.advance();
+            return Ok(Action::Nuzul);
+        }
+
+        if matches!(self.current_token()?, Token::KeywordSueud) {
+            self.advance();
+            return Ok(Action::Sueud);
         }
 
         let fixture_selector = self.try_parse(Self::parse_fixture_selector);
@@ -597,9 +675,17 @@ impl<'a> Parser2<'a> {
             return self.parse_set_function(fixture_selector);
         }
 
-        Err(ParseError::UnexpectedToken(
+        Err(ParseError::UnexpectedTokenAlternatives(
             self.current_token()?.clone(),
-            "Expected function".to_string(),
+            vec![
+                "\"home\"",
+                "\"record\"",
+                "\"create\"",
+                "\"rename\"",
+                "\"update\"",
+                "\"clear\"",
+                "fixture selector",
+            ],
         ))
     }
 
@@ -619,10 +705,10 @@ impl<'a> Parser2<'a> {
                 .ok_or(ParseError::NoDefaultActionForObject(object));
         }
 
-        Err(ParseError::UnexpectedVariant(
-            "Expected command (function or object)".to_string(),
-            vec![function.err().unwrap(), object.err().unwrap()],
-        ))
+        Err(ParseError::UnexpectedVariant(vec![
+            ("function".to_owned(), function.err().unwrap()),
+            ("object".to_owned(), object.err().unwrap()),
+        ]))
     }
 
     pub fn parse(&mut self) -> Result<Action, ParseError> {

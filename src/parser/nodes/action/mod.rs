@@ -18,7 +18,7 @@ pub mod error;
 pub mod result;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ChannelTypeSelector {
+pub enum ChannelTypeSelectorActionData {
     All,
     Active,
     Channels(Vec<u16>),
@@ -28,6 +28,12 @@ pub enum ChannelTypeSelector {
 pub enum ChannelValueSingleActionData {
     Single(f32),
     Thru(f32, f32),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum UpdateModeActionData {
+    Merge,
+    Override,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,7 +57,7 @@ pub enum Action {
 
     RecordPreset(u16, u32, FixtureSelector, Option<String>),
     RecordGroup2(u32, FixtureSelector, Option<String>),
-    RecordSequenceCue(u32, usize, FixtureSelector, ChannelTypeSelector),
+    RecordSequenceCue(u32, usize, FixtureSelector, ChannelTypeSelectorActionData),
 
     RecordGroup(FixtureSelector, u32), // depr
 
@@ -69,10 +75,17 @@ pub enum Action {
 
     CreateSequence(u32, Option<String>),
     CreateExecutor(u32, u32),
+    CreateMacro(u32, Box<Action>, Option<String>),
+
+    UpdatePreset(u16, u32, FixtureSelector, UpdateModeActionData),
 
     FixtureSelector(FixtureSelector),
     ClearAll,
+    Save,
     Test(String),
+
+    Nuzul,
+    Sueud,
 }
 
 impl Action {
@@ -138,11 +151,30 @@ impl Action {
             Self::CreateExecutor(id, sequence_id) => {
                 self.run_create_executor(updatable_handler, *id, *sequence_id)
             }
+            Self::CreateMacro(id, action, name) => {
+                self.run_create_macro(*id, action, name, preset_handler)
+            }
 
-            Self::RecordMacro(action, id) => self.run_record_macro(*id, action, preset_handler),
+            Self::UpdatePreset(channel_type, preset_id, fixture_selector, update_mode) => self
+                .run_update_preset(
+                    preset_handler,
+                    updatable_handler,
+                    fixture_handler,
+                    fixture_selector,
+                    fixture_selector_context,
+                    *channel_type,
+                    *preset_id,
+                    update_mode,
+                ),
+
             Self::ClearAll => Ok(ActionRunResult::new()),
             Self::FixtureSelector(_) => Ok(ActionRunResult::new()),
             Self::Test(_) => Ok(ActionRunResult::new()),
+            Self::Save => Ok(ActionRunResult::Info("Saving...".to_owned())),
+
+            Self::Nuzul => Ok(ActionRunResult::Info("Going down...".to_owned())),
+            Self::Sueud => Ok(ActionRunResult::Info("Going up...".to_owned())),
+
             unimplemented_action => Err(ActionRunError::UnimplementedAction(
                 unimplemented_action.clone(),
             )),
@@ -361,16 +393,49 @@ impl Action {
         Ok(ActionRunResult::new())
     }
 
-    fn run_record_macro(
+    fn run_create_macro(
         &self,
         id: u32,
         action: &Action,
+        name: &Option<String>,
         preset_handler: &mut PresetHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
-            .record_macro(id, Box::new(action.clone()))
+            .create_macro(id, name.clone(), Box::new(action.clone()))
             .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())
+    }
+
+    fn run_update_preset(
+        &self,
+        preset_handler: &mut PresetHandler,
+        updatable_handler: &UpdatableHandler,
+        fixture_handler: &mut FixtureHandler,
+        fixture_selector: &FixtureSelector,
+        fixture_selector_context: FixtureSelectorContext,
+        channel_type: u16,
+        preset_id: u32,
+        update_mode: &UpdateModeActionData,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let num_updated = preset_handler
+            .update_preset(
+                fixture_selector,
+                fixture_selector_context,
+                channel_type,
+                preset_id,
+                fixture_handler,
+                updatable_handler,
+                update_mode,
+            )
+            .map_err(ActionRunError::PresetHandlerError)?;
+
+        if num_updated == 0 {
+            Ok(ActionRunResult::Warn(
+                "No fixtures we're affected. If you're trying override existing preset data, try running with the \"override\" flag.".to_owned(),
+            ))
+        } else {
+            Ok(ActionRunResult::new())
+        }
     }
 }

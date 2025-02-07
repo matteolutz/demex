@@ -5,23 +5,29 @@ command                     = function
 
 
 function                    = fixture_selector ((channel_type value_single) | specific_preset)
-                            = "home" [homeable_object]
-                            = "record" record_function
-                            = "create" create_function
-                            = "rename" rename_function
-                            = "clear"
+                            | "home" [homeable_object]
+                            | "record" record_function
+                            | "create" create_function
+                            | "rename" rename_function
+                            | "update" update_function
+                            | "clear"
+                            | "nuzul" | "sueud"
+                            | "save"
+
+update_function             = "preset" discrete_channel_type integer "for" fixture_selector [udpate_mode]
 
 renane_function             = "preset" discrete_channel_type integer "to" string
-                            = "group" integer "to" string
-                            = "sequence" integer "to" string
+                            | "group" integer "to" string
+                            | "sequence" integer "to" string
 
 
 record_function:            = "preset" discrete_channel_type integer "for" fixture_selector ["as" string]
-                            = "group" integer "for" fixture_selector ["as" string]
-                            = "sequence" integer "cue" integer "for" fixture_selector ["with" (channel_type+ | "active" | "all")]
+                            | "group" integer "for" fixture_selector ["as" string]
+                            | "sequence" integer "cue" integer "for" fixture_selector ["with" (channel_type_list | "active" | "all")]
 
 create_function:            = "sequence" integer ["as" string]
-                            = "executor" integer "for" ("sequence" integer) ["as" string]
+                            | "executor" integer "for" ("sequence" integer) ["as" string]
+                            | "macro" integer "with" command ["as" string]
 
 object                      = homeable_object
                             | specific_preset
@@ -47,6 +53,9 @@ discrete_channel_type       = "intensity"
                             | "color"
                             | "position"
                             | "strobe"
+
+update_mode                 = "merge"
+                            | "override"
 
 fixture_selector            = atomic_fixture_selector
                             | atomic_fixture_selector "+" atomic_fixture_selector

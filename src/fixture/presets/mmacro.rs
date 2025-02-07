@@ -18,10 +18,10 @@ pub struct MMacro {
 }
 
 impl MMacro {
-    pub fn new(id: u32, action: Box<Action>) -> Self {
+    pub fn new(id: u32, name: Option<String>, action: Box<Action>) -> Self {
         MMacro {
             id,
-            name: format!("Macro {}", id),
+            name: name.unwrap_or(format!("Macro {}", id)),
             action,
         }
     }

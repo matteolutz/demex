@@ -6,14 +6,12 @@ use crate::{
         FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
     },
     lexer::token::Token,
-    parser::nodes::fixture_selector::{
-        AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
-    },
+    parser::nodes::fixture_selector::{AtomicFixtureSelector, FixtureSelector},
     ui::DemexUiContext,
 };
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
-    let mut preset_handler = context.preset_handler.write();
+    let preset_handler = context.preset_handler.read();
     let mut fixture_handler = context.fixture_handler.write();
     let mut updatable_handler = context.updatable_handler.write();
 
@@ -230,20 +228,14 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             let preset_button =
                 ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
             if preset_button.clicked() {
-                let macro_run_result = preset.run(
-                    &mut fixture_handler,
-                    &mut preset_handler,
-                    FixtureSelectorContext::new(&context.global_fixture_select),
-                    &mut updatable_handler,
-                );
-                println!("Macro run result: {:?}", macro_run_result);
+                context.macro_execution_queue.push(preset.action().clone());
             }
         }
 
         let add_position_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
         if add_position_button.clicked() {
             context.command.extend(vec![
-                Token::KeywordRecord,
+                Token::KeywordCreate,
                 Token::KeywordMacro,
                 Token::Integer(preset_handler.macros().keys().max().unwrap_or(&0) + 1),
             ])

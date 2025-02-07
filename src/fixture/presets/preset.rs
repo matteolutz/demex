@@ -8,12 +8,15 @@ use crate::{
         handler::FixtureHandler,
         updatables::UpdatableHandler,
     },
-    parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    parser::nodes::{
+        action::UpdateModeActionData,
+        fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    },
 };
 
 use super::{error::PresetHandlerError, PresetHandler};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FixturePreset {
     id: u32,
     name: String,
@@ -49,11 +52,11 @@ impl FixturePreset {
                     continue;
                 }
 
-                let fixture_position = fixture
+                let fixture_channel_value = fixture
                     .channel_value(channel_type, preset_handler, updatable_handler)
                     .map_err(PresetHandlerError::FixtureError)?;
 
-                values.insert(fixture_id, fixture_position.to_discrete());
+                values.insert(fixture_id, fixture_channel_value.to_discrete());
             }
         }
 
@@ -83,5 +86,29 @@ impl FixturePreset {
 
     pub fn value(&self, fixture_id: u32) -> Option<&FixtureChannelDiscreteValue> {
         self.values.get(&fixture_id)
+    }
+
+    pub fn update(
+        &mut self,
+        values_to_update: HashMap<u32, FixtureChannelDiscreteValue>,
+        update_mode: &UpdateModeActionData,
+    ) -> Result<usize, PresetHandlerError> {
+        let mut updated = 0;
+
+        for (fixture_id, new_fixture_value) in values_to_update {
+            // if we already have a value for this fixture and we are not in override mode, skip
+            if self.values.contains_key(&fixture_id)
+                && update_mode != &UpdateModeActionData::Override
+            {
+                continue;
+            }
+
+            // Insert or update
+            self.values.insert(fixture_id, new_fixture_value);
+
+            updated += 1;
+        }
+
+        Ok(updated)
     }
 }

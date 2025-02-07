@@ -64,6 +64,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         patch,
         stats.clone(),
         TEST_FPS,
+        |show: DemexShow| {
+            serde_json::to_writer(std::fs::File::create(TEST_SHOW_FILE).unwrap(), &show)?;
+            Ok(())
+        },
     );
 
     thread::spawn(move || {

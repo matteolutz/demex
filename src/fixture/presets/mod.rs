@@ -8,7 +8,7 @@ use preset::FixturePreset;
 use serde::{Deserialize, Serialize};
 
 use crate::parser::nodes::{
-    action::Action,
+    action::{Action, UpdateModeActionData},
     fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 
@@ -29,7 +29,7 @@ pub mod group;
 pub mod mmacro;
 pub mod preset;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct PresetHandler {
     groups: HashMap<u32, FixtureGroup>,
 
@@ -124,6 +124,43 @@ impl PresetHandler {
         Ok(())
     }
 
+    pub fn update_preset(
+        &mut self,
+        fixture_selector: &FixtureSelector,
+        fixture_selector_context: FixtureSelectorContext,
+        channel_type: u16,
+        id: u32,
+        fixture_handler: &FixtureHandler,
+        updatable_handler: &UpdatableHandler,
+        update_mode: &UpdateModeActionData,
+    ) -> Result<usize, PresetHandlerError> {
+        let mut new_values: HashMap<u32, FixtureChannelDiscreteValue> = HashMap::new();
+
+        for fixture_id in fixture_selector
+            .get_fixtures(self, fixture_selector_context)
+            .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?
+        {
+            let fixture = fixture_handler.fixture_immut(fixture_id);
+            if let Some(fixture) = fixture {
+                if !fixture.channel_types().contains(&channel_type) {
+                    continue;
+                }
+
+                let fixture_channel_value = fixture
+                    .channel_value(channel_type, self, updatable_handler)
+                    .map_err(PresetHandlerError::FixtureError)?;
+
+                new_values.insert(fixture_id, fixture_channel_value.to_discrete());
+            }
+        }
+
+        let preset = self.get_preset_mut(id, channel_type)?;
+
+        let values_updated = preset.update(new_values, update_mode)?;
+
+        Ok(values_updated)
+    }
+
     pub fn presets_mut(&mut self, channel_type: u16) -> &mut HashMap<u32, FixturePreset> {
         match channel_type {
             FIXTURE_CHANNEL_INTENSITY_ID => &mut self.dimmers,
@@ -191,12 +228,17 @@ impl PresetHandler {
 
 // Macros
 impl PresetHandler {
-    pub fn record_macro(&mut self, id: u32, action: Box<Action>) -> Result<(), PresetHandlerError> {
+    pub fn create_macro(
+        &mut self,
+        id: u32,
+        name: Option<String>,
+        action: Box<Action>,
+    ) -> Result<(), PresetHandlerError> {
         if self.macros.contains_key(&id) {
             return Err(PresetHandlerError::PresetAlreadyExists(id));
         }
 
-        self.macros.insert(id, MMacro::new(id, action));
+        self.macros.insert(id, MMacro::new(id, name, action));
         Ok(())
     }
 

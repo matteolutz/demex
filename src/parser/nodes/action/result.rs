@@ -1,8 +1,12 @@
 #[derive(Debug)]
-pub struct ActionRunResult {}
+pub enum ActionRunResult {
+    Default,
+    Info(String),
+    Warn(String),
+}
 
 impl ActionRunResult {
     pub fn new() -> Self {
-        Self {}
+        Self::Default
     }
 }

@@ -92,6 +92,12 @@ impl<'a> Lexer<'a> {
                     "cue" => Some(Token::KeywordCue),
                     "with" => Some(Token::KeywordWith),
                     "all" => Some(Token::KeywordAll),
+                    "update" => Some(Token::KeywordUpdate),
+                    "merge" => Some(Token::KeywordMerge),
+                    "override" => Some(Token::KeywordOverride),
+                    "nuzul" => Some(Token::KeywordNuzul),
+                    "sueud" => Some(Token::KeywordSueud),
+                    "save" => Some(Token::KeywordSave),
                     _ => None,
                 };
 

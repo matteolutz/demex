@@ -11,7 +11,7 @@ use super::{
 
 pub mod error;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct UpdatableHandler {
     executors: HashMap<u32, SequenceRuntimeExecutor>,
     faders: HashMap<u32, DemexFader>,
