@@ -10,9 +10,12 @@ function                    = fixture_selector ((channel_type value_single) | sp
                             | "create" create_function
                             | "rename" rename_function
                             | "update" update_function
+                            | "delete" delete_function "really"
                             | "clear"
                             | "nuzul" | "sueud"
                             | "save"
+
+delete_function             = "macro" integer_or_range
 
 update_function             = "preset" discrete_channel_type integer "for" fixture_selector [udpate_mode]
 
@@ -67,6 +70,8 @@ atomic_fixture_selector     = integer
                             | "group" integer
                             | "(" fixture_selector ")"
                             | "~"
+
+integer_or_range            = integer ["thru" integer]
 
 integer                     = digit+
 float                       = digit+ ["." digit+]

@@ -422,6 +422,19 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_integer_or_range(&mut self) -> Result<(u32, u32), ParseError> {
+        let start = self.parse_integer()?;
+
+        if matches!(self.current_token()?, Token::KeywordThru) {
+            self.advance();
+
+            let end = self.parse_integer()?;
+            Ok((start, end))
+        } else {
+            Ok((start, start))
+        }
+    }
+
     fn parse_update_mode(&mut self) -> Result<UpdateModeActionData, ParseError> {
         match self.current_token()? {
             Token::KeywordMerge => {
@@ -629,6 +642,29 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_delete_function(&mut self) -> Result<Action, ParseError> {
+        let action = match self.current_token()? {
+            Token::KeywordMacro => {
+                self.advance();
+
+                let macro_id_range = self.parse_integer_or_range()?;
+
+                Ok(Action::DeleteMacro(macro_id_range))
+            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec!["\"macro\""],
+            )),
+        };
+
+        if let Ok(action) = action {
+            expect_and_consume_token!(self, Token::KeywordReally, "\"really\"");
+            Ok(action)
+        } else {
+            action
+        }
+    }
+
     fn parse_function(&mut self) -> Result<Action, ParseError> {
         if matches!(self.current_token()?, Token::KeywordHome) {
             self.advance();
@@ -653,6 +689,11 @@ impl<'a> Parser2<'a> {
         if matches!(self.current_token()?, Token::KeywordUpdate) {
             self.advance();
             return self.parse_update_function();
+        }
+
+        if matches!(self.current_token()?, Token::KeywordDelete) {
+            self.advance();
+            return self.parse_delete_function();
         }
 
         if matches!(self.current_token()?, Token::KeywordClear) {
@@ -688,7 +729,9 @@ impl<'a> Parser2<'a> {
                 "\"create\"",
                 "\"rename\"",
                 "\"update\"",
+                "\"delete\"",
                 "\"clear\"",
+                "\"save\"",
                 "fixture selector",
             ],
         ))

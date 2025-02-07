@@ -250,6 +250,13 @@ impl PresetHandler {
         Ok(())
     }
 
+    pub fn delete_macro(&mut self, id: u32) -> Result<(), PresetHandlerError> {
+        self.macros
+            .remove(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))?;
+        Ok(())
+    }
+
     pub fn macros(&self) -> &HashMap<u32, MMacro> {
         &self.macros
     }

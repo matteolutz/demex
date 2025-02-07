@@ -98,6 +98,8 @@ impl<'a> Lexer<'a> {
                     "nuzul" => Some(Token::KeywordNuzul),
                     "sueud" => Some(Token::KeywordSueud),
                     "save" => Some(Token::KeywordSave),
+                    "delete" | "del" => Some(Token::KeywordDelete),
+                    "really" => Some(Token::KeywordReally),
                     _ => None,
                 };
 

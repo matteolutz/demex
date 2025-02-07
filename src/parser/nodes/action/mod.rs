@@ -79,6 +79,8 @@ pub enum Action {
 
     UpdatePreset(u16, u32, FixtureSelector, UpdateModeActionData),
 
+    DeleteMacro((u32, u32)),
+
     FixtureSelector(FixtureSelector),
     ClearAll,
     Save,
@@ -166,6 +168,23 @@ impl Action {
                     *preset_id,
                     update_mode,
                 ),
+
+            Self::DeleteMacro((id_from, id_to)) => {
+                for macro_id in *id_from..=*id_to {
+                    preset_handler
+                        .delete_macro(macro_id)
+                        .map_err(ActionRunError::PresetHandlerError)?;
+                }
+
+                if id_from == id_to {
+                    Ok(ActionRunResult::new())
+                } else {
+                    Ok(ActionRunResult::Info(format!(
+                        "Deleted {} macros",
+                        id_to - id_from + 1
+                    )))
+                }
+            }
 
             Self::ClearAll => Ok(ActionRunResult::new()),
             Self::FixtureSelector(_) => Ok(ActionRunResult::new()),

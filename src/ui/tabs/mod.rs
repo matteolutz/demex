@@ -8,6 +8,7 @@ pub mod faders_tab;
 pub mod fixture_controls_tab;
 pub mod fixture_list_tab;
 pub mod layout_view_tab;
+pub mod logs_tab;
 pub mod preset_grid_tab;
 pub mod sequences_list_tab;
 
@@ -19,6 +20,7 @@ pub enum DemexTab {
     FixtureControls,
     Faders,
     SequencesList,
+    Logs,
     Debug,
 }
 
@@ -43,6 +45,7 @@ impl<'a> TabViewer for DemexTabViewer<'a> {
             DemexTab::FixtureControls => fixture_controls_tab::ui(ui, self.context),
             DemexTab::Faders => faders_tab::ui(ui, self.context),
             DemexTab::SequencesList => sequences_list_tab::ui(ui, self.context),
+            DemexTab::Logs => logs_tab::ui(ui, self.context),
             DemexTab::Debug => debug_tab::ui(ui, self.context),
         }
     }
@@ -66,6 +69,7 @@ impl Default for DemexTabs {
         let mut dock_state = DockState::new(vec![
             DemexTab::FixtureList,
             DemexTab::SequencesList,
+            DemexTab::Logs,
             DemexTab::Debug,
         ]);
 

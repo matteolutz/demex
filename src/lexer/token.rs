@@ -62,6 +62,8 @@ pub enum Token {
     KeywordMerge,
     KeywordOverride,
     KeywordSave,
+    KeywordDelete,
+    KeywordReally,
 
     KeywordNuzul,
     KeywordSueud,
@@ -106,6 +108,7 @@ impl Token {
             Token::KeywordNuzul => TokenType::ActionKeyword,
             Token::KeywordSueud => TokenType::ActionKeyword,
             Token::KeywordSave => TokenType::ActionKeyword,
+            Token::KeywordDelete => TokenType::ActionKeyword,
 
             Token::KeywordGroup => TokenType::ObjectKeyword,
             Token::KeywordMacro => TokenType::ObjectKeyword,
@@ -124,6 +127,7 @@ impl Token {
             Token::KeywordAll => TokenType::OtherKeyword,
             Token::KeywordMerge => TokenType::OtherKeyword,
             Token::KeywordOverride => TokenType::OtherKeyword,
+            Token::KeywordReally => TokenType::OtherKeyword,
 
             Token::Eof => TokenType::Eof,
         }
@@ -185,6 +189,8 @@ impl std::fmt::Display for Token {
             Token::KeywordNuzul => write!(f, "nuzul"),
             Token::KeywordSueud => write!(f, "sueud"),
             Token::KeywordSave => write!(f, "save"),
+            Token::KeywordDelete => write!(f, "delete"),
+            Token::KeywordReally => write!(f, "really"),
             Token::Eof => write!(f, "Eof"),
         }
     }
