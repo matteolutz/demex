@@ -24,7 +24,6 @@ use super::{
 
 pub mod command_slice;
 pub mod error;
-pub mod fader;
 pub mod group;
 pub mod mmacro;
 pub mod preset;

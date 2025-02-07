@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 
 use error::UpdatableHandlerError;
+use executor::SequenceRuntimeExecutor;
+use fader::DemexFader;
 use serde::{Deserialize, Serialize};
 
-use super::{
-    handler::FixtureHandler,
-    presets::{fader::DemexFader, PresetHandler},
-    sequence::executor::SequenceRuntimeExecutor,
-};
+use super::{handler::FixtureHandler, presets::PresetHandler};
 
 pub mod error;
+pub mod executor;
+pub mod fader;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct UpdatableHandler {

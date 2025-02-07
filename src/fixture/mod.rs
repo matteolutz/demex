@@ -1,13 +1,13 @@
 use channel::{
     error::FixtureChannelError,
     value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait},
+    value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait},
     FixtureId, SerializableFixtureChannelPatch, FIXTURE_CHANNEL_COLOR_ID,
     FIXTURE_CHANNEL_INTENSITY_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
 };
 use presets::PresetHandler;
 use serde::{Deserialize, Serialize};
 use updatables::UpdatableHandler;
-use value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait};
 
 use self::{channel::FixtureChannel, error::FixtureError};
 
@@ -20,7 +20,6 @@ pub mod patch;
 pub mod presets;
 pub mod sequence;
 pub mod updatables;
-pub mod value_source;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerializableFixturePatch {

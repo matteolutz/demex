@@ -11,12 +11,12 @@ pub mod overrides;
 use crate::fixture::{
     channel::{
         value::{FixtureChannelDiscreteValue, FixtureChannelValue},
+        value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
         FIXTURE_CHANNEL_INTENSITY_ID,
     },
     error::FixtureError,
     handler::FixtureHandler,
     sequence::FadeFixtureChannelValue,
-    value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
     Fixture,
 };
 

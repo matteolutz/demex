@@ -1,10 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
-    handler::FixtureHandler, presets::PresetHandler, value_source::FixtureChannelValueSource,
+    channel::value_source::FixtureChannelValueSource,
+    handler::FixtureHandler,
+    presets::PresetHandler,
+    sequence::{runtime::SequenceRuntime, FadeFixtureChannelValue},
 };
-
-use super::{runtime::SequenceRuntime, FadeFixtureChannelValue};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SequenceRuntimeExecutor {

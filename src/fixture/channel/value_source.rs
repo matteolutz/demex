@@ -4,14 +4,12 @@ use egui_probe::EguiProbe;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use super::{
-    channel::value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait},
-    error::FixtureError,
-    presets::PresetHandler,
-    sequence::FadeFixtureChannelValue,
-    updatables::UpdatableHandler,
-    Fixture,
+use crate::fixture::{
+    error::FixtureError, presets::PresetHandler, sequence::FadeFixtureChannelValue,
+    updatables::UpdatableHandler, Fixture,
 };
+
+use super::value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, EguiProbe)]
 pub enum FixtureChannelValuePriority {

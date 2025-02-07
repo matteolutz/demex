@@ -10,6 +10,7 @@ use super::{presets::PresetHandler, updatables::UpdatableHandler, Fixture};
 
 pub mod error;
 pub mod value;
+pub mod value_source;
 
 pub const FIXTURE_CHANNEL_INTENSITY_ID: u16 = 0;
 pub const FIXTURE_CHANNEL_STROBE: u16 = 1;
