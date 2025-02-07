@@ -670,6 +670,11 @@ impl<'a> Parser2<'a> {
             return Ok(Action::Sueud);
         }
 
+        if matches!(self.current_token()?, Token::KeywordSave) {
+            self.advance();
+            return Ok(Action::Save);
+        }
+
         let fixture_selector = self.try_parse(Self::parse_fixture_selector);
         if let Ok(fixture_selector) = fixture_selector {
             return self.parse_set_function(fixture_selector);
