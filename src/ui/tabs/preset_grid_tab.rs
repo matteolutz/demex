@@ -37,7 +37,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             if group_button.clicked() {
                 context
                     .command
-                    .extend(vec![Token::KeywordGroup, Token::Integer(group.id())])
+                    .extend_from_slice(&[Token::KeywordGroup, Token::Integer(group.id())])
             }
 
             if group_button.double_clicked() {
@@ -50,7 +50,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
         let add_group_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
         if add_group_button.clicked() {
-            context.command.extend(vec![
+            context.command.extend_from_slice(&[
                 Token::KeywordRecord,
                 Token::KeywordGroup,
                 Token::Integer(preset_handler.groups().keys().max().unwrap_or(&0) + 1),
@@ -80,7 +80,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             let preset_button =
                 ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
             if preset_button.clicked() {
-                context.command.extend(vec![
+                context.command.extend_from_slice(&[
                     Token::KeywordPreset,
                     Token::KeywordIntens,
                     Token::Integer(preset.id()),
@@ -90,7 +90,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
         let add_intensity_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
         if add_intensity_button.clicked() {
-            context.command.extend(vec![
+            context.command.extend_from_slice(&[
                 Token::KeywordRecord,
                 Token::KeywordPreset,
                 Token::KeywordIntens,
@@ -128,7 +128,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             let preset_button =
                 ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
             if preset_button.clicked() {
-                context.command.extend(vec![
+                context.command.extend_from_slice(&[
                     Token::KeywordPreset,
                     Token::KeywordColor,
                     Token::Integer(preset.id()),
@@ -138,7 +138,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
         let add_color_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
         if add_color_button.clicked() {
-            context.command.extend(vec![
+            context.command.extend_from_slice(&[
                 Token::KeywordRecord,
                 Token::KeywordPreset,
                 Token::KeywordColor,
@@ -176,7 +176,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             let preset_button =
                 ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
             if preset_button.clicked() {
-                context.command.extend(vec![
+                context.command.extend_from_slice(&[
                     Token::KeywordPreset,
                     Token::KeywordPosition,
                     Token::Integer(preset.id()),
@@ -186,7 +186,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
         let add_position_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
         if add_position_button.clicked() {
-            context.command.extend(vec![
+            context.command.extend_from_slice(&[
                 Token::KeywordRecord,
                 Token::KeywordPreset,
                 Token::KeywordPosition,
@@ -234,7 +234,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
         let add_position_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
         if add_position_button.clicked() {
-            context.command.extend(vec![
+            context.command.extend_from_slice(&[
                 Token::KeywordCreate,
                 Token::KeywordMacro,
                 Token::Integer(preset_handler.macros().keys().max().unwrap_or(&0) + 1),
@@ -267,7 +267,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             let preset_button =
                 ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
             if preset_button.clicked() {
-                context.command.extend(preset.command().clone());
+                context.command.extend_from_slice(preset.command());
             }
         }
 
@@ -352,6 +352,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     .executor_mut(*preset_id)
                     .unwrap()
                     .stop(&mut fixture_handler, &preset_handler);
+            }
+
+            if preset_button.long_touched() {
+                context
+                    .command
+                    .extend_from_slice(&[Token::KeywordExecutor, Token::Integer(*preset_id)])
             }
         }
 

@@ -146,12 +146,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     ),
                                 );
 
-                                let value = color
-                                    .as_quadruple(
-                                        &preset_handler,
-                                        fixture.id(),
-                                        FIXTURE_CHANNEL_COLOR_ID,
-                                    )
+                                let value = fixture
+                                    .display_color(&preset_handler, &updatable_handler)
                                     .unwrap();
 
                                 let color_value = egui::Color32::from_rgb(

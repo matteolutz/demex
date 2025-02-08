@@ -16,14 +16,13 @@ use dmx::output::debug_dummy::{DebugDummyOutput, DebugDummyOutputVerbosity};
 use fixture::{handler::FixtureHandler, patch::Patch};
 use parking_lot::RwLock;
 use show::DemexShow;
-use ui::{DemexUiApp, DemexUiStats};
+use ui::{stats::DemexUiStats, DemexUiApp};
 use utils::deadlock::start_deadlock_checking_thread;
 
 const TEST_SHOW_FILE: &str = "test_data/show.json";
 const TEST_PATCH_FILE: &str = "test_data/patch.json";
 
 const TEST_FUPS: f64 = 200.0;
-const TEST_FPS: f64 = 60.0;
 
 const DEADLOCK_TEST: bool = true;
 
@@ -63,7 +62,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         updatable_handler.clone(),
         patch,
         stats.clone(),
-        TEST_FPS,
         |show: DemexShow| {
             serde_json::to_writer(std::fs::File::create(TEST_SHOW_FILE).unwrap(), &show)?;
             Ok(())

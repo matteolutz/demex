@@ -17,7 +17,7 @@ pub enum TokenType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Token {
     Integer(u32),
-    FloatingPoint(f32),
+    FloatingPoint(f32, (u32, u32)),
     String(String),
     Plus,
     Minus,
@@ -64,6 +64,8 @@ pub enum Token {
     KeywordSave,
     KeywordDelete,
     KeywordReally,
+    KeywordDot,
+    KeywordNext,
 
     KeywordNuzul,
     KeywordSueud,
@@ -75,7 +77,7 @@ impl Token {
     pub fn token_type(&self) -> TokenType {
         match self {
             Token::Integer(_) => TokenType::Literal,
-            Token::FloatingPoint(_) => TokenType::Literal,
+            Token::FloatingPoint(_, _) => TokenType::Literal,
             Token::String(_) => TokenType::Literal,
             Token::KeywordFixturesSelected => TokenType::Literal,
 
@@ -128,6 +130,8 @@ impl Token {
             Token::KeywordMerge => TokenType::OtherKeyword,
             Token::KeywordOverride => TokenType::OtherKeyword,
             Token::KeywordReally => TokenType::OtherKeyword,
+            Token::KeywordDot => TokenType::OtherKeyword,
+            Token::KeywordNext => TokenType::OtherKeyword,
 
             Token::Eof => TokenType::Eof,
         }
@@ -144,7 +148,7 @@ impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Token::Integer(n) => write!(f, "{}", n),
-            Token::FloatingPoint(n) => write!(f, "{}", n),
+            Token::FloatingPoint(n, _) => write!(f, "{}", n),
             Token::String(s) => write!(f, "\"{}\"", s),
             Token::Plus => write!(f, "+"),
             Token::Minus => write!(f, "-"),
@@ -191,6 +195,8 @@ impl std::fmt::Display for Token {
             Token::KeywordSave => write!(f, "save"),
             Token::KeywordDelete => write!(f, "delete"),
             Token::KeywordReally => write!(f, "really"),
+            Token::KeywordDot => write!(f, "dot"),
+            Token::KeywordNext => write!(f, "next"),
             Token::Eof => write!(f, "Eof"),
         }
     }

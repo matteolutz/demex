@@ -1,7 +1,6 @@
 use std::fmt;
 
 use egui_probe::EguiProbe;
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
@@ -11,18 +10,29 @@ use crate::fixture::{
 
 use super::value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, EguiProbe)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, EguiProbe, Default)]
 pub enum FixtureChannelValuePriority {
-    LTP,
-    Super,
+    #[default]
+    Ltp,
+    SuperLtp,
+    Htp,
 }
 
 impl FixtureChannelValuePriority {
     pub fn priority_value(&self) -> u8 {
         match self {
-            Self::LTP => 0,
-            Self::Super => 10,
+            Self::SuperLtp => 1,
+            Self::Ltp => 0,
+            Self::Htp => 0,
         }
+    }
+
+    pub fn programmer() -> Self {
+        Self::Ltp
+    }
+
+    pub fn is_htp(&self) -> bool {
+        matches!(self, Self::Htp)
     }
 }
 
@@ -55,18 +65,6 @@ pub enum FixtureChannelValueSource {
     Fader { fader_id: u32 },
 }
 
-impl FixtureChannelValueSource {
-    pub fn priority(&self) -> FixtureChannelValuePriority {
-        match self {
-            Self::Programmer => FixtureChannelValuePriority::LTP,
-            // TODO add sequence priority setting
-            Self::Executor { executor_id: _ } => FixtureChannelValuePriority::LTP,
-            // TODO: add fader priority setting
-            Self::Fader { fader_id: _ } => FixtureChannelValuePriority::LTP,
-        }
-    }
-}
-
 impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
     fn get_channel_value(
         &self,
@@ -75,13 +73,18 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
         updatable_handler: &UpdatableHandler,
         preset_handler: &PresetHandler,
     ) -> Result<FixtureChannelValue, FixtureError> {
-        let values = self
+        let mut values = self
             .iter()
-            .sorted_by(|a, b| a.priority().cmp(&b.priority()))
             .flat_map(|source| match source {
-                FixtureChannelValueSource::Programmer => fixture
-                    .channel_value_programmer(channel_id)
-                    .map(|v| FadeFixtureChannelValue::new(v, 1.0)),
+                FixtureChannelValueSource::Programmer => {
+                    fixture.channel_value_programmer(channel_id).map(|v| {
+                        FadeFixtureChannelValue::new(
+                            v,
+                            1.0,
+                            FixtureChannelValuePriority::programmer(),
+                        )
+                    })
+                }
                 FixtureChannelValueSource::Executor {
                     executor_id: runtime_id,
                 } => {
@@ -111,9 +114,20 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
             return Err(FixtureError::ChannelValueNotFound(channel_id));
         }
 
+        values.sort_by_key(|v| v.priority());
+
         let mut value = FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::AnyHome);
         for v in values {
             if v.value().is_home() {
+                continue;
+            }
+
+            if !v.priority().is_htp() {
+                value = FixtureChannelValue::Mix {
+                    a: Box::new(FixtureChannelValue::any_home()),
+                    b: Box::new(v.value().clone()),
+                    mix: v.alpha(),
+                };
                 continue;
             }
 

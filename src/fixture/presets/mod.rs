@@ -8,7 +8,9 @@ use preset::FixturePreset;
 use serde::{Deserialize, Serialize};
 
 use crate::parser::nodes::{
-    action::{Action, UpdateModeActionData},
+    action::{
+        Action, ChannelTypeSelectorActionData, CueIdxSelectorActionData, UpdateModeActionData,
+    },
     fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 
@@ -18,7 +20,10 @@ use super::{
         FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
     },
     handler::FixtureHandler,
-    sequence::Sequence,
+    sequence::{
+        cue::{Cue, CueTiming, CueTrigger},
+        Sequence,
+    },
     updatables::UpdatableHandler,
 };
 
@@ -189,6 +194,22 @@ impl PresetHandler {
         Ok(())
     }
 
+    pub fn get_preset_range(
+        &self,
+        preset_id_from: u32,
+        preset_id_to: u32,
+        channel_type: u16,
+    ) -> Result<Vec<&FixturePreset>, PresetHandlerError> {
+        let mut presets = Vec::new();
+
+        for i in preset_id_from..=preset_id_to {
+            let preset = self.get_preset(i, channel_type)?;
+            presets.push(preset);
+        }
+
+        Ok(presets)
+    }
+
     pub fn get_preset(
         &self,
         preset_id: u32,
@@ -315,6 +336,93 @@ impl PresetHandler {
         Ok(())
     }
 
+    pub fn record_sequence_cue(
+        &mut self,
+        sequence_id: u32,
+        fixture_handler: &FixtureHandler,
+        fixture_selector: &FixtureSelector,
+        fixture_selector_context: FixtureSelectorContext,
+        cue_idx: CueIdxSelectorActionData,
+        channel_type_selector: &ChannelTypeSelectorActionData,
+    ) -> Result<(), PresetHandlerError> {
+        // does this cue already exist?
+        if let CueIdxSelectorActionData::Discrete(cue_idx) = cue_idx {
+            if self
+                .sequences
+                .get(&sequence_id)
+                .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?
+                .cues()
+                .iter()
+                .any(|c| c.cue_idx() == cue_idx)
+            {
+                return Err(PresetHandlerError::CueAlreadyExists(sequence_id, cue_idx));
+            }
+        }
+
+        let discrete_cue_idx = match cue_idx {
+            CueIdxSelectorActionData::Discrete(cue_idx) => cue_idx,
+            CueIdxSelectorActionData::Next => {
+                let cues = self
+                    .sequences
+                    .get(&sequence_id)
+                    .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?
+                    .cues();
+
+                if cues.is_empty() {
+                    (1, 0)
+                } else {
+                    (cues.last().unwrap().cue_idx().0 + 1, 0)
+                }
+            }
+        };
+
+        let mut cue_data = HashMap::new();
+
+        for fixture_id in fixture_selector
+            .get_fixtures(self, fixture_selector_context)
+            .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?
+        {
+            if let Some(fixture) = fixture_handler.fixture_immut(fixture_id) {
+                cue_data.insert(
+                    fixture_id,
+                    channel_type_selector
+                        .get_channel_values(fixture)
+                        .map_err(PresetHandlerError::FixtureError)?,
+                );
+            }
+        }
+
+        let cue = Cue::new(
+            discrete_cue_idx,
+            cue_data,
+            0.0,
+            None,
+            0.0,
+            None,
+            0.0,
+            CueTiming::default(),
+            CueTrigger::Manual,
+        );
+
+        let cues = self
+            .sequences
+            .get_mut(&sequence_id)
+            .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?
+            .cues_mut();
+
+        for (idx, c) in cues.iter().enumerate() {
+            if c.cue_idx() > discrete_cue_idx {
+                cues.insert(idx, cue);
+                return Ok(());
+            }
+        }
+
+        // if we didn't insert the cue yet, it means it's the last cue
+        cues.push(cue);
+
+        Ok(())
+    }
+
     pub fn rename_sequence(&mut self, id: u32, new_name: String) -> Result<(), PresetHandlerError> {
         let sequence = self
             .sequences
@@ -327,6 +435,12 @@ impl PresetHandler {
     pub fn get_sequence(&self, id: u32) -> Result<&Sequence, PresetHandlerError> {
         self.sequences
             .get(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))
+    }
+
+    pub fn get_sequence_mut(&mut self, id: u32) -> Result<&mut Sequence, PresetHandlerError> {
+        self.sequences
+            .get_mut(&id)
             .ok_or(PresetHandlerError::PresetNotFound(id))
     }
 

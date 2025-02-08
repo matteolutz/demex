@@ -1,5 +1,7 @@
 use itertools::Itertools;
 
+use crate::lexer::token::Token;
+
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let preset_handler = context.preset_handler.read();
 
@@ -12,8 +14,39 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
         {
             ui.horizontal(|ui| {
                 ui.label(id.to_string());
-                ui.label(seq.name());
+                let name_button = ui.button(seq.name());
+                if name_button.clicked() {
+                    context
+                        .command
+                        .extend_from_slice(&[Token::KeywordSequence, Token::Integer(*id)]);
+                }
+
                 ui.label(format!("{} cues", seq.cues().len()));
+
+                ui.label("(");
+                for (cue_idx_major, cue_idx_minor) in seq.cues().iter().map(|c| c.cue_idx()) {
+                    let cue_button = ui.button(format!("{}.{}", cue_idx_major, cue_idx_minor));
+                    if cue_button.clicked() {
+                        context.command.extend_from_slice(&[
+                            Token::KeywordSequence,
+                            Token::Integer(*id),
+                            Token::KeywordCue,
+                            Token::FloatingPoint(0.0, (cue_idx_major, cue_idx_minor)),
+                        ]);
+                    }
+                }
+
+                if ui.button("+").clicked() {
+                    context.command.extend_from_slice(&[
+                        Token::KeywordRecord,
+                        Token::KeywordSequence,
+                        Token::Integer(*id),
+                        Token::KeywordCue,
+                        Token::KeywordNext,
+                    ]);
+                }
+
+                ui.label(")");
             });
         }
     });

@@ -1,5 +1,7 @@
 use itertools::Itertools;
 
+use crate::lexer::token::Token;
+
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
     let mut updatable_handler = context.updatable_handler.write();
@@ -49,6 +51,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                         .fader_mut(*id)
                         .unwrap()
                         .home(&mut fixture_handler);
+                }
+
+                if ui.button("Sel").clicked() {
+                    context
+                        .command
+                        .extend_from_slice(&[Token::KeywordFader, Token::Integer(*id)]);
                 }
             });
         }

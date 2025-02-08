@@ -5,6 +5,7 @@ use channel::{
     FixtureId, SerializableFixtureChannelPatch, FIXTURE_CHANNEL_COLOR_ID,
     FIXTURE_CHANNEL_INTENSITY_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
 };
+use itertools::Itertools;
 use presets::PresetHandler;
 use serde::{Deserialize, Serialize};
 use updatables::UpdatableHandler;
@@ -240,6 +241,54 @@ impl Fixture {
         self.channel_value(FIXTURE_CHANNEL_COLOR_ID, preset_handler, updatable_handler)
     }
 
+    pub fn display_color(
+        &self,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+    ) -> Result<[f32; 4], FixtureError> {
+        match self
+            .patch
+            .iter()
+            .find(|c| c.type_id() == FIXTURE_CHANNEL_COLOR_ID)
+        {
+            Some(FixtureChannel::ColorRGB(_, _)) | Some(FixtureChannel::ColorRGBW(_, _)) => {
+                let color = self.channel_value(
+                    FIXTURE_CHANNEL_COLOR_ID,
+                    preset_handler,
+                    updatable_handler,
+                )?;
+
+                Ok(color
+                    .as_quadruple(preset_handler, self.id, FIXTURE_CHANNEL_COLOR_ID)
+                    .map_err(|err| FixtureError::FixtureChannelError(Box::new(err)))?)
+            }
+            Some(FixtureChannel::ColorMacro(map, _)) => {
+                let color = self.channel_value(
+                    FIXTURE_CHANNEL_COLOR_ID,
+                    preset_handler,
+                    updatable_handler,
+                )?;
+
+                let value = color
+                    .as_single(preset_handler, self.id, FIXTURE_CHANNEL_COLOR_ID)
+                    .map_err(|err| FixtureError::FixtureChannelError(Box::new(err)))?;
+
+                let byte_value = (value * 255.0) as u8;
+
+                let color_key = map
+                    .keys()
+                    .sorted_by_key(|v| byte_value.abs_diff(**v))
+                    .next()
+                    .unwrap();
+
+                Ok(map[color_key].clone())
+            }
+            _ => Err(FixtureError::ChannelNotFound(Some(
+                FixtureChannel::name_by_id(FIXTURE_CHANNEL_COLOR_ID),
+            ))),
+        }
+    }
+
     pub fn set_color(&mut self, value: FixtureChannelValue) -> Result<(), FixtureError> {
         self.set_channel_value(FIXTURE_CHANNEL_COLOR_ID, value)
     }
@@ -301,9 +350,9 @@ impl Fixture {
                 FixtureChannel::Intensity(_, intens) => Ok(intens.clone()),
                 FixtureChannel::Strobe(strobe) => Ok(strobe.clone()),
                 FixtureChannel::Zoom(_, zoom) => Ok(zoom.clone()),
-                FixtureChannel::ColorRGB(_, value) | FixtureChannel::ColorRGBW(_, value) => {
-                    Ok(value.clone())
-                }
+                FixtureChannel::ColorRGB(_, value)
+                | FixtureChannel::ColorRGBW(_, value)
+                | FixtureChannel::ColorMacro(_, value) => Ok(value.clone()),
                 FixtureChannel::PositionPanTilt(_, value) => Ok(value.clone()),
                 FixtureChannel::Maintenance(_, _, value) => Ok(value.clone()),
                 FixtureChannel::ToggleFlags(_, value) => Ok(value.clone()),
@@ -346,6 +395,14 @@ impl Fixture {
                 Ok(())
             }
             Some(FixtureChannel::ColorRGB(_, color)) => {
+                *color = value;
+                Ok(())
+            }
+            Some(FixtureChannel::ColorRGBW(_, color)) => {
+                *color = value;
+                Ok(())
+            }
+            Some(FixtureChannel::ColorMacro(_, color)) => {
                 *color = value;
                 Ok(())
             }
@@ -402,6 +459,13 @@ impl Fixture {
     pub fn channel_name(&self, type_id: u16) -> Result<String, FixtureError> {
         match self.patch.iter().find(|c| c.type_id() == type_id) {
             Some(channel) => Ok(channel.name().to_string()),
+            None => Err(FixtureError::ChannelNotFound(None)),
+        }
+    }
+
+    pub fn channel(&self, type_id: u16) -> Result<&FixtureChannel, FixtureError> {
+        match self.patch.iter().find(|c| c.type_id() == type_id) {
+            Some(channel) => Ok(channel),
             None => Err(FixtureError::ChannelNotFound(None)),
         }
     }

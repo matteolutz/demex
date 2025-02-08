@@ -5,7 +5,10 @@ use executor::SequenceRuntimeExecutor;
 use fader::DemexFader;
 use serde::{Deserialize, Serialize};
 
-use super::{handler::FixtureHandler, presets::PresetHandler};
+use super::{
+    channel::value_source::FixtureChannelValuePriority, handler::FixtureHandler,
+    presets::PresetHandler,
+};
 
 pub mod error;
 pub mod executor;
@@ -28,8 +31,10 @@ impl UpdatableHandler {
             return Err(UpdatableHandlerError::UpdatableAlreadyExists(id));
         }
 
-        self.executors
-            .insert(id, SequenceRuntimeExecutor::new(id, sequence_id));
+        self.executors.insert(
+            id,
+            SequenceRuntimeExecutor::new(id, sequence_id, FixtureChannelValuePriority::default()),
+        );
         Ok(())
     }
 

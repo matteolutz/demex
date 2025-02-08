@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -16,11 +17,17 @@ use crate::{
 
 use super::{error::PresetHandlerError, PresetHandler};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
 pub struct FixturePreset {
+    #[egui_probe(skip)]
     id: u32,
+
     name: String,
+
+    #[egui_probe(skip)]
     channel_type: u16,
+
+    #[egui_probe(skip)]
     values: HashMap<u32, FixtureChannelDiscreteValue>,
 }
 

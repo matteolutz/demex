@@ -1,11 +1,13 @@
 use std::fmt;
 
+use dialog::DemexGlobalDialogEntry;
+
 use crate::{
     lexer::token::Token,
     parser::nodes::action::{result::ActionRunResult, Action},
 };
 
-use super::DemexGlobalDialogEntry;
+pub mod dialog;
 
 pub enum DemexLogEntryType {
     DialogEntry(DemexGlobalDialogEntry),
@@ -21,17 +23,19 @@ impl fmt::Display for DemexLogEntryType {
             DemexLogEntryType::DialogEntry(entry) => write!(f, "[DLG]: {}", entry),
             DemexLogEntryType::CommandEntry(tokens) => {
                 write!(f, "[CMD]: ")?;
-                for i in 0..tokens.len() - 1 {
-                    write!(f, "{} ", tokens[i])?;
+
+                // omit the Eof token
+                for token in tokens.iter().take(tokens.len() - 1) {
+                    write!(f, "{} ", token)?;
                 }
                 Ok(())
             }
             DemexLogEntryType::CommandFailedEntry(err) => write!(f, "[CMD][FAIL]: {}", err),
             DemexLogEntryType::ActionEntrySuccess(action, res) => {
-                write!(f, "[ACT][SUCC]: {:?} -> {:?}", action, res)
+                write!(f, "[ACT][SUCC]: {:?}\n\t> {:?}", action, res)
             }
             DemexLogEntryType::ActionEntryFailed(action, err) => {
-                write!(f, "[ACT][FAIL]: {:?} -> {}", action, err)
+                write!(f, "[ACT][FAIL]: {:?}\n\t> {}", action, err)
             }
         }
     }

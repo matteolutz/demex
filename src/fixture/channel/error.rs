@@ -5,6 +5,7 @@ pub enum FixtureChannelError {
     FixtureChannelValueWrongVariant(String),
     FixtureError(FixtureError),
     FixtureChannelValueIsUnset,
+    WrongFixtureChannelType,
 }
 
 impl std::fmt::Display for FixtureChannelError {
@@ -22,6 +23,9 @@ impl std::fmt::Display for FixtureChannelError {
             }
             Self::FixtureChannelValueIsUnset => {
                 write!(f, "Fixture channel value is unset.")
+            }
+            Self::WrongFixtureChannelType => {
+                write!(f, "Wrong fixture channel type.")
             }
         }
     }

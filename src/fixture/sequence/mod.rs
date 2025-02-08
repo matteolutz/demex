@@ -1,8 +1,8 @@
-use cue::Cue;
+use cue::{Cue, CueIdx};
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use super::channel::value::FixtureChannelValue;
+use super::channel::{value::FixtureChannelValue, value_source::FixtureChannelValuePriority};
 
 pub mod cue;
 pub mod runtime;
@@ -11,11 +11,20 @@ pub mod runtime;
 pub struct FadeFixtureChannelValue {
     value: FixtureChannelValue,
     alpha: f32,
+    priority: FixtureChannelValuePriority,
 }
 
 impl FadeFixtureChannelValue {
-    pub fn new(value: FixtureChannelValue, alpha: f32) -> Self {
-        Self { value, alpha }
+    pub fn new(
+        value: FixtureChannelValue,
+        alpha: f32,
+        priority: FixtureChannelValuePriority,
+    ) -> Self {
+        Self {
+            value,
+            alpha,
+            priority,
+        }
     }
 
     pub fn value(&self) -> &FixtureChannelValue {
@@ -25,12 +34,20 @@ impl FadeFixtureChannelValue {
     pub fn alpha(&self) -> f32 {
         self.alpha
     }
+
+    pub fn priority(&self) -> FixtureChannelValuePriority {
+        self.priority
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, EguiProbe)]
 pub struct Sequence {
+    #[egui_probe(skip)]
     id: u32,
+
     name: String,
+
+    #[egui_probe(skip)]
     cues: Vec<Cue>,
 }
 
@@ -63,7 +80,15 @@ impl Sequence {
         &self.cues
     }
 
+    pub fn cues_mut(&mut self) -> &mut Vec<Cue> {
+        &mut self.cues
+    }
+
     pub fn cue(&self, idx: usize) -> &Cue {
         &self.cues[idx]
+    }
+
+    pub fn find_cue_mut(&mut self, cue_idx: CueIdx) -> Option<&mut Cue> {
+        self.cues.iter_mut().find(|cue| cue.cue_idx() == cue_idx)
     }
 }

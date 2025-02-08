@@ -21,6 +21,12 @@ pub const FIXTURE_CHANNEL_TOGGLE_FLAGS: u16 = 30;
 
 pub type FixtureId = u32;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum FixtureColorChannelMode {
+    Rgbw,
+    Macro,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SerializableFixtureChannelPatch {
     Intensity(bool),
@@ -28,6 +34,7 @@ pub enum SerializableFixtureChannelPatch {
     Zoom(bool),
     ColorRGB(bool),
     ColorRGBW(bool),
+    ColorMacro(HashMap<u8, [f32; 4]>),
     PositionPanTilt(bool),
     Maintenance(String),
     ToggleFlags(HashMap<String, u8>),
@@ -47,6 +54,7 @@ impl From<FixtureChannel> for SerializableFixtureChannelPatch {
             FixtureChannel::ColorRGBW(is_fine, _) => {
                 SerializableFixtureChannelPatch::ColorRGBW(is_fine)
             }
+            FixtureChannel::ColorMacro(map, _) => SerializableFixtureChannelPatch::ColorMacro(map),
             FixtureChannel::PositionPanTilt(is_fine, _) => {
                 SerializableFixtureChannelPatch::PositionPanTilt(is_fine)
             }
@@ -74,6 +82,9 @@ impl From<SerializableFixtureChannelPatch> for FixtureChannel {
             SerializableFixtureChannelPatch::ColorRGBW(is_fine) => {
                 FixtureChannel::color_rgbw(is_fine)
             }
+            SerializableFixtureChannelPatch::ColorMacro(map) => {
+                FixtureChannel::ColorMacro(map, FixtureChannelValue::any_home())
+            }
             SerializableFixtureChannelPatch::PositionPanTilt(is_fine) => {
                 FixtureChannel::position_pan_tilt(is_fine)
             }
@@ -94,6 +105,7 @@ pub enum FixtureChannel {
     Zoom(bool, FixtureChannelValue),
     ColorRGB(bool, FixtureChannelValue),
     ColorRGBW(bool, FixtureChannelValue),
+    ColorMacro(HashMap<u8, [f32; 4]>, FixtureChannelValue),
     PositionPanTilt(bool, FixtureChannelValue),
     Maintenance(String, u16, FixtureChannelValue),
     ToggleFlags(HashMap<String, u8>, FixtureChannelValue),
@@ -167,6 +179,7 @@ impl FixtureChannel {
             FixtureChannel::Zoom(_, zoom) => *zoom = FixtureChannelValue::any_home(),
             FixtureChannel::ColorRGB(_, rgb) => *rgb = FixtureChannelValue::any_home(),
             FixtureChannel::ColorRGBW(_, rgbw) => *rgbw = FixtureChannelValue::any_home(),
+            FixtureChannel::ColorMacro(_, value) => *value = FixtureChannelValue::any_home(),
             FixtureChannel::PositionPanTilt(_, position) => {
                 *position = FixtureChannelValue::any_home()
             }
@@ -183,6 +196,7 @@ impl FixtureChannel {
             FixtureChannel::ColorRGB(_, color) | FixtureChannel::ColorRGBW(_, color) => {
                 color.is_home()
             }
+            FixtureChannel::ColorMacro(_, value) => value.is_home(),
             FixtureChannel::PositionPanTilt(_, position) => position.is_home(),
             FixtureChannel::Maintenance(_, _, value) => value.is_home(),
             FixtureChannel::ToggleFlags(_, value) => value.is_home(),
@@ -222,6 +236,7 @@ impl FixtureChannel {
                     4
                 }
             }
+            FixtureChannel::ColorMacro(_, _) => 1,
             FixtureChannel::PositionPanTilt(is_fine, _) => {
                 if *is_fine {
                     4
@@ -239,12 +254,28 @@ impl FixtureChannel {
             FixtureChannel::Intensity(_, _) => FIXTURE_CHANNEL_INTENSITY_ID,
             FixtureChannel::Strobe(_) => FIXTURE_CHANNEL_STROBE,
             FixtureChannel::Zoom(_, _) => FIXTURE_CHANNEL_ZOOM,
-            FixtureChannel::ColorRGB(_, _) | FixtureChannel::ColorRGBW(_, _) => {
-                FIXTURE_CHANNEL_COLOR_ID
-            }
+            FixtureChannel::ColorRGB(_, _)
+            | FixtureChannel::ColorRGBW(_, _)
+            | FixtureChannel::ColorMacro(_, _) => FIXTURE_CHANNEL_COLOR_ID,
             FixtureChannel::PositionPanTilt(_, _) => FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
             FixtureChannel::Maintenance(_, id, _) => *id,
             FixtureChannel::ToggleFlags(_, _) => FIXTURE_CHANNEL_TOGGLE_FLAGS,
+        }
+    }
+
+    pub fn color_mode(&self) -> Result<FixtureColorChannelMode, FixtureChannelError> {
+        match self {
+            FixtureChannel::ColorRGB(_, _) => Ok(FixtureColorChannelMode::Rgbw),
+            FixtureChannel::ColorRGBW(_, _) => Ok(FixtureColorChannelMode::Rgbw),
+            FixtureChannel::ColorMacro(_, _) => Ok(FixtureColorChannelMode::Macro),
+            _ => Err(FixtureChannelError::WrongFixtureChannelType),
+        }
+    }
+
+    pub fn color_macro_map(&self) -> Result<&HashMap<u8, [f32; 4]>, FixtureChannelError> {
+        match self {
+            FixtureChannel::ColorMacro(map, _) => Ok(map),
+            _ => Err(FixtureChannelError::WrongFixtureChannelType),
         }
     }
 
@@ -371,6 +402,21 @@ impl FixtureChannel {
                 } else {
                     Ok(vec![r, g, b, w])
                 }
+            }
+            FixtureChannel::ColorMacro(_, _) => {
+                let channel_value = fixture
+                    .channel_value(FIXTURE_CHANNEL_COLOR_ID, preset_handler, updatable_handler)
+                    .map_err(FixtureChannelError::FixtureError)?;
+
+                let value = channel_value.as_single(
+                    preset_handler,
+                    fixture_id,
+                    FIXTURE_CHANNEL_COLOR_ID,
+                )?;
+
+                let (value, _) = Self::float_to_coarse_and_fine(value);
+
+                Ok(vec![value])
             }
             FixtureChannel::PositionPanTilt(is_fine, _) => {
                 let channel_value = fixture

@@ -112,8 +112,14 @@ impl CueTiming {
     }
 }
 
+pub type CueIdx = (u32, u32);
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, EguiProbe)]
 pub struct Cue {
+    #[egui_probe(skip)]
+    cue_idx: CueIdx,
+
+    #[egui_probe(skip)]
     data: HashMap<FixtureId, Vec<CueFixtureChannelValue>>,
 
     // Time, to fade into the cue
@@ -139,6 +145,7 @@ pub struct Cue {
 
 impl Cue {
     pub fn new(
+        cue_idx: CueIdx,
         data: HashMap<FixtureId, Vec<CueFixtureChannelValue>>,
         in_fade: f32,
         out_fade: Option<f32>,
@@ -149,6 +156,8 @@ impl Cue {
         trigger: CueTrigger,
     ) -> Self {
         Self {
+            cue_idx,
+
             data,
             in_fade,
             out_fade,
@@ -158,6 +167,10 @@ impl Cue {
             timing,
             trigger,
         }
+    }
+
+    pub fn cue_idx(&self) -> CueIdx {
+        self.cue_idx
     }
 
     pub fn data(&self) -> &HashMap<FixtureId, Vec<CueFixtureChannelValue>> {

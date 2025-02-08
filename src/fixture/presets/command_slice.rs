@@ -30,7 +30,7 @@ impl CommandSlice {
         &mut self.name
     }
 
-    pub fn command(&self) -> &Vec<Token> {
+    pub fn command(&self) -> &[Token] {
         &self.command
     }
 }

@@ -6,8 +6,8 @@ use egui::{
 use crate::{
     fixture::{
         channel::{
-            value::FixtureChannelValueTrait, FIXTURE_CHANNEL_COLOR_ID,
-            FIXTURE_CHANNEL_INTENSITY_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+            value::FixtureChannelValueTrait, FIXTURE_CHANNEL_INTENSITY_ID,
+            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
         },
         layout::{FixtureLayoutDecoration, FixtureLayoutEntry, FixtureLayoutEntryType},
     },
@@ -287,19 +287,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             .as_single(&preset_handler, fixture.id(), FIXTURE_CHANNEL_INTENSITY_ID)
             .expect("error handling");
 
-        let rect_color = if let Ok(color) = fixture.color(&preset_handler, &updatable_handler) {
-            let color = color
-                .as_quadruple(&preset_handler, fixture.id(), FIXTURE_CHANNEL_COLOR_ID)
-                .unwrap();
-            egui::Color32::from_rgba_unmultiplied(
-                (color[0] * 255.0) as u8,
-                (color[1] * 255.0) as u8,
-                (color[2] * 255.0) as u8,
-                (intensity * 255.0) as u8,
-            )
-        } else {
-            egui::Color32::from_rgba_unmultiplied(255, 255, 255, (intensity * 255.0) as u8)
-        };
+        let rect_color =
+            if let Ok(color) = fixture.display_color(&preset_handler, &updatable_handler) {
+                egui::Color32::from_rgba_unmultiplied(
+                    (color[0] * 255.0) as u8,
+                    (color[1] * 255.0) as u8,
+                    (color[2] * 255.0) as u8,
+                    (intensity * 255.0) as u8,
+                )
+            } else {
+                egui::Color32::from_rgba_unmultiplied(255, 255, 255, (intensity * 255.0) as u8)
+            };
 
         let position: Option<egui::Vec2> = fixture
             .position_pan_tilt(&preset_handler, &updatable_handler)

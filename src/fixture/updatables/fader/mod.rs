@@ -1,8 +1,5 @@
-use std::collections::HashMap;
-
 use config::{DemexFaderConfig, DemexFaderRuntimeFunction};
 use egui_probe::EguiProbe;
-use overrides::DemexFaderChannelOverride;
 use serde::{Deserialize, Serialize};
 
 pub mod config;
@@ -36,9 +33,6 @@ pub struct DemexFader {
     value: f32,
 
     config: DemexFaderConfig,
-
-    #[serde(default)]
-    overrides: HashMap<u16, DemexFaderChannelOverride>,
 }
 
 impl DemexFader {
@@ -47,9 +41,8 @@ impl DemexFader {
             id,
             name,
             config,
-            priority: FixtureChannelValuePriority::LTP,
+            priority: FixtureChannelValuePriority::Ltp,
             value: 0.0,
-            overrides: HashMap::new(),
         }
     }
 
@@ -67,10 +60,6 @@ impl DemexFader {
 
     pub fn config(&self) -> &DemexFaderConfig {
         &self.config
-    }
-
-    pub fn overrides(&self) -> &HashMap<u16, DemexFaderChannelOverride> {
-        &self.overrides
     }
 
     pub fn value(&self) -> f32 {
@@ -164,24 +153,6 @@ impl DemexFader {
             return Err(FixtureError::ChannelValueNotFound(channel_id));
         }
 
-        if let Some(channel_override) = self.overrides.get(&channel_id) {
-            return if let Some(from_value) = channel_override.from_value() {
-                Ok(FadeFixtureChannelValue::new(
-                    FixtureChannelValue::Mix {
-                        a: Box::new(from_value.clone()),
-                        b: Box::new(channel_override.to_value().clone()),
-                        mix: self.value,
-                    },
-                    1.0,
-                ))
-            } else {
-                Ok(FadeFixtureChannelValue::new(
-                    channel_override.to_value().clone(),
-                    self.value,
-                ))
-            };
-        }
-
         match &self.config {
             DemexFaderConfig::Submaster { fixtures } => {
                 if !fixtures.contains(&fixture.id()) || channel_id != FIXTURE_CHANNEL_INTENSITY_ID {
@@ -191,6 +162,7 @@ impl DemexFader {
                 Ok(FadeFixtureChannelValue::new(
                     FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(1.0)),
                     self.value,
+                    self.priority,
                 ))
             }
             DemexFaderConfig::SequenceRuntime {
@@ -220,6 +192,7 @@ impl DemexFader {
                         speed_multiplier,
                         intensity_multiplier,
                         preset_handler,
+                        self.priority,
                     )
                     .ok_or(FixtureError::ChannelValueNotFound(channel_id))
             }

@@ -162,7 +162,20 @@
           "ToggleFlags": { "Turn On": 131, "Turn Off": 231 }
         },
         {
-          "Maintenance": "ColorMaro"
+          "ColorMacro": {
+            "0": [1.0, 1.0, 1.0, 0.0],
+            "10": [0.25, 0.87, 0.81, 0.0],
+            "21": [1.0, 0.0, 0.0, 0.0],
+            "32": [0.0, 1.0, 1.0, 0.0],
+            "42": [0.0, 1.0, 0.0, 0.0],
+            "53": [1.0, 1.0, 1.0, 0.0],
+            "64": [0.0, 0.5, 1.0, 0.0],
+            "74": [1.0, 1.0, 0.0, 0.0],
+            "85": [0.0, 1.0, 0.0, 0.0],
+            "96": [1.0, 0.05, 0.75, 0.0],
+            "106": [0.0, 0.0, 1.0, 0.0],
+            "117": [1.0, 0.5, 0.0, 0.0]
+          }
         },
         {
           "Maintenance": "NoFunction1"
@@ -213,7 +226,20 @@
           "ToggleFlags": { "Turn On": 131, "Turn Off": 231 }
         },
         {
-          "Maintenance": "ColorMaro"
+          "ColorMacro": {
+            "0": [1.0, 1.0, 1.0, 0.0],
+            "10": [0.25, 0.87, 0.81, 0.0],
+            "21": [1.0, 0.0, 0.0, 0.0],
+            "32": [0.0, 1.0, 1.0, 0.0],
+            "42": [0.0, 1.0, 0.0, 0.0],
+            "53": [1.0, 1.0, 1.0, 0.0],
+            "64": [0.0, 0.5, 1.0, 0.0],
+            "74": [1.0, 1.0, 0.0, 0.0],
+            "85": [0.0, 1.0, 0.0, 0.0],
+            "96": [1.0, 0.05, 0.75, 0.0],
+            "106": [0.0, 0.0, 1.0, 0.0],
+            "117": [1.0, 0.5, 0.0, 0.0]
+          }
         },
         {
           "Maintenance": "NoFunction1"
@@ -243,6 +269,118 @@
       ],
       "universe": 1,
       "start_address": 320
+    },
+    {
+      "id": 101,
+      "name": "T1",
+      "patch": [
+        {
+          "Intensity": true
+        },
+        {
+          "ColorRGB": true
+        }
+      ],
+      "universe": 2,
+      "start_address": 1
+    },
+    {
+      "id": 102,
+      "name": "T2",
+      "patch": [
+        {
+          "Intensity": true
+        },
+        {
+          "ColorRGB": true
+        }
+      ],
+      "universe": 2,
+      "start_address": 9
+    },
+    {
+      "id": 103,
+      "name": "T3",
+      "patch": [
+        {
+          "Intensity": true
+        },
+        {
+          "ColorRGB": true
+        }
+      ],
+      "universe": 2,
+      "start_address": 17
+    },
+    {
+      "id": 104,
+      "name": "T4",
+      "patch": [
+        {
+          "Intensity": true
+        },
+        {
+          "ColorRGB": true
+        }
+      ],
+      "universe": 2,
+      "start_address": 25
+    },
+    {
+      "id": 105,
+      "name": "T5",
+      "patch": [
+        {
+          "Intensity": true
+        },
+        {
+          "ColorRGB": true
+        }
+      ],
+      "universe": 2,
+      "start_address": 33
+    },
+    {
+      "id": 106,
+      "name": "T6",
+      "patch": [
+        {
+          "Intensity": true
+        },
+        {
+          "ColorRGB": true
+        }
+      ],
+      "universe": 2,
+      "start_address": 41
+    },
+    {
+      "id": 107,
+      "name": "T7",
+      "patch": [
+        {
+          "Intensity": true
+        },
+        {
+          "ColorRGB": true
+        }
+      ],
+      "universe": 2,
+      "start_address": 49
+    },
+    {
+      "id": 108,
+      "name": "T8",
+      "patch": [
+        {
+          "Intensity": true
+        },
+        {
+          "ColorRGB": true
+        }
+      ],
+      "universe": 2,
+      "start_address": 57
     }
   ],
   "layout": {
@@ -251,6 +389,13 @@
         "Label": {
           "pos": { "x": 0.0, "y": -10.0 },
           "text": "Top Truss",
+          "font_size": 4.0
+        }
+      },
+      {
+        "Label": {
+          "pos": { "x": 0.0, "y": 30.0 },
+          "text": "Test",
           "font_size": 4.0
         }
       },
@@ -380,6 +525,55 @@
         "position": { "x": 100.0, "y": 50.0 },
         "size": { "x": 2.5, "y": 2.5 },
         "entry_type": "Circle"
+      },
+
+      {
+        "fixture_id": 101,
+        "position": { "x": -40.0, "y": 40.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Rect"
+      },
+      {
+        "fixture_id": 102,
+        "position": { "x": -30.0, "y": 40.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Rect"
+      },
+      {
+        "fixture_id": 103,
+        "position": { "x": -20.0, "y": 40.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Rect"
+      },
+      {
+        "fixture_id": 104,
+        "position": { "x": -10.0, "y": 40.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Rect"
+      },
+      {
+        "fixture_id": 105,
+        "position": { "x": 10.0, "y": 40.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Rect"
+      },
+      {
+        "fixture_id": 106,
+        "position": { "x": 20.0, "y": 40.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Rect"
+      },
+      {
+        "fixture_id": 107,
+        "position": { "x": 30.0, "y": 40.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Rect"
+      },
+      {
+        "fixture_id": 108,
+        "position": { "x": 40.0, "y": 40.0 },
+        "size": { "x": 2.5, "y": 2.5 },
+        "entry_type": "Rect"
       }
     ]
   }

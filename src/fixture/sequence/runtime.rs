@@ -4,7 +4,10 @@ use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
-    channel::{value::FixtureChannelValue, FIXTURE_CHANNEL_INTENSITY_ID},
+    channel::{
+        value::FixtureChannelValue, value_source::FixtureChannelValuePriority,
+        FIXTURE_CHANNEL_INTENSITY_ID,
+    },
     presets::PresetHandler,
 };
 
@@ -69,6 +72,7 @@ impl SequenceRuntime {
         speed_multiplier: f32,
         intensity_multiplier: f32,
         preset_handler: &PresetHandler,
+        priority: FixtureChannelValuePriority,
     ) -> Option<FadeFixtureChannelValue> {
         if !self.started {
             return None;
@@ -76,7 +80,7 @@ impl SequenceRuntime {
 
         let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
-        if sequence.cues().len() == 0 {
+        if sequence.cues().is_empty() {
             return None;
         }
 
@@ -111,7 +115,7 @@ impl SequenceRuntime {
             }
 
             cue.channel_value_for_fixture(fixture_id, channel_id)
-                .map(|v| FadeFixtureChannelValue::new(v.clone(), fade))
+                .map(|v| FadeFixtureChannelValue::new(v.clone(), fade, priority))
         } else if prev_cue_idx.is_some() {
             // this isn't the first cue, meaning we should fade between the value of the previous cue
             // and the value of the current cue
@@ -150,13 +154,14 @@ impl SequenceRuntime {
                                 mix,
                             },
                             fade,
+                            priority,
                         )
                     });
 
             if current_cue_value.is_none() {
                 prev_cue
                     .channel_value_for_fixture(fixture_id, channel_id)
-                    .map(|v| FadeFixtureChannelValue::new(v.clone(), (1.0 - mix) * fade))
+                    .map(|v| FadeFixtureChannelValue::new(v.clone(), (1.0 - mix) * fade, priority))
             } else {
                 current_cue_value
             }
@@ -177,7 +182,7 @@ impl SequenceRuntime {
 
         let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
-        if sequence.cues().len() == 0 {
+        if sequence.cues().is_empty() {
             return false;
         }
 
@@ -202,12 +207,12 @@ impl SequenceRuntime {
                 if *sequence.cue(next_cue_idx).trigger() == CueTrigger::Follow {
                     self.next_cue(preset_handler);
                 }
-            // it's the last cue, so we should wait for the out time of the last cue
-            // and then stop the sequence
-            } else if delta > cue_time + current_cue.out_time() {
-                self.stop();
-                return true;
-            }
+                // it's the last cue, so we should wait for the out time of the last cue
+                // and then stop the sequence
+            } /* else if delta > cue_time + current_cue.out_time() {
+                  self.stop();
+                  return true;
+              }*/
         }
 
         false
@@ -242,6 +247,7 @@ impl SequenceRuntime {
         if self.current_cue == sequence.cues().len() - 1
             && !self.should_auto_restart(preset_handler)
         {
+            self.stop();
             return;
         }
 

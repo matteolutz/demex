@@ -4,7 +4,7 @@ command                     = function
                             | object
 
 
-function                    = fixture_selector ((channel_type value_single) | specific_preset)
+function                    = fixture_selector set_function
                             | "home" [homeable_object]
                             | "record" record_function
                             | "create" create_function
@@ -26,18 +26,25 @@ renane_function             = "preset" discrete_channel_type integer "to" string
 
 record_function             = "preset" discrete_channel_type integer "for" fixture_selector ["as" string]
                             | "group" integer "for" fixture_selector ["as" string]
-                            | "sequence" integer "cue" integer "for" fixture_selector ["with" (channel_type_list | "active" | "all")]
+                            | "sequence" integer "cue" cue_idx "for" fixture_selector ["with" (channel_type_list | "active" | "all")]
 
 create_function             = "sequence" integer ["as" string]
                             | "executor" integer "for" ("sequence" integer) ["as" string]
                             | "macro" integer "with" command ["as" string]
 
+set_function                = channel_type value_single
+                            | specific_preset_or_range
+
 object                      = homeable_object
                             | specific_preset
+                            | "sequence" integer ["cue" cue_idx]
 
 homeable_object             = fixture_selector
+                            | "executor" integer
+                            | "fader" integer
 
 specific_preset             = "preset" discrete_channel_type integer
+specific_preset_or_range    = specific_preset ["thru" integer]
 
 value_single                = discrete_value_single
                             | discrete_value_single "thru" discrete_value_single
@@ -72,6 +79,11 @@ atomic_fixture_selector     = integer
                             | "~"
 
 integer_or_range            = integer ["thru" integer]
+
+cue_idx                     = discrete_cue_idx
+                            | "next"
+
+discrete_cue_idx            = integer | float
 
 integer                     = digit+
 float                       = digit+ ["." digit+]

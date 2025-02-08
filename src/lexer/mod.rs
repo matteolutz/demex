@@ -44,13 +44,18 @@ impl<'a> Lexer<'a> {
                 }
 
                 if self.peek() == '.' {
-                    num.push(self.consume());
+                    let mut fract = String::new();
 
                     while self.peek().is_ascii_digit() {
-                        num.push(self.consume());
+                        fract.push(self.consume());
                     }
 
-                    tokens.push(Token::FloatingPoint(num.parse().unwrap()));
+                    let floating_point: f32 = format!("{}.{}", num, fract).parse().unwrap();
+
+                    let num: u32 = num.parse().unwrap();
+                    let fract: u32 = fract.parse().unwrap();
+
+                    tokens.push(Token::FloatingPoint(floating_point, (num, fract)));
                     continue;
                 }
 
@@ -100,6 +105,8 @@ impl<'a> Lexer<'a> {
                     "save" => Some(Token::KeywordSave),
                     "delete" | "del" => Some(Token::KeywordDelete),
                     "really" => Some(Token::KeywordReally),
+                    "dot" => Some(Token::KeywordDot),
+                    "next" => Some(Token::KeywordNext),
                     _ => None,
                 };
 
