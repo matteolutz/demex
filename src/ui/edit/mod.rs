@@ -5,7 +5,7 @@ use crate::fixture::{
     updatables::UpdatableHandler,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DemexEditWindow {
     EditSequence(u32),
     EditSequenceCue(u32, CueIdx),
@@ -36,6 +36,43 @@ impl DemexEditWindow {
         }
     }
 
+    pub fn window_ui(
+        &self,
+        ui: &mut egui::Ui,
+        preset_handler: &mut PresetHandler,
+        updatable_handler: &mut UpdatableHandler,
+    ) {
+        match self {
+            Self::EditSequence(sequence_id) => {
+                Probe::new(preset_handler.get_sequence_mut(*sequence_id).unwrap()).show(ui);
+            }
+            Self::EditSequenceCue(sequence_id, cue_idx) => {
+                Probe::new(
+                    preset_handler
+                        .get_sequence_mut(*sequence_id)
+                        .unwrap()
+                        .find_cue_mut(*cue_idx)
+                        .unwrap(),
+                )
+                .show(ui);
+            }
+            Self::EditExecutor(executor_id) => {
+                Probe::new(updatable_handler.executor_mut(*executor_id).unwrap()).show(ui);
+            }
+            Self::EditFader(fader_id) => {
+                Probe::new(updatable_handler.fader_mut(*fader_id).unwrap()).show(ui);
+            }
+            Self::EditPreset(channel_type, preset_id) => {
+                Probe::new(
+                    preset_handler
+                        .get_preset_mut(*preset_id, *channel_type)
+                        .unwrap(),
+                )
+                .show(ui);
+            }
+        }
+    }
+
     pub fn ui(
         &self,
         ctx: &egui::Context,
@@ -48,35 +85,7 @@ impl DemexEditWindow {
                     return true;
                 }
 
-                match self {
-                    Self::EditSequence(sequence_id) => {
-                        Probe::new(preset_handler.get_sequence_mut(*sequence_id).unwrap()).show(ui);
-                    }
-                    Self::EditSequenceCue(sequence_id, cue_idx) => {
-                        Probe::new(
-                            preset_handler
-                                .get_sequence_mut(*sequence_id)
-                                .unwrap()
-                                .find_cue_mut(*cue_idx)
-                                .unwrap(),
-                        )
-                        .show(ui);
-                    }
-                    Self::EditExecutor(executor_id) => {
-                        Probe::new(updatable_handler.executor_mut(*executor_id).unwrap()).show(ui);
-                    }
-                    Self::EditFader(fader_id) => {
-                        Probe::new(updatable_handler.fader_mut(*fader_id).unwrap()).show(ui);
-                    }
-                    Self::EditPreset(channel_type, preset_id) => {
-                        Probe::new(
-                            preset_handler
-                                .get_preset_mut(*preset_id, *channel_type)
-                                .unwrap(),
-                        )
-                        .show(ui);
-                    }
-                }
+                self.window_ui(ui, preset_handler, updatable_handler);
 
                 let close_button = ui.button("Close");
                 if close_button.clicked() {

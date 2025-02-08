@@ -25,19 +25,25 @@ impl DemexGlobalDialogEntryType {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DemexGlobalDialogEntry {
     entry_type: DemexGlobalDialogEntryType,
     message: String,
     time: chrono::DateTime<chrono::Local>,
+    link: Option<String>,
 }
 
 impl DemexGlobalDialogEntry {
-    pub fn new(entry_type: DemexGlobalDialogEntryType, message: String) -> Self {
+    pub fn new(
+        entry_type: DemexGlobalDialogEntryType,
+        message: String,
+        link: Option<String>,
+    ) -> Self {
         Self {
             entry_type,
             message,
             time: chrono::offset::Local::now(),
+            link,
         }
     }
 
@@ -53,16 +59,46 @@ impl DemexGlobalDialogEntry {
         self.entry_type
     }
 
+    pub fn link(&self) -> Option<&String> {
+        self.link.as_ref()
+    }
+
     pub fn error(error: &dyn std::error::Error) -> Self {
-        Self::new(DemexGlobalDialogEntryType::Error, error.to_string())
+        Self::new(DemexGlobalDialogEntryType::Error, error.to_string(), None)
     }
 
     pub fn warn(warn: &str) -> Self {
-        Self::new(DemexGlobalDialogEntryType::Warn, warn.to_string())
+        Self::new(DemexGlobalDialogEntryType::Warn, warn.to_string(), None)
     }
 
     pub fn info(info: &str) -> Self {
-        Self::new(DemexGlobalDialogEntryType::Info, info.to_string())
+        Self::new(DemexGlobalDialogEntryType::Info, info.to_string(), None)
+    }
+
+    pub fn info_with_link(info: &str, link: &str) -> Self {
+        Self::new(
+            DemexGlobalDialogEntryType::Info,
+            info.to_string(),
+            Some(link.to_string()),
+        )
+    }
+}
+
+impl DemexGlobalDialogEntry {
+    pub fn window_ui(&self, ui: &mut egui::Ui) {
+        ui.vertical(|ui| {
+            ui.label(
+                egui::RichText::from(self.to_string())
+                    .strong()
+                    .color(self.color()),
+            );
+
+            if let Some(link) = self.link() {
+                if ui.link(link).clicked() {
+                    let _ = open::that(link);
+                }
+            }
+        });
     }
 }
 

@@ -12,7 +12,7 @@ use crate::{
         updatables::UpdatableHandler,
         Fixture,
     },
-    ui::edit::DemexEditWindow,
+    ui::{constants::INFO_TEXT, edit::DemexEditWindow},
 };
 
 use self::{error::ActionRunError, result::ActionRunResult};
@@ -135,6 +135,8 @@ pub enum Action {
 
     Nuzul,
     Sueud,
+
+    MatteoLutz,
 }
 
 impl Action {
@@ -287,6 +289,11 @@ impl Action {
 
             Self::Nuzul => Ok(ActionRunResult::Info("Going down...".to_owned())),
             Self::Sueud => Ok(ActionRunResult::Info("Going up...".to_owned())),
+
+            Self::MatteoLutz => Ok(ActionRunResult::InfoWithLink(
+                INFO_TEXT.to_owned(),
+                "https://matteolutz.de".to_owned(),
+            )),
 
             unimplemented_action => Err(ActionRunError::UnimplementedAction(
                 unimplemented_action.clone(),

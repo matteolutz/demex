@@ -50,7 +50,7 @@ pub fn position_controls_ui(
                 let pos = pos_val
                     // TODO: change this, to use the corresponding fixture
                     .as_pair(
-                        &preset_handler,
+                        preset_handler,
                         selected_fixtures[0],
                         FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
                     )

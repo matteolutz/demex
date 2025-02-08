@@ -4,6 +4,7 @@ use crate::ui::edit::DemexEditWindow;
 pub enum ActionRunResult {
     Default,
     Info(String),
+    InfoWithLink(String, String),
     Warn(String),
     EditWindow(DemexEditWindow),
 }

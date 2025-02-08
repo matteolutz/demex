@@ -21,9 +21,9 @@ use crate::{
 };
 
 use super::{
-    edit::DemexEditWindow,
     log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
     tabs::layout_view_tab::LayoutViewContext,
+    window::DemexWindow,
     DemexUiStats,
 };
 
@@ -39,7 +39,6 @@ pub struct DemexUiContext {
 
     pub stats: Arc<RwLock<DemexUiStats>>,
 
-    pub dialogs: Vec<DemexGlobalDialogEntry>,
     pub logs: Vec<DemexLogEntry>,
 
     pub macro_execution_queue: Vec<Action>,
@@ -49,12 +48,20 @@ pub struct DemexUiContext {
     pub layout_view_context: LayoutViewContext,
     pub gm_slider_val: u8,
 
-    pub edit_window: Option<DemexEditWindow>,
+    pub windows: Vec<DemexWindow>,
 }
 
 impl DemexUiContext {
     pub fn add_dialog_entry(&mut self, dialog_entry: DemexGlobalDialogEntry) {
-        self.dialogs.push(dialog_entry.clone());
+        let dialog_window = self.windows.iter_mut().find(|w| w.is_dialog());
+
+        if let Some(dialog_window) = dialog_window {
+            dialog_window.add_dialog_entry(dialog_entry.clone());
+        } else {
+            self.windows
+                .push(DemexWindow::Dialog(vec![dialog_entry.clone()]));
+        }
+
         self.logs
             .push(DemexLogEntry::new(DemexLogEntryType::DialogEntry(
                 dialog_entry,
@@ -82,18 +89,16 @@ impl DemexUiContext {
                         self.global_fixture_select = Some(fixture_selector);
                     } else if let Err(fixture_selector_err) = selected_fixtures {
                         self.global_fixture_select = None;
-                        self.dialogs
-                            .push(DemexGlobalDialogEntry::error(&fixture_selector_err));
+                        self.add_dialog_entry(DemexGlobalDialogEntry::error(&fixture_selector_err));
                     }
                 } else if let Err(fixture_selector_err) = fixture_selector {
                     self.global_fixture_select = None;
-                    self.dialogs
-                        .push(DemexGlobalDialogEntry::error(&fixture_selector_err));
+                    self.add_dialog_entry(DemexGlobalDialogEntry::error(&fixture_selector_err));
                 }
             }
             Action::ClearAll => {
                 self.global_fixture_select = None;
-                self.dialogs.clear();
+                self.windows.retain(|el| !el.is_dialog());
             }
             Action::HomeAll => {
                 let mut updatable_handler_lock = self.updatable_handler.write();
@@ -186,8 +191,18 @@ impl DemexUiContext {
             ActionRunResult::Info(info) => {
                 self.add_dialog_entry(DemexGlobalDialogEntry::info(info.as_str()));
             }
+            ActionRunResult::InfoWithLink(info, link) => {
+                self.add_dialog_entry(DemexGlobalDialogEntry::info_with_link(
+                    info.as_str(),
+                    link.as_str(),
+                ));
+            }
             ActionRunResult::EditWindow(edit_window) => {
-                self.edit_window = Some(edit_window);
+                let demex_edit_window = DemexWindow::Edit(edit_window);
+
+                if !self.windows.contains(&demex_edit_window) {
+                    self.windows.push(demex_edit_window);
+                }
             }
             _ => {}
         }

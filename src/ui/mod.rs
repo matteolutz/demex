@@ -1,13 +1,12 @@
 use std::{sync::Arc, time};
 
+use constants::VERSION_STR;
 use context::DemexUiContext;
-use log::{
-    dialog::{DemexGlobalDialogEntry, DemexGlobalDialogEntryType},
-    DemexLogEntry, DemexLogEntryType,
-};
+use log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use parking_lot::RwLock;
 use stats::DemexUiStats;
 use tabs::{layout_view_tab::LayoutViewContext, DemexTabs};
+use window::DemexWindow;
 
 #[allow(unused_imports)]
 use crate::{
@@ -17,11 +16,12 @@ use crate::{
 };
 use crate::{
     fixture::{patch::Patch, presets::PresetHandler, updatables::UpdatableHandler},
-    parser::Parser2,
+    parser::{nodes::action::Action, Parser2},
     show::DemexShow,
 };
 
 pub mod components;
+pub mod constants;
 pub mod context;
 pub mod edit;
 pub mod error;
@@ -31,6 +31,7 @@ pub mod log;
 pub mod stats;
 pub mod tabs;
 pub mod traits;
+pub mod window;
 
 pub struct DemexUiApp {
     command_input: String,
@@ -57,7 +58,6 @@ impl DemexUiApp {
                 patch,
                 stats,
                 gm_slider_val: fixture_handler.clone().read().grand_master(),
-                dialogs: Vec::new(),
                 fixture_handler,
                 preset_handler,
                 updatable_handler,
@@ -67,7 +67,7 @@ impl DemexUiApp {
                 macro_execution_queue: Vec::new(),
                 save_show,
                 logs: Vec::new(),
-                edit_window: None,
+                windows: Vec::new(),
             },
             tabs: DemexTabs::default(),
             last_update: time::Instant::now(),
@@ -114,13 +114,13 @@ impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         // self.demex_update();
 
-        if let Some(edit_window) = &self.context.edit_window {
-            if edit_window.ui(
+        for i in 0..self.context.windows.len() {
+            if self.context.windows[i].ui(
                 ctx,
-                &mut self.context.preset_handler.write(),
-                &mut self.context.updatable_handler.write(),
+                &mut self.context.preset_handler,
+                &mut self.context.updatable_handler,
             ) {
-                self.context.edit_window = None;
+                self.context.windows.remove(i);
             }
         }
 
@@ -134,37 +134,6 @@ impl eframe::App for DemexUiApp {
                     .add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));
             }
         }
-
-        if !self.context.dialogs.is_empty() && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
-            self.context.dialogs.clear();
-        }
-
-        if !self.context.dialogs.is_empty() {
-            egui::Window::new("demex dialog")
-                .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
-                .collapsible(false)
-                .resizable(false)
-                .interactable(false)
-                .show(ctx, |ui| {
-                    ui.vertical(|ui| {
-                        for (idx, dialog) in self.context.dialogs.iter().enumerate() {
-                            ui.label(
-                                egui::RichText::from(dialog.to_string())
-                                    .strong()
-                                    .color(dialog.color()),
-                            );
-
-                            if idx < self.context.dialogs.len() - 1 {
-                                ui.separator();
-                            }
-                        }
-                    });
-                });
-        }
-
-        /*egui::Window::new("Settings").show(ctx, |ui| {
-            Probe::new(self.context.preset_handler.fader_mut(2).unwrap()).show(ui);
-        });*/
 
         eframe::egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
@@ -187,25 +156,23 @@ impl eframe::App for DemexUiApp {
                 }
             });
 
-            let num_of_type =
-                |dialogs: &Vec<DemexGlobalDialogEntry>, dialog_type: DemexGlobalDialogEntryType| {
-                    dialogs
-                        .iter()
-                        .filter(|d| d.entry_type() == dialog_type)
-                        .count()
-                };
+            ui.horizontal(|ui| {
+                ui.label(format!("v{}", VERSION_STR));
 
-            let num_of_errors =
-                num_of_type(&self.context.dialogs, DemexGlobalDialogEntryType::Error);
-            let num_of_warns = num_of_type(&self.context.dialogs, DemexGlobalDialogEntryType::Warn);
-            let num_of_infos = num_of_type(&self.context.dialogs, DemexGlobalDialogEntryType::Info);
+                ui.separator();
 
-            let dialog_summary = format!(
-                "Errors: {}, Warns: {}, Infos: {}",
-                num_of_errors, num_of_warns, num_of_infos
-            );
+                if ui.link("Matteo Lutz").clicked() {
+                    let _ = self.context.run_and_handle_action(&Action::MatteoLutz);
+                }
 
-            ui.colored_label(egui::Color32::PLACEHOLDER, dialog_summary);
+                ui.separator();
+
+                if ui.link("About demex").clicked()
+                    && !self.context.windows.contains(&DemexWindow::AboutDemex)
+                {
+                    self.context.windows.push(DemexWindow::AboutDemex);
+                }
+            });
         });
 
         eframe::egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
@@ -238,7 +205,7 @@ impl eframe::App for DemexUiApp {
                     )
                     .labelled_by(command_label.id);
 
-                if self.context.edit_window.is_none() {
+                if self.context.windows.is_empty() {
                     if command_input_field
                         .ctx
                         .input(|i| i.key_pressed(eframe::egui::Key::Space))

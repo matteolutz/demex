@@ -65,7 +65,7 @@ pub fn color_controls_ui(
                     let rgb_color = fixture_color
                         // TODO: change this, to use the corresponding fixture
                         .as_quadruple(
-                            &preset_handler,
+                            preset_handler,
                             selected_fixtures[0],
                             FIXTURE_CHANNEL_COLOR_ID,
                         )
