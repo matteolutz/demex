@@ -40,6 +40,8 @@ pub struct DemexUiApp {
 
     tabs: DemexTabs,
     last_update: std::time::Instant,
+
+    desired_fps: f64,
 }
 
 impl DemexUiApp {
@@ -50,6 +52,7 @@ impl DemexUiApp {
         patch: Patch,
         stats: Arc<RwLock<DemexUiStats>>,
         save_show: fn(DemexShow) -> Result<(), Box<dyn std::error::Error>>,
+        desired_fps: f64,
     ) -> Self {
         Self {
             command_input: String::new(),
@@ -71,6 +74,7 @@ impl DemexUiApp {
             },
             tabs: DemexTabs::default(),
             last_update: time::Instant::now(),
+            desired_fps,
         }
     }
 }
@@ -272,12 +276,20 @@ impl eframe::App for DemexUiApp {
             self.tabs.ui(ui, &mut self.context, ctx);
         });
 
-        let elapsed = self.last_update.elapsed();
+        let elapsed = self.last_update.elapsed().as_secs_f64();
+        let epxected_elapsed: f64 = 1.0 / self.desired_fps;
+        let diff = epxected_elapsed - elapsed;
 
-        self.context.stats.write().ui(elapsed.as_secs_f64());
+        if diff > 0.0 {
+            std::thread::sleep(time::Duration::from_secs_f64(diff));
+        }
+
+        self.context
+            .stats
+            .write()
+            .ui(self.last_update.elapsed().as_secs_f64());
+        self.last_update = time::Instant::now();
 
         ctx.request_repaint();
-
-        self.last_update = time::Instant::now();
     }
 }

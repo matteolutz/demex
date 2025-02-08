@@ -22,7 +22,8 @@ use utils::deadlock::start_deadlock_checking_thread;
 const TEST_SHOW_FILE: &str = "test_data/show.json";
 const TEST_PATCH_FILE: &str = "test_data/patch.json";
 
-const TEST_FUPS: f64 = 200.0;
+const TEST_MAX_FUPS: f64 = 200.0;
+const TEST_FPS: f64 = 120.0;
 
 const DEADLOCK_TEST: bool = true;
 
@@ -66,16 +67,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             serde_json::to_writer(std::fs::File::create(TEST_SHOW_FILE).unwrap(), &show)?;
             Ok(())
         },
+        TEST_FPS,
     );
 
     thread::spawn(move || {
         let mut last_update = time::Instant::now();
-        let sleep_duration = Duration::from_secs_f64(1.0 / TEST_FUPS);
 
         loop {
-            let elapsed = last_update.elapsed();
+            let elapsed = last_update.elapsed().as_secs_f64();
+            let diff = (1.0 / TEST_MAX_FUPS) - elapsed;
 
-            let delta_time = elapsed.as_secs_f64();
+            if diff > 0.0 {
+                thread::sleep(Duration::from_secs_f64(diff));
+            }
+
+            let real_elapsed = last_update.elapsed();
+
+            let delta_time = real_elapsed.as_secs_f64();
+
+            last_update = time::Instant::now();
 
             stats.write().fixed_update(delta_time);
 
@@ -97,10 +107,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let _ =
                     fixture_handler.update(&preset_handler, &updatable_handler.read(), delta_time);
             }
-
-            last_update = time::Instant::now();
-
-            thread::sleep(sleep_duration);
         }
     });
 
