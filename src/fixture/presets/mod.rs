@@ -33,7 +33,7 @@ pub mod group;
 pub mod mmacro;
 pub mod preset;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct PresetHandler {
     groups: HashMap<u32, FixtureGroup>,
 
@@ -45,20 +45,6 @@ pub struct PresetHandler {
     command_slices: HashMap<u32, CommandSlice>,
 
     sequences: HashMap<u32, Sequence>,
-}
-
-impl PresetHandler {
-    pub fn new() -> Self {
-        PresetHandler {
-            groups: HashMap::new(),
-            dimmers: HashMap::new(),
-            colors: HashMap::new(),
-            positions: HashMap::new(),
-            macros: HashMap::new(),
-            command_slices: HashMap::new(),
-            sequences: HashMap::new(),
-        }
-    }
 }
 
 // Groups

@@ -31,9 +31,8 @@ impl DemexWindow {
     }
 
     pub fn add_dialog_entry(&mut self, entry: DemexGlobalDialogEntry) {
-        match self {
-            Self::Dialog(entries) => entries.push(entry),
-            _ => {}
+        if let Self::Dialog(entries) = self {
+            entries.push(entry);
         }
     }
 }

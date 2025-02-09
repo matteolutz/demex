@@ -285,7 +285,7 @@ impl Action {
             Self::ClearAll => Ok(ActionRunResult::new()),
             Self::FixtureSelector(_) => Ok(ActionRunResult::new()),
             Self::Test(_) => Ok(ActionRunResult::new()),
-            Self::Save => Ok(ActionRunResult::Info("Saving...".to_owned())),
+            Self::Save => Ok(ActionRunResult::new()),
 
             Self::Nuzul => Ok(ActionRunResult::Info("Going down...".to_owned())),
             Self::Sueud => Ok(ActionRunResult::Info("Going up...".to_owned())),

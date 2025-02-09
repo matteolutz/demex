@@ -10,6 +10,19 @@ use crate::{
     ui::DemexUiContext,
 };
 
+const NUM_KEYS: [egui::Key; 10] = [
+    egui::Key::Num1,
+    egui::Key::Num2,
+    egui::Key::Num3,
+    egui::Key::Num4,
+    egui::Key::Num5,
+    egui::Key::Num6,
+    egui::Key::Num7,
+    egui::Key::Num8,
+    egui::Key::Num9,
+    egui::Key::Num0,
+];
+
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
     let preset_handler = context.preset_handler.read();
@@ -294,10 +307,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 }),
         );
 
-        for preset_id in updatable_handler
+        for (preset_idx, preset_id) in updatable_handler
             .executor_keys()
             .iter()
             .sorted_by(|a, b| a.cmp(b))
+            .enumerate()
         {
             let is_started = updatable_handler.executor(*preset_id).unwrap().is_started();
 
@@ -329,7 +343,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 }),
             );
 
-            if preset_button.clicked() {
+            if preset_button.clicked()
+                || (preset_idx < 10
+                    && ui.input(|reader| {
+                        (reader.modifiers.ctrl || reader.modifiers.mac_cmd)
+                            && reader.key_pressed(NUM_KEYS[preset_idx])
+                    }))
+            {
                 if is_started {
                     updatable_handler
                         .executor_mut(*preset_id)

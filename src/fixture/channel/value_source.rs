@@ -117,6 +117,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
         values.sort_by_key(|v| v.priority());
 
         let mut value = FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::AnyHome);
+
         for v in values {
             if v.value().is_home() {
                 continue;
@@ -128,6 +129,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                     b: Box::new(v.value().clone()),
                     mix: v.alpha(),
                 };
+
                 continue;
             }
 

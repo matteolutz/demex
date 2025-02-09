@@ -179,18 +179,10 @@ pub struct LayoutViewDragContext {
     projection_center: egui::Vec2,
 }
 
+#[derive(Default)]
 pub struct LayoutViewContext {
     drag_context: Option<LayoutViewDragContext>,
     layout_projection: LayoutProjection,
-}
-
-impl Default for LayoutViewContext {
-    fn default() -> Self {
-        Self {
-            drag_context: None,
-            layout_projection: LayoutProjection::default(),
-        }
-    }
 }
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
@@ -248,6 +240,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
     if response.hovered() {
         ui.output_mut(|o| o.cursor_icon = egui::CursorIcon::Crosshair);
+    }
+
+    if response.double_clicked() {
+        context.global_fixture_select = None;
     }
 
     painter.rect_filled(rect, 0.0, egui::Color32::BLACK);

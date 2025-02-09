@@ -9,6 +9,17 @@ use crate::{
     parser::nodes::fixture_selector::FixtureSelectorContext,
 };
 
+const SOURCE_INDEX_COLORS: [egui::Color32; 4] = [
+    egui::Color32::YELLOW,
+    egui::Color32::LIGHT_BLUE,
+    egui::Color32::LIGHT_RED,
+    egui::Color32::LIGHT_GREEN,
+];
+
+fn color_for_source_index(idx: usize) -> egui::Color32 {
+    SOURCE_INDEX_COLORS[idx.min(SOURCE_INDEX_COLORS.len() - 1)]
+}
+
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let fixture_handler = context.fixture_handler.read();
     let preset_handler = context.preset_handler.read();
@@ -93,15 +104,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             ));
                         });
 
+                        // Value Sources
                         row.col(|ui| {
                             for (idx, source) in fixture.sources().iter().enumerate() {
-                                ui.label(RichText::from(source.to_string()).color(
-                                    if idx == fixture.sources().len() - 1 {
-                                        egui::Color32::YELLOW
-                                    } else {
-                                        egui::Color32::WHITE
-                                    },
-                                ));
+                                ui.label(
+                                    RichText::from(source.to_string())
+                                        .color(color_for_source_index(idx)),
+                                );
                             }
                         });
 

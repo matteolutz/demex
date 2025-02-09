@@ -1,8 +1,10 @@
 use crate::ui::edit::DemexEditWindow;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum ActionRunResult {
+    #[default]
     Default,
+
     Info(String),
     InfoWithLink(String, String),
     Warn(String),

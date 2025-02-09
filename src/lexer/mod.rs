@@ -44,10 +44,16 @@ impl<'a> Lexer<'a> {
                 }
 
                 if self.peek() == '.' {
+                    self.consume();
+
                     let mut fract = String::new();
 
                     while self.peek().is_ascii_digit() {
                         fract.push(self.consume());
+                    }
+
+                    if fract.is_empty() {
+                        return Err(TokenizationError::InvalidFloatingPoint);
                     }
 
                     let floating_point: f32 = format!("{}.{}", num, fract).parse().unwrap();

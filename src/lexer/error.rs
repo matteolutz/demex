@@ -3,6 +3,7 @@ pub enum TokenizationError {
     UnknownKeyword(String),
     UnterminatedString,
     UnknownCharacter(char),
+    InvalidFloatingPoint,
 }
 
 impl std::fmt::Display for TokenizationError {
@@ -11,6 +12,7 @@ impl std::fmt::Display for TokenizationError {
             TokenizationError::UnknownKeyword(kw) => write!(f, "Unknown keyword: {}", kw),
             TokenizationError::UnterminatedString => write!(f, "Unterminated string"),
             TokenizationError::UnknownCharacter(c) => write!(f, "Unknown character: {}", c),
+            TokenizationError::InvalidFloatingPoint => write!(f, "Invalid floating point number"),
         }
     }
 }

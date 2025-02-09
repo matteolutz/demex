@@ -45,6 +45,8 @@ pub enum SequenceStopBehavior {
     #[default]
     ManualStop,
 
+    ManualRestart,
+
     AutoStop,
 }
 
