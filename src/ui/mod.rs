@@ -4,7 +4,6 @@ use constants::VERSION_STR;
 use context::DemexUiContext;
 use log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use parking_lot::RwLock;
-use stats::DemexUiStats;
 use tabs::{layout_view_tab::LayoutViewContext, DemexTabs};
 use window::DemexWindow;
 
@@ -18,6 +17,7 @@ use crate::{
     fixture::{patch::Patch, presets::PresetHandler, updatables::UpdatableHandler},
     parser::{nodes::action::Action, Parser2},
     show::DemexShow,
+    utils::thread::DemexThreadStatsHandler,
 };
 
 pub mod components;
@@ -28,7 +28,6 @@ pub mod error;
 pub mod graphics;
 pub mod iimpl;
 pub mod log;
-pub mod stats;
 pub mod tabs;
 pub mod traits;
 pub mod window;
@@ -50,7 +49,7 @@ impl DemexUiApp {
         preset_handler: Arc<RwLock<PresetHandler>>,
         updatable_handler: Arc<RwLock<UpdatableHandler>>,
         patch: Patch,
-        stats: Arc<RwLock<DemexUiStats>>,
+        stats: Arc<RwLock<DemexThreadStatsHandler>>,
         save_show: fn(DemexShow) -> Result<(), Box<dyn std::error::Error>>,
         desired_fps: f64,
     ) -> Self {
@@ -287,7 +286,7 @@ impl eframe::App for DemexUiApp {
         self.context
             .stats
             .write()
-            .ui(self.last_update.elapsed().as_secs_f64());
+            .update("demex-ui", self.last_update.elapsed().as_secs_f64());
         self.last_update = time::Instant::now();
 
         ctx.request_repaint();

@@ -18,13 +18,13 @@ use crate::{
     },
     show::DemexShow,
     ui::error::DemexUiError,
+    utils::thread::DemexThreadStatsHandler,
 };
 
 use super::{
     log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
     tabs::layout_view_tab::LayoutViewContext,
     window::DemexWindow,
-    DemexUiStats,
 };
 
 pub struct DemexUiContext {
@@ -37,7 +37,7 @@ pub struct DemexUiContext {
     pub global_fixture_select: Option<FixtureSelector>,
     pub command: Vec<Token>,
 
-    pub stats: Arc<RwLock<DemexUiStats>>,
+    pub stats: Arc<RwLock<DemexThreadStatsHandler>>,
 
     pub logs: Vec<DemexLogEntry>,
 

@@ -6,24 +6,23 @@ pub mod show;
 pub mod ui;
 pub mod utils;
 
-use std::{
-    sync::Arc,
-    thread,
-    time::{self, Duration},
-};
+use std::sync::Arc;
 
 use dmx::output::debug_dummy::{DebugDummyOutput, DebugDummyOutputVerbosity};
 use fixture::{handler::FixtureHandler, patch::Patch};
 use parking_lot::RwLock;
 use show::DemexShow;
-use ui::{stats::DemexUiStats, DemexUiApp};
-use utils::deadlock::start_deadlock_checking_thread;
+use ui::DemexUiApp;
+use utils::{
+    deadlock::start_deadlock_checking_thread,
+    thread::{demex_thread, DemexThreadStatsHandler},
+};
 
 const TEST_SHOW_FILE: &str = "test_data/show.json";
 const TEST_PATCH_FILE: &str = "test_data/patch.json";
 
 const TEST_MAX_FUPS: f64 = 200.0;
-const TEST_FPS: f64 = 120.0;
+const TEST_UI_FPS: f64 = 60.0;
 
 const DEADLOCK_TEST: bool = true;
 
@@ -55,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let preset_handler = Arc::new(RwLock::new(show.preset_handler));
     let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));
 
-    let stats = Arc::new(RwLock::new(DemexUiStats::default()));
+    let stats = Arc::new(RwLock::new(DemexThreadStatsHandler::default()));
 
     let ui_app_state = DemexUiApp::new(
         fixture_handler.clone(),
@@ -67,48 +66,46 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             serde_json::to_writer(std::fs::File::create(TEST_SHOW_FILE).unwrap(), &show)?;
             Ok(())
         },
-        TEST_FPS,
+        TEST_UI_FPS,
     );
 
-    thread::spawn(move || {
-        let mut last_update = time::Instant::now();
+    let fixture_handler_thread_a = fixture_handler.clone();
+    let preset_handler_thread_a = preset_handler.clone();
+    let updatable_handler_thread_a = updatable_handler.clone();
 
-        loop {
-            let elapsed = last_update.elapsed().as_secs_f64();
-            let diff = (1.0 / TEST_MAX_FUPS) - elapsed;
+    demex_thread(
+        "demex-dmx-output".to_owned(),
+        stats.clone(),
+        60.0,
+        move |delta_time| {
+            let _ = fixture_handler_thread_a.write().update(
+                &preset_handler_thread_a.read(),
+                &updatable_handler_thread_a.read(),
+                delta_time,
+            );
+        },
+    );
 
-            if diff > 0.0 {
-                thread::sleep(Duration::from_secs_f64(diff));
-            }
-
-            let real_elapsed = last_update.elapsed();
-
-            let delta_time = real_elapsed.as_secs_f64();
-
-            last_update = time::Instant::now();
-
-            stats.write().fixed_update(delta_time);
+    demex_thread(
+        "demex-update".to_owned(),
+        stats.clone(),
+        TEST_MAX_FUPS,
+        move |delta_time| {
+            let preset_handler = preset_handler.read();
+            let mut fixture_handler = fixture_handler.write();
 
             {
-                let preset_handler = preset_handler.read();
-                let mut fixture_handler = fixture_handler.write();
+                let mut updatable_handler = updatable_handler.write();
 
-                {
-                    let mut updatable_handler = updatable_handler.write();
-
-                    updatable_handler.update_faders(delta_time, &preset_handler);
-                    updatable_handler.update_executors(
-                        delta_time,
-                        &mut fixture_handler,
-                        &preset_handler,
-                    );
-                }
-
-                let _ =
-                    fixture_handler.update(&preset_handler, &updatable_handler.read(), delta_time);
+                updatable_handler.update_faders(delta_time, &preset_handler);
+                updatable_handler.update_executors(
+                    delta_time,
+                    &mut fixture_handler,
+                    &preset_handler,
+                );
             }
-        }
-    });
+        },
+    );
 
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default().with_maximized(true),
