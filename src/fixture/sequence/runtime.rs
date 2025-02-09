@@ -11,7 +11,33 @@ use crate::fixture::{
     presets::PresetHandler,
 };
 
-use super::{cue::CueTrigger, FadeFixtureChannelValue};
+use super::{cue::CueTrigger, FadeFixtureChannelValue, SequenceStopBehavior};
+
+#[derive(Debug, Clone, Default)]
+pub enum SequenceRuntimeState {
+    #[default]
+    Stopped,
+
+    FirstCue(time::Instant),
+    Cue(time::Instant, usize),
+}
+
+impl SequenceRuntimeState {
+    pub fn is_started(&self) -> bool {
+        match self {
+            Self::Cue(_, _) | Self::FirstCue(_) => true,
+            Self::Stopped => false,
+        }
+    }
+
+    pub fn cue_idx(&self) -> Option<usize> {
+        match self {
+            Self::FirstCue(_) => Some(0),
+            Self::Cue(_, idx) => Some(*idx),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, EguiProbe)]
 pub struct SequenceRuntime {
@@ -32,6 +58,10 @@ pub struct SequenceRuntime {
     #[serde(default, skip_serializing, skip_deserializing)]
     #[egui_probe(skip)]
     first_cue: bool,
+
+    #[serde(default, skip_serializing, skip_deserializing)]
+    #[egui_probe(skip)]
+    state: SequenceRuntimeState,
 }
 
 impl SequenceRuntime {
@@ -42,6 +72,7 @@ impl SequenceRuntime {
             cue_update: None,
             started: false,
             first_cue: true,
+            state: SequenceRuntimeState::default(),
         }
     }
 
@@ -208,11 +239,13 @@ impl SequenceRuntime {
                     self.next_cue(preset_handler);
                 }
                 // it's the last cue, so we should wait for the out time of the last cue
-                // and then stop the sequence
-            } /* else if delta > cue_time + current_cue.out_time() {
-                  self.stop();
-                  return true;
-              }*/
+                // and then stop the sequence, if the sequence is set to auto stop
+            } else if sequence.stop_behavior() == SequenceStopBehavior::AutoStop
+                && delta > cue_time + current_cue.out_time()
+            {
+                self.stop();
+                return true;
+            }
         }
 
         false
@@ -223,12 +256,16 @@ impl SequenceRuntime {
         self.current_cue = 0;
         self.cue_update = Some(time::Instant::now());
         self.first_cue = true;
+
+        self.state = SequenceRuntimeState::FirstCue(time::Instant::now());
     }
 
     pub fn stop(&mut self) {
         self.started = false;
         self.cue_update = None;
         self.first_cue = true;
+
+        self.state = SequenceRuntimeState::Stopped
     }
 
     pub fn should_auto_restart(&self, preset_handler: &PresetHandler) -> bool {
@@ -254,13 +291,19 @@ impl SequenceRuntime {
         self.current_cue = (self.current_cue + 1) % sequence.cues().len();
         self.cue_update = Some(time::Instant::now());
         self.first_cue = false;
+
+        let cue_idx = (self.state.cue_idx().unwrap_or(0) + 1) % sequence.cues().len();
+        self.state = SequenceRuntimeState::Cue(time::Instant::now(), cue_idx);
     }
 
     pub fn previous_cue_idx(&self, preset_handler: &PresetHandler) -> Option<usize> {
         let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
         if self.current_cue == 0 {
-            if self.should_auto_restart(preset_handler) {
+            // if this is the first cue, we shouldn't return any
+            // previous cue. This would distort the fade in time
+            // of the first cue
+            if !self.first_cue && self.should_auto_restart(preset_handler) {
                 Some(sequence.cues().len() - 1)
             } else {
                 None

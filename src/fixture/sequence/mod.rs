@@ -40,12 +40,23 @@ impl FadeFixtureChannelValue {
     }
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Default, PartialEq, Eq, EguiProbe)]
+pub enum SequenceStopBehavior {
+    #[default]
+    ManualStop,
+
+    AutoStop,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, EguiProbe)]
 pub struct Sequence {
     #[egui_probe(skip)]
     id: u32,
 
     name: String,
+
+    #[serde(default)]
+    stop_behavior: SequenceStopBehavior,
 
     #[egui_probe(skip)]
     cues: Vec<Cue>,
@@ -57,11 +68,16 @@ impl Sequence {
             id,
             name,
             cues: Vec::new(),
+            stop_behavior: SequenceStopBehavior::default(),
         }
     }
 
     pub fn id(&self) -> u32 {
         self.id
+    }
+
+    pub fn stop_behavior(&self) -> SequenceStopBehavior {
+        self.stop_behavior
     }
 
     pub fn name(&self) -> &str {
