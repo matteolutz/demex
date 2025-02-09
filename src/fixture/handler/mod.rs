@@ -47,6 +47,10 @@ pub struct FixtureHandler {
 }
 
 impl FixtureHandler {
+    pub fn default_grandmaster_value() -> u8 {
+        255
+    }
+
     pub fn new(
         outputs: Vec<Box<dyn DMXOutput + Sync + Send>>,
         fixtures: Vec<Fixture>,
@@ -77,7 +81,7 @@ impl FixtureHandler {
             universe_output_data: HashMap::with_capacity(fixtures.len()),
             fixtures,
             outputs,
-            grand_master: 255,
+            grand_master: Self::default_grandmaster_value(),
         })
     }
 

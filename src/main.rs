@@ -78,11 +78,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         stats.clone(),
         60.0,
         move |delta_time| {
-            let _ = fixture_handler_thread_a.write().update(
-                &preset_handler_thread_a.read(),
-                &updatable_handler_thread_a.read(),
-                delta_time,
-            );
+            let mut fixture_handler = fixture_handler_thread_a.write();
+            let preset_handler = preset_handler_thread_a.read();
+            let updatable_handler = updatable_handler_thread_a.read();
+
+            let _ = fixture_handler.update(&preset_handler, &updatable_handler, delta_time);
         },
     );
 
@@ -91,19 +91,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         stats.clone(),
         TEST_MAX_FUPS,
         move |delta_time| {
-            let preset_handler = preset_handler.read();
             let mut fixture_handler = fixture_handler.write();
+            let preset_handler = preset_handler.read();
+            let mut updatable_handler = updatable_handler.write();
 
-            {
-                let mut updatable_handler = updatable_handler.write();
-
-                updatable_handler.update_faders(delta_time, &preset_handler);
-                updatable_handler.update_executors(
-                    delta_time,
-                    &mut fixture_handler,
-                    &preset_handler,
-                );
-            }
+            updatable_handler.update_faders(delta_time, &preset_handler);
+            updatable_handler.update_executors(delta_time, &mut fixture_handler, &preset_handler);
         },
     );
 

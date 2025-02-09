@@ -1,4 +1,8 @@
-use std::{collections::HashMap, sync::Arc, thread};
+use std::{
+    collections::HashMap,
+    sync::Arc,
+    thread::{self, ThreadId},
+};
 
 use parking_lot::RwLock;
 
@@ -8,7 +12,10 @@ pub fn demex_thread<F: Fn(f64) + Send + 'static>(
     fps: f64,
     f: F,
 ) {
-    thread::spawn(move || {
+    let stats_cloned = stats.clone();
+    let name_cloned = name.to_owned();
+
+    let handle = thread::spawn(move || {
         let mut last_update = std::time::Instant::now();
 
         loop {
@@ -30,6 +37,10 @@ pub fn demex_thread<F: Fn(f64) + Send + 'static>(
             stats.write().update(name.as_str(), delta_time);
         }
     });
+
+    stats_cloned
+        .write()
+        .register_thread(name_cloned, handle.thread().id());
 }
 
 #[derive(Debug, Default)]
@@ -55,9 +66,14 @@ impl DemexThreadStats {
 #[derive(Default)]
 pub struct DemexThreadStatsHandler {
     stats: HashMap<String, DemexThreadStats>,
+    name_to_id: HashMap<String, ThreadId>,
 }
 
 impl DemexThreadStatsHandler {
+    pub fn register_thread(&mut self, name: String, id: ThreadId) {
+        self.name_to_id.insert(name, id);
+    }
+
     pub fn update(&mut self, name: &str, dt: f64) {
         if let Some(stats) = self.stats.get_mut(name) {
             stats.dt = dt;
@@ -66,6 +82,10 @@ impl DemexThreadStatsHandler {
             self.stats
                 .insert(name.to_string(), DemexThreadStats::new(dt));
         }
+    }
+
+    pub fn thread_id(&self, name: &str) -> Option<ThreadId> {
+        self.name_to_id.get(name).copied()
     }
 
     pub fn stats(&self) -> &HashMap<String, DemexThreadStats> {

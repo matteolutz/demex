@@ -1,4 +1,4 @@
-use std::{sync::Arc, time};
+use std::{sync::Arc, thread, time};
 
 use constants::VERSION_STR;
 use context::DemexUiContext;
@@ -32,6 +32,8 @@ pub mod tabs;
 pub mod traits;
 pub mod window;
 
+const UI_THREAD_NAME: &str = "demex-ui";
+
 pub struct DemexUiApp {
     command_input: String,
     is_command_input_empty: bool,
@@ -53,13 +55,17 @@ impl DemexUiApp {
         save_show: fn(DemexShow) -> Result<(), Box<dyn std::error::Error>>,
         desired_fps: f64,
     ) -> Self {
+        stats
+            .write()
+            .register_thread(UI_THREAD_NAME.to_owned(), thread::current().id());
+
         Self {
             command_input: String::new(),
             is_command_input_empty: true,
             context: DemexUiContext {
                 patch,
                 stats,
-                gm_slider_val: fixture_handler.clone().read().grand_master(),
+                gm_slider_val: FixtureHandler::default_grandmaster_value(),
                 fixture_handler,
                 preset_handler,
                 updatable_handler,
@@ -100,23 +106,8 @@ impl DemexUiApp {
     }
 }
 
-impl DemexUiApp {
-    #[allow(dead_code)]
-    fn demex_update(&mut self) {
-        let preset_handler = self.context.preset_handler.read();
-        let mut fixture_handler = self.context.fixture_handler.write();
-
-        let mut updatable_handler = self.context.updatable_handler.write();
-
-        updatable_handler.update_faders(0.0, &preset_handler);
-        updatable_handler.update_executors(0.0, &mut fixture_handler, &preset_handler);
-    }
-}
-
 impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        // self.demex_update();
-
         for i in 0..self.context.windows.len() {
             if self.context.windows[i].ui(
                 ctx,
@@ -286,7 +277,7 @@ impl eframe::App for DemexUiApp {
         self.context
             .stats
             .write()
-            .update("demex-ui", self.last_update.elapsed().as_secs_f64());
+            .update(UI_THREAD_NAME, self.last_update.elapsed().as_secs_f64());
         self.last_update = time::Instant::now();
 
         ctx.request_repaint();

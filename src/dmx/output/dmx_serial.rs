@@ -8,14 +8,14 @@ type DmxData = [u8; 512];
 
 #[derive(Debug)]
 pub struct DMXSerialOutput {
-    // serial: DMXSerial,
     tx: mpsc::Sender<DmxData>,
+    universe: u16,
 }
 
 unsafe impl Sync for DMXSerialOutput {}
 
 impl DMXSerialOutput {
-    pub fn new(serial_port: String) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(serial_port: String, universe: u16) -> Result<Self, Box<dyn std::error::Error>> {
         let (tx, rx) = mpsc::channel();
 
         thread::spawn(move || {
@@ -28,21 +28,17 @@ impl DMXSerialOutput {
             }
         });
 
-        Ok(Self {
-            // serial: DMXSerial::open_sync(serial_port)?,
-            tx,
-        })
+        Ok(Self { tx, universe })
     }
 }
 
 impl DMXOutput for DMXSerialOutput {
-    fn send(&mut self, _universe: u16, data: &[u8; 512]) -> Result<(), Box<dyn std::error::Error>> {
-        // TODO: multiple universes with multiple serial ports
+    fn send(&mut self, universe: u16, data: &[u8; 512]) -> Result<(), Box<dyn std::error::Error>> {
+        if universe != self.universe {
+            return Ok(());
+        }
 
-        // self.serial.set_channels(*data);
-        // self.serial.update()?;
-        self.tx.send(data.clone())?;
-
+        self.tx.send(*data)?;
         Ok(())
     }
 }

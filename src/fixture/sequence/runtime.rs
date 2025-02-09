@@ -37,27 +37,19 @@ impl SequenceRuntimeState {
             _ => None,
         }
     }
+
+    pub fn when_started(&self) -> Option<(time::Instant, usize, bool)> {
+        match self {
+            Self::FirstCue(t) => Some((*t, 0, true)),
+            Self::Cue(t, idx) => Some((*t, *idx, false)),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, EguiProbe)]
 pub struct SequenceRuntime {
     sequence_id: u32,
-
-    #[serde(default, skip_serializing, skip_deserializing)]
-    #[egui_probe(skip)]
-    current_cue: usize,
-
-    #[serde(default, skip_serializing, skip_deserializing)]
-    #[egui_probe(skip)]
-    cue_update: Option<time::Instant>,
-
-    #[serde(default, skip_serializing, skip_deserializing)]
-    #[egui_probe(skip)]
-    started: bool,
-
-    #[serde(default, skip_serializing, skip_deserializing)]
-    #[egui_probe(skip)]
-    first_cue: bool,
 
     #[serde(default, skip_serializing, skip_deserializing)]
     #[egui_probe(skip)]
@@ -68,10 +60,6 @@ impl SequenceRuntime {
     pub fn new(sequence_id: u32) -> Self {
         Self {
             sequence_id,
-            current_cue: 0,
-            cue_update: None,
-            started: false,
-            first_cue: true,
             state: SequenceRuntimeState::default(),
         }
     }
@@ -81,11 +69,11 @@ impl SequenceRuntime {
     }
 
     pub fn is_started(&self) -> bool {
-        self.started
+        self.state.is_started()
     }
 
-    pub fn current_cue(&self) -> usize {
-        self.current_cue
+    pub fn current_cue(&self) -> Option<usize> {
+        self.state.cue_idx()
     }
 
     pub fn num_cues(&self, preset_handler: &PresetHandler) -> usize {
@@ -105,96 +93,98 @@ impl SequenceRuntime {
         preset_handler: &PresetHandler,
         priority: FixtureChannelValuePriority,
     ) -> Option<FadeFixtureChannelValue> {
-        if !self.started {
-            return None;
-        }
+        if let Some((cue_update, cue_idx, is_first_cue)) = self.state.when_started() {
+            let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
-        let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
-
-        if sequence.cues().is_empty() {
-            return None;
-        }
-
-        let cue = sequence.cue(self.current_cue);
-        let prev_cue_idx = self.previous_cue_idx(preset_handler);
-
-        let mut delta = time::Instant::now()
-            .duration_since(self.cue_update.unwrap())
-            .as_secs_f32();
-
-        delta *= speed_multiplier;
-
-        delta = f32::max(delta - cue.offset_for_fixture(fixture_id), 0.0);
-
-        let should_snap = cue.should_snap_channel_value_for_fixture(fixture_id, channel_id);
-
-        // its the first cue, so we want to fade in from black
-        // TODO: this wont work like this
-        if self.first_cue {
-            let mut fade = if delta < cue.in_delay() {
-                0.0
-            } else {
-                ((delta - cue.in_delay()) / cue.in_fade()).min(1.0)
-            };
-
-            if should_snap {
-                fade = if fade >= cue.snap_percent() { 1.0 } else { 0.0 };
+            if sequence.cues().is_empty() {
+                return None;
             }
 
-            if channel_id == FIXTURE_CHANNEL_INTENSITY_ID {
-                fade *= intensity_multiplier;
-            }
+            let cue = sequence.cue(cue_idx);
+            let prev_cue_idx = self.previous_cue_idx(preset_handler);
 
-            cue.channel_value_for_fixture(fixture_id, channel_id)
-                .map(|v| FadeFixtureChannelValue::new(v.clone(), fade, priority))
-        } else if prev_cue_idx.is_some() {
-            // this isn't the first cue, meaning we should fade between the value of the previous cue
-            // and the value of the current cue
-            let prev_cue = sequence.cue(prev_cue_idx.unwrap());
+            let mut delta = time::Instant::now()
+                .duration_since(cue_update)
+                .as_secs_f32();
 
-            let mut mix = if delta < (prev_cue.out_delay() + cue.in_delay()) {
-                0.0
-            } else {
-                ((delta - (cue.in_delay() + prev_cue.out_delay()))
-                    / (cue.in_fade() + prev_cue.out_fade()))
-                .min(1.0)
-            };
+            delta *= speed_multiplier;
 
-            if should_snap {
-                mix = if mix >= cue.snap_percent() { 1.0 } else { 0.0 };
-            }
+            delta = f32::max(delta - cue.offset_for_fixture(fixture_id), 0.0);
 
-            let fade = if channel_id == FIXTURE_CHANNEL_INTENSITY_ID {
-                intensity_multiplier
-            } else {
-                1.0
-            };
+            let should_snap = cue.should_snap_channel_value_for_fixture(fixture_id, channel_id);
 
-            let current_cue_value =
+            // its the first cue, so we want to fade in from black
+            // TODO: this wont work like this
+            if is_first_cue {
+                let mut fade = if delta < cue.in_delay() {
+                    0.0
+                } else {
+                    ((delta - cue.in_delay()) / cue.in_fade()).min(1.0)
+                };
+
+                if should_snap {
+                    fade = if fade >= cue.snap_percent() { 1.0 } else { 0.0 };
+                }
+
+                if channel_id == FIXTURE_CHANNEL_INTENSITY_ID {
+                    fade *= intensity_multiplier;
+                }
+
                 cue.channel_value_for_fixture(fixture_id, channel_id)
-                    .map(|v| {
-                        FadeFixtureChannelValue::new(
-                            FixtureChannelValue::Mix {
-                                a: Box::new(
-                                    prev_cue
-                                        .channel_value_for_fixture(fixture_id, channel_id)
-                                        .cloned()
-                                        .unwrap_or(FixtureChannelValue::any_home()),
-                                ),
-                                b: Box::new(v.clone()),
-                                mix,
-                            },
-                            fade,
-                            priority,
-                        )
-                    });
+                    .map(|v| FadeFixtureChannelValue::new(v.clone(), fade, priority))
+            } else if prev_cue_idx.is_some() {
+                // this isn't the first cue, meaning we should fade between the value of the previous cue
+                // and the value of the current cue
+                let prev_cue = sequence.cue(prev_cue_idx.unwrap());
 
-            if current_cue_value.is_none() {
-                prev_cue
-                    .channel_value_for_fixture(fixture_id, channel_id)
-                    .map(|v| FadeFixtureChannelValue::new(v.clone(), (1.0 - mix) * fade, priority))
+                let mut mix = if delta < (prev_cue.out_delay() + cue.in_delay()) {
+                    0.0
+                } else {
+                    ((delta - (cue.in_delay() + prev_cue.out_delay()))
+                        / (cue.in_fade() + prev_cue.out_fade()))
+                    .min(1.0)
+                };
+
+                if should_snap {
+                    mix = if mix >= cue.snap_percent() { 1.0 } else { 0.0 };
+                }
+
+                let fade = if channel_id == FIXTURE_CHANNEL_INTENSITY_ID {
+                    intensity_multiplier
+                } else {
+                    1.0
+                };
+
+                let current_cue_value =
+                    cue.channel_value_for_fixture(fixture_id, channel_id)
+                        .map(|v| {
+                            FadeFixtureChannelValue::new(
+                                FixtureChannelValue::Mix {
+                                    a: Box::new(
+                                        prev_cue
+                                            .channel_value_for_fixture(fixture_id, channel_id)
+                                            .cloned()
+                                            .unwrap_or(FixtureChannelValue::any_home()),
+                                    ),
+                                    b: Box::new(v.clone()),
+                                    mix,
+                                },
+                                fade,
+                                priority,
+                            )
+                        });
+
+                if current_cue_value.is_none() {
+                    prev_cue
+                        .channel_value_for_fixture(fixture_id, channel_id)
+                        .map(|v| {
+                            FadeFixtureChannelValue::new(v.clone(), (1.0 - mix) * fade, priority)
+                        })
+                } else {
+                    current_cue_value
+                }
             } else {
-                current_cue_value
+                None
             }
         } else {
             None
@@ -207,64 +197,55 @@ impl SequenceRuntime {
         speed_multiplier: f32,
         preset_handler: &PresetHandler,
     ) -> bool {
-        if !self.started {
-            return false;
-        }
+        if let Some((cue_update, cue_idx, _)) = self.state.when_started() {
+            let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
-        let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
-
-        if sequence.cues().is_empty() {
-            return false;
-        }
-
-        let delta = time::Instant::now()
-            .duration_since(self.cue_update.unwrap())
-            .as_secs_f32()
-            * speed_multiplier;
-
-        let previous_cue_idx = self.previous_cue_idx(preset_handler);
-        let current_cue = sequence.cue(self.current_cue);
-        let next_cue_idx = self.next_cue_idx(preset_handler);
-
-        let previous_cue_out_time = previous_cue_idx
-            .map(|i| sequence.cue(i).out_time())
-            .unwrap_or(0.0);
-
-        let cue_time = previous_cue_out_time + current_cue.in_time();
-
-        if delta > cue_time {
-            // is the next cue, a follow cue?
-            if let Some(next_cue_idx) = next_cue_idx {
-                if *sequence.cue(next_cue_idx).trigger() == CueTrigger::Follow {
-                    self.next_cue(preset_handler);
-                }
-                // it's the last cue, so we should wait for the out time of the last cue
-                // and then stop the sequence, if the sequence is set to auto stop
-            } else if sequence.stop_behavior() == SequenceStopBehavior::AutoStop
-                && delta > cue_time + current_cue.out_time()
-            {
-                self.stop();
-                return true;
+            if sequence.cues().is_empty() {
+                return false;
             }
-        }
 
-        false
+            let delta = time::Instant::now()
+                .duration_since(cue_update)
+                .as_secs_f32()
+                * speed_multiplier;
+
+            let previous_cue_idx = self.previous_cue_idx(preset_handler);
+            let current_cue = sequence.cue(cue_idx);
+            let next_cue_idx = self.next_cue_idx(preset_handler);
+
+            let previous_cue_out_time = previous_cue_idx
+                .map(|i| sequence.cue(i).out_time())
+                .unwrap_or(0.0);
+
+            let cue_time = previous_cue_out_time + current_cue.in_time();
+
+            if delta > cue_time {
+                // is the next cue, a follow cue?
+                if let Some(next_cue_idx) = next_cue_idx {
+                    if *sequence.cue(next_cue_idx).trigger() == CueTrigger::Follow {
+                        self.next_cue(preset_handler);
+                    }
+                    // it's the last cue, so we should wait for the out time of the last cue
+                    // and then stop the sequence, if the sequence is set to auto stop
+                } else if sequence.stop_behavior() == SequenceStopBehavior::AutoStop
+                    && delta > cue_time + current_cue.out_time()
+                {
+                    self.stop();
+                    return true;
+                }
+            }
+
+            false
+        } else {
+            false
+        }
     }
 
     pub fn start(&mut self) {
-        self.started = true;
-        self.current_cue = 0;
-        self.cue_update = Some(time::Instant::now());
-        self.first_cue = true;
-
         self.state = SequenceRuntimeState::FirstCue(time::Instant::now());
     }
 
     pub fn stop(&mut self) {
-        self.started = false;
-        self.cue_update = None;
-        self.first_cue = true;
-
         self.state = SequenceRuntimeState::Stopped
     }
 
@@ -279,51 +260,55 @@ impl SequenceRuntime {
     }
 
     pub fn next_cue(&mut self, preset_handler: &PresetHandler) {
-        let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
+        if let Some((_, cue_idx, _)) = self.state.when_started() {
+            let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
-        if self.current_cue == sequence.cues().len() - 1
-            && !self.should_auto_restart(preset_handler)
-        {
-            self.stop();
-            return;
+            if cue_idx == sequence.cues().len() - 1 && !self.should_auto_restart(preset_handler) {
+                self.stop();
+                return;
+            }
+
+            let cue_idx = (cue_idx + 1) % sequence.cues().len();
+            self.state = SequenceRuntimeState::Cue(time::Instant::now(), cue_idx);
         }
-
-        self.current_cue = (self.current_cue + 1) % sequence.cues().len();
-        self.cue_update = Some(time::Instant::now());
-        self.first_cue = false;
-
-        let cue_idx = (self.state.cue_idx().unwrap_or(0) + 1) % sequence.cues().len();
-        self.state = SequenceRuntimeState::Cue(time::Instant::now(), cue_idx);
     }
 
     pub fn previous_cue_idx(&self, preset_handler: &PresetHandler) -> Option<usize> {
-        let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
+        if let Some((_, cue_idx, is_first_cue)) = self.state.when_started() {
+            let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
-        if self.current_cue == 0 {
-            // if this is the first cue, we shouldn't return any
-            // previous cue. This would distort the fade in time
-            // of the first cue
-            if !self.first_cue && self.should_auto_restart(preset_handler) {
-                Some(sequence.cues().len() - 1)
+            if cue_idx == 0 {
+                // if this is the first cue, we shouldn't return any
+                // previous cue. This would distort the fade in time
+                // of the first cue
+                if !is_first_cue && self.should_auto_restart(preset_handler) {
+                    Some(sequence.cues().len() - 1)
+                } else {
+                    None
+                }
             } else {
-                None
+                Some(cue_idx - 1)
             }
         } else {
-            Some(self.current_cue - 1)
+            None
         }
     }
 
     pub fn next_cue_idx(&self, preset_handler: &PresetHandler) -> Option<usize> {
-        let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
+        if let Some((_, cue_idx, _)) = self.state.when_started() {
+            let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
-        if self.current_cue == sequence.cues().len() - 1 {
-            if self.should_auto_restart(preset_handler) {
-                Some(0)
+            if cue_idx == sequence.cues().len() - 1 {
+                if self.should_auto_restart(preset_handler) {
+                    Some(0)
+                } else {
+                    None
+                }
             } else {
-                None
+                Some(cue_idx + 1)
             }
         } else {
-            Some(self.current_cue + 1)
+            None
         }
     }
 }

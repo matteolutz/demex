@@ -3,12 +3,12 @@ use egui_dock::{DockArea, DockState, Style, TabViewer};
 
 use super::DemexUiContext;
 
-pub mod debug_tab;
 pub mod faders_tab;
 pub mod fixture_controls_tab;
 pub mod fixture_list_tab;
 pub mod layout_view_tab;
 pub mod logs_tab;
+pub mod performance_tab;
 pub mod preset_grid_tab;
 pub mod sequences_list_tab;
 
@@ -21,7 +21,7 @@ pub enum DemexTab {
     Faders,
     SequencesList,
     Logs,
-    Debug,
+    Performance,
 }
 
 pub struct DemexTabViewer<'a> {
@@ -46,7 +46,7 @@ impl<'a> TabViewer for DemexTabViewer<'a> {
             DemexTab::Faders => faders_tab::ui(ui, self.context),
             DemexTab::SequencesList => sequences_list_tab::ui(ui, self.context),
             DemexTab::Logs => logs_tab::ui(ui, self.context),
-            DemexTab::Debug => debug_tab::ui(ui, self.context),
+            DemexTab::Performance => performance_tab::ui(ui, self.context),
         }
     }
 
@@ -70,7 +70,7 @@ impl Default for DemexTabs {
             DemexTab::FixtureList,
             DemexTab::SequencesList,
             DemexTab::Logs,
-            DemexTab::Debug,
+            DemexTab::Performance,
         ]);
 
         let surface = dock_state.main_surface_mut();

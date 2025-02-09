@@ -281,7 +281,8 @@ impl Fixture {
                     .next()
                     .unwrap();
 
-                Ok(map[color_key].clone())
+                // implicitly copying this feels very wrong, but cargo clippy prefers it..
+                Ok(map[color_key])
             }
             _ => Err(FixtureError::ChannelNotFound(Some(
                 FixtureChannel::name_by_id(FIXTURE_CHANNEL_COLOR_ID),

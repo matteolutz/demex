@@ -10,9 +10,9 @@ use crate::{
 };
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
+    let fixture_handler = context.fixture_handler.read();
     let preset_handler = context.preset_handler.read();
     let updatable_handler = context.updatable_handler.read();
-    let fixture_handler = context.fixture_handler.read();
 
     egui::ScrollArea::horizontal().show(ui, |ui| {
         let selectd_fixtures = if let Some(fixture_select) = &context.global_fixture_select {

@@ -11,8 +11,8 @@ use crate::{
 };
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
-    let preset_handler = context.preset_handler.read();
     let mut fixture_handler = context.fixture_handler.write();
+    let preset_handler = context.preset_handler.read();
     let mut updatable_handler = context.updatable_handler.write();
 
     eframe::egui::Grid::new("preset_grid").show(ui, |ui| {
@@ -309,17 +309,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         .executor(*preset_id)
                         .unwrap()
                         .name(&preset_handler),
-                    if is_started {
-                        (updatable_handler
-                            .executor(*preset_id)
-                            .unwrap()
-                            .runtime()
-                            .current_cue()
-                            + 1)
-                        .to_string()
-                    } else {
-                        "-".to_owned()
-                    },
+                    updatable_handler
+                        .executor(*preset_id)
+                        .unwrap()
+                        .runtime()
+                        .current_cue()
+                        .map(|c| (c + 1).to_string())
+                        .unwrap_or("-".to_owned()),
                     updatable_handler
                         .executor(*preset_id)
                         .unwrap()
