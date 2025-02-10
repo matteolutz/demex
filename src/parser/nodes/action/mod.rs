@@ -90,6 +90,11 @@ pub enum UpdateModeActionData {
     Override,
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum ConfigTypeActionData {
+    Output,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Action {
     SetChannelValue(FixtureSelector, u16, ChannelValueSingleActionData),
@@ -132,6 +137,8 @@ pub enum Action {
     ClearAll,
     Save,
     Test(String),
+
+    Config(ConfigTypeActionData),
 
     Nuzul,
     Sueud,
@@ -289,6 +296,10 @@ impl Action {
 
             Self::Nuzul => Ok(ActionRunResult::Info("Going down...".to_owned())),
             Self::Sueud => Ok(ActionRunResult::Info("Going up...".to_owned())),
+
+            Self::Config(config_type) => Ok(ActionRunResult::EditWindow(DemexEditWindow::Config(
+                *config_type,
+            ))),
 
             Self::MatteoLutz => Ok(ActionRunResult::InfoWithLink(
                 INFO_TEXT.to_owned(),

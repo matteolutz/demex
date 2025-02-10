@@ -1,6 +1,6 @@
 use std::collections::{BTreeSet, HashMap};
 
-use crate::dmx::DMXOutput;
+use crate::dmx::{DemexDmxOutput, DemexDmxOutputTrait};
 
 use self::error::FixtureHandlerError;
 
@@ -41,7 +41,7 @@ fn write_universe_data(
 #[derive(Debug)]
 pub struct FixtureHandler {
     fixtures: Vec<Fixture>,
-    outputs: Vec<Box<dyn DMXOutput + Send + Sync>>,
+    outputs: Vec<DemexDmxOutput>,
     universe_output_data: HashMap<u16, [u8; 512]>,
     grand_master: u8,
 }
@@ -52,7 +52,7 @@ impl FixtureHandler {
     }
 
     pub fn new(
-        outputs: Vec<Box<dyn DMXOutput + Sync + Send>>,
+        outputs: Vec<DemexDmxOutput>,
         fixtures: Vec<Fixture>,
     ) -> Result<Self, FixtureHandlerError> {
         // check if the fixtures overlap
@@ -111,6 +111,10 @@ impl FixtureHandler {
 
     pub fn grand_master_mut(&mut self) -> &mut u8 {
         &mut self.grand_master
+    }
+
+    pub fn outputs_mut(&mut self) -> &mut Vec<DemexDmxOutput> {
+        &mut self.outputs
     }
 
     pub fn update(

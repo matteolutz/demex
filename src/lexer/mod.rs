@@ -113,6 +113,8 @@ impl<'a> Lexer<'a> {
                     "really" => Some(Token::KeywordReally),
                     "dot" => Some(Token::KeywordDot),
                     "next" => Some(Token::KeywordNext),
+                    "config" => Some(Token::KeywordConfig),
+                    "output" => Some(Token::KeywordOutput),
                     _ => None,
                 };
 

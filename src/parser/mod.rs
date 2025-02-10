@@ -1,4 +1,4 @@
-use nodes::action::CueIdxSelectorActionData;
+use nodes::action::{ConfigTypeActionData, CueIdxSelectorActionData};
 
 use crate::{
     fixture::{
@@ -768,6 +768,19 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_config_function(&mut self) -> Result<Action, ParseError> {
+        match self.current_token()? {
+            Token::KeywordOutput => {
+                self.advance();
+                Ok(Action::Config(ConfigTypeActionData::Output))
+            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec!["\"output\""],
+            )),
+        }
+    }
+
     fn parse_function(&mut self) -> Result<Action, ParseError> {
         if matches!(self.current_token()?, Token::KeywordHome) {
             self.advance();
@@ -817,6 +830,11 @@ impl<'a> Parser2<'a> {
         if matches!(self.current_token()?, Token::KeywordSave) {
             self.advance();
             return Ok(Action::Save);
+        }
+
+        if matches!(self.current_token()?, Token::KeywordConfig) {
+            self.advance();
+            return self.parse_config_function();
         }
 
         let fixture_selector = self.try_parse(Self::parse_fixture_selector);

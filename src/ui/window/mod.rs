@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use parking_lot::RwLock;
 
-use crate::fixture::{presets::PresetHandler, updatables::UpdatableHandler};
+use crate::fixture::{
+    handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler,
+};
 
 use super::{edit::DemexEditWindow, log::dialog::DemexGlobalDialogEntry};
 
@@ -57,6 +59,7 @@ impl DemexWindow {
     pub fn ui(
         &self,
         ctx: &egui::Context,
+        fixture_handler: &mut Arc<RwLock<FixtureHandler>>,
         preset_handler: &mut Arc<RwLock<PresetHandler>>,
         updatable_handler: &mut Arc<RwLock<UpdatableHandler>>,
     ) -> bool {
@@ -80,10 +83,16 @@ impl DemexWindow {
                         });
                     }
                     Self::Edit(edit_window) => {
+                        let mut fixture_handler = fixture_handler.write();
                         let mut preset_handler = preset_handler.write();
                         let mut updatable_handler = updatable_handler.write();
 
-                        edit_window.window_ui(ui, &mut preset_handler, &mut updatable_handler);
+                        edit_window.window_ui(
+                            ui,
+                            &mut fixture_handler,
+                            &mut preset_handler,
+                            &mut updatable_handler,
+                        );
                     }
                     Self::AboutDemex => {
                         ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {

@@ -9,7 +9,6 @@ use window::DemexWindow;
 
 #[allow(unused_imports)]
 use crate::{
-    dmx::output::{debug_dummy::DebugDummyOutput, dmx_serial::DMXSerialOutput},
     fixture::{handler::FixtureHandler, Fixture},
     lexer::Lexer,
 };
@@ -111,6 +110,7 @@ impl eframe::App for DemexUiApp {
         for i in 0..self.context.windows.len() {
             if self.context.windows[i].ui(
                 ctx,
+                &mut self.context.fixture_handler,
                 &mut self.context.preset_handler,
                 &mut self.context.updatable_handler,
             ) {

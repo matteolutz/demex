@@ -14,6 +14,7 @@ function                    = fixture_selector set_function
                             | "clear"
                             | "nuzul" | "sueud"
                             | "save"
+                            | "config" ("output")
 
 delete_function             = "macro" integer_or_range
 

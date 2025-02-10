@@ -1,8 +1,11 @@
 use egui_probe::Probe;
 
-use crate::fixture::{
-    channel::FixtureChannel, presets::PresetHandler, sequence::cue::CueIdx,
-    updatables::UpdatableHandler,
+use crate::{
+    fixture::{
+        channel::FixtureChannel, handler::FixtureHandler, presets::PresetHandler,
+        sequence::cue::CueIdx, updatables::UpdatableHandler,
+    },
+    parser::nodes::action::ConfigTypeActionData,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -12,6 +15,8 @@ pub enum DemexEditWindow {
     EditExecutor(u32),
     EditFader(u32),
     EditPreset(u16, u32),
+
+    Config(ConfigTypeActionData),
 }
 
 impl DemexEditWindow {
@@ -33,12 +38,14 @@ impl DemexEditWindow {
                     preset_id
                 )
             }
+            Self::Config(config_type) => format!("Config {:?}", config_type),
         }
     }
 
     pub fn window_ui(
         &self,
         ui: &mut egui::Ui,
+        fixture_handler: &mut FixtureHandler,
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
     ) {
@@ -70,12 +77,25 @@ impl DemexEditWindow {
                 )
                 .show(ui);
             }
+            Self::Config(config_type) => match config_type {
+                ConfigTypeActionData::Output => {
+                    ui.colored_label(
+                        egui::Color32::YELLOW,
+                        "A restart is required for output changes to take effect!",
+                    );
+
+                    Probe::new(fixture_handler.outputs_mut())
+                        .with_header("Edit outputs")
+                        .show(ui);
+                }
+            },
         }
     }
 
     pub fn ui(
         &self,
         ctx: &egui::Context,
+        fixture_handler: &mut FixtureHandler,
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
     ) -> bool {
@@ -85,7 +105,7 @@ impl DemexEditWindow {
                     return true;
                 }
 
-                self.window_ui(ui, preset_handler, updatable_handler);
+                self.window_ui(ui, fixture_handler, preset_handler, updatable_handler);
 
                 let close_button = ui.button("Close");
                 if close_button.clicked() {

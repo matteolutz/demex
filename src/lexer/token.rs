@@ -66,6 +66,8 @@ pub enum Token {
     KeywordReally,
     KeywordDot,
     KeywordNext,
+    KeywordConfig,
+    KeywordOutput,
 
     KeywordNuzul,
     KeywordSueud,
@@ -111,6 +113,7 @@ impl Token {
             Token::KeywordSueud => TokenType::ActionKeyword,
             Token::KeywordSave => TokenType::ActionKeyword,
             Token::KeywordDelete => TokenType::ActionKeyword,
+            Token::KeywordConfig => TokenType::ActionKeyword,
 
             Token::KeywordGroup => TokenType::ObjectKeyword,
             Token::KeywordMacro => TokenType::ObjectKeyword,
@@ -132,6 +135,7 @@ impl Token {
             Token::KeywordReally => TokenType::OtherKeyword,
             Token::KeywordDot => TokenType::OtherKeyword,
             Token::KeywordNext => TokenType::OtherKeyword,
+            Token::KeywordOutput => TokenType::OtherKeyword,
 
             Token::Eof => TokenType::Eof,
         }
@@ -197,6 +201,8 @@ impl std::fmt::Display for Token {
             Token::KeywordReally => write!(f, "really"),
             Token::KeywordDot => write!(f, "dot"),
             Token::KeywordNext => write!(f, "next"),
+            Token::KeywordConfig => write!(f, "config"),
+            Token::KeywordOutput => write!(f, "output"),
             Token::Eof => write!(f, "Eof"),
         }
     }

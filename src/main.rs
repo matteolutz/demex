@@ -8,7 +8,7 @@ pub mod utils;
 
 use std::sync::Arc;
 
-use dmx::output::debug_dummy::{DebugDummyOutput, DebugDummyOutputVerbosity};
+use dmx::{debug::DebugOutputVerbosity, DemexDmxOutputConfig};
 use fixture::{handler::FixtureHandler, patch::Patch};
 use parking_lot::RwLock;
 use show::DemexShow;
@@ -40,11 +40,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let fixture_handler = Arc::new(RwLock::new(
         FixtureHandler::new(
             vec![
-                Box::new(DebugDummyOutput::new(DebugDummyOutputVerbosity::Silent)),
+                // Box::new(DebugDummyOutput::new(DebugDummyOutputVerbosity::Silent)),
                 /*Box::new(
                     DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ")
                         .expect("this shouldn't happen"),
                 ),*/
+                DemexDmxOutputConfig::Debug(DebugOutputVerbosity::Silent).into(),
             ],
             patch.clone().into(),
         )
