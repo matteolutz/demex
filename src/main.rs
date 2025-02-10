@@ -33,6 +33,7 @@ struct Args {
 }
 
 const TEST_MAX_FUPS: f64 = 200.0;
+const TEST_MAX_DMX_FPS: f64 = 30.0;
 const TEST_UI_FPS: f64 = 60.0;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -73,7 +74,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     demex_update_thread(
         "demex-dmx-output".to_owned(),
         stats.clone(),
-        60.0,
+        TEST_MAX_DMX_FPS,
         move |delta_time| {
             let mut fixture_handler = fixture_handler_thread_a.write();
             let preset_handler = preset_handler_thread_a.read();
