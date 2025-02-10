@@ -3,6 +3,7 @@ use std::{
     sync::mpsc::{self},
 };
 
+use artnet::start_artnet_output_thread;
 use debug::{start_debug_output_thread, DebugOutputVerbosity};
 use egui_probe::EguiProbe;
 use serial::start_serial_output_thread;
@@ -21,15 +22,9 @@ pub type DmxData = (u16, [u8; 512]);
 pub enum DemexDmxOutputConfig {
     Debug(DebugOutputVerbosity),
 
-    Serial {
-        serial_port: String,
-        universe: u16,
-    },
+    Serial { serial_port: String, universe: u16 },
 
-    Artnet {
-        socket_addr: String,
-        socket_port: u16,
-    },
+    Artnet(String),
 }
 
 impl Default for DemexDmxOutputConfig {
@@ -46,10 +41,7 @@ impl DemexDmxOutputConfig {
                 serial_port,
                 universe,
             } => start_serial_output_thread(rx, serial_port.clone(), *universe),
-            Self::Artnet {
-                socket_addr: _,
-                socket_port: _,
-            } => {}
+            Self::Artnet(socket_addr) => start_artnet_output_thread(rx, socket_addr.clone()),
         }
     }
 }

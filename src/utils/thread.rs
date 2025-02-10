@@ -6,7 +6,24 @@ use std::{
 
 use parking_lot::RwLock;
 
-pub fn demex_thread<F: Fn(f64) + Send + 'static>(
+pub fn demex_simple_thread<F: Fn(Arc<RwLock<DemexThreadStatsHandler>>, &str) + Send + 'static>(
+    name: String,
+    stats: Arc<RwLock<DemexThreadStatsHandler>>,
+    f: F,
+) {
+    let stats_cloned = stats.clone();
+    let name_cloned = name.to_owned();
+
+    let handle = thread::spawn(move || {
+        f(stats, name.as_str());
+    });
+
+    stats_cloned
+        .write()
+        .register_thread(name_cloned, handle.thread().id());
+}
+
+pub fn demex_update_thread<F: Fn(f64) + Send + 'static>(
     name: String,
     stats: Arc<RwLock<DemexThreadStatsHandler>>,
     fps: f64,

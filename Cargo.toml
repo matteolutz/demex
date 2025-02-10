@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+artnet_protocol = { git = "https://github.com/matteolutz/artnet_protocol" }
 chrono = "0.4.39"
 eframe = { features = ["default"], version = "0.28.1" }
 egui = { features = ["default"], version = "0.28.1" }

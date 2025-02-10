@@ -201,6 +201,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
 
 [[package]]
+name = "artnet_protocol"
+version = "0.4.3"
+source = "git+https://github.com/matteolutz/artnet_protocol#e43c5c2974c42a5a9aee63f8fa8c98a50a90b34d"
+dependencies = [
+ "bitflags 2.8.0",
+ "byteorder",
+]
+
+[[package]]
 name = "as-raw-xcb-connection"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -887,6 +896,7 @@ checksum = "96a6ac251f4a2aca6b3f91340350eab87ae57c3f127ffeb585e92bd336717991"
 name = "demex"
 version = "0.1.0"
 dependencies = [
+ "artnet_protocol",
  "chrono",
  "eframe",
  "egui",

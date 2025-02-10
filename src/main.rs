@@ -15,7 +15,7 @@ use show::DemexShow;
 use ui::DemexUiApp;
 use utils::{
     deadlock::start_deadlock_checking_thread,
-    thread::{demex_thread, DemexThreadStatsHandler},
+    thread::{demex_update_thread, DemexThreadStatsHandler},
 };
 
 const TEST_SHOW_FILE: &str = "test_data/show.json";
@@ -46,6 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .expect("this shouldn't happen"),
                 ),*/
                 DemexDmxOutputConfig::Debug(DebugOutputVerbosity::Silent).into(),
+                DemexDmxOutputConfig::Artnet("0.0.0.0".to_owned()).into(),
             ],
             patch.clone().into(),
         )
@@ -74,7 +75,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let preset_handler_thread_a = preset_handler.clone();
     let updatable_handler_thread_a = updatable_handler.clone();
 
-    demex_thread(
+    demex_update_thread(
         "demex-dmx-output".to_owned(),
         stats.clone(),
         60.0,
@@ -87,7 +88,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     );
 
-    demex_thread(
+    demex_update_thread(
         "demex-update".to_owned(),
         stats.clone(),
         TEST_MAX_FUPS,
