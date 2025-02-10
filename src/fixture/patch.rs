@@ -5,7 +5,7 @@ use crate::dmx::{DemexDmxOutput, DemexDmxOutputConfig};
 
 use super::{layout::FixtureLayout, Fixture, SerializableFixturePatch};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Patch {
     fixtures: Vec<SerializableFixturePatch>,
     layout: FixtureLayout,

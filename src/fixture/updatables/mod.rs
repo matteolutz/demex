@@ -14,7 +14,7 @@ pub mod error;
 pub mod executor;
 pub mod fader;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct UpdatableHandler {
     executors: HashMap<u32, SequenceRuntimeExecutor>,
     faders: HashMap<u32, DemexFader>,

@@ -1,12 +1,15 @@
 use std::sync::Arc;
 
+use edit::DemexEditWindow;
 use parking_lot::RwLock;
 
 use crate::fixture::{
     handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler,
 };
 
-use super::{edit::DemexEditWindow, log::dialog::DemexGlobalDialogEntry};
+use super::log::dialog::DemexGlobalDialogEntry;
+
+pub mod edit;
 
 #[derive(Debug)]
 pub enum DemexWindow {

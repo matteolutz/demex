@@ -12,7 +12,7 @@ use crate::{
         updatables::UpdatableHandler,
         Fixture,
     },
-    ui::{constants::INFO_TEXT, edit::DemexEditWindow},
+    ui::{constants::INFO_TEXT, window::edit::DemexEditWindow},
 };
 
 use self::{error::ActionRunError, result::ActionRunResult};

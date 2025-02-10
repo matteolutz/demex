@@ -22,7 +22,6 @@ use crate::{
 pub mod components;
 pub mod constants;
 pub mod context;
-pub mod edit;
 pub mod error;
 pub mod graphics;
 pub mod iimpl;

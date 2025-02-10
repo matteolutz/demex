@@ -25,7 +25,7 @@ use clap::Parser;
 struct Args {
     /// Path to the show file to load
     #[arg(short, long)]
-    show: PathBuf,
+    show: Option<PathBuf>,
 
     /// Run a additional thread to periodically check for RwLock deadlocks
     #[arg(long)]
@@ -42,7 +42,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         start_deadlock_checking_thread();
     }
 
-    let show: DemexShow = serde_json::from_reader(std::fs::File::open(args.show).unwrap()).unwrap();
+    let show: DemexShow = args
+        .show
+        .map(|show_path| serde_json::from_reader(std::fs::File::open(show_path).unwrap()).unwrap())
+        .unwrap_or(DemexShow::default());
 
     let fixture_handler = Arc::new(RwLock::new(FixtureHandler::new(show.patch).unwrap()));
 

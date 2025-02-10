@@ -1,4 +1,4 @@
-use crate::ui::edit::DemexEditWindow;
+use crate::ui::window::edit::DemexEditWindow;
 
 #[derive(Debug, Clone, Default)]
 pub enum ActionRunResult {

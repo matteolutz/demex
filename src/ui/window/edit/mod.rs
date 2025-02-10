@@ -87,7 +87,7 @@ impl DemexEditWindow {
                     let patch = fixture_handler.patch_mut();
 
                     Probe::new(patch.output_configs_mut())
-                        .with_header("Edit outputs")
+                        .with_header("Outputs")
                         .show(ui);
                 }
             },

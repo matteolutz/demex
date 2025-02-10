@@ -58,7 +58,7 @@ impl FixtureLayoutEntry {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct FixtureLayout {
     fixtures: Vec<FixtureLayoutEntry>,
     decorations: Vec<FixtureLayoutDecoration>,
