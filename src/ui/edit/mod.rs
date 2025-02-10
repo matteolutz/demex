@@ -84,7 +84,9 @@ impl DemexEditWindow {
                         "A restart is required for output changes to take effect!",
                     );
 
-                    Probe::new(fixture_handler.outputs_mut())
+                    let patch = fixture_handler.patch_mut();
+
+                    Probe::new(patch.output_configs_mut())
                         .with_header("Edit outputs")
                         .show(ui);
                 }

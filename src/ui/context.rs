@@ -7,7 +7,6 @@ use crate::{
         channel::{value::FixtureChannelValue, FIXTURE_CHANNEL_INTENSITY_ID},
         effect::FixtureChannelEffect,
         handler::FixtureHandler,
-        patch::Patch,
         presets::PresetHandler,
         updatables::UpdatableHandler,
     },
@@ -28,8 +27,6 @@ use super::{
 };
 
 pub struct DemexUiContext {
-    pub patch: Patch,
-
     pub fixture_handler: Arc<RwLock<FixtureHandler>>,
     pub preset_handler: Arc<RwLock<PresetHandler>>,
     pub updatable_handler: Arc<RwLock<UpdatableHandler>>,
@@ -111,16 +108,19 @@ impl DemexUiContext {
                 updatable_handler_lock.faders_home_all(&mut fixture_handler_lock);
             }
             Action::Save => {
-                let updatable_handler_lock = self.updatable_handler.read();
+                let fixture_handler_lock = self.fixture_handler.read();
                 let preset_handler_lock = self.preset_handler.read();
+                let updatable_handler_lock = self.updatable_handler.read();
 
                 let show = DemexShow {
                     preset_handler: preset_handler_lock.clone(),
                     updatable_handler: updatable_handler_lock.clone(),
+                    patch: fixture_handler_lock.patch().clone(),
                 };
 
                 let save_result = (self.save_show)(show);
 
+                drop(fixture_handler_lock);
                 drop(updatable_handler_lock);
                 drop(preset_handler_lock);
 

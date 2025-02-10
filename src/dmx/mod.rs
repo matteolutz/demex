@@ -6,6 +6,7 @@ use std::{
 use artnet::start_artnet_output_thread;
 use debug::{start_debug_output_thread, DebugOutputVerbosity};
 use egui_probe::EguiProbe;
+use serde::{Deserialize, Serialize};
 use serial::start_serial_output_thread;
 
 pub mod artnet;
@@ -13,18 +14,18 @@ pub mod debug;
 pub mod serial;
 
 pub trait DemexDmxOutputTrait: fmt::Debug {
-    fn send(&mut self, universe: u16, data: &[u8; 512]) -> Result<(), Box<dyn std::error::Error>>;
+    fn send(&self, universe: u16, data: &[u8; 512]) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 pub type DmxData = (u16, [u8; 512]);
 
-#[derive(Debug, EguiProbe)]
+#[derive(Debug, Clone, EguiProbe, Serialize, Deserialize)]
 pub enum DemexDmxOutputConfig {
     Debug(DebugOutputVerbosity),
 
     Serial { serial_port: String, universe: u16 },
 
-    Artnet(String),
+    Artnet { destination_ip: Option<String> },
 }
 
 impl Default for DemexDmxOutputConfig {
@@ -41,7 +42,9 @@ impl DemexDmxOutputConfig {
                 serial_port,
                 universe,
             } => start_serial_output_thread(rx, serial_port.clone(), *universe),
-            Self::Artnet(socket_addr) => start_artnet_output_thread(rx, socket_addr.clone()),
+            Self::Artnet { destination_ip } => {
+                start_artnet_output_thread(rx, destination_ip.clone())
+            }
         }
     }
 }
@@ -71,7 +74,7 @@ impl From<DemexDmxOutputConfig> for DemexDmxOutput {
 }
 
 impl DemexDmxOutputTrait for DemexDmxOutput {
-    fn send(&mut self, universe: u16, data: &[u8; 512]) -> Result<(), Box<dyn std::error::Error>> {
+    fn send(&self, universe: u16, data: &[u8; 512]) -> Result<(), Box<dyn std::error::Error>> {
         self.tx.send((universe, *data))?;
         Ok(())
     }

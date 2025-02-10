@@ -4,7 +4,7 @@ use crate::dmx::{DemexDmxOutput, DemexDmxOutputTrait};
 
 use self::error::FixtureHandlerError;
 
-use super::{presets::PresetHandler, updatables::UpdatableHandler, Fixture};
+use super::{patch::Patch, presets::PresetHandler, updatables::UpdatableHandler, Fixture};
 
 pub mod error;
 
@@ -42,6 +42,7 @@ fn write_universe_data(
 pub struct FixtureHandler {
     fixtures: Vec<Fixture>,
     outputs: Vec<DemexDmxOutput>,
+    patch: Patch,
     universe_output_data: HashMap<u16, [u8; 512]>,
     grand_master: u8,
 }
@@ -51,11 +52,10 @@ impl FixtureHandler {
         255
     }
 
-    pub fn new(
-        outputs: Vec<DemexDmxOutput>,
-        fixtures: Vec<Fixture>,
-    ) -> Result<Self, FixtureHandlerError> {
+    pub fn new(patch: Patch) -> Result<Self, FixtureHandlerError> {
         // check if the fixtures overlap
+
+        let (fixtures, outputs) = patch.clone().into();
 
         let mut fixture_addresses: HashMap<u16, BTreeSet<u16>> = HashMap::new();
 
@@ -81,6 +81,7 @@ impl FixtureHandler {
             universe_output_data: HashMap::with_capacity(fixtures.len()),
             fixtures,
             outputs,
+            patch,
             grand_master: Self::default_grandmaster_value(),
         })
     }
@@ -113,8 +114,12 @@ impl FixtureHandler {
         &mut self.grand_master
     }
 
-    pub fn outputs_mut(&mut self) -> &mut Vec<DemexDmxOutput> {
-        &mut self.outputs
+    pub fn patch(&self) -> &Patch {
+        &self.patch
+    }
+
+    pub fn patch_mut(&mut self) -> &mut Patch {
+        &mut self.patch
     }
 
     pub fn update(
@@ -155,7 +160,7 @@ impl FixtureHandler {
             dirty_universes.insert(f.universe());
         }
 
-        for output in self.outputs.iter_mut() {
+        for output in &self.outputs {
             for (universe, data) in &self.universe_output_data {
                 if !dirty_universes.contains(universe) {
                     continue;

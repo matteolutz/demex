@@ -6,10 +6,9 @@ pub mod show;
 pub mod ui;
 pub mod utils;
 
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
-use dmx::{debug::DebugOutputVerbosity, DemexDmxOutputConfig};
-use fixture::{handler::FixtureHandler, patch::Patch};
+use fixture::handler::FixtureHandler;
 use parking_lot::RwLock;
 use show::DemexShow;
 use ui::DemexUiApp;
@@ -18,40 +17,34 @@ use utils::{
     thread::{demex_update_thread, DemexThreadStatsHandler},
 };
 
-const TEST_SHOW_FILE: &str = "test_data/show.json";
-const TEST_PATCH_FILE: &str = "test_data/patch.json";
+use clap::Parser;
+
+/// demex - command based stage lighting control
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Path to the show file to load
+    #[arg(short, long)]
+    show: PathBuf,
+
+    /// Run a additional thread to periodically check for RwLock deadlocks
+    #[arg(long)]
+    deadlock_test: bool,
+}
 
 const TEST_MAX_FUPS: f64 = 200.0;
 const TEST_UI_FPS: f64 = 60.0;
 
-const DEADLOCK_TEST: bool = true;
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    if DEADLOCK_TEST {
+    let args = Args::parse();
+
+    if args.deadlock_test {
         start_deadlock_checking_thread();
     }
 
-    let show: DemexShow =
-        serde_json::from_reader(std::fs::File::open(TEST_SHOW_FILE).unwrap()).unwrap();
+    let show: DemexShow = serde_json::from_reader(std::fs::File::open(args.show).unwrap()).unwrap();
 
-    let patch: Patch =
-        serde_json::from_reader(std::fs::File::open(TEST_PATCH_FILE).unwrap()).unwrap();
-
-    let fixture_handler = Arc::new(RwLock::new(
-        FixtureHandler::new(
-            vec![
-                // Box::new(DebugDummyOutput::new(DebugDummyOutputVerbosity::Silent)),
-                /*Box::new(
-                    DMXSerialOutput::new("/dev/tty.usbserial-A10KPDBZ")
-                        .expect("this shouldn't happen"),
-                ),*/
-                DemexDmxOutputConfig::Debug(DebugOutputVerbosity::Silent).into(),
-                DemexDmxOutputConfig::Artnet("0.0.0.0".to_owned()).into(),
-            ],
-            patch.clone().into(),
-        )
-        .unwrap(),
-    ));
+    let fixture_handler = Arc::new(RwLock::new(FixtureHandler::new(show.patch).unwrap()));
 
     let preset_handler = Arc::new(RwLock::new(show.preset_handler));
     let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));
@@ -62,10 +55,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         fixture_handler.clone(),
         preset_handler.clone(),
         updatable_handler.clone(),
-        patch,
         stats.clone(),
         |show: DemexShow| {
-            serde_json::to_writer(std::fs::File::create(TEST_SHOW_FILE).unwrap(), &show)?;
+            serde_json::to_writer(std::fs::File::create("test_data/show.json").unwrap(), &show)?;
             Ok(())
         },
         TEST_UI_FPS,

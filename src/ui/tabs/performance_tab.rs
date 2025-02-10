@@ -20,4 +20,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
             ui.separator();
         });
     }
+
+    ui.vertical(|ui| {
+        ui.heading("Outputs (additional thread per output)");
+        ui.label("Test");
+    });
 }

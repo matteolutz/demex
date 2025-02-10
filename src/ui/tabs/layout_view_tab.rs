@@ -190,7 +190,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let preset_handler = context.preset_handler.read();
     let updatable_handler = context.updatable_handler.read();
 
-    let fixture_layout = context.patch.layout();
+    let fixture_layout = fixture_handler.patch().layout();
     ui.heading("Layout View");
 
     ui.with_layout(

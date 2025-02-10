@@ -1,21 +1,38 @@
 use std::{
-    net,
+    net::{self, IpAddr},
     sync::mpsc::{self, TryRecvError},
     thread,
 };
 
-use artnet_protocol::{ArtCommand, Output};
+use artnet_protocol::{ArtCommand, Output, Poll};
 
 use super::DmxData;
 
 const ARTNET_PORT: u16 = 6454;
 
-pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, socket_addr: String) {
+pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, destination_ip: Option<String>) {
     thread::spawn(move || {
-        let socket = net::UdpSocket::bind((socket_addr, ARTNET_PORT)).unwrap();
-        let broadcast_addr =
-            net::SocketAddr::new(net::IpAddr::V4(net::Ipv4Addr::BROADCAST), ARTNET_PORT);
-        socket.set_broadcast(true).unwrap();
+        let socket = net::UdpSocket::bind(("0.0.0.0", ARTNET_PORT)).unwrap();
+
+        let destination_addr = net::SocketAddr::new(
+            net::IpAddr::V4(
+                destination_ip
+                    .map(|ip| ip.parse().unwrap())
+                    .unwrap_or(net::Ipv4Addr::BROADCAST),
+            ),
+            ARTNET_PORT,
+        );
+        socket
+            .set_broadcast(if let IpAddr::V4(addr) = destination_addr.ip() {
+                addr.is_broadcast()
+            } else {
+                false
+            })
+            .unwrap();
+
+        // Send poll
+        let poll_buff = ArtCommand::Poll(Poll::default()).write_to_buffer().unwrap();
+        socket.send_to(&poll_buff, destination_addr).unwrap();
 
         loop {
             let recv_result = rx.try_recv();
@@ -28,7 +45,7 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, socket_addr: Stri
                 });
 
                 let command_bytes = output_command.write_to_buffer().unwrap();
-                socket.send_to(&command_bytes, broadcast_addr).unwrap();
+                socket.send_to(&command_bytes, destination_addr).unwrap();
             } else if recv_result.err().unwrap() == TryRecvError::Disconnected {
                 break;
             }

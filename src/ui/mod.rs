@@ -13,7 +13,7 @@ use crate::{
     lexer::Lexer,
 };
 use crate::{
-    fixture::{patch::Patch, presets::PresetHandler, updatables::UpdatableHandler},
+    fixture::{presets::PresetHandler, updatables::UpdatableHandler},
     parser::{nodes::action::Action, Parser2},
     show::DemexShow,
     utils::thread::DemexThreadStatsHandler,
@@ -49,7 +49,6 @@ impl DemexUiApp {
         fixture_handler: Arc<RwLock<FixtureHandler>>,
         preset_handler: Arc<RwLock<PresetHandler>>,
         updatable_handler: Arc<RwLock<UpdatableHandler>>,
-        patch: Patch,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
         save_show: fn(DemexShow) -> Result<(), Box<dyn std::error::Error>>,
         desired_fps: f64,
@@ -62,7 +61,6 @@ impl DemexUiApp {
             command_input: String::new(),
             is_command_input_empty: true,
             context: DemexUiContext {
-                patch,
                 stats,
                 gm_slider_val: FixtureHandler::default_grandmaster_value(),
                 fixture_handler,

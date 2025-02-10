@@ -4,10 +4,11 @@ use std::{
 };
 
 use egui_probe::EguiProbe;
+use serde::{Deserialize, Serialize};
 
 use super::DmxData;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, EguiProbe)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, EguiProbe, Serialize, Deserialize)]
 pub enum DebugOutputVerbosity {
     Verbose,
     Quiet,
