@@ -39,7 +39,13 @@ impl DemexDmxOutputConfig {
         match self {
             Self::Debug(_) => 1,
             Self::Serial { .. } => 1,
-            Self::Artnet { .. } => 2,
+            Self::Artnet { broadcast, .. } => {
+                if broadcast {
+                    1
+                } else {
+                    2
+                }
+            }
         }
     }
 }
