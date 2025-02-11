@@ -80,10 +80,8 @@ impl Default for DemexTabs {
             vec![DemexTab::FixtureControls],
         );
 
-        surface.split_right(new_node, 0.66, vec![DemexTab::Faders]);
-
         surface.split_below(new_node, 0.5, vec![DemexTab::LayoutView]);
-        surface.split_above(old_node, 0.5, vec![DemexTab::PresetGrid]);
+        surface.split_above(old_node, 0.5, vec![DemexTab::PresetGrid, DemexTab::Faders]);
 
         Self { dock_state }
     }
