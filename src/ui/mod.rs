@@ -28,6 +28,7 @@ pub mod iimpl;
 pub mod log;
 pub mod tabs;
 pub mod traits;
+pub mod utils;
 pub mod window;
 
 const UI_THREAD_NAME: &str = "demex-ui";

@@ -14,7 +14,7 @@ use egui::{Style, Visuals};
 use fixture::handler::FixtureHandler;
 use parking_lot::RwLock;
 use show::DemexShow;
-use ui::DemexUiApp;
+use ui::{utils::icon::load_icon, DemexUiApp};
 use utils::{
     deadlock::start_deadlock_checking_thread,
     thread::{demex_update_thread, DemexThreadStatsHandler},
@@ -113,7 +113,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let options = eframe::NativeOptions {
-        viewport: eframe::egui::ViewportBuilder::default().with_maximized(true),
+        viewport: eframe::egui::ViewportBuilder::default()
+            .with_maximized(true)
+            .with_icon(load_icon()),
         ..Default::default()
     };
 

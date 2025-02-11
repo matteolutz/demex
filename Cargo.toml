@@ -12,6 +12,7 @@ egui = { features = ["default"], version = "0.28.1" }
 egui-probe = { version = "0.5.1", features = ["derive"] }
 egui_dock = "0.13.0"
 egui_extras = { features = ["default"], version = "0.28.1" }
+image = "0.24.9"
 itertools = "0.13.0"
 open = "5.3.2"
 open_dmx = "1.1.1"
