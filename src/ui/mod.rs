@@ -1,10 +1,10 @@
-use std::{sync::Arc, thread, time};
+use std::{collections::HashSet, sync::Arc, thread, time};
 
 use constants::VERSION_STR;
 use context::DemexUiContext;
 use log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use parking_lot::RwLock;
-use tabs::{layout_view_tab::LayoutViewContext, DemexTabs};
+use tabs::{layout_view_tab::LayoutViewContext, DemexTab, DemexTabs};
 use window::DemexWindow;
 
 #[allow(unused_imports)]
@@ -38,6 +38,8 @@ pub struct DemexUiApp {
     context: DemexUiContext,
 
     tabs: DemexTabs,
+    detached_tabs: HashSet<DemexTab>,
+
     last_update: std::time::Instant,
 
     desired_fps: f64,
@@ -74,6 +76,7 @@ impl DemexUiApp {
                 windows: Vec::new(),
             },
             tabs: DemexTabs::default(),
+            detached_tabs: HashSet::new(),
             last_update: time::Instant::now(),
             desired_fps,
         }
@@ -124,6 +127,30 @@ impl eframe::App for DemexUiApp {
                 self.context
                     .add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));
             }
+        }
+
+        for detached_tab in self.detached_tabs.clone() {
+            let tab_title = detached_tab.to_string();
+
+            ctx.show_viewport_immediate(
+                egui::ViewportId::from_hash_of(tab_title.as_str()),
+                egui::ViewportBuilder::default()
+                    .with_title(format!("demex - {}", tab_title))
+                    .with_maximized(true)
+                    .with_window_level(egui::WindowLevel::AlwaysOnTop),
+                |ctx, _| {
+                    if ctx.input(|reader| reader.viewport().close_requested()) {
+                        self.detached_tabs.remove(&detached_tab);
+                        self.tabs.re_attach(detached_tab);
+                    }
+
+                    egui::CentralPanel::default().show(ctx, |ui| {
+                        egui::ScrollArea::both().show(ui, |ui| {
+                            detached_tab.ui(ui, &mut self.context);
+                        });
+                    });
+                },
+            );
         }
 
         eframe::egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -260,7 +287,8 @@ impl eframe::App for DemexUiApp {
         });
 
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
-            self.tabs.ui(ui, &mut self.context, ctx);
+            self.tabs
+                .ui(ui, &mut self.context, ctx, &mut self.detached_tabs);
         });
 
         let elapsed = self.last_update.elapsed().as_secs_f64();

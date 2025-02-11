@@ -40,7 +40,7 @@ impl DemexDmxOutputConfig {
             Self::Debug(_) => 1,
             Self::Serial { .. } => 1,
             Self::Artnet { broadcast, .. } => {
-                if broadcast {
+                if *broadcast {
                     1
                 } else {
                     2
