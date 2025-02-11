@@ -3,7 +3,7 @@ use std::{
     sync::mpsc::{self},
 };
 
-use artnet::start_artnet_output_thread;
+use artnet::{start_artnet_output_thread, start_broadcast_artnet_output_thread};
 use debug::{start_debug_output_thread, DebugOutputVerbosity};
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
@@ -29,9 +29,19 @@ pub enum DemexDmxOutputConfig {
     },
 
     Artnet {
-        destination_ip: Option<String>,
+        broadcast: bool,
         bind_ip: Option<String>,
     },
+}
+
+impl DemexDmxOutputConfig {
+    pub fn num_threads(&self) -> usize {
+        match self {
+            Self::Debug(_) => 1,
+            Self::Serial { .. } => 1,
+            Self::Artnet { .. } => 2,
+        }
+    }
 }
 
 impl Default for DemexDmxOutputConfig {
@@ -48,10 +58,13 @@ impl DemexDmxOutputConfig {
                 serial_port,
                 universe,
             } => start_serial_output_thread(rx, serial_port.clone(), *universe),
-            Self::Artnet {
-                destination_ip,
-                bind_ip,
-            } => start_artnet_output_thread(rx, destination_ip.clone(), bind_ip.clone()),
+            Self::Artnet { broadcast, bind_ip } => {
+                if *broadcast {
+                    start_broadcast_artnet_output_thread(rx, bind_ip.clone())
+                } else {
+                    start_artnet_output_thread(rx, bind_ip.clone())
+                }
+            }
         }
     }
 }

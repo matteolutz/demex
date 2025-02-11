@@ -98,6 +98,10 @@ impl FixtureHandler {
         &self.fixtures
     }
 
+    pub fn outputs(&self) -> &Vec<DemexDmxOutput> {
+        &self.outputs
+    }
+
     pub fn home_all(&mut self) -> Result<(), FixtureHandlerError> {
         for f in self.fixtures.iter_mut() {
             f.home().map_err(FixtureHandlerError::FixtureError)?;
@@ -169,9 +173,12 @@ impl FixtureHandler {
                     continue;
                 }
 
-                output
-                    .send(*universe, data)
-                    .map_err(FixtureHandlerError::FixtureHandlerUpdateError)?;
+                if let Err(err) = output.send(*universe, data) {
+                    println!(
+                        "Failed to send data via {:?} for universe {}. Did the corresponding output thread panic?\n{}",
+                        output, universe, err
+                    );
+                }
             }
         }
 

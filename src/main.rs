@@ -1,3 +1,5 @@
+#![warn(unused_extern_crates)]
+
 pub mod dmx;
 pub mod fixture;
 pub mod lexer;

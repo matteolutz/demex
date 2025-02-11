@@ -1,5 +1,10 @@
+use std::thread;
+
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
+    let fixture_handler = context.fixture_handler.read();
     let stats = context.stats.read();
+
+    let mut num_threads = 1; // main thread
 
     for (thread_name, thread_stats) in stats.stats().iter() {
         ui.vertical(|ui| {
@@ -19,10 +24,32 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
             ui.separator();
         });
+
+        num_threads += 1;
     }
 
     ui.vertical(|ui| {
-        ui.heading("Outputs (additional thread per output)");
-        ui.label("Test");
+        ui.heading("Outputs");
+
+        for output in fixture_handler.outputs() {
+            ui.horizontal(|ui| {
+                ui.label(format!("{:?}", output.config()));
+                ui.label(format!("(Threads: {})", output.config().num_threads()));
+            });
+
+            num_threads += output.config().num_threads();
+        }
+    });
+
+    ui.vertical(|ui| {
+        ui.separator();
+
+        ui.label(format!(
+            "Threads in use: >{} (/{})",
+            num_threads,
+            thread::available_parallelism()
+                .map(|n| n.to_string())
+                .unwrap_or_else(|_| "unknown".to_owned())
+        ));
     });
 }
