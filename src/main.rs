@@ -8,6 +8,7 @@ pub mod utils;
 
 use std::{path::PathBuf, sync::Arc, time};
 
+use egui::{Style, Visuals};
 use fixture::handler::FixtureHandler;
 use parking_lot::RwLock;
 use show::DemexShow;
@@ -114,7 +115,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    eframe::run_native("demex", options, Box::new(|_| Ok(Box::new(ui_app_state))))?;
+    eframe::run_native(
+        "demex",
+        options,
+        Box::new(|creation_context| {
+            let style = Style {
+                visuals: Visuals::dark(),
+                ..Style::default()
+            };
+            creation_context.egui_ctx.set_style(style);
+            Ok(Box::new(ui_app_state))
+        }),
+    )?;
 
     Ok(())
 }
