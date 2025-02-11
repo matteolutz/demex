@@ -298,7 +298,23 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
             FixtureChannelValue::Discrete(value) => {
                 value.as_toggle_flag(preset_handler, fixture_id)
             }
-            _ => todo!("Preset handling for toggle flag"),
+            FixtureChannelValue::Mix { a, b, mix } => {
+                let a = a.as_toggle_flag(preset_handler, fixture_id)?;
+                let b = b.as_toggle_flag(preset_handler, fixture_id)?;
+
+                if *mix > 0.5 {
+                    Ok(b)
+                } else {
+                    Ok(a)
+                }
+            }
+            unexpted => {
+                println!(
+                    "getting toggle flag for fixture id {}: {:?}",
+                    fixture_id, unexpted
+                );
+                Ok(None)
+            }
         }
     }
 

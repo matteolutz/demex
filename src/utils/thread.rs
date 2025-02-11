@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     sync::Arc,
     thread::{self, ThreadId},
+    time,
 };
 
 use parking_lot::RwLock;
@@ -23,7 +24,7 @@ pub fn demex_simple_thread<F: Fn(Arc<RwLock<DemexThreadStatsHandler>>, &str) + S
         .register_thread(name_cloned, handle.thread().id());
 }
 
-pub fn demex_update_thread<F: Fn(f64) + Send + 'static>(
+pub fn demex_update_thread<F: Fn(f64, &mut time::Instant) + Send + 'static>(
     name: String,
     stats: Arc<RwLock<DemexThreadStatsHandler>>,
     fps: f64,
@@ -31,6 +32,8 @@ pub fn demex_update_thread<F: Fn(f64) + Send + 'static>(
 ) {
     let stats_cloned = stats.clone();
     let name_cloned = name.to_owned();
+
+    let mut last_user_update = time::Instant::now();
 
     let handle = thread::spawn(move || {
         let mut last_update = std::time::Instant::now();
@@ -49,7 +52,7 @@ pub fn demex_update_thread<F: Fn(f64) + Send + 'static>(
 
             last_update = std::time::Instant::now();
 
-            f(delta_time);
+            f(delta_time, &mut last_user_update);
 
             stats.write().update(name.as_str(), delta_time);
         }

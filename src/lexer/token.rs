@@ -152,7 +152,7 @@ impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Token::Integer(n) => write!(f, "{}", n),
-            Token::FloatingPoint(n, _) => write!(f, "{}", n),
+            Token::FloatingPoint(_, (n, frac)) => write!(f, "{}.{}", n, frac),
             Token::String(s) => write!(f, "\"{}\"", s),
             Token::Plus => write!(f, "+"),
             Token::Minus => write!(f, "-"),

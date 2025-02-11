@@ -18,8 +18,11 @@ impl<'a> eframe::egui::Widget for PositionSelector<'a> {
     fn ui(mut self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
         let position = ((self.get_or_set)(None)).unwrap_or(eframe::egui::vec2(0.0, 0.0));
 
+        let rect_size = 250.0;
+
         // draw a rect
-        let (rect, response) = ui.allocate_exact_size(eframe::egui::vec2(150.0, 150.0), self.sense);
+        let (rect, response) =
+            ui.allocate_exact_size(eframe::egui::vec2(rect_size, rect_size), self.sense);
 
         let vis_size = 7.5;
 

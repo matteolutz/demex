@@ -6,7 +6,7 @@ pub mod show;
 pub mod ui;
 pub mod utils;
 
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc, time};
 
 use fixture::handler::FixtureHandler;
 use parking_lot::RwLock;
@@ -75,12 +75,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "demex-dmx-output".to_owned(),
         stats.clone(),
         TEST_MAX_DMX_FPS,
-        move |delta_time| {
+        move |delta_time, last_user_update| {
             let mut fixture_handler = fixture_handler_thread_a.write();
             let preset_handler = preset_handler_thread_a.read();
             let updatable_handler = updatable_handler_thread_a.read();
 
-            let _ = fixture_handler.update(&preset_handler, &updatable_handler, delta_time);
+            if fixture_handler
+                .update(
+                    &preset_handler,
+                    &updatable_handler,
+                    delta_time,
+                    last_user_update.elapsed().as_secs_f64() > 1.0,
+                )
+                .unwrap()
+                > 0
+            {
+                *last_user_update = time::Instant::now();
+            }
         },
     );
 
@@ -88,7 +99,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "demex-update".to_owned(),
         stats.clone(),
         TEST_MAX_FUPS,
-        move |delta_time| {
+        move |delta_time, _| {
             let mut fixture_handler = fixture_handler.write();
             let preset_handler = preset_handler.read();
             let mut updatable_handler = updatable_handler.write();

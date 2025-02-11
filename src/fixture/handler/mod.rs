@@ -127,7 +127,8 @@ impl FixtureHandler {
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         _delta_time: f64,
-    ) -> Result<(), FixtureHandlerError> {
+        force: bool,
+    ) -> Result<usize, FixtureHandlerError> {
         let mut dirty_universes: BTreeSet<u16> = BTreeSet::new();
 
         for f in &self.fixtures {
@@ -142,11 +143,13 @@ impl FixtureHandler {
                 .map(|p| (*p as f32 * (self.grand_master as f32 / 255.0)) as u8)
                 .collect::<Vec<u8>>();
 
-            if compare_universe_output_data(
-                self.universe_output_data.get(&f.universe()),
-                &fixture_data,
-                fixture_universe_offset,
-            ) {
+            if !force
+                && compare_universe_output_data(
+                    self.universe_output_data.get(&f.universe()),
+                    &fixture_data,
+                    fixture_universe_offset,
+                )
+            {
                 continue;
             }
 
@@ -172,6 +175,6 @@ impl FixtureHandler {
             }
         }
 
-        Ok(())
+        Ok(dirty_universes.len())
     }
 }
