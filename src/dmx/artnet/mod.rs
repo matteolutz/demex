@@ -10,9 +10,14 @@ use super::DmxData;
 
 const ARTNET_PORT: u16 = 6454;
 
-pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, destination_ip: Option<String>) {
+pub fn start_artnet_output_thread(
+    rx: mpsc::Receiver<DmxData>,
+    destination_ip: Option<String>,
+    bind_ip: Option<String>,
+) {
     thread::spawn(move || {
-        let socket = net::UdpSocket::bind(("0.0.0.0", ARTNET_PORT)).unwrap();
+        let socket =
+            net::UdpSocket::bind((bind_ip.unwrap_or("0.0.0.0".to_owned()), ARTNET_PORT)).unwrap();
 
         let destination_addr = net::SocketAddr::new(
             net::IpAddr::V4(

@@ -23,9 +23,15 @@ pub type DmxData = (u16, [u8; 512]);
 pub enum DemexDmxOutputConfig {
     Debug(DebugOutputVerbosity),
 
-    Serial { serial_port: String, universe: u16 },
+    Serial {
+        serial_port: String,
+        universe: u16,
+    },
 
-    Artnet { destination_ip: Option<String> },
+    Artnet {
+        destination_ip: Option<String>,
+        bind_ip: Option<String>,
+    },
 }
 
 impl Default for DemexDmxOutputConfig {
@@ -42,9 +48,10 @@ impl DemexDmxOutputConfig {
                 serial_port,
                 universe,
             } => start_serial_output_thread(rx, serial_port.clone(), *universe),
-            Self::Artnet { destination_ip } => {
-                start_artnet_output_thread(rx, destination_ip.clone())
-            }
+            Self::Artnet {
+                destination_ip,
+                bind_ip,
+            } => start_artnet_output_thread(rx, destination_ip.clone(), bind_ip.clone()),
         }
     }
 }
