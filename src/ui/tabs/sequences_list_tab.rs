@@ -49,5 +49,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 ui.label(")");
             });
         }
+
+        if ui.button("+").clicked() {
+            context.command.extend_from_slice(&[
+                Token::KeywordCreate,
+                Token::KeywordSequence,
+                Token::KeywordNext,
+            ]);
+        }
     });
 }

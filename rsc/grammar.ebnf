@@ -18,20 +18,20 @@ function                    = fixture_selector set_function
 
 delete_function             = "macro" integer_or_range
 
-update_function             = "preset" discrete_channel_type integer "for" fixture_selector [udpate_mode]
+update_function             = specific_preset "for" fixture_selector [udpate_mode]
 
-renane_function             = "preset" discrete_channel_type integer "to" string
+renane_function             = specific_preset "to" string
                             | "group" integer "to" string
                             | "sequence" integer "to" string
 
 
-record_function             = "preset" discrete_channel_type integer "for" fixture_selector ["as" string]
-                            | "group" integer "for" fixture_selector ["as" string]
+record_function             = "preset" feature_group (integer | "next") "for" fixture_selector ["as" string]
+                            | "group" (integer | "next") "for" fixture_selector ["as" string]
                             | "sequence" integer "cue" cue_idx "for" fixture_selector ["with" (channel_type_list | "active" | "all")]
 
-create_function             = "sequence" integer ["as" string]
-                            | "executor" integer "for" ("sequence" integer) ["as" string]
-                            | "macro" integer "with" command ["as" string]
+create_function             = "sequence" (integer | "next") ["as" string]
+                            | "executor" (integer | "next") "for" ("sequence" integer) ["as" string]
+                            | "macro" (integer | "next") "with" command ["as" string]
 
 set_function                = channel_type value_single
                             | specific_preset_or_range
@@ -44,7 +44,15 @@ homeable_object             = fixture_selector
                             | "executor" integer
                             | "fader" integer
 
-specific_preset             = "preset" discrete_channel_type integer
+feature_group               = "intensity"
+                            | "color"
+                            | "position"
+                            | "beam"
+                            | "focus"
+                            | "control"
+                            | "feature" integer
+
+specific_preset             = "preset" integer
 specific_preset_or_range    = specific_preset ["thru" integer]
 
 value_single                = discrete_value_single

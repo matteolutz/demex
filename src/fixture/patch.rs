@@ -1,26 +1,36 @@
+use std::collections::HashMap;
+
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::dmx::{DemexDmxOutput, DemexDmxOutputConfig};
 
-use super::{layout::FixtureLayout, Fixture, SerializableFixturePatch};
+use super::{
+    channel::SerializableFixtureChannelPatch, layout::FixtureLayout, Fixture,
+    SerializableFixturePatch,
+};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FixturePatchTypeMode {
+    pub name: String,
+    pub channels: Vec<SerializableFixtureChannelPatch>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FixturePatchType {
+    pub name: String,
+    pub modes: HashMap<u32, FixturePatchTypeMode>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Patch {
     fixtures: Vec<SerializableFixturePatch>,
+    fixture_types: HashMap<String, FixturePatchType>,
     layout: FixtureLayout,
     outputs: Vec<DemexDmxOutputConfig>,
 }
 
 impl Patch {
-    pub fn new(fixtures: Vec<SerializableFixturePatch>) -> Self {
-        Self {
-            fixtures,
-            layout: FixtureLayout::new(Vec::new()),
-            outputs: Vec::new(),
-        }
-    }
-
     pub fn fixtures(&self) -> &[SerializableFixturePatch] {
         &self.fixtures
     }

@@ -58,6 +58,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let stats = Arc::new(RwLock::new(DemexThreadStatsHandler::default()));
 
+    let icon = Arc::new(load_icon());
+
     let ui_app_state = DemexUiApp::new(
         fixture_handler.clone(),
         preset_handler.clone(),
@@ -68,6 +70,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         },
         TEST_UI_FPS,
+        icon.clone(),
     );
 
     let fixture_handler_thread_a = fixture_handler.clone();
@@ -115,7 +118,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
             .with_maximized(true)
-            .with_icon(load_icon()),
+            .with_icon(icon),
         ..Default::default()
     };
 

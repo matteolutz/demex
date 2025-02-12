@@ -64,6 +64,10 @@ impl UpdatableHandler {
         self.executors.keys().cloned().collect()
     }
 
+    pub fn next_executor_id(&self) -> u32 {
+        self.executors.keys().max().unwrap_or(&0) + 1
+    }
+
     pub fn update_executors(
         &mut self,
         delta_time: f64,

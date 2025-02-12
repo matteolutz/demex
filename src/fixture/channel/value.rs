@@ -207,7 +207,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
             FixtureChannelValue::Effect(effect) => effect.as_single(0.0),
             FixtureChannelValue::Preset(preset_id) => {
                 let preset =
-                    preset_handler.get_preset_for_fixture(*preset_id, channel_type, fixture_id);
+                    preset_handler.get_preset_for_fixture(*preset_id, fixture_id, channel_type);
 
                 Ok(preset
                     .map(|p| {
@@ -231,7 +231,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
             }
             FixtureChannelValue::Preset(preset_id) => {
                 let preset =
-                    preset_handler.get_preset_for_fixture(*preset_id, channel_type, fixture_id);
+                    preset_handler.get_preset_for_fixture(*preset_id, fixture_id, channel_type);
 
                 Ok(preset
                     .map(|p| {
@@ -267,7 +267,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
             }
             FixtureChannelValue::Preset(preset_id) => {
                 let preset =
-                    preset_handler.get_preset_for_fixture(*preset_id, channel_type, fixture_id);
+                    preset_handler.get_preset_for_fixture(*preset_id, fixture_id, channel_type);
 
                 Ok(preset
                     .map(|p| {
@@ -329,9 +329,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
         match self {
             FixtureChannelValue::Discrete(value) => value.to_string(preset_handler, channel_type),
             FixtureChannelValue::Preset(preset_id) => {
-                let preset = preset_handler
-                    .get_preset(*preset_id, channel_type)
-                    .map(|p| p.name());
+                let preset = preset_handler.get_preset(*preset_id).map(|p| p.name());
                 if let Ok(preset) = preset {
                     preset.to_owned()
                 } else {
@@ -367,7 +365,22 @@ impl FixtureChannelValue {
         match self {
             FixtureChannelValue::Discrete(value) => value.clone(),
             FixtureChannelValue::Preset(_) => todo!("Preset handling for to_discrete"),
-            FixtureChannelValue::Mix { a: _, b: _, mix: _ } => todo!(),
+            FixtureChannelValue::Mix { a, b, mix } => {
+                let a = a.to_discrete();
+                let b = b.to_discrete();
+
+                if *mix == 0.0 {
+                    return a;
+                } else if *mix == 1.0 {
+                    return b;
+                }
+
+                if a.is_home() && b.is_home() {
+                    return FixtureChannelDiscreteValue::AnyHome;
+                }
+
+                todo!();
+            }
             FixtureChannelValue::Effect(_) => todo!(),
         }
     }

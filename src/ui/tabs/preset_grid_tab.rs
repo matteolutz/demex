@@ -1,10 +1,6 @@
 use itertools::Itertools;
 
 use crate::{
-    fixture::channel::{
-        FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
-        FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-    },
     lexer::token::Token,
     parser::nodes::fixture_selector::{AtomicFixtureSelector, FixtureSelector},
     ui::DemexUiContext,
@@ -73,149 +69,50 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         ui.end_row();
         ui.end_row();
 
-        // Dimmers
-        ui.add_sized(
-            [80.0, 80.0],
-            eframe::egui::Button::new("Intensity")
-                .stroke(eframe::egui::Stroke::new(1.0, eframe::egui::Color32::WHITE))
-                .sense(eframe::egui::Sense {
-                    click: false,
-                    drag: false,
-                    focusable: false,
-                }),
-        );
-
-        for (_, preset) in preset_handler
-            .presets(FIXTURE_CHANNEL_INTENSITY_ID)
+        for (feature_group_id, feature_group) in preset_handler
+            .feature_groups()
             .iter()
-            .sorted_by(|a, b| a.0.cmp(b.0))
+            .sorted_by_key(|(id, _)| *id)
         {
-            let preset_button =
-                ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
-            if preset_button.clicked() {
-                context.command.extend_from_slice(&[
-                    Token::KeywordPreset,
-                    Token::KeywordIntens,
-                    Token::Integer(preset.id()),
-                ])
+            ui.add_sized(
+                [80.0, 80.0],
+                eframe::egui::Button::new(feature_group.name())
+                    .stroke(eframe::egui::Stroke::new(1.0, eframe::egui::Color32::GREEN))
+                    .sense(eframe::egui::Sense {
+                        click: false,
+                        drag: false,
+                        focusable: false,
+                    }),
+            );
+
+            for preset in preset_handler
+                .presets_for_feature_group(*feature_group_id)
+                .iter()
+                .sorted_by_key(|p| p.id())
+            {
+                let preset_button =
+                    ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
+                if preset_button.clicked() {
+                    context
+                        .command
+                        .extend_from_slice(&[Token::KeywordPreset, Token::Integer(preset.id())])
+                }
             }
-        }
 
-        let add_intensity_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
-        if add_intensity_button.clicked() {
-            context.command.extend_from_slice(&[
-                Token::KeywordRecord,
-                Token::KeywordPreset,
-                Token::KeywordIntens,
-                Token::Integer(
-                    preset_handler
-                        .presets(FIXTURE_CHANNEL_INTENSITY_ID)
-                        .keys()
-                        .max()
-                        .unwrap_or(&0)
-                        + 1,
-                ),
-            ])
-        }
-
-        ui.end_row();
-        ui.end_row();
-
-        // Colors
-        ui.add_sized(
-            [80.0, 80.0],
-            eframe::egui::Button::new("Color")
-                .stroke(eframe::egui::Stroke::new(1.0, eframe::egui::Color32::GREEN))
-                .sense(eframe::egui::Sense {
-                    click: false,
-                    drag: false,
-                    focusable: false,
-                }),
-        );
-
-        for (_, preset) in preset_handler
-            .presets(FIXTURE_CHANNEL_COLOR_ID)
-            .iter()
-            .sorted_by(|a, b| a.0.cmp(b.0))
-        {
-            let preset_button =
-                ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
-            if preset_button.clicked() {
+            let record_preset_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
+            if record_preset_button.clicked() {
                 context.command.extend_from_slice(&[
+                    Token::KeywordRecord,
                     Token::KeywordPreset,
-                    Token::KeywordColor,
-                    Token::Integer(preset.id()),
-                ])
+                    Token::KeywordFeature,
+                    Token::Integer(*feature_group_id),
+                    Token::KeywordNext,
+                ]);
             }
+
+            ui.end_row();
+            ui.end_row();
         }
-
-        let add_color_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
-        if add_color_button.clicked() {
-            context.command.extend_from_slice(&[
-                Token::KeywordRecord,
-                Token::KeywordPreset,
-                Token::KeywordColor,
-                Token::Integer(
-                    preset_handler
-                        .presets(FIXTURE_CHANNEL_COLOR_ID)
-                        .keys()
-                        .max()
-                        .unwrap_or(&0)
-                        + 1,
-                ),
-            ])
-        }
-
-        ui.end_row();
-        ui.end_row();
-
-        // Positions
-        ui.add_sized(
-            [80.0, 80.0],
-            eframe::egui::Button::new("Position")
-                .stroke(eframe::egui::Stroke::new(1.0, eframe::egui::Color32::BLUE))
-                .sense(eframe::egui::Sense {
-                    click: false,
-                    drag: false,
-                    focusable: false,
-                }),
-        );
-
-        for (_, preset) in preset_handler
-            .presets(FIXTURE_CHANNEL_POSITION_PAN_TILT_ID)
-            .iter()
-            .sorted_by(|a, b| a.0.cmp(b.0))
-        {
-            let preset_button =
-                ui.add_sized([80.0, 80.0], eframe::egui::Button::new(preset.name()));
-            if preset_button.clicked() {
-                context.command.extend_from_slice(&[
-                    Token::KeywordPreset,
-                    Token::KeywordPosition,
-                    Token::Integer(preset.id()),
-                ])
-            }
-        }
-
-        let add_position_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
-        if add_position_button.clicked() {
-            context.command.extend_from_slice(&[
-                Token::KeywordRecord,
-                Token::KeywordPreset,
-                Token::KeywordPosition,
-                Token::Integer(
-                    preset_handler
-                        .presets(FIXTURE_CHANNEL_POSITION_PAN_TILT_ID)
-                        .keys()
-                        .max()
-                        .unwrap_or(&0)
-                        + 1,
-                ),
-            ])
-        }
-
-        ui.end_row();
-        ui.end_row();
 
         // Macros
         ui.add_sized(
@@ -245,12 +142,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             }
         }
 
-        let add_position_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
-        if add_position_button.clicked() {
+        let add_macro_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
+        if add_macro_button.clicked() {
             context.command.extend_from_slice(&[
                 Token::KeywordCreate,
                 Token::KeywordMacro,
-                Token::Integer(preset_handler.macros().keys().max().unwrap_or(&0) + 1),
+                Token::KeywordNext,
             ])
         }
 
@@ -284,8 +181,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             }
         }
 
-        let add_position_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
-        if add_position_button.clicked() {
+        let add_command_slice_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
+        if add_command_slice_button.clicked() {
             // TODO: add command slices command
         }
 
@@ -375,6 +272,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     .command
                     .extend_from_slice(&[Token::KeywordExecutor, Token::Integer(*preset_id)])
             }
+        }
+
+        let add_executor_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
+        if add_executor_button.clicked() {
+            context.command.extend_from_slice(&[
+                Token::KeywordCreate,
+                Token::KeywordExecutor,
+                Token::KeywordNext,
+            ])
         }
 
         ui.end_row();

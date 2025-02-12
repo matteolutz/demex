@@ -23,6 +23,24 @@ pub struct FeatureGroup {
 }
 
 impl FeatureGroup {
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn name_mut(&mut self) -> &mut String {
+        &mut self.name
+    }
+
+    pub fn channel_types(&self) -> &[u16] {
+        &self.channel_types
+    }
+}
+
+impl FeatureGroup {
     pub fn default_feature_groups() -> HashMap<u32, FeatureGroup> {
         let mut feature_groups = HashMap::new();
 

@@ -5,8 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel::{value::FixtureChannelDiscreteValue, FixtureChannel},
-        handler::FixtureHandler,
+        channel::value::FixtureChannelDiscreteValue, handler::FixtureHandler,
         updatables::UpdatableHandler,
     },
     parser::nodes::{
@@ -25,10 +24,10 @@ pub struct FixturePreset {
     name: String,
 
     #[egui_probe(skip)]
-    channel_type: u16,
+    feature_group_id: u32,
 
     #[egui_probe(skip)]
-    values: HashMap<u32, FixtureChannelDiscreteValue>,
+    data: HashMap<u32, HashMap<u16, FixtureChannelDiscreteValue>>,
 }
 
 impl FixturePreset {
@@ -37,41 +36,47 @@ impl FixturePreset {
         name: Option<String>,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        channel_type: u16,
+        feature_group_id: u32,
         preset_handler: &PresetHandler,
         fixture_handler: &FixtureHandler,
         updatable_handler: &UpdatableHandler,
     ) -> Result<Self, PresetHandlerError> {
-        let name = name.unwrap_or(format!(
-            "{} Preset {}",
-            FixtureChannel::name_by_id(channel_type),
-            id
-        ));
+        let feature_group = preset_handler.get_feature_group(feature_group_id)?;
 
-        let mut values = HashMap::new();
+        let name = name.unwrap_or(format!("{} Preset {}", feature_group.name(), id));
+
+        let mut data = HashMap::new();
+
         for fixture_id in fixture_selector
             .get_fixtures(preset_handler, fixture_selector_context)
             .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?
         {
             let fixture = fixture_handler.fixture_immut(fixture_id);
+
             if let Some(fixture) = fixture {
-                if !fixture.channel_types().contains(&channel_type) {
-                    continue;
+                let mut values = HashMap::new();
+
+                for channel_type in feature_group.channel_types() {
+                    if !fixture.channel_types().contains(&channel_type) {
+                        continue;
+                    }
+
+                    let fixture_channel_value = fixture
+                        .channel_value(*channel_type, preset_handler, updatable_handler)
+                        .map_err(PresetHandlerError::FixtureError)?;
+
+                    values.insert(*channel_type, fixture_channel_value.to_discrete());
                 }
 
-                let fixture_channel_value = fixture
-                    .channel_value(channel_type, preset_handler, updatable_handler)
-                    .map_err(PresetHandlerError::FixtureError)?;
-
-                values.insert(fixture_id, fixture_channel_value.to_discrete());
+                data.insert(fixture_id, values);
             }
         }
 
         Ok(Self {
             id,
             name,
-            channel_type,
-            values,
+            feature_group_id,
+            data,
         })
     }
 
@@ -87,31 +92,45 @@ impl FixturePreset {
         &mut self.name
     }
 
-    pub fn channel_type(&self) -> u16 {
-        self.channel_type
+    pub fn feature_group_id(&self) -> u32 {
+        self.feature_group_id
     }
 
-    pub fn value(&self, fixture_id: u32) -> Option<&FixtureChannelDiscreteValue> {
-        self.values.get(&fixture_id)
+    pub fn channel_types(&self, preset_handler: &PresetHandler) -> Vec<u16> {
+        preset_handler
+            .get_feature_group(self.feature_group_id)
+            .unwrap()
+            .channel_types()
+            .to_vec()
+    }
+
+    pub fn value(
+        &self,
+        fixture_id: u32,
+        channel_type: u16,
+    ) -> Option<&FixtureChannelDiscreteValue> {
+        self.data
+            .get(&fixture_id)
+            .map(|values| values.get(&channel_type))
+            .flatten()
     }
 
     pub fn update(
         &mut self,
-        values_to_update: HashMap<u32, FixtureChannelDiscreteValue>,
+        values_to_update: HashMap<u32, HashMap<u16, FixtureChannelDiscreteValue>>,
         update_mode: &UpdateModeActionData,
     ) -> Result<usize, PresetHandlerError> {
         let mut updated = 0;
 
-        for (fixture_id, new_fixture_value) in values_to_update {
+        for (fixture_id, new_fixture_values) in values_to_update {
             // if we already have a value for this fixture and we are not in override mode, skip
-            if self.values.contains_key(&fixture_id)
-                && update_mode != &UpdateModeActionData::Override
+            if self.data.contains_key(&fixture_id) && update_mode != &UpdateModeActionData::Override
             {
                 continue;
             }
 
             // Insert or update
-            self.values.insert(fixture_id, new_fixture_value);
+            self.data.insert(fixture_id, new_fixture_values);
 
             updated += 1;
         }

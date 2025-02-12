@@ -98,14 +98,14 @@ pub enum ConfigTypeActionData {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Action {
     SetChannelValue(FixtureSelector, u16, ChannelValueSingleActionData),
-    SetChannelValuePreset(FixtureSelector, u16, u32),
-    SetChannelValuePresetRange(FixtureSelector, u16, u32, u32),
+    SetChannelValuePreset(FixtureSelector, u32),
+    SetChannelValuePresetRange(FixtureSelector, u32, u32),
 
     Home(HomeableObject),
     HomeAll,
 
-    RecordPreset(u16, u32, FixtureSelector, Option<String>),
-    RecordGroup2(u32, FixtureSelector, Option<String>),
+    RecordPreset(u32, Option<u32>, FixtureSelector, Option<String>),
+    RecordGroup2(Option<u32>, FixtureSelector, Option<String>),
     RecordSequenceCue(
         u32,
         CueIdxSelectorActionData,
@@ -113,17 +113,17 @@ pub enum Action {
         ChannelTypeSelectorActionData,
     ),
 
-    RenamePreset(u16, u32, String),
+    RenamePreset(u32, String),
     RenameGroup(u32, String),
     RenameSequence(u32, String),
 
     RecordMacro(Box<Action>, u32),
 
-    CreateSequence(u32, Option<String>),
-    CreateExecutor(u32, u32),
-    CreateMacro(u32, Box<Action>, Option<String>),
+    CreateSequence(Option<u32>, Option<String>),
+    CreateExecutor(Option<u32>, u32),
+    CreateMacro(Option<u32>, Box<Action>, Option<String>),
 
-    UpdatePreset(u16, u32, FixtureSelector, UpdateModeActionData),
+    UpdatePreset(u32, FixtureSelector, UpdateModeActionData),
 
     DeleteMacro((u32, u32)),
 
@@ -131,7 +131,7 @@ pub enum Action {
     EditSequenceCue(u32, CueIdx),
     EditExecutor(u32),
     EditFader(u32),
-    EditPreset(u16, u32),
+    EditPreset(u32),
 
     FixtureSelector(FixtureSelector),
     ClearAll,
@@ -164,29 +164,24 @@ impl Action {
                     *channel_type,
                     value,
                 ),
-            Self::SetChannelValuePreset(fixture_selector, channel_type, preset_id) => self
+            Self::SetChannelValuePreset(fixture_selector, preset_id) => self
                 .run_set_channel_value_preset(
                     preset_handler,
                     fixture_handler,
                     fixture_selector,
                     fixture_selector_context,
-                    *channel_type,
                     *preset_id,
                 ),
-            Self::SetChannelValuePresetRange(
-                fixture_selector,
-                channel_type,
-                preset_id_from,
-                preset_id_to,
-            ) => self.run_set_channel_value_preset_range(
-                preset_handler,
-                fixture_handler,
-                fixture_selector,
-                fixture_selector_context,
-                *channel_type,
-                *preset_id_from,
-                *preset_id_to,
-            ),
+            Self::SetChannelValuePresetRange(fixture_selector, preset_id_from, preset_id_to) => {
+                self.run_set_channel_value_preset_range(
+                    preset_handler,
+                    fixture_handler,
+                    fixture_selector,
+                    fixture_selector_context,
+                    *preset_id_from,
+                    *preset_id_to,
+                )
+            }
 
             Self::Home(homeable_object) => self.run_home(
                 preset_handler,
@@ -196,16 +191,17 @@ impl Action {
                 fixture_selector_context,
             ),
             Self::HomeAll => self.run_home_all(fixture_handler),
-            Self::RecordPreset(channel_type, id, fixture_selector, name) => self.run_record_preset(
-                preset_handler,
-                fixture_handler,
-                updatable_handler,
-                fixture_selector,
-                fixture_selector_context,
-                *channel_type,
-                *id,
-                name,
-            ),
+            Self::RecordPreset(feature_group_id, id, fixture_selector, name) => self
+                .run_record_preset(
+                    preset_handler,
+                    fixture_handler,
+                    updatable_handler,
+                    fixture_selector,
+                    fixture_selector_context,
+                    *feature_group_id,
+                    *id,
+                    name,
+                ),
             Self::RecordGroup2(id, fixture_selector, name) => self.run_record_group(
                 preset_handler,
                 fixture_selector,
@@ -228,8 +224,8 @@ impl Action {
                 channel_type_selector,
             ),
 
-            Self::RenamePreset(channel_type, id, new_name) => {
-                self.run_rename_preset(preset_handler, *channel_type, *id, new_name)
+            Self::RenamePreset(id, new_name) => {
+                self.run_rename_preset(preset_handler, *id, new_name)
             }
             Self::RenameGroup(id, new_name) => self.run_rename_group(preset_handler, *id, new_name),
             Self::RenameSequence(id, new_name) => {
@@ -244,17 +240,15 @@ impl Action {
                 self.run_create_macro(*id, action, name, preset_handler)
             }
 
-            Self::UpdatePreset(channel_type, preset_id, fixture_selector, update_mode) => self
-                .run_update_preset(
-                    preset_handler,
-                    updatable_handler,
-                    fixture_handler,
-                    fixture_selector,
-                    fixture_selector_context,
-                    *channel_type,
-                    *preset_id,
-                    update_mode,
-                ),
+            Self::UpdatePreset(preset_id, fixture_selector, update_mode) => self.run_update_preset(
+                preset_handler,
+                updatable_handler,
+                fixture_handler,
+                fixture_selector,
+                fixture_selector_context,
+                *preset_id,
+                update_mode,
+            ),
 
             Self::DeleteMacro((id_from, id_to)) => {
                 for macro_id in *id_from..=*id_to {
@@ -285,8 +279,8 @@ impl Action {
             Self::EditFader(fader_id) => Ok(ActionRunResult::EditWindow(
                 DemexEditWindow::EditFader(*fader_id),
             )),
-            Self::EditPreset(channel_type, preset_id) => Ok(ActionRunResult::EditWindow(
-                DemexEditWindow::EditPreset(*channel_type, *preset_id),
+            Self::EditPreset(preset_id) => Ok(ActionRunResult::EditWindow(
+                DemexEditWindow::EditPreset(*preset_id),
             )),
 
             Self::ClearAll => Ok(ActionRunResult::new()),
@@ -360,7 +354,6 @@ impl Action {
         fixture_handler: &mut FixtureHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        channel_type: u16,
         preset_id: u32,
     ) -> Result<ActionRunResult, ActionRunError> {
         let fixtures = fixture_selector
@@ -368,13 +361,23 @@ impl Action {
             .map_err(ActionRunError::FixtureSelectorError)?;
 
         let preset = preset_handler
-            .get_preset(preset_id, channel_type)
+            .get_preset(preset_id)
+            .map_err(ActionRunError::PresetHandlerError)?;
+
+        let feature_group = preset_handler
+            .get_feature_group(preset.feature_group_id())
             .map_err(ActionRunError::PresetHandlerError)?;
 
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
-                f.set_channel_value(channel_type, FixtureChannelValue::Preset(preset.id()))
-                    .map_err(ActionRunError::FixtureError)?;
+                for channel_type in feature_group.channel_types() {
+                    if !f.channel_types().contains(channel_type) {
+                        continue;
+                    }
+
+                    f.set_channel_value(*channel_type, FixtureChannelValue::Preset(preset.id()))
+                        .map_err(ActionRunError::FixtureError)?;
+                }
             }
         }
 
@@ -383,14 +386,14 @@ impl Action {
 
     fn run_set_channel_value_preset_range(
         &self,
-        preset_handler: &PresetHandler,
-        fixture_handler: &mut FixtureHandler,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        channel_type: u16,
-        preset_id_from: u32,
-        preset_id_to: u32,
+        _preset_handler: &PresetHandler,
+        _fixture_handler: &mut FixtureHandler,
+        _fixture_selector: &FixtureSelector,
+        _fixture_selector_context: FixtureSelectorContext,
+        _preset_id_from: u32,
+        _preset_id_to: u32,
     ) -> Result<ActionRunResult, ActionRunError> {
+        /*
         let fixtures = fixture_selector
             .get_fixtures(preset_handler, fixture_selector_context)
             .map_err(ActionRunError::FixtureSelectorError)?;
@@ -421,6 +424,7 @@ impl Action {
                     .map_err(ActionRunError::FixtureError)?;
             }
         }
+        */
 
         Ok(ActionRunResult::new())
     }
@@ -482,18 +486,18 @@ impl Action {
         updatable_handler: &UpdatableHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        channel_type: u16,
-        id: u32,
+        feature_group_id: u32,
+        id: Option<u32>,
         name: &Option<String>,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
             .record_preset(
                 fixture_selector,
                 fixture_selector_context,
-                id,
+                id.unwrap_or_else(|| preset_handler.next_preset_id()),
                 name.clone(),
                 fixture_handler,
-                channel_type,
+                feature_group_id,
                 updatable_handler,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
@@ -506,7 +510,7 @@ impl Action {
         preset_handler: &mut PresetHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        id: u32,
+        id: Option<u32>,
         name: &Option<String>,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
@@ -514,7 +518,7 @@ impl Action {
                 fixture_selector
                     .flatten(preset_handler, fixture_selector_context)
                     .map_err(ActionRunError::FixtureSelectorError)?,
-                id,
+                id.unwrap_or_else(|| preset_handler.next_group_id()),
                 name.clone(),
             )
             .map_err(ActionRunError::PresetHandlerError)?;
@@ -575,12 +579,11 @@ impl Action {
     fn run_rename_preset(
         &self,
         preset_handler: &mut PresetHandler,
-        channel_type: u16,
         id: u32,
         new_name: &str,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
-            .rename_preset(id, channel_type, new_name.to_owned())
+            .rename_preset(id, new_name.to_owned())
             .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())
@@ -589,11 +592,14 @@ impl Action {
     fn run_create_sequence(
         &self,
         preset_handler: &mut PresetHandler,
-        id: u32,
+        id: Option<u32>,
         name: &Option<String>,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
-            .create_sequence(id, name.clone())
+            .create_sequence(
+                id.unwrap_or_else(|| preset_handler.next_sequence_id()),
+                name.clone(),
+            )
             .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())
@@ -602,11 +608,14 @@ impl Action {
     fn run_create_executor(
         &self,
         updatable_handler: &mut UpdatableHandler,
-        id: u32,
+        id: Option<u32>,
         sequence_id: u32,
     ) -> Result<ActionRunResult, ActionRunError> {
         updatable_handler
-            .create_executor(id, sequence_id)
+            .create_executor(
+                id.unwrap_or_else(|| updatable_handler.next_executor_id()),
+                sequence_id,
+            )
             .map_err(ActionRunError::UpdatableHandlerError)?;
 
         Ok(ActionRunResult::new())
@@ -614,13 +623,17 @@ impl Action {
 
     fn run_create_macro(
         &self,
-        id: u32,
+        id: Option<u32>,
         action: &Action,
         name: &Option<String>,
         preset_handler: &mut PresetHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
-            .create_macro(id, name.clone(), Box::new(action.clone()))
+            .create_macro(
+                id.unwrap_or_else(|| preset_handler.next_macro_id()),
+                name.clone(),
+                Box::new(action.clone()),
+            )
             .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())
@@ -633,7 +646,6 @@ impl Action {
         fixture_handler: &mut FixtureHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        channel_type: u16,
         preset_id: u32,
         update_mode: &UpdateModeActionData,
     ) -> Result<ActionRunResult, ActionRunError> {
@@ -641,7 +653,6 @@ impl Action {
             .update_preset(
                 fixture_selector,
                 fixture_selector_context,
-                channel_type,
                 preset_id,
                 fixture_handler,
                 updatable_handler,

@@ -32,7 +32,7 @@ pub enum Object {
     HomeableObject(HomeableObject),
     Sequence(u32),
     SequenceCue(u32, CueIdx),
-    Preset(u16, u32),
+    Preset(u32),
 }
 
 impl ObjectTrait for Object {
@@ -43,7 +43,7 @@ impl ObjectTrait for Object {
             Self::SequenceCue(sequence_id, cue_idx) => {
                 Some(Action::EditSequenceCue(sequence_id, cue_idx))
             }
-            Self::Preset(preset_id, fixture_id) => Some(Action::EditPreset(preset_id, fixture_id)),
+            Self::Preset(preset_id) => Some(Action::EditPreset(preset_id)),
         }
     }
 }

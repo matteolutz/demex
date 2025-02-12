@@ -32,6 +32,9 @@ pub enum Token {
     KeywordPosition,
     KeywordStrobe,
     KeywordMaintenance,
+    KeywordBeam,
+    KeywordControl,
+    KeywordFocus,
 
     KeywordThru,
     KeywordFull,
@@ -68,6 +71,7 @@ pub enum Token {
     KeywordNext,
     KeywordConfig,
     KeywordOutput,
+    KeywordFeature,
 
     KeywordNuzul,
     KeywordSueud,
@@ -96,6 +100,9 @@ impl Token {
             Token::KeywordPosition => TokenType::ChannelTypeKeyword,
             Token::KeywordStrobe => TokenType::ChannelTypeKeyword,
             Token::KeywordMaintenance => TokenType::ChannelTypeKeyword,
+            Token::KeywordBeam => TokenType::ChannelTypeKeyword,
+            Token::KeywordControl => TokenType::ChannelTypeKeyword,
+            Token::KeywordFocus => TokenType::ChannelTypeKeyword,
 
             Token::KeywordFull => TokenType::ValueKeyword,
             Token::KeywordHalf => TokenType::ValueKeyword,
@@ -123,6 +130,7 @@ impl Token {
             Token::KeywordFader => TokenType::ObjectKeyword,
             Token::KeywordExecutor => TokenType::ObjectKeyword,
             Token::KeywordCue => TokenType::ObjectKeyword,
+            Token::KeywordFeature => TokenType::ObjectKeyword,
 
             Token::KeywordThru => TokenType::OtherKeyword,
             Token::KeywordFor => TokenType::OtherKeyword,
@@ -203,6 +211,10 @@ impl std::fmt::Display for Token {
             Token::KeywordNext => write!(f, "next"),
             Token::KeywordConfig => write!(f, "config"),
             Token::KeywordOutput => write!(f, "output"),
+            Token::KeywordControl => write!(f, "control"),
+            Token::KeywordBeam => write!(f, "beam"),
+            Token::KeywordFocus => write!(f, "focus"),
+            Token::KeywordFeature => write!(f, "feature"),
             Token::Eof => write!(f, "Eof"),
         }
     }

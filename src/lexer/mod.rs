@@ -115,6 +115,10 @@ impl<'a> Lexer<'a> {
                     "next" => Some(Token::KeywordNext),
                     "config" => Some(Token::KeywordConfig),
                     "output" => Some(Token::KeywordOutput),
+                    "beam" => Some(Token::KeywordBeam),
+                    "control" => Some(Token::KeywordControl),
+                    "focus" => Some(Token::KeywordFocus),
+                    "feature" => Some(Token::KeywordFeature),
                     _ => None,
                 };
 

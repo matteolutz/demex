@@ -15,10 +15,7 @@ use crate::parser::nodes::{
 };
 
 use super::{
-    channel::{
-        value::FixtureChannelDiscreteValue, FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
-        FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-    },
+    channel::value::FixtureChannelDiscreteValue,
     feature::group::FeatureGroup,
     handler::FixtureHandler,
     sequence::{
@@ -38,24 +35,25 @@ pub mod preset;
 pub struct PresetHandler {
     groups: HashMap<u32, FixtureGroup>,
 
-    dimmers: HashMap<u32, FixturePreset>,
-    colors: HashMap<u32, FixturePreset>,
-    positions: HashMap<u32, FixturePreset>,
-
     macros: HashMap<u32, MMacro>,
     command_slices: HashMap<u32, CommandSlice>,
 
     sequences: HashMap<u32, Sequence>,
 
+    presets: HashMap<u32, FixturePreset>,
+
     feature_groups: HashMap<u32, FeatureGroup>,
 }
 
 impl Default for PresetHandler {
-    #[allow(unconditional_recursion)]
     fn default() -> Self {
         Self {
             feature_groups: FeatureGroup::default_feature_groups(),
-            ..Default::default()
+            groups: HashMap::new(),
+            macros: HashMap::new(),
+            command_slices: HashMap::new(),
+            sequences: HashMap::new(),
+            presets: HashMap::new(),
         }
     }
 }
@@ -95,6 +93,10 @@ impl PresetHandler {
     pub fn groups(&self) -> &HashMap<u32, FixtureGroup> {
         &self.groups
     }
+
+    pub fn next_group_id(&self) -> u32 {
+        self.groups.keys().max().unwrap_or(&0) + 1
+    }
 }
 
 impl PresetHandler {
@@ -105,10 +107,10 @@ impl PresetHandler {
         id: u32,
         name: Option<String>,
         fixture_handler: &FixtureHandler,
-        channel_type: u16,
+        feature_group_id: u32,
         updatable_handler: &UpdatableHandler,
     ) -> Result<(), PresetHandlerError> {
-        if self.presets_mut(channel_type).contains_key(&id) {
+        if self.presets.contains_key(&id) {
             return Err(PresetHandlerError::PresetAlreadyExists(id));
         }
 
@@ -117,13 +119,13 @@ impl PresetHandler {
             name,
             fixture_selector,
             fixture_selector_context,
-            channel_type,
+            feature_group_id,
             self,
             fixture_handler,
             updatable_handler,
         )?;
 
-        self.presets_mut(channel_type).insert(id, preset);
+        self.presets.insert(id, preset);
         Ok(())
     }
 
@@ -131,13 +133,15 @@ impl PresetHandler {
         &mut self,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        channel_type: u16,
         id: u32,
         fixture_handler: &FixtureHandler,
         updatable_handler: &UpdatableHandler,
         update_mode: &UpdateModeActionData,
     ) -> Result<usize, PresetHandlerError> {
-        let mut new_values: HashMap<u32, FixtureChannelDiscreteValue> = HashMap::new();
+        let preset = self.get_preset(id)?;
+        let feature_group = self.get_feature_group(preset.feature_group_id())?;
+
+        let mut new_data: HashMap<u32, HashMap<u16, FixtureChannelDiscreteValue>> = HashMap::new();
 
         for fixture_id in fixture_selector
             .get_fixtures(self, fixture_selector_context)
@@ -145,50 +149,56 @@ impl PresetHandler {
         {
             let fixture = fixture_handler.fixture_immut(fixture_id);
             if let Some(fixture) = fixture {
-                if !fixture.channel_types().contains(&channel_type) {
-                    continue;
+                let mut new_values = HashMap::new();
+
+                for channel_type in feature_group.channel_types() {
+                    if !fixture.channel_types().contains(&channel_type) {
+                        continue;
+                    }
+
+                    let fixture_channel_value = fixture
+                        .channel_value(*channel_type, self, updatable_handler)
+                        .map_err(PresetHandlerError::FixtureError)?;
+
+                    new_values.insert(*channel_type, fixture_channel_value.to_discrete());
                 }
 
-                let fixture_channel_value = fixture
-                    .channel_value(channel_type, self, updatable_handler)
-                    .map_err(PresetHandlerError::FixtureError)?;
-
-                new_values.insert(fixture_id, fixture_channel_value.to_discrete());
+                new_data.insert(fixture_id, new_values);
             }
         }
 
-        let preset = self.get_preset_mut(id, channel_type)?;
+        let preset = self.get_preset_mut(id)?;
 
-        let values_updated = preset.update(new_values, update_mode)?;
+        let values_updated = preset.update(new_data, update_mode)?;
 
         Ok(values_updated)
     }
 
-    pub fn presets_mut(&mut self, channel_type: u16) -> &mut HashMap<u32, FixturePreset> {
-        match channel_type {
-            FIXTURE_CHANNEL_INTENSITY_ID => &mut self.dimmers,
-            FIXTURE_CHANNEL_COLOR_ID => &mut self.colors,
-            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => &mut self.positions,
-            _ => todo!("not implemented"),
-        }
+    pub fn presets_mut(&mut self) -> &mut HashMap<u32, FixturePreset> {
+        &mut self.presets
     }
 
-    pub fn presets(&self, channel_type: u16) -> &HashMap<u32, FixturePreset> {
-        match channel_type {
-            FIXTURE_CHANNEL_INTENSITY_ID => &self.dimmers,
-            FIXTURE_CHANNEL_COLOR_ID => &self.colors,
-            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => &self.positions,
-            _ => todo!("not implemented"),
-        }
+    pub fn presets(&self) -> &HashMap<u32, FixturePreset> {
+        &self.presets
+    }
+
+    pub fn presets_for_feature_group(&self, feature_group_id: u32) -> Vec<&FixturePreset> {
+        self.presets
+            .values()
+            .filter(|p| p.feature_group_id() == feature_group_id)
+            .collect()
+    }
+
+    pub fn next_preset_id(&self) -> u32 {
+        self.presets.keys().max().unwrap_or(&0) + 1
     }
 
     pub fn rename_preset(
         &mut self,
         preset_id: u32,
-        channel_type: u16,
         new_name: String,
     ) -> Result<(), PresetHandlerError> {
-        let preset = self.get_preset_mut(preset_id, channel_type)?;
+        let preset = self.get_preset_mut(preset_id)?;
         *preset.name_mut() = new_name;
         Ok(())
     }
@@ -197,24 +207,19 @@ impl PresetHandler {
         &self,
         preset_id_from: u32,
         preset_id_to: u32,
-        channel_type: u16,
     ) -> Result<Vec<&FixturePreset>, PresetHandlerError> {
         let mut presets = Vec::new();
 
         for i in preset_id_from..=preset_id_to {
-            let preset = self.get_preset(i, channel_type)?;
+            let preset = self.get_preset(i)?;
             presets.push(preset);
         }
 
         Ok(presets)
     }
 
-    pub fn get_preset(
-        &self,
-        preset_id: u32,
-        channel_type: u16,
-    ) -> Result<&FixturePreset, PresetHandlerError> {
-        self.presets(channel_type)
+    pub fn get_preset(&self, preset_id: u32) -> Result<&FixturePreset, PresetHandlerError> {
+        self.presets
             .get(&preset_id)
             .ok_or(PresetHandlerError::PresetNotFound(preset_id))
     }
@@ -222,9 +227,8 @@ impl PresetHandler {
     pub fn get_preset_mut(
         &mut self,
         preset_id: u32,
-        channel_type: u16,
     ) -> Result<&mut FixturePreset, PresetHandlerError> {
-        self.presets_mut(channel_type)
+        self.presets
             .get_mut(&preset_id)
             .ok_or(PresetHandlerError::PresetNotFound(preset_id))
     }
@@ -232,13 +236,13 @@ impl PresetHandler {
     pub fn get_preset_for_fixture(
         &self,
         preset_id: u32,
-        channel_type: u16,
         fixture_id: u32,
+        channel_type: u16,
     ) -> Option<FixtureChannelDiscreteValue> {
-        let preset = self.get_preset(preset_id, channel_type);
+        let preset = self.get_preset(preset_id);
 
         if let Ok(preset) = preset {
-            preset.value(fixture_id).cloned()
+            preset.value(fixture_id, channel_type).cloned()
         } else {
             None
         }
@@ -259,6 +263,10 @@ impl PresetHandler {
 
         self.macros.insert(id, MMacro::new(id, name, action));
         Ok(())
+    }
+
+    pub fn next_macro_id(&self) -> u32 {
+        self.macros.keys().max().unwrap_or(&0) + 1
     }
 
     pub fn rename_macro(&mut self, id: u32, new_name: String) -> Result<(), PresetHandlerError> {
@@ -333,6 +341,10 @@ impl PresetHandler {
             Sequence::new(id, name.unwrap_or(format!("Sequence {}", id))),
         );
         Ok(())
+    }
+
+    pub fn next_sequence_id(&self) -> u32 {
+        self.sequences.keys().max().unwrap_or(&0) + 1
     }
 
     pub fn record_sequence_cue(
@@ -445,5 +457,40 @@ impl PresetHandler {
 
     pub fn sequences(&self) -> &HashMap<u32, Sequence> {
         &self.sequences
+    }
+}
+
+// Feature groupus
+impl PresetHandler {
+    pub fn feature_groups(&self) -> &HashMap<u32, FeatureGroup> {
+        &self.feature_groups
+    }
+
+    pub fn get_feature_group(&self, id: u32) -> Result<&FeatureGroup, PresetHandlerError> {
+        self.feature_groups
+            .get(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))
+    }
+
+    pub fn get_feature_group_mut(
+        &mut self,
+        id: u32,
+    ) -> Result<&mut FeatureGroup, PresetHandlerError> {
+        self.feature_groups
+            .get_mut(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))
+    }
+
+    pub fn rename_feature_group(
+        &mut self,
+        id: u32,
+        new_name: String,
+    ) -> Result<(), PresetHandlerError> {
+        let group = self
+            .feature_groups
+            .get_mut(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))?;
+        *group.name_mut() = new_name;
+        Ok(())
     }
 }

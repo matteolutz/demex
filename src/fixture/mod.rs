@@ -28,7 +28,9 @@ pub mod updatables;
 pub struct SerializableFixturePatch {
     id: FixtureId,
     name: String,
-    patch: Vec<SerializableFixtureChannelPatch>,
+    // patch: Vec<SerializableFixtureChannelPatch>,
+    fixture_type: String,
+    fixture_mode: u32,
     universe: u16,
     start_address: u16,
 }

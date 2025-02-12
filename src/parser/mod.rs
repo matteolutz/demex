@@ -6,6 +6,11 @@ use crate::{
             FixtureChannel, FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
             FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
         },
+        feature::group::{
+            DEFAULT_FEATURE_GROUP_BEAM_ID, DEFAULT_FEATURE_GROUP_COLOR_ID,
+            DEFAULT_FEATURE_GROUP_CONTROL_ID, DEFAULT_FEATURE_GROUP_FOCUS_ID,
+            DEFAULT_FEATURE_GROUP_INTENSITY_ID, DEFAULT_FEATURE_GROUP_POSITION_ID,
+        },
         sequence::cue::CueIdx,
     },
     lexer::token::Token,
@@ -247,10 +252,9 @@ impl<'a> Parser2<'a> {
         if matches!(self.current_token()?, Token::KeywordPreset) {
             self.advance();
 
-            let discrete_channel_type = self.parse_discrete_channel_type()?;
             let preset_id = self.parse_integer()?;
 
-            return Ok(Object::Preset(discrete_channel_type, preset_id));
+            return Ok(Object::Preset(preset_id));
         }
 
         Err(ParseError::UnexpectedToken(
@@ -346,24 +350,69 @@ impl<'a> Parser2<'a> {
         Ok(channel_types)
     }
 
-    fn parse_specific_preset(&mut self) -> Result<(u16, u32), ParseError> {
+    fn parse_specific_preset(&mut self) -> Result<u32, ParseError> {
         expect_and_consume_token!(self, Token::KeywordPreset, "\"preset\"");
 
-        let channel_type = self.parse_discrete_channel_type()?;
         let preset_id = self.parse_integer()?;
 
-        Ok((channel_type, preset_id))
+        Ok(preset_id)
     }
 
-    fn parse_specific_preset_or_range(&mut self) -> Result<(u16, u32, u32), ParseError> {
-        let (channel_type, preset_id) = self.parse_specific_preset()?;
+    fn parse_specific_preset_or_range(&mut self) -> Result<(u32, u32), ParseError> {
+        let preset_id = self.parse_specific_preset()?;
 
         if matches!(self.current_token()?, Token::KeywordThru) {
             self.advance();
             let end_preset_id = self.parse_integer()?;
-            Ok((channel_type, preset_id, end_preset_id))
+            Ok((preset_id, end_preset_id))
         } else {
-            Ok((channel_type, preset_id, preset_id))
+            Ok((preset_id, preset_id))
+        }
+    }
+
+    fn parse_feature_group_id(&mut self) -> Result<u32, ParseError> {
+        match self.current_token()? {
+            Token::KeywordIntens => {
+                self.advance();
+                Ok(DEFAULT_FEATURE_GROUP_INTENSITY_ID)
+            }
+            Token::KeywordPosition => {
+                self.advance();
+                Ok(DEFAULT_FEATURE_GROUP_POSITION_ID)
+            }
+            Token::KeywordColor => {
+                self.advance();
+                Ok(DEFAULT_FEATURE_GROUP_COLOR_ID)
+            }
+            Token::KeywordBeam => {
+                self.advance();
+                Ok(DEFAULT_FEATURE_GROUP_BEAM_ID)
+            }
+            Token::KeywordFocus => {
+                self.advance();
+                Ok(DEFAULT_FEATURE_GROUP_FOCUS_ID)
+            }
+            Token::KeywordControl => {
+                self.advance();
+                Ok(DEFAULT_FEATURE_GROUP_CONTROL_ID)
+            }
+            Token::KeywordFeature => {
+                self.advance();
+                let feature_group_id = self.parse_integer()?;
+                Ok(feature_group_id)
+            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec![
+                    "\"intens\"",
+                    "\"color\"",
+                    "\"position\"",
+                    "\"beam\"",
+                    "\"focus\"",
+                    "\"control\"",
+                    "\"feature\" <id>",
+                ],
+            )),
         }
     }
 
@@ -410,18 +459,16 @@ impl<'a> Parser2<'a> {
         fixture_selector: FixtureSelector,
     ) -> Result<Action, ParseError> {
         let preset = self.try_parse(Self::parse_specific_preset_or_range);
-        if let Ok((channel_type, preset_id_from, preset_id_to)) = preset {
+        if let Ok((preset_id_from, preset_id_to)) = preset {
             if preset_id_from == preset_id_to {
                 return Ok(Action::SetChannelValuePreset(
                     fixture_selector,
-                    channel_type,
                     preset_id_from,
                 ));
             }
 
             return Ok(Action::SetChannelValuePresetRange(
                 fixture_selector,
-                channel_type,
                 preset_id_from,
                 preset_id_to,
             ));
@@ -503,6 +550,23 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_integer_or_next(&mut self) -> Result<Option<u32>, ParseError> {
+        match self.current_token()? {
+            &Token::Integer(value) => {
+                self.advance();
+                Ok(Some(value))
+            }
+            &Token::KeywordNext => {
+                self.advance();
+                Ok(None)
+            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec!["integer", "\"next\""],
+            )),
+        }
+    }
+
     fn parse_discrete_cue_idx(&mut self) -> Result<CueIdx, ParseError> {
         match self.current_token()? {
             &Token::Integer(value) => {
@@ -560,8 +624,8 @@ impl<'a> Parser2<'a> {
             Token::KeywordPreset => {
                 self.advance();
 
-                let discrete_channel_type = self.parse_discrete_channel_type()?;
-                let id = self.parse_integer()?;
+                let feature_group_id = self.parse_feature_group_id()?;
+                let id = self.parse_integer_or_next()?;
 
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
 
@@ -570,7 +634,7 @@ impl<'a> Parser2<'a> {
                 let preset_name = self.try_parse(Self::parse_as).ok();
 
                 Ok(Action::RecordPreset(
-                    discrete_channel_type,
+                    feature_group_id,
                     id,
                     fixture_selector,
                     preset_name,
@@ -579,7 +643,7 @@ impl<'a> Parser2<'a> {
             Token::KeywordGroup => {
                 self.advance();
 
-                let id = self.parse_integer()?;
+                let id = self.parse_integer_or_next()?;
 
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
 
@@ -634,14 +698,13 @@ impl<'a> Parser2<'a> {
             Token::KeywordPreset => {
                 self.advance();
 
-                let discrete_channel_type = self.parse_discrete_channel_type()?;
                 let id = self.parse_integer()?;
 
                 expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
                 let preset_name = self.parse_string()?;
 
-                Ok(Action::RenamePreset(discrete_channel_type, id, preset_name))
+                Ok(Action::RenamePreset(id, preset_name))
             }
             Token::KeywordGroup => {
                 self.advance();
@@ -677,7 +740,7 @@ impl<'a> Parser2<'a> {
             Token::KeywordSequence => {
                 self.advance();
 
-                let sequence_id = self.parse_integer()?;
+                let sequence_id = self.parse_integer_or_next()?;
 
                 let sequence_name = self.try_parse(Self::parse_as).ok();
 
@@ -686,7 +749,7 @@ impl<'a> Parser2<'a> {
             Token::KeywordExecutor => {
                 self.advance();
 
-                let executor_id = self.parse_integer()?;
+                let executor_id = self.parse_integer_or_next()?;
 
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
                 expect_and_consume_token!(self, Token::KeywordSequence, "\"sequence\"");
@@ -698,7 +761,7 @@ impl<'a> Parser2<'a> {
             Token::KeywordMacro => {
                 self.advance();
 
-                let macro_id = self.parse_integer()?;
+                let macro_id = self.parse_integer_or_next()?;
 
                 expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
 
@@ -720,7 +783,6 @@ impl<'a> Parser2<'a> {
             Token::KeywordPreset => {
                 self.advance();
 
-                let preset_channel_type = self.parse_discrete_channel_type()?;
                 let preset_id = self.parse_integer()?;
 
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
@@ -732,7 +794,6 @@ impl<'a> Parser2<'a> {
                     .unwrap_or(UpdateModeActionData::Merge);
 
                 Ok(Action::UpdatePreset(
-                    preset_channel_type,
                     preset_id,
                     fixture_selector,
                     update_mode,

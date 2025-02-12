@@ -2,6 +2,7 @@ use std::{collections::HashSet, sync::Arc, thread, time};
 
 use constants::VERSION_STR;
 use context::DemexUiContext;
+use egui::IconData;
 use log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use parking_lot::RwLock;
 use tabs::{layout_view_tab::LayoutViewContext, DemexTab, DemexTabs};
@@ -44,6 +45,8 @@ pub struct DemexUiApp {
     last_update: std::time::Instant,
 
     desired_fps: f64,
+
+    icon: Arc<IconData>,
 }
 
 impl DemexUiApp {
@@ -54,6 +57,7 @@ impl DemexUiApp {
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
         save_show: fn(DemexShow) -> Result<(), Box<dyn std::error::Error>>,
         desired_fps: f64,
+        icon: Arc<IconData>,
     ) -> Self {
         stats
             .write()
@@ -80,6 +84,7 @@ impl DemexUiApp {
             detached_tabs: HashSet::new(),
             last_update: time::Instant::now(),
             desired_fps,
+            icon,
         }
     }
 }
@@ -138,6 +143,7 @@ impl eframe::App for DemexUiApp {
                 egui::ViewportBuilder::default()
                     .with_title(format!("demex - {}", tab_title))
                     .with_maximized(true)
+                    .with_icon(self.icon.clone())
                     .with_window_level(egui::WindowLevel::AlwaysOnTop),
                 |ctx, _| {
                     if ctx.input(|reader| reader.viewport().close_requested()) {
@@ -146,7 +152,7 @@ impl eframe::App for DemexUiApp {
                     }
 
                     egui::CentralPanel::default().show(ctx, |ui| {
-                        egui::ScrollArea::both().show(ui, |ui| {
+                        egui::ScrollArea::both().auto_shrink(false).show(ui, |ui| {
                             detached_tab.ui(ui, &mut self.context);
                         });
                     });
