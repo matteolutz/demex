@@ -1,3 +1,5 @@
+use std::time;
+
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
@@ -48,6 +50,7 @@ pub enum FixtureChannelDiscreteValue {
     Quadruple([f32; 4]),
     Multiple(Vec<f32>),
     ToggleFlag(String),
+
     #[default]
     AnyHome,
 }
@@ -158,7 +161,12 @@ pub enum FixtureChannelValue {
         b: Box<FixtureChannelValue>,
         mix: f32,
     },
-    Effect(FixtureChannelEffect),
+    Effect {
+        #[serde(default, skip_serializing, skip_deserializing)]
+        #[egui_probe(skip)]
+        started: Option<time::Instant>,
+        effect: FixtureChannelEffect,
+    },
 }
 
 impl Default for FixtureChannelValue {
@@ -204,7 +212,6 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
 
                 Ok(a * (1.0 - mix) + b * mix)
             }
-            FixtureChannelValue::Effect(effect) => effect.as_single(0.0),
             FixtureChannelValue::Preset(preset_id) => {
                 let preset =
                     preset_handler.get_preset_for_fixture(*preset_id, fixture_id, channel_type);
@@ -216,6 +223,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
                     })
                     .unwrap_or(0.0))
             }
+            FixtureChannelValue::Effect { started, effect } => effect.as_single(started),
         }
     }
 
@@ -251,7 +259,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
                     a[3] * (1.0 - mix) + b[3] * mix,
                 ])
             }
-            FixtureChannelValue::Effect(effect) => effect.as_quadruple(0.0),
+            FixtureChannelValue::Effect { started, effect } => effect.as_quadruple(started),
         }
     }
 
@@ -285,7 +293,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
                     a[1] * (1.0 - mix) + b[1] * mix,
                 ])
             }
-            FixtureChannelValue::Effect(effect) => effect.as_pair(0.0),
+            FixtureChannelValue::Effect { started, effect } => effect.as_pair(started),
         }
     }
 
@@ -351,7 +359,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
                     )
                 }
             }
-            FixtureChannelValue::Effect(effect) => format!("{}", effect),
+            FixtureChannelValue::Effect { started, effect } => effect.to_string(started),
         }
     }
 }
@@ -361,13 +369,34 @@ impl FixtureChannelValue {
         Self::Discrete(FixtureChannelDiscreteValue::AnyHome)
     }
 
-    pub fn to_discrete(&self) -> FixtureChannelDiscreteValue {
+    pub fn start_effect(&mut self) {
+        if let Self::Effect { started, .. } = self {
+            *started = Some(time::Instant::now());
+        }
+    }
+
+    pub fn to_discrete(
+        &self,
+        fixture_id: u32,
+        channel_type: u16,
+        preset_handler: &PresetHandler,
+    ) -> FixtureChannelDiscreteValue {
         match self {
             FixtureChannelValue::Discrete(value) => value.clone(),
-            FixtureChannelValue::Preset(_) => todo!("Preset handling for to_discrete"),
+            FixtureChannelValue::Preset(preset_id) => {
+                let preset_value = preset_handler
+                    .get_preset(*preset_id)
+                    .map(|p| p.value(fixture_id, channel_type));
+
+                if let Ok(Some(preset_value)) = preset_value {
+                    preset_value.clone()
+                } else {
+                    FixtureChannelDiscreteValue::AnyHome
+                }
+            }
             FixtureChannelValue::Mix { a, b, mix } => {
-                let a = a.to_discrete();
-                let b = b.to_discrete();
+                let a = a.to_discrete(fixture_id, channel_type, preset_handler);
+                let b = b.to_discrete(fixture_id, channel_type, preset_handler);
 
                 if *mix == 0.0 {
                     return a;
@@ -381,7 +410,7 @@ impl FixtureChannelValue {
 
                 todo!();
             }
-            FixtureChannelValue::Effect(_) => todo!(),
+            FixtureChannelValue::Effect { .. } => FixtureChannelDiscreteValue::AnyHome,
         }
     }
 }

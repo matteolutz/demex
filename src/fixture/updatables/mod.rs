@@ -32,10 +32,10 @@ impl UpdatableHandler {
         !(self
             .executors
             .iter()
-            .any(|(_, v)| v.runtime().sequence_id() != sequence_id)
+            .any(|(_, v)| v.runtime().sequence_id() == sequence_id)
             || self.faders.iter().any(|(_, v)| match v.config() {
                 DemexFaderConfig::SequenceRuntime { runtime, .. } => {
-                    sequence_id != runtime.sequence_id()
+                    sequence_id == runtime.sequence_id()
                 }
                 _ => true,
             }))

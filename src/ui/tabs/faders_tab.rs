@@ -4,6 +4,7 @@ use crate::lexer::token::Token;
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
+    let preset_handler = context.preset_handler.read();
     let mut updatable_handler = context.updatable_handler.write();
 
     ui.horizontal(|ui| {
@@ -12,7 +13,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 ui.set_min_width(100.0);
 
                 ui.label(
-                    egui::RichText::from(updatable_handler.fader(*id).unwrap().name()).color(
+                    egui::RichText::from(
+                        updatable_handler
+                            .fader(*id)
+                            .unwrap()
+                            .display_name(&preset_handler),
+                    )
+                    .color(
                         if updatable_handler.fader(*id).unwrap().is_active() {
                             egui::Color32::YELLOW
                         } else {

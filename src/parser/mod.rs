@@ -987,6 +987,14 @@ impl<'a> Parser2<'a> {
             return self.parse_config_function();
         }
 
+        if matches!(self.current_token()?, Token::KeywordTest) {
+            self.advance();
+
+            let test_action = self.parse_string()?;
+
+            return Ok(Action::Test(test_action));
+        }
+
         let fixture_selector = self.try_parse(Self::parse_fixture_selector);
         if let Ok(fixture_selector) = fixture_selector {
             return self.parse_set_function(fixture_selector);

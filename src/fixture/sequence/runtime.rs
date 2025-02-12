@@ -122,12 +122,12 @@ impl SequenceRuntime {
                     ((delta - cue.in_delay()) / cue.in_fade()).min(1.0)
                 };
 
-                if should_snap {
-                    fade = if fade >= cue.snap_percent() { 1.0 } else { 0.0 };
-                }
-
                 if channel_id == FIXTURE_CHANNEL_INTENSITY_ID {
                     fade *= intensity_multiplier;
+                }
+
+                if should_snap {
+                    fade = if fade >= cue.snap_percent() { 1.0 } else { 0.0 };
                 }
 
                 cue.channel_value_for_fixture(fixture_id, channel_id)

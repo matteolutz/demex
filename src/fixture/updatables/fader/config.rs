@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::fixture::sequence::runtime::SequenceRuntime;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, EguiProbe, Default)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, EguiProbe, Default)]
 pub enum DemexFaderRuntimeFunction {
     #[default]
     Intensity,

@@ -159,7 +159,7 @@ impl PresetHandler {
                 let mut new_values = HashMap::new();
 
                 for channel_type in feature_group.channel_types() {
-                    if !fixture.channel_types().contains(&channel_type) {
+                    if !fixture.channel_types().contains(channel_type) {
                         continue;
                     }
 
@@ -167,7 +167,10 @@ impl PresetHandler {
                         .channel_value(*channel_type, self, updatable_handler)
                         .map_err(PresetHandlerError::FixtureError)?;
 
-                    new_values.insert(*channel_type, fixture_channel_value.to_discrete());
+                    new_values.insert(
+                        *channel_type,
+                        fixture_channel_value.to_discrete(fixture_id, *channel_type, self),
+                    );
                 }
 
                 new_data.insert(fixture_id, new_values);

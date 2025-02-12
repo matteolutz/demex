@@ -389,10 +389,12 @@ impl Fixture {
     pub fn set_channel_value(
         &mut self,
         channel_id: u16,
-        value: FixtureChannelValue,
+        mut value: FixtureChannelValue,
     ) -> Result<(), FixtureError> {
         // make the programmer the first element in the sources vector
         self.push_value_source(FixtureChannelValueSource::Programmer);
+
+        value.start_effect();
 
         match self.patch.iter_mut().find(|c| c.type_id() == channel_id) {
             Some(channel) => match channel {

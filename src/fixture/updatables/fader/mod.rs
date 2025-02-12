@@ -54,6 +54,18 @@ impl DemexFader {
         &self.name
     }
 
+    pub fn display_name(&self, preset_handler: &PresetHandler) -> String {
+        match &self.config {
+            DemexFaderConfig::Submaster { .. } => self.name().to_owned(),
+            DemexFaderConfig::SequenceRuntime { runtime, .. } => {
+                let sequence_name = preset_handler
+                    .get_sequence(runtime.sequence_id())
+                    .map(|seq| seq.name());
+                format!("{} ({})", self.name(), sequence_name.unwrap_or("Deleted"))
+            }
+        }
+    }
+
     pub fn priority(&self) -> FixtureChannelValuePriority {
         self.priority
     }
@@ -174,12 +186,13 @@ impl DemexFader {
                     return Err(FixtureError::ChannelValueNotFound(channel_id));
                 }
 
-                let speed_multiplier = if function == &DemexFaderRuntimeFunction::Speed {
+                let speed_multiplier = if *function == DemexFaderRuntimeFunction::Speed {
                     self.value
                 } else {
                     1.0
                 };
-                let intensity_multiplier = if function == &DemexFaderRuntimeFunction::Intensity {
+
+                let intensity_multiplier = if *function == DemexFaderRuntimeFunction::Intensity {
                     self.value
                 } else {
                     1.0
@@ -204,9 +217,17 @@ impl DemexFader {
             DemexFaderConfig::SequenceRuntime {
                 fixtures: _,
                 runtime,
-                function: _,
+                function,
             } => {
-                runtime.update(delta_time, self.value, preset_handler);
+                runtime.update(
+                    delta_time,
+                    if *function == DemexFaderRuntimeFunction::Speed {
+                        self.value
+                    } else {
+                        1.0
+                    },
+                    preset_handler,
+                );
             }
             _ => {}
         }

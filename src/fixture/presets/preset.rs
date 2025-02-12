@@ -65,7 +65,14 @@ impl FixturePreset {
                         .channel_value(*channel_type, preset_handler, updatable_handler)
                         .map_err(PresetHandlerError::FixtureError)?;
 
-                    values.insert(*channel_type, fixture_channel_value.to_discrete());
+                    values.insert(
+                        *channel_type,
+                        fixture_channel_value.to_discrete(
+                            fixture_id,
+                            *channel_type,
+                            preset_handler,
+                        ),
+                    );
                 }
 
                 data.insert(fixture_id, values);
