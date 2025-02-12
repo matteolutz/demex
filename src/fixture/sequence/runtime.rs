@@ -264,7 +264,7 @@ impl SequenceRuntime {
             let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
             if cue_idx == sequence.cues().len() - 1 && !self.should_auto_restart(preset_handler) {
-                if sequence.stop_behavior() == SequenceStopBehavior::ManualRestart {
+                if sequence.stop_behavior() == SequenceStopBehavior::Restart {
                     self.state = SequenceRuntimeState::Cue(time::Instant::now(), 0);
                     return;
                 } else {
@@ -288,7 +288,7 @@ impl SequenceRuntime {
                 // of the first cue
                 if !is_first_cue
                     && (self.should_auto_restart(preset_handler)
-                        || sequence.stop_behavior() == SequenceStopBehavior::ManualRestart)
+                        || sequence.stop_behavior() == SequenceStopBehavior::Restart)
                 {
                     Some(sequence.cues().len() - 1)
                 } else {

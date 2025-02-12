@@ -102,6 +102,35 @@ impl From<SerializableFixtureChannelPatch> for FixtureChannel {
     }
 }
 
+impl From<&SerializableFixtureChannelPatch> for FixtureChannel {
+    fn from(value: &SerializableFixtureChannelPatch) -> Self {
+        match value {
+            SerializableFixtureChannelPatch::Intensity(is_fine) => {
+                FixtureChannel::intensity(*is_fine)
+            }
+            SerializableFixtureChannelPatch::Shutter => FixtureChannel::strobe(),
+            SerializableFixtureChannelPatch::Zoom(is_fine) => FixtureChannel::zoom(*is_fine),
+            SerializableFixtureChannelPatch::ColorRGB(is_fine) => {
+                FixtureChannel::color_rgb(*is_fine)
+            }
+            SerializableFixtureChannelPatch::ColorRGBW(is_fine) => {
+                FixtureChannel::color_rgbw(*is_fine)
+            }
+            SerializableFixtureChannelPatch::ColorMacro(map) => {
+                FixtureChannel::ColorMacro(map.clone(), FixtureChannelValue::any_home())
+            }
+            SerializableFixtureChannelPatch::PositionPanTilt(is_fine) => {
+                FixtureChannel::position_pan_tilt(*is_fine)
+            }
+            SerializableFixtureChannelPatch::Maintenance(name) => FixtureChannel::maintenance(name),
+            SerializableFixtureChannelPatch::ToggleFlags(flags) => {
+                FixtureChannel::toggle_flags(flags.clone())
+            }
+            SerializableFixtureChannelPatch::NoFunction => FixtureChannel::NoFunction,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum FixtureChannel {
     Intensity(bool, FixtureChannelValue),
@@ -319,6 +348,7 @@ impl FixtureChannel {
         fixture: &Fixture,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
+        grand_master: f32,
     ) -> Result<Vec<u8>, FixtureChannelError> {
         let fixture_id = fixture.id();
 
@@ -332,12 +362,13 @@ impl FixtureChannel {
                     )
                     .map_err(FixtureChannelError::FixtureError)?;
 
-                let (intens_coarse, intens_fine) =
-                    Self::float_to_coarse_and_fine(channel_value.as_single(
+                let (intens_coarse, intens_fine) = Self::float_to_coarse_and_fine(
+                    channel_value.as_single(
                         preset_handler,
                         fixture.id(),
                         FIXTURE_CHANNEL_INTENSITY_ID,
-                    )?);
+                    )? * grand_master,
+                );
 
                 if *is_fine {
                     Ok(vec![intens_coarse, intens_fine])

@@ -6,8 +6,8 @@ use crate::fixture::sequence::runtime::SequenceRuntime;
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, EguiProbe, Default)]
 pub enum DemexFaderRuntimeFunction {
     #[default]
-    Speed,
     Intensity,
+    Speed,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]

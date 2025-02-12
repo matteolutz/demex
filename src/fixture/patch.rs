@@ -50,13 +50,22 @@ impl Patch {
 
 impl From<Patch> for Vec<Fixture> {
     fn from(value: Patch) -> Self {
-        value.fixtures.into_iter().map_into().collect()
+        value
+            .fixtures
+            .into_iter()
+            .map(|f| f.try_into_fixture(&value.fixture_types).unwrap())
+            .collect()
     }
 }
 
 impl From<&Patch> for Vec<Fixture> {
     fn from(value: &Patch) -> Self {
-        value.fixtures.iter().cloned().map_into().collect()
+        value
+            .fixtures
+            .iter()
+            .cloned()
+            .map(|f| f.try_into_fixture(&value.fixture_types).unwrap())
+            .collect()
     }
 }
 
@@ -69,7 +78,11 @@ impl From<&Patch> for Vec<DemexDmxOutput> {
 impl From<Patch> for (Vec<Fixture>, Vec<DemexDmxOutput>) {
     fn from(value: Patch) -> Self {
         (
-            value.fixtures.into_iter().map_into().collect(),
+            value
+                .fixtures
+                .into_iter()
+                .map(|f| f.try_into_fixture(&value.fixture_types).unwrap())
+                .collect(),
             value.outputs.into_iter().map_into().collect(),
         )
     }

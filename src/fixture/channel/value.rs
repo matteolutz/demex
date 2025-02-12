@@ -333,7 +333,7 @@ impl FixtureChannelValueTrait for FixtureChannelValue {
                 if let Ok(preset) = preset {
                     preset.to_owned()
                 } else {
-                    format!("Preset {}.{}", channel_type, preset_id)
+                    format!("Preset {} (deleted)", preset_id)
                 }
             }
             FixtureChannelValue::Mix { a, b, mix } => {

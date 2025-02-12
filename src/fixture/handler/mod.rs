@@ -143,18 +143,17 @@ impl FixtureHandler {
             let fixture_universe_offset = f.start_address() - 1;
 
             let data_packet = f
-                .generate_data_packet(preset_handler, updatable_handler)
+                .generate_data_packet(
+                    preset_handler,
+                    updatable_handler,
+                    self.grand_master as f32 / 255.0,
+                )
                 .map_err(FixtureHandlerError::FixtureChannelError)?;
-
-            let fixture_data = data_packet
-                .iter()
-                .map(|p| (*p as f32 * (self.grand_master as f32 / 255.0)) as u8)
-                .collect::<Vec<u8>>();
 
             if !force
                 && compare_universe_output_data(
                     self.universe_output_data.get(&f.universe()),
-                    &fixture_data,
+                    &data_packet,
                     fixture_universe_offset,
                 )
             {
@@ -166,7 +165,7 @@ impl FixtureHandler {
                 .entry(f.universe())
                 .or_insert_with(|| [0; 512]);
 
-            write_universe_data(universe_data, &fixture_data, fixture_universe_offset);
+            write_universe_data(universe_data, &data_packet, fixture_universe_offset);
 
             dirty_universes.insert(f.universe());
         }

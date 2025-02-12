@@ -1,4 +1,6 @@
-use nodes::action::{ConfigTypeActionData, CueIdxSelectorActionData};
+use nodes::action::{
+    ConfigTypeActionData, CueIdxSelectorActionData, FaderCreationConfigActionData,
+};
 
 use crate::{
     fixture::{
@@ -735,6 +737,32 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_create_fader_function(&mut self) -> Result<FaderCreationConfigActionData, ParseError> {
+        expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
+
+        match self.current_token()? {
+            Token::KeywordSequence => {
+                self.advance();
+
+                let sequence_id = self.parse_integer()?;
+
+                expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
+
+                let fixture_selector = self.parse_fixture_selector()?;
+
+                Ok(FaderCreationConfigActionData::Sequence(
+                    sequence_id,
+                    fixture_selector,
+                ))
+            }
+            _ => {
+                let fixture_selector = self.parse_fixture_selector()?;
+
+                Ok(FaderCreationConfigActionData::Submaster(fixture_selector))
+            }
+        }
+    }
+
     fn parse_create_function(&mut self) -> Result<Action, ParseError> {
         match self.current_token()? {
             Token::KeywordSequence => {
@@ -756,7 +784,15 @@ impl<'a> Parser2<'a> {
 
                 let sequence_id = self.parse_integer()?;
 
-                Ok(Action::CreateExecutor(executor_id, sequence_id))
+                expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
+
+                let fixture_selector = self.parse_fixture_selector()?;
+
+                Ok(Action::CreateExecutor(
+                    executor_id,
+                    sequence_id,
+                    fixture_selector,
+                ))
             }
             Token::KeywordMacro => {
                 self.advance();
@@ -771,9 +807,20 @@ impl<'a> Parser2<'a> {
 
                 Ok(Action::CreateMacro(macro_id, Box::new(command), macro_name))
             }
+            Token::KeywordFader => {
+                self.advance();
+
+                let fader_id = self.parse_integer_or_next()?;
+
+                let fader_config = self.parse_create_fader_function()?;
+
+                let fader_name = self.try_parse(Self::parse_as).ok();
+
+                Ok(Action::CreateFader(fader_id, fader_config, fader_name))
+            }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
-                vec!["\"sequence\"", "\"executor\"", "\"macro\""],
+                vec!["\"sequence\"", "\"executor\"", "\"macro\"", "\"fader\""],
             )),
         }
     }
@@ -815,9 +862,51 @@ impl<'a> Parser2<'a> {
 
                 Ok(Action::DeleteMacro(macro_id_range))
             }
+            Token::KeywordPreset => {
+                self.advance();
+
+                let preset_id_range = self.parse_integer_or_range()?;
+
+                Ok(Action::DeletePreset(preset_id_range))
+            }
+            Token::KeywordSequence => {
+                self.advance();
+
+                let sequence_id_range = self.parse_integer_or_range()?;
+
+                Ok(Action::DeleteSequence(sequence_id_range))
+            }
+            Token::KeywordExecutor => {
+                self.advance();
+
+                let executor_id_range = self.parse_integer_or_range()?;
+
+                Ok(Action::DeleteExecutor(executor_id_range))
+            }
+            Token::KeywordFader => {
+                self.advance();
+
+                let fader_id_range = self.parse_integer_or_range()?;
+
+                Ok(Action::DeleteFader(fader_id_range))
+            }
+            Token::KeywordGroup => {
+                self.advance();
+
+                let group_id_range = self.parse_integer_or_range()?;
+
+                Ok(Action::DeleteGroup(group_id_range))
+            }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
-                vec!["\"macro\""],
+                vec![
+                    "\"macro\"",
+                    "\"preset\"",
+                    "\"sequence\"",
+                    "\"executor\"",
+                    "\"fader\"",
+                    "\"group\"",
+                ],
             )),
         };
 

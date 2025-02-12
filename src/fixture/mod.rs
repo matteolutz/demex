@@ -1,12 +1,14 @@
+use std::collections::HashMap;
+
 use channel::{
     error::FixtureChannelError,
     value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait},
     value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait},
-    FixtureId, SerializableFixtureChannelPatch, FIXTURE_CHANNEL_COLOR_ID,
-    FIXTURE_CHANNEL_INTENSITY_ID, FIXTURE_CHANNEL_NO_FUNCTION_ID,
-    FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+    FixtureId, FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
+    FIXTURE_CHANNEL_NO_FUNCTION_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
 };
 use itertools::Itertools;
+use patch::FixturePatchType;
 use presets::PresetHandler;
 use serde::{Deserialize, Serialize};
 use updatables::UpdatableHandler;
@@ -37,36 +39,41 @@ pub struct SerializableFixturePatch {
 
 impl From<Fixture> for SerializableFixturePatch {
     fn from(value: Fixture) -> Self {
-        return Self {
+        Self {
             id: value.id,
             name: value.name,
-            patch: value
-                .patch
-                .iter()
-                .map(|channel| channel.clone().into())
-                .collect(),
+            fixture_type: value.fixture_type,
+            fixture_mode: value.fixture_mode,
             universe: value.universe,
             start_address: value.start_address,
-        };
+        }
     }
 }
 
-impl From<SerializableFixturePatch> for Fixture {
-    fn from(value: SerializableFixturePatch) -> Self {
-        let patch = value
-            .patch
-            .into_iter()
-            .map(|channel| channel.into())
-            .collect();
+impl SerializableFixturePatch {
+    pub fn try_into_fixture(
+        self,
+        fixture_types: &HashMap<String, FixturePatchType>,
+    ) -> Result<Fixture, FixtureError> {
+        let patch = fixture_types
+            .get(&self.fixture_type)
+            .ok_or(FixtureError::FixtureTypeNotFound(self.fixture_type.clone()))?
+            .modes
+            .get(&self.fixture_mode)
+            .ok_or(FixtureError::FixtureTypeModeNotFound(
+                self.fixture_type.clone(),
+                self.fixture_mode,
+            ))?;
 
-        Self::new(
-            value.id,
-            value.name,
-            patch,
-            value.universe,
-            value.start_address,
+        Fixture::new(
+            self.id,
+            self.name,
+            patch.channels.iter().map_into().collect(),
+            self.fixture_type,
+            self.fixture_mode,
+            self.universe,
+            self.start_address,
         )
-        .unwrap()
     }
 }
 
@@ -74,6 +81,10 @@ impl From<SerializableFixturePatch> for Fixture {
 pub struct Fixture {
     id: FixtureId,
     name: String,
+
+    fixture_type: String,
+    fixture_mode: u32,
+
     patch: Vec<FixtureChannel>,
     universe: u16,
     start_address: u16,
@@ -82,29 +93,13 @@ pub struct Fixture {
     sources: Vec<FixtureChannelValueSource>,
 }
 
-impl Serialize for Fixture {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        Into::<SerializableFixturePatch>::into(self.clone()).serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for Fixture {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        SerializableFixturePatch::deserialize(deserializer).map(Into::<Fixture>::into)
-    }
-}
-
 impl Fixture {
     pub fn new(
         id: FixtureId,
         name: String,
         patch: Vec<FixtureChannel>,
+        fixture_type: String,
+        fixture_mode: u32,
         universe: u16,
         start_address: u16,
     ) -> Result<Self, FixtureError> {
@@ -135,6 +130,8 @@ impl Fixture {
                 .iter()
                 .fold(0, |sum, patch_part| sum + patch_part.address_bandwidth()),
             patch,
+            fixture_type,
+            fixture_mode,
             universe,
             start_address,
             channel_types,
@@ -187,11 +184,17 @@ impl Fixture {
         &self,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
+        grand_master: f32,
     ) -> Result<Vec<u8>, FixtureChannelError> {
         let mut data = Vec::new();
 
         for channel in &self.patch {
-            data.extend(channel.generate_data_packet(self, preset_handler, updatable_handler)?);
+            data.extend(channel.generate_data_packet(
+                self,
+                preset_handler,
+                updatable_handler,
+                grand_master,
+            )?);
         }
 
         Ok(data)

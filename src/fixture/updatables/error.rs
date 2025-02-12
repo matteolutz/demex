@@ -1,7 +1,14 @@
+use crate::{
+    fixture::presets::error::PresetHandlerError,
+    parser::nodes::fixture_selector::FixtureSelectorError,
+};
+
 #[derive(Debug)]
 pub enum UpdatableHandlerError {
     UpdatableAlreadyExists(u32),
     UpdatableNotFound(u32),
+    PresetHandlerError(PresetHandlerError),
+    FixtureSelectorError(FixtureSelectorError),
 }
 
 impl std::fmt::Display for UpdatableHandlerError {
@@ -12,6 +19,12 @@ impl std::fmt::Display for UpdatableHandlerError {
             }
             UpdatableHandlerError::UpdatableNotFound(id) => {
                 write!(f, "Updatable id {} not found", id)
+            }
+            UpdatableHandlerError::FixtureSelectorError(err) => {
+                write!(f, "Fixture selector error: {}", err)
+            }
+            UpdatableHandlerError::PresetHandlerError(err) => {
+                write!(f, "Preset handler error: {}", err)
             }
         }
     }

@@ -10,6 +10,8 @@ pub enum FixtureError {
     InvalidDataLength,
     NoFunctionAccess,
     FixtureChannelError(Box<FixtureChannelError>),
+    FixtureTypeNotFound(String),
+    FixtureTypeModeNotFound(String, u32),
 }
 
 impl std::fmt::Display for FixtureError {
@@ -27,6 +29,10 @@ impl std::fmt::Display for FixtureError {
             Self::InvalidDataLength => write!(f, "Invalid data length"),
             Self::FixtureChannelError(e) => write!(f, "Fixture channel error: {}", e),
             Self::NoFunctionAccess => write!(f, "Tried to access values for a NoFunction channel"),
+            Self::FixtureTypeNotFound(s) => write!(f, "Fixture type ({}) not found", s),
+            Self::FixtureTypeModeNotFound(s, id) => {
+                write!(f, "Fixture type mode ({}) with id ({}) not found", s, id)
+            }
         }
     }
 }

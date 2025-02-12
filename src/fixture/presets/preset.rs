@@ -57,7 +57,7 @@ impl FixturePreset {
                 let mut values = HashMap::new();
 
                 for channel_type in feature_group.channel_types() {
-                    if !fixture.channel_types().contains(&channel_type) {
+                    if !fixture.channel_types().contains(channel_type) {
                         continue;
                     }
 
@@ -111,8 +111,7 @@ impl FixturePreset {
     ) -> Option<&FixtureChannelDiscreteValue> {
         self.data
             .get(&fixture_id)
-            .map(|values| values.get(&channel_type))
-            .flatten()
+            .and_then(|values| values.get(&channel_type))
     }
 
     pub fn update(

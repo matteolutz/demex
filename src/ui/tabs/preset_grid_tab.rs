@@ -254,17 +254,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         .next_cue(&preset_handler);
                 } else {
                     updatable_handler
-                        .executor_mut(*preset_id)
-                        .unwrap()
-                        .start(&mut fixture_handler, &preset_handler);
+                        .start_executor(*preset_id, &mut fixture_handler)
+                        .unwrap();
                 }
             }
 
             if preset_button.secondary_clicked() {
                 updatable_handler
-                    .executor_mut(*preset_id)
-                    .unwrap()
-                    .stop(&mut fixture_handler, &preset_handler);
+                    .stop_executor(*preset_id, &mut fixture_handler)
+                    .unwrap();
             }
 
             if preset_button.long_touched() {

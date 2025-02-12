@@ -111,7 +111,6 @@ impl<'a> Lexer<'a> {
                     "save" => Some(Token::KeywordSave),
                     "delete" | "del" => Some(Token::KeywordDelete),
                     "really" => Some(Token::KeywordReally),
-                    "dot" => Some(Token::KeywordDot),
                     "next" => Some(Token::KeywordNext),
                     "config" => Some(Token::KeywordConfig),
                     "output" => Some(Token::KeywordOutput),

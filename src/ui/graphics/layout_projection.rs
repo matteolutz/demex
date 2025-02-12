@@ -14,6 +14,11 @@ impl Default for LayoutProjection {
 }
 
 impl LayoutProjection {
+    pub fn reset(&mut self) {
+        self.zoom = 1.0;
+        self.center = egui::Vec2::default();
+    }
+
     pub fn with_zoom(zoom: f32) -> Self {
         Self {
             zoom,

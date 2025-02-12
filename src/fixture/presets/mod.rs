@@ -97,6 +97,13 @@ impl PresetHandler {
     pub fn next_group_id(&self) -> u32 {
         self.groups.keys().max().unwrap_or(&0) + 1
     }
+
+    pub fn delete_group(&mut self, id: u32) -> Result<(), PresetHandlerError> {
+        self.groups
+            .remove(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))?;
+        Ok(())
+    }
 }
 
 impl PresetHandler {
@@ -246,6 +253,13 @@ impl PresetHandler {
         } else {
             None
         }
+    }
+
+    pub fn delete_preset(&mut self, preset_id: u32) -> Result<(), PresetHandlerError> {
+        self.presets
+            .remove(&preset_id)
+            .ok_or(PresetHandlerError::PresetNotFound(preset_id))?;
+        Ok(())
     }
 }
 
@@ -457,6 +471,13 @@ impl PresetHandler {
 
     pub fn sequences(&self) -> &HashMap<u32, Sequence> {
         &self.sequences
+    }
+
+    pub fn delete_sequence(&mut self, id: u32) -> Result<(), PresetHandlerError> {
+        self.sequences
+            .remove(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))?;
+        Ok(())
     }
 }
 

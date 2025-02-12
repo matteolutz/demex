@@ -67,7 +67,6 @@ pub enum Token {
     KeywordSave,
     KeywordDelete,
     KeywordReally,
-    KeywordDot,
     KeywordNext,
     KeywordConfig,
     KeywordOutput,
@@ -141,7 +140,6 @@ impl Token {
             Token::KeywordMerge => TokenType::OtherKeyword,
             Token::KeywordOverride => TokenType::OtherKeyword,
             Token::KeywordReally => TokenType::OtherKeyword,
-            Token::KeywordDot => TokenType::OtherKeyword,
             Token::KeywordNext => TokenType::OtherKeyword,
             Token::KeywordOutput => TokenType::OtherKeyword,
 
@@ -207,7 +205,6 @@ impl std::fmt::Display for Token {
             Token::KeywordSave => write!(f, "save"),
             Token::KeywordDelete => write!(f, "delete"),
             Token::KeywordReally => write!(f, "really"),
-            Token::KeywordDot => write!(f, "dot"),
             Token::KeywordNext => write!(f, "next"),
             Token::KeywordConfig => write!(f, "config"),
             Token::KeywordOutput => write!(f, "output"),

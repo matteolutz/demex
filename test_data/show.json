@@ -1,1 +1,1265 @@
-{"preset_handler":{"groups":{"2":{"id":2,"name":"PARs","fixture_selector":{"Atomic":{"FixtureRange":[3,10]}}},"1":{"id":1,"name":"Washes","fixture_selector":{"Atomic":{"FixtureRange":[1,2]}}},"5":{"id":5,"name":"Test","fixture_selector":{"Atomic":{"FixtureIdList":[101,102,103,104,105,106,107,108]}}},"6":{"id":6,"name":"ML Top","fixture_selector":{"Atomic":{"FixtureIdList":[21,2,1,20]}}},"3":{"id":3,"name":"Spots","fixture_selector":{"Atomic":{"FixtureRange":[20,21]}}},"4":{"id":4,"name":"ML","fixture_selector":{"Additive":[{"FixtureGroup":1},{"Atomic":{"FixtureGroup":3}}]}}},"macros":{"3":{"id":3,"name":"Home","action":"HomeAll"},"4":{"id":4,"name":"Nuzul","action":"Nuzul"},"2":{"id":2,"name":"~ @ out","action":{"SetChannelValue":[{"Atomic":"CurrentFixturesSelected"},0,{"Single":0.0}]}},"1":{"id":1,"name":"~ @ full","action":{"SetChannelValue":[{"Atomic":"CurrentFixturesSelected"},0,{"Single":1.0}]}}},"command_slices":{"3":{"id":3,"name":"~","command":["KeywordFixturesSelected"]},"2":{"id":2,"name":"@ Out","command":["KeywordIntens","KeywordOut"]},"1":{"id":1,"name":"@ Full","command":["KeywordIntens","KeywordFull"]}},"sequences":{"3":{"id":3,"name":"Flash Washes","stop_behavior":"AutoStop","cues":[{"cue_idx":[1,0],"data":{"2":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false},{"value":{"Discrete":{"Quadruple":[1.0,1.0,1.0,0.0]}},"channel_type":10,"snap":false},{"value":{"Discrete":{"Single":0.95}},"channel_type":1,"snap":false}],"1":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false},{"value":{"Discrete":{"Quadruple":[1.0,1.0,1.0,0.0]}},"channel_type":10,"snap":false},{"value":{"Discrete":{"Single":0.95}},"channel_type":1,"snap":false}]},"in_fade":0.2,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Manual"},{"cue_idx":[2,0],"data":{},"in_fade":0.0,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Manual"}]},"7":{"id":7,"name":"test","stop_behavior":"ManualRestart","cues":[{"cue_idx":[1,0],"data":{"1":[{"value":{"Discrete":{"Single":0.0}},"channel_type":0,"snap":false}],"21":[{"value":{"Discrete":{"Single":0.0}},"channel_type":0,"snap":false}],"20":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"2":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}]},"in_fade":0.1,"out_fade":null,"in_delay":0.25,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Follow"},{"cue_idx":[2,0],"data":{"21":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"2":[{"value":{"Discrete":{"Single":0.0}},"channel_type":0,"snap":false}],"1":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"20":[{"value":{"Discrete":{"Single":0.0}},"channel_type":0,"snap":false}]},"in_fade":0.1,"out_fade":null,"in_delay":0.25,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Follow"}]},"8":{"id":8,"name":"Movement","stop_behavior":"ManualStop","cues":[{"cue_idx":[1,0],"data":{"2":[{"value":{"Discrete":{"Pair":[0.087005205,0.2747396]}},"channel_type":20,"snap":false}],"1":[{"value":{"Discrete":{"Pair":[0.087005205,0.2747396]}},"channel_type":20,"snap":false}]},"in_fade":0.5,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Follow"},{"cue_idx":[2,0],"data":{"1":[{"value":{"Discrete":{"Pair":[0.2563021,0.29867187]}},"channel_type":20,"snap":false}],"2":[{"value":{"Discrete":{"Pair":[0.2563021,0.29867187]}},"channel_type":20,"snap":false}]},"in_fade":0.5,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Follow"},{"cue_idx":[3,0],"data":{"2":[{"value":{"Discrete":{"Pair":[0.2653125,0.48507813]}},"channel_type":20,"snap":false}],"1":[{"value":{"Discrete":{"Pair":[0.2653125,0.48507813]}},"channel_type":20,"snap":false}]},"in_fade":0.5,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Follow"},{"cue_idx":[4,0],"data":{"2":[{"value":{"Discrete":{"Pair":[0.079505205,0.51666665]}},"channel_type":20,"snap":false}],"1":[{"value":{"Discrete":{"Pair":[0.079505205,0.51666665]}},"channel_type":20,"snap":false}]},"in_fade":0.5,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Follow"}]},"2":{"id":2,"name":"Flash Top PARs","stop_behavior":"AutoStop","cues":[{"cue_idx":[1,0],"data":{"9":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"3":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"4":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"10":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"7":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"6":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"5":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"8":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}]},"in_fade":0.2,"out_fade":0.2,"in_delay":0.0,"out_delay":0.0,"snap_percent":0.0,"timing":{"offset":0.05,"direction":"LowToHigh"},"trigger":"Manual"},{"cue_idx":[2,0],"data":{},"in_fade":0.0,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Follow"},{"cue_idx":[3,0],"data":{"8":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"4":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"3":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"5":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"10":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"9":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"6":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}],"7":[{"value":{"Discrete":{"Single":1.0}},"channel_type":0,"snap":false}]},"in_fade":0.2,"out_fade":0.2,"in_delay":0.0,"out_delay":0.0,"snap_percent":0.0,"timing":{"offset":0.05,"direction":"OutsideToCenter"},"trigger":"Manual"},{"cue_idx":[4,0],"data":{},"in_fade":0.0,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Follow"}]},"9":{"id":9,"name":"Spot Movement","stop_behavior":"ManualStop","cues":[{"cue_idx":[1,0],"data":{"20":[{"value":{"Discrete":{"Pair":[0.25591147,0.11627604]}},"channel_type":20,"snap":false}],"21":[{"value":{"Discrete":{"Pair":[0.25591147,0.11627604]}},"channel_type":20,"snap":false}]},"in_fade":0.5,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Follow"},{"cue_idx":[2,0],"data":{"20":[{"value":{"Discrete":{"Pair":[0.086666666,0.15671875]}},"channel_type":20,"snap":false}],"21":[{"value":{"Discrete":{"Pair":[0.086666666,0.15671875]}},"channel_type":20,"snap":false}]},"in_fade":0.5,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Follow"},{"cue_idx":[3,0],"data":{"20":[{"value":{"Discrete":{"Pair":[0.07367188,0.3083854]}},"channel_type":20,"snap":false}],"21":[{"value":{"Discrete":{"Pair":[0.07367188,0.3083854]}},"channel_type":20,"snap":false}]},"in_fade":0.5,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Follow"},{"cue_idx":[4,0],"data":{"21":[{"value":{"Discrete":{"Pair":[0.25921875,0.29164064]}},"channel_type":20,"snap":false}],"20":[{"value":{"Discrete":{"Pair":[0.25921875,0.29164064]}},"channel_type":20,"snap":false}]},"in_fade":0.5,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Follow"}]}},"presets":{"6":{"id":6,"name":"Zoom Narrow","feature_group_id":4,"data":{"2":{"2":{"Single":1.0}},"1":{"2":{"Single":1.0}}}},"5":{"id":5,"name":"Zoom Wide","feature_group_id":4,"data":{"2":{"2":{"Single":0.0}},"1":{"2":{"Single":0.0}}}},"2":{"id":2,"name":"Out","feature_group_id":0,"data":{"2":{"0":{"Single":0.0}},"103":{"0":{"Single":0.0}},"6":{"0":{"Single":0.0}},"12":{"0":{"Single":0.0}},"8":{"0":{"Single":0.0}},"1":{"0":{"Single":0.0}},"11":{"0":{"Single":0.0}},"16":{"0":{"Single":0.0}},"108":{"0":{"Single":0.0}},"105":{"0":{"Single":0.0}},"106":{"0":{"Single":0.0}},"102":{"0":{"Single":0.0}},"10":{"0":{"Single":0.0}},"3":{"0":{"Single":0.0}},"101":{"0":{"Single":0.0}},"13":{"0":{"Single":0.0}},"21":{"0":{"Single":0.0}},"15":{"0":{"Single":0.0}},"9":{"0":{"Single":0.0}},"7":{"0":{"Single":0.0}},"5":{"0":{"Single":0.0}},"20":{"0":{"Single":0.0}},"104":{"0":{"Single":0.0}},"14":{"0":{"Single":0.0}},"4":{"0":{"Single":0.0}},"107":{"0":{"Single":0.0}}}},"3":{"id":3,"name":"Rot","feature_group_id":2,"data":{"2":{"10":{"Quadruple":[1.0,0.0,0.0,0.0]}},"20":{"10":{"Single":0.08235294}},"1":{"10":{"Quadruple":[1.0,0.0,0.0,0.0]}},"21":{"10":{"Single":0.08235294}}}},"4":{"id":4,"name":"Hellblau","feature_group_id":2,"data":{"20":{"10":{"Single":0.2509804}},"1":{"10":{"Quadruple":[0.0,0.6666667,1.0,0.0]}},"21":{"10":{"Single":0.2509804}},"2":{"10":{"Quadruple":[0.0,0.6666667,1.0,0.0]}}}},"1":{"id":1,"name":"Full","feature_group_id":0,"data":{"21":{"0":{"Single":1.0}},"10":{"0":{"Single":1.0}},"14":{"0":{"Single":1.0}},"101":{"0":{"Single":1.0}},"4":{"0":{"Single":1.0}},"107":{"0":{"Single":1.0}},"105":{"0":{"Single":1.0}},"8":{"0":{"Single":1.0}},"11":{"0":{"Single":1.0}},"104":{"0":{"Single":1.0}},"16":{"0":{"Single":1.0}},"108":{"0":{"Single":1.0}},"13":{"0":{"Single":1.0}},"106":{"0":{"Single":1.0}},"9":{"0":{"Single":1.0}},"5":{"0":{"Single":1.0}},"3":{"0":{"Single":1.0}},"6":{"0":{"Single":1.0}},"20":{"0":{"Single":1.0}},"102":{"0":{"Single":1.0}},"12":{"0":{"Single":1.0}},"103":{"0":{"Single":1.0}},"15":{"0":{"Single":1.0}},"7":{"0":{"Single":1.0}},"1":{"0":{"Single":1.0}},"2":{"0":{"Single":1.0}}}}},"feature_groups":{"4":{"id":4,"name":"Focus","channel_types":[2]},"0":{"id":0,"name":"Intensity","channel_types":[0]},"3":{"id":3,"name":"Beam","channel_types":[1]},"5":{"id":5,"name":"Control","channel_types":[30]},"1":{"id":1,"name":"Position","channel_types":[20]},"2":{"id":2,"name":"Color","channel_types":[10]}}},"updatable_handler":{"executors":{"2":{"id":2,"priority":"Ltp","runtime":{"sequence_id":3}},"1":{"id":1,"priority":"Ltp","runtime":{"sequence_id":2}},"4":{"id":4,"priority":"Ltp","runtime":{"sequence_id":8}},"5":{"id":5,"priority":"Ltp","runtime":{"sequence_id":9}},"3":{"id":3,"priority":"Ltp","runtime":{"sequence_id":7}}},"faders":{}},"patch":{"fixtures":[{"id":1,"name":"WASH 1","patch":[{"PositionPanTilt":true},{"Intensity":true},"Shutter",{"ColorRGB":true},{"Maintenance":"White"},{"Maintenance":"WhiteFine"},{"Maintenance":"ColorTemp"},{"Maintenance":"ColorTint"},{"Maintenance":"ColorMacro"},{"Maintenance":"ColorMacroCrossfade"},{"Zoom":true},{"Maintenance":"PanTiltSpeed"},{"ToggleFlags":{"Turn Off":231,"Turn On":131}}],"universe":1,"start_address":411},{"id":2,"name":"WASH 2","patch":[{"PositionPanTilt":true},{"Intensity":true},"Shutter",{"ColorRGB":true},{"Maintenance":"White"},{"Maintenance":"WhiteFine"},{"Maintenance":"ColorTemp"},{"Maintenance":"ColorTint"},{"Maintenance":"ColorMacro"},{"Maintenance":"ColorMacroCrossfade"},{"Zoom":true},{"Maintenance":"PanTiltSpeed"},{"ToggleFlags":{"Turn Off":231,"Turn On":131}}],"universe":1,"start_address":451},{"id":3,"name":"PAR T1","patch":[{"Intensity":false}],"universe":1,"start_address":8},{"id":4,"name":"PAR T2","patch":[{"Intensity":false}],"universe":1,"start_address":7},{"id":5,"name":"PAR T3","patch":[{"Intensity":false}],"universe":1,"start_address":6},{"id":6,"name":"PAR T4","patch":[{"Intensity":false}],"universe":1,"start_address":5},{"id":7,"name":"PAR T5","patch":[{"Intensity":false}],"universe":1,"start_address":4},{"id":8,"name":"PAR T6","patch":[{"Intensity":false}],"universe":1,"start_address":3},{"id":9,"name":"PAR T7","patch":[{"Intensity":false}],"universe":1,"start_address":2},{"id":10,"name":"PAR T8","patch":[{"Intensity":false}],"universe":1,"start_address":1},{"id":11,"name":"PAR L1","patch":[{"Intensity":false}],"universe":1,"start_address":12},{"id":12,"name":"PAR L2","patch":[{"Intensity":false}],"universe":1,"start_address":14},{"id":13,"name":"PAR L3","patch":[{"Intensity":false}],"universe":1,"start_address":16},{"id":14,"name":"PAR R1","patch":[{"Intensity":false}],"universe":1,"start_address":18},{"id":15,"name":"PAR R2","patch":[{"Intensity":false}],"universe":1,"start_address":20},{"id":16,"name":"PAR R3","patch":[{"Intensity":false}],"universe":1,"start_address":22},{"id":20,"name":"Spot 1","patch":[{"PositionPanTilt":false},{"Maintenance":"PanFine"},{"Maintenance":"TiltFine"},{"Maintenance":"PanTiltSpeed"},{"ToggleFlags":{"Turn Off":231,"Turn On":131}},{"ColorMacro":{"21":[1.0,0.0,0.0,0.0],"74":[1.0,1.0,0.0,0.0],"96":[1.0,0.05,0.75,0.0],"42":[0.0,1.0,0.0,0.0],"0":[1.0,1.0,1.0,0.0],"117":[1.0,0.5,0.0,0.0],"64":[0.0,0.5,1.0,0.0],"53":[1.0,1.0,1.0,0.0],"32":[0.0,1.0,1.0,0.0],"10":[0.25,0.87,0.81,0.0],"85":[0.0,1.0,0.0,0.0],"106":[0.0,0.0,1.0,0.0]}},"NoFunction",{"Maintenance":"Prism"},{"Maintenance":"PrismRotation"},{"Maintenance":"RotatingGobos"},{"Maintenance":"GoboRotation"},"NoFunction",{"Maintenance":"Focus"},"Shutter",{"Intensity":false}],"universe":1,"start_address":270},{"id":21,"name":"Spot 2","patch":[{"PositionPanTilt":false},{"Maintenance":"PanFine"},{"Maintenance":"TiltFine"},{"Maintenance":"PanTiltSpeed"},{"ToggleFlags":{"Turn Off":231,"Turn On":131}},{"ColorMacro":{"96":[1.0,0.05,0.75,0.0],"74":[1.0,1.0,0.0,0.0],"0":[1.0,1.0,1.0,0.0],"21":[1.0,0.0,0.0,0.0],"106":[0.0,0.0,1.0,0.0],"85":[0.0,1.0,0.0,0.0],"32":[0.0,1.0,1.0,0.0],"10":[0.25,0.87,0.81,0.0],"42":[0.0,1.0,0.0,0.0],"53":[1.0,1.0,1.0,0.0],"64":[0.0,0.5,1.0,0.0],"117":[1.0,0.5,0.0,0.0]}},"NoFunction",{"Maintenance":"Prism"},{"Maintenance":"PrismRotation"},{"Maintenance":"RotatingGobos"},{"Maintenance":"GoboRotation"},"NoFunction",{"Maintenance":"Focus"},"Shutter",{"Intensity":false}],"universe":1,"start_address":310},{"id":101,"name":"T1","patch":[{"Intensity":true},{"ColorRGB":true}],"universe":2,"start_address":1},{"id":102,"name":"T2","patch":[{"Intensity":true},{"ColorRGB":true}],"universe":2,"start_address":9},{"id":103,"name":"T3","patch":[{"Intensity":true},{"ColorRGB":true}],"universe":2,"start_address":17},{"id":104,"name":"T4","patch":[{"Intensity":true},{"ColorRGB":true}],"universe":2,"start_address":25},{"id":105,"name":"T5","patch":[{"Intensity":true},{"ColorRGB":true}],"universe":2,"start_address":33},{"id":106,"name":"T6","patch":[{"Intensity":true},{"ColorRGB":true}],"universe":2,"start_address":41},{"id":107,"name":"T7","patch":[{"Intensity":true},{"ColorRGB":true}],"universe":2,"start_address":49},{"id":108,"name":"T8","patch":[{"Intensity":true},{"ColorRGB":true}],"universe":2,"start_address":57}],"layout":{"fixtures":[{"fixture_id":3,"position":{"x":-60.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":20,"position":{"x":-50.0,"y":0.0},"size":{"x":3.0,"y":3.0},"entry_type":"Rect"},{"fixture_id":4,"position":{"x":-40.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":5,"position":{"x":-30.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":1,"position":{"x":-20.0,"y":0.0},"size":{"x":5.0,"y":5.0},"entry_type":"Rect"},{"fixture_id":6,"position":{"x":-10.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":7,"position":{"x":10.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":2,"position":{"x":20.0,"y":0.0},"size":{"x":5.0,"y":5.0},"entry_type":"Rect"},{"fixture_id":8,"position":{"x":30.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":9,"position":{"x":40.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":21,"position":{"x":50.0,"y":0.0},"size":{"x":3.0,"y":3.0},"entry_type":"Rect"},{"fixture_id":10,"position":{"x":60.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":11,"position":{"x":-100.0,"y":20.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":12,"position":{"x":-100.0,"y":40.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":13,"position":{"x":-100.0,"y":50.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":14,"position":{"x":100.0,"y":20.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":15,"position":{"x":100.0,"y":40.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":16,"position":{"x":100.0,"y":50.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":101,"position":{"x":-40.0,"y":40.0},"size":{"x":2.5,"y":2.5},"entry_type":"Rect"},{"fixture_id":102,"position":{"x":-30.0,"y":40.0},"size":{"x":2.5,"y":2.5},"entry_type":"Rect"},{"fixture_id":103,"position":{"x":-20.0,"y":40.0},"size":{"x":2.5,"y":2.5},"entry_type":"Rect"},{"fixture_id":104,"position":{"x":-10.0,"y":40.0},"size":{"x":2.5,"y":2.5},"entry_type":"Rect"},{"fixture_id":105,"position":{"x":10.0,"y":40.0},"size":{"x":2.5,"y":2.5},"entry_type":"Rect"},{"fixture_id":106,"position":{"x":20.0,"y":40.0},"size":{"x":2.5,"y":2.5},"entry_type":"Rect"},{"fixture_id":107,"position":{"x":30.0,"y":40.0},"size":{"x":2.5,"y":2.5},"entry_type":"Rect"},{"fixture_id":108,"position":{"x":40.0,"y":40.0},"size":{"x":2.5,"y":2.5},"entry_type":"Rect"}],"decorations":[{"Label":{"pos":{"x":0.0,"y":-10.0},"text":"Top Truss","font_size":4.0}},{"Label":{"pos":{"x":0.0,"y":30.0},"text":"Test","font_size":4.0}},{"Label":{"pos":{"x":-100.0,"y":10.0},"text":"Left Truss","font_size":4.0}},{"Label":{"pos":{"x":100.0,"y":10.0},"text":"Right Truss","font_size":4.0}}]},"outputs":[{"Artnet":{"broadcast":false,"bind_ip":null}}]}}
+{
+  "preset_handler": {
+    "groups": {
+      "1": {
+        "id": 1,
+        "name": "Washes",
+        "fixture_selector": { "Atomic": { "FixtureRange": [1, 2] } }
+      },
+      "2": {
+        "id": 2,
+        "name": "PARs",
+        "fixture_selector": { "Atomic": { "FixtureRange": [3, 10] } }
+      },
+      "3": {
+        "id": 3,
+        "name": "Spots",
+        "fixture_selector": { "Atomic": { "FixtureRange": [20, 21] } }
+      },
+      "4": {
+        "id": 4,
+        "name": "ML",
+        "fixture_selector": {
+          "Additive": [
+            { "FixtureGroup": 1 },
+            { "Atomic": { "FixtureGroup": 3 } }
+          ]
+        }
+      },
+      "6": {
+        "id": 6,
+        "name": "ML Top",
+        "fixture_selector": { "Atomic": { "FixtureIdList": [21, 2, 1, 20] } }
+      },
+      "5": {
+        "id": 5,
+        "name": "Test",
+        "fixture_selector": {
+          "Atomic": {
+            "FixtureIdList": [101, 102, 103, 104, 105, 106, 107, 108]
+          }
+        }
+      }
+    },
+    "macros": {
+      "1": {
+        "id": 1,
+        "name": "~ @ full",
+        "action": {
+          "SetChannelValue": [
+            { "Atomic": "CurrentFixturesSelected" },
+            0,
+            { "Single": 1.0 }
+          ]
+        }
+      },
+      "2": {
+        "id": 2,
+        "name": "~ @ out",
+        "action": {
+          "SetChannelValue": [
+            { "Atomic": "CurrentFixturesSelected" },
+            0,
+            { "Single": 0.0 }
+          ]
+        }
+      },
+      "3": { "id": 3, "name": "Home", "action": "HomeAll" },
+      "4": { "id": 4, "name": "Nuzul", "action": "Nuzul" }
+    },
+    "command_slices": {
+      "2": { "id": 2, "name": "for", "command": ["KeywordFor"] },
+      "1": {
+        "id": 1,
+        "name": "for ~",
+        "command": ["KeywordFor", "KeywordFixturesSelected"]
+      }
+    },
+    "sequences": {
+      "2": {
+        "id": 2,
+        "name": "Flash Top PARs",
+        "stop_behavior": "AutoStop",
+        "cues": [
+          {
+            "cue_idx": [1, 0],
+            "data": {
+              "4": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "8": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "9": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "7": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "5": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "10": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "3": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "6": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.2,
+            "out_fade": 0.2,
+            "in_delay": 0.0,
+            "out_delay": 0.0,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.05, "direction": "LowToHigh" },
+            "trigger": "Manual"
+          },
+          {
+            "cue_idx": [2, 0],
+            "data": {},
+            "in_fade": 0.0,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          },
+          {
+            "cue_idx": [3, 0],
+            "data": {
+              "6": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "7": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "8": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "9": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "4": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "10": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "5": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "3": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.2,
+            "out_fade": 0.2,
+            "in_delay": 0.0,
+            "out_delay": 0.0,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.05, "direction": "OutsideToCenter" },
+            "trigger": "Manual"
+          },
+          {
+            "cue_idx": [4, 0],
+            "data": {},
+            "in_fade": 0.0,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          }
+        ]
+      },
+      "9": {
+        "id": 9,
+        "name": "Spot Movement",
+        "stop_behavior": "ManualStop",
+        "cues": [
+          {
+            "cue_idx": [1, 0],
+            "data": {
+              "20": [
+                {
+                  "value": { "Discrete": { "Pair": [0.25591147, 0.11627604] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "21": [
+                {
+                  "value": { "Discrete": { "Pair": [0.25591147, 0.11627604] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.5,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          },
+          {
+            "cue_idx": [2, 0],
+            "data": {
+              "20": [
+                {
+                  "value": {
+                    "Discrete": { "Pair": [0.086666666, 0.15671875] }
+                  },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "21": [
+                {
+                  "value": {
+                    "Discrete": { "Pair": [0.086666666, 0.15671875] }
+                  },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.5,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          },
+          {
+            "cue_idx": [3, 0],
+            "data": {
+              "20": [
+                {
+                  "value": { "Discrete": { "Pair": [0.07367188, 0.3083854] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "21": [
+                {
+                  "value": { "Discrete": { "Pair": [0.07367188, 0.3083854] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.5,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          },
+          {
+            "cue_idx": [4, 0],
+            "data": {
+              "20": [
+                {
+                  "value": { "Discrete": { "Pair": [0.25921875, 0.29164064] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "21": [
+                {
+                  "value": { "Discrete": { "Pair": [0.25921875, 0.29164064] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.5,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          }
+        ]
+      },
+      "7": {
+        "id": 7,
+        "name": "Wash + Spot On / Off",
+        "stop_behavior": "Restart",
+        "cues": [
+          {
+            "cue_idx": [1, 0],
+            "data": {
+              "2": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "1": [
+                {
+                  "value": { "Discrete": { "Single": 0.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "21": [
+                {
+                  "value": { "Discrete": { "Single": 0.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "20": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.1,
+            "out_fade": null,
+            "in_delay": 0.25,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          },
+          {
+            "cue_idx": [2, 0],
+            "data": {
+              "21": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "2": [
+                {
+                  "value": { "Discrete": { "Single": 0.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "1": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ],
+              "20": [
+                {
+                  "value": { "Discrete": { "Single": 0.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.1,
+            "out_fade": null,
+            "in_delay": 0.25,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          }
+        ]
+      },
+      "8": {
+        "id": 8,
+        "name": "Movement",
+        "stop_behavior": "ManualStop",
+        "cues": [
+          {
+            "cue_idx": [1, 0],
+            "data": {
+              "2": [
+                {
+                  "value": { "Discrete": { "Pair": [0.087005205, 0.2747396] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "1": [
+                {
+                  "value": { "Discrete": { "Pair": [0.087005205, 0.2747396] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.5,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          },
+          {
+            "cue_idx": [2, 0],
+            "data": {
+              "1": [
+                {
+                  "value": { "Discrete": { "Pair": [0.2563021, 0.29867187] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "2": [
+                {
+                  "value": { "Discrete": { "Pair": [0.2563021, 0.29867187] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.5,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          },
+          {
+            "cue_idx": [3, 0],
+            "data": {
+              "2": [
+                {
+                  "value": { "Discrete": { "Pair": [0.2653125, 0.48507813] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "1": [
+                {
+                  "value": { "Discrete": { "Pair": [0.2653125, 0.48507813] } },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.5,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          },
+          {
+            "cue_idx": [4, 0],
+            "data": {
+              "2": [
+                {
+                  "value": {
+                    "Discrete": { "Pair": [0.079505205, 0.51666665] }
+                  },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ],
+              "1": [
+                {
+                  "value": {
+                    "Discrete": { "Pair": [0.079505205, 0.51666665] }
+                  },
+                  "channel_type": 20,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.5,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Follow"
+          }
+        ]
+      },
+      "3": {
+        "id": 3,
+        "name": "Wash Strobe",
+        "stop_behavior": "AutoStop",
+        "cues": [
+          {
+            "cue_idx": [1, 0],
+            "data": {
+              "1": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                },
+                {
+                  "value": {
+                    "Discrete": { "Quadruple": [1.0, 1.0, 1.0, 0.0] }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": { "Discrete": { "Single": 0.95 } },
+                  "channel_type": 1,
+                  "snap": false
+                }
+              ],
+              "2": [
+                {
+                  "value": { "Discrete": { "Single": 1.0 } },
+                  "channel_type": 0,
+                  "snap": false
+                },
+                {
+                  "value": {
+                    "Discrete": { "Quadruple": [1.0, 1.0, 1.0, 0.0] }
+                  },
+                  "channel_type": 10,
+                  "snap": false
+                },
+                {
+                  "value": { "Discrete": { "Single": 0.95 } },
+                  "channel_type": 1,
+                  "snap": false
+                }
+              ]
+            },
+            "in_fade": 0.2,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Manual"
+          },
+          {
+            "cue_idx": [2, 0],
+            "data": {},
+            "in_fade": 0.0,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Manual"
+          }
+        ]
+      }
+    },
+    "presets": {
+      "6": {
+        "id": 6,
+        "name": "Zoom Narrow",
+        "feature_group_id": 4,
+        "data": {
+          "1": { "2": { "Single": 1.0 } },
+          "2": { "2": { "Single": 1.0 } }
+        }
+      },
+      "3": {
+        "id": 3,
+        "name": "Rot",
+        "feature_group_id": 2,
+        "data": {
+          "1": { "10": { "Quadruple": [1.0, 0.0, 0.0, 0.0] } },
+          "2": { "10": { "Quadruple": [1.0, 0.0, 0.0, 0.0] } },
+          "21": { "10": { "Single": 0.08235294 } },
+          "20": { "10": { "Single": 0.08235294 } }
+        }
+      },
+      "4": {
+        "id": 4,
+        "name": "Hellblau",
+        "feature_group_id": 2,
+        "data": {
+          "2": { "10": { "Quadruple": [0.0, 0.6666667, 1.0, 0.0] } },
+          "21": { "10": { "Single": 0.2509804 } },
+          "1": { "10": { "Quadruple": [0.0, 0.6666667, 1.0, 0.0] } },
+          "20": { "10": { "Single": 0.2509804 } }
+        }
+      },
+      "5": {
+        "id": 5,
+        "name": "Zoom Wide",
+        "feature_group_id": 4,
+        "data": {
+          "2": { "2": { "Single": 0.0 } },
+          "1": { "2": { "Single": 0.0 } }
+        }
+      },
+      "1": {
+        "id": 1,
+        "name": "Full",
+        "feature_group_id": 0,
+        "data": {
+          "9": { "0": { "Single": 1.0 } },
+          "10": { "0": { "Single": 1.0 } },
+          "2": { "0": { "Single": 1.0 } },
+          "11": { "0": { "Single": 1.0 } },
+          "16": { "0": { "Single": 1.0 } },
+          "21": { "0": { "Single": 1.0 } },
+          "3": { "0": { "Single": 1.0 } },
+          "104": { "0": { "Single": 1.0 } },
+          "7": { "0": { "Single": 1.0 } },
+          "4": { "0": { "Single": 1.0 } },
+          "103": { "0": { "Single": 1.0 } },
+          "15": { "0": { "Single": 1.0 } },
+          "13": { "0": { "Single": 1.0 } },
+          "101": { "0": { "Single": 1.0 } },
+          "1": { "0": { "Single": 1.0 } },
+          "105": { "0": { "Single": 1.0 } },
+          "14": { "0": { "Single": 1.0 } },
+          "106": { "0": { "Single": 1.0 } },
+          "20": { "0": { "Single": 1.0 } },
+          "102": { "0": { "Single": 1.0 } },
+          "5": { "0": { "Single": 1.0 } },
+          "12": { "0": { "Single": 1.0 } },
+          "108": { "0": { "Single": 1.0 } },
+          "6": { "0": { "Single": 1.0 } },
+          "107": { "0": { "Single": 1.0 } },
+          "8": { "0": { "Single": 1.0 } }
+        }
+      },
+      "2": {
+        "id": 2,
+        "name": "Out",
+        "feature_group_id": 0,
+        "data": {
+          "9": { "0": { "Single": 0.0 } },
+          "11": { "0": { "Single": 0.0 } },
+          "5": { "0": { "Single": 0.0 } },
+          "14": { "0": { "Single": 0.0 } },
+          "7": { "0": { "Single": 0.0 } },
+          "8": { "0": { "Single": 0.0 } },
+          "13": { "0": { "Single": 0.0 } },
+          "6": { "0": { "Single": 0.0 } },
+          "101": { "0": { "Single": 0.0 } },
+          "12": { "0": { "Single": 0.0 } },
+          "104": { "0": { "Single": 0.0 } },
+          "10": { "0": { "Single": 0.0 } },
+          "1": { "0": { "Single": 0.0 } },
+          "20": { "0": { "Single": 0.0 } },
+          "21": { "0": { "Single": 0.0 } },
+          "2": { "0": { "Single": 0.0 } },
+          "102": { "0": { "Single": 0.0 } },
+          "103": { "0": { "Single": 0.0 } },
+          "105": { "0": { "Single": 0.0 } },
+          "106": { "0": { "Single": 0.0 } },
+          "16": { "0": { "Single": 0.0 } },
+          "4": { "0": { "Single": 0.0 } },
+          "108": { "0": { "Single": 0.0 } },
+          "3": { "0": { "Single": 0.0 } },
+          "15": { "0": { "Single": 0.0 } },
+          "107": { "0": { "Single": 0.0 } }
+        }
+      }
+    },
+    "feature_groups": {
+      "0": { "id": 0, "name": "Intensity", "channel_types": [0] },
+      "2": { "id": 2, "name": "Color", "channel_types": [10] },
+      "1": { "id": 1, "name": "Position", "channel_types": [20] },
+      "3": { "id": 3, "name": "Beam", "channel_types": [1] },
+      "4": { "id": 4, "name": "Focus", "channel_types": [2] },
+      "5": { "id": 5, "name": "Control", "channel_types": [30] }
+    }
+  },
+  "updatable_handler": {
+    "executors": {
+      "3": {
+        "id": 3,
+        "priority": "Ltp",
+        "runtime": { "sequence_id": 7 },
+        "fixtures": [1, 2, 20, 21]
+      },
+      "2": {
+        "id": 2,
+        "priority": "Ltp",
+        "runtime": { "sequence_id": 3 },
+        "fixtures": [1, 2]
+      },
+      "4": {
+        "id": 4,
+        "priority": "Ltp",
+        "runtime": { "sequence_id": 8 },
+        "fixtures": [1, 2]
+      },
+      "5": {
+        "id": 5,
+        "priority": "Ltp",
+        "runtime": { "sequence_id": 9 },
+        "fixtures": [20, 21]
+      },
+      "1": {
+        "id": 1,
+        "priority": "Ltp",
+        "runtime": { "sequence_id": 2 },
+        "fixtures": [3, 4, 5, 6, 7, 8, 9, 10]
+      }
+    },
+    "faders": {}
+  },
+  "patch": {
+    "fixtures": [
+      {
+        "id": 1,
+        "name": "WASH 1",
+        "fixture_type": "CameoWash",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 411
+      },
+      {
+        "id": 2,
+        "name": "WASH 2",
+        "fixture_type": "CameoWash",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 451
+      },
+      {
+        "id": 3,
+        "name": "PAR T1",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 8
+      },
+      {
+        "id": 4,
+        "name": "PAR T2",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 7
+      },
+      {
+        "id": 5,
+        "name": "PAR T3",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 6
+      },
+      {
+        "id": 6,
+        "name": "PAR T4",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 5
+      },
+      {
+        "id": 7,
+        "name": "PAR T5",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 4
+      },
+      {
+        "id": 8,
+        "name": "PAR T6",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 3
+      },
+      {
+        "id": 9,
+        "name": "PAR T7",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 2
+      },
+      {
+        "id": 10,
+        "name": "PAR T8",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 1
+      },
+      {
+        "id": 11,
+        "name": "PAR L1",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 12
+      },
+      {
+        "id": 12,
+        "name": "PAR L2",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 14
+      },
+      {
+        "id": 13,
+        "name": "PAR L3",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 16
+      },
+      {
+        "id": 14,
+        "name": "PAR R1",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 18
+      },
+      {
+        "id": 15,
+        "name": "PAR R2",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 20
+      },
+      {
+        "id": 16,
+        "name": "PAR R3",
+        "fixture_type": "BasicDimmer",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 22
+      },
+      {
+        "id": 20,
+        "name": "Spot 1",
+        "fixture_type": "ProHead250",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 270
+      },
+      {
+        "id": 21,
+        "name": "Spot 2",
+        "fixture_type": "ProHead250",
+        "fixture_mode": 0,
+        "universe": 1,
+        "start_address": 310
+      },
+      {
+        "id": 101,
+        "name": "T1",
+        "fixture_type": "TestColorFixture",
+        "fixture_mode": 0,
+        "universe": 2,
+        "start_address": 1
+      },
+      {
+        "id": 102,
+        "name": "T2",
+        "fixture_type": "TestColorFixture",
+        "fixture_mode": 0,
+        "universe": 2,
+        "start_address": 9
+      },
+      {
+        "id": 103,
+        "name": "T3",
+        "fixture_type": "TestColorFixture",
+        "fixture_mode": 0,
+        "universe": 2,
+        "start_address": 17
+      },
+      {
+        "id": 104,
+        "name": "T4",
+        "fixture_type": "TestColorFixture",
+        "fixture_mode": 0,
+        "universe": 2,
+        "start_address": 25
+      },
+      {
+        "id": 105,
+        "name": "T5",
+        "fixture_type": "TestColorFixture",
+        "fixture_mode": 0,
+        "universe": 2,
+        "start_address": 33
+      },
+      {
+        "id": 106,
+        "name": "T6",
+        "fixture_type": "TestColorFixture",
+        "fixture_mode": 0,
+        "universe": 2,
+        "start_address": 41
+      },
+      {
+        "id": 107,
+        "name": "T7",
+        "fixture_type": "TestColorFixture",
+        "fixture_mode": 0,
+        "universe": 2,
+        "start_address": 49
+      },
+      {
+        "id": 108,
+        "name": "T8",
+        "fixture_type": "TestColorFixture",
+        "fixture_mode": 0,
+        "universe": 2,
+        "start_address": 57
+      }
+    ],
+    "fixture_types": {
+      "ProHead250": {
+        "name": "Pro Head 250",
+        "modes": {
+          "0": {
+            "name": "16bit",
+            "channels": [
+              { "PositionPanTilt": false },
+              { "Maintenance": "PanFine" },
+              { "Maintenance": "TiltFine" },
+              { "Maintenance": "PanTiltSpeed" },
+              { "ToggleFlags": { "Turn On": 131, "Turn Off": 231 } },
+              {
+                "ColorMacro": {
+                  "42": [0.0, 1.0, 0.0, 0.0],
+                  "96": [1.0, 0.05, 0.75, 0.0],
+                  "32": [0.0, 1.0, 1.0, 0.0],
+                  "106": [0.0, 0.0, 1.0, 0.0],
+                  "0": [1.0, 1.0, 1.0, 0.0],
+                  "85": [0.0, 1.0, 0.0, 0.0],
+                  "53": [1.0, 1.0, 1.0, 0.0],
+                  "21": [1.0, 0.0, 0.0, 0.0],
+                  "10": [0.25, 0.87, 0.81, 0.0],
+                  "117": [1.0, 0.5, 0.0, 0.0],
+                  "74": [1.0, 1.0, 0.0, 0.0],
+                  "64": [0.0, 0.5, 1.0, 0.0]
+                }
+              },
+              "NoFunction",
+              { "Maintenance": "Prism" },
+              { "Maintenance": "PrismRotation" },
+              { "Maintenance": "RotatingGobos" },
+              { "Maintenance": "GoboRotation" },
+              "NoFunction",
+              { "Maintenance": "Focus" },
+              "Shutter",
+              { "Intensity": false }
+            ]
+          }
+        }
+      },
+      "CameoWash": {
+        "name": "Cameo Wash",
+        "modes": {
+          "0": {
+            "name": "23 Channel",
+            "channels": [
+              { "PositionPanTilt": true },
+              { "Intensity": true },
+              "Shutter",
+              { "ColorRGB": true },
+              { "Maintenance": "White" },
+              { "Maintenance": "WhiteFine" },
+              { "Maintenance": "ColorTemp" },
+              { "Maintenance": "ColorTint" },
+              { "Maintenance": "ColorMacro" },
+              { "Maintenance": "ColorMacroCrossfade" },
+              { "Zoom": true },
+              { "Maintenance": "PanTiltSpeed" },
+              { "ToggleFlags": { "Turn Off": 231, "Turn On": 131 } }
+            ]
+          }
+        }
+      },
+      "BasicDimmer": {
+        "name": "Basic Dimmer",
+        "modes": {
+          "0": { "name": "Default", "channels": [{ "Intensity": false }] }
+        }
+      },
+      "TestColorFixture": {
+        "name": "Test Color Fixture",
+        "modes": {
+          "0": {
+            "name": "8 Channels",
+            "channels": [{ "Intensity": true }, { "ColorRGB": true }]
+          }
+        }
+      }
+    },
+    "layout": {
+      "fixtures": [
+        {
+          "fixture_id": 3,
+          "position": { "x": -60.0, "y": 0.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 20,
+          "position": { "x": -50.0, "y": 0.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 4,
+          "position": { "x": -40.0, "y": 0.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 5,
+          "position": { "x": -30.0, "y": 0.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 1,
+          "position": { "x": -20.0, "y": 0.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 6,
+          "position": { "x": -10.0, "y": 0.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 7,
+          "position": { "x": 10.0, "y": 0.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 2,
+          "position": { "x": 20.0, "y": 0.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 8,
+          "position": { "x": 30.0, "y": 0.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 9,
+          "position": { "x": 40.0, "y": 0.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 21,
+          "position": { "x": 50.0, "y": 0.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 10,
+          "position": { "x": 60.0, "y": 0.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 11,
+          "position": { "x": -100.0, "y": 20.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 12,
+          "position": { "x": -100.0, "y": 40.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 13,
+          "position": { "x": -100.0, "y": 50.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 14,
+          "position": { "x": 100.0, "y": 20.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 15,
+          "position": { "x": 100.0, "y": 40.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 16,
+          "position": { "x": 100.0, "y": 50.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 101,
+          "position": { "x": -40.0, "y": 40.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 102,
+          "position": { "x": -30.0, "y": 40.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 103,
+          "position": { "x": -20.0, "y": 40.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 104,
+          "position": { "x": -10.0, "y": 40.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 105,
+          "position": { "x": 10.0, "y": 40.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 106,
+          "position": { "x": 20.0, "y": 40.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 107,
+          "position": { "x": 30.0, "y": 40.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 108,
+          "position": { "x": 40.0, "y": 40.0 },
+          "size": { "x": 2.5, "y": 2.5 },
+          "entry_type": "Rect"
+        }
+      ],
+      "decorations": [
+        {
+          "Label": {
+            "pos": { "x": 0.0, "y": -10.0 },
+            "text": "Top Truss",
+            "font_size": 4.0
+          }
+        },
+        {
+          "Label": {
+            "pos": { "x": 0.0, "y": 30.0 },
+            "text": "Test",
+            "font_size": 4.0
+          }
+        },
+        {
+          "Label": {
+            "pos": { "x": -100.0, "y": 10.0 },
+            "text": "Left Truss",
+            "font_size": 4.0
+          }
+        },
+        {
+          "Label": {
+            "pos": { "x": 100.0, "y": 10.0 },
+            "text": "Right Truss",
+            "font_size": 4.0
+          }
+        }
+      ]
+    },
+    "outputs": [{ "Artnet": { "broadcast": false, "bind_ip": null } }]
+  }
+}

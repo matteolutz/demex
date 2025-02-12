@@ -72,7 +72,7 @@ impl FixtureLayoutEntry {
         label: impl ToString,
     ) {
         let (pos, size) = self.get_pos_and_size(projection, screen);
-        let stroke_width = (if is_selected { 0.5 } else { 0.25 }) * projection.zoom();
+        let stroke_width = 0.25 * projection.zoom();
 
         match self.entry_type() {
             FixtureLayoutEntryType::Rect => {
@@ -202,10 +202,14 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             ));
 
             ui.label(format!(
-                "Zoom: {}, Center: {}",
+                "Zoom: {:.2}, Center: {:.2}",
                 context.layout_view_context.layout_projection.zoom(),
                 context.layout_view_context.layout_projection.center()
             ));
+
+            if ui.button("Reset").clicked() {
+                context.layout_view_context.layout_projection.reset();
+            }
         },
     );
 
@@ -338,6 +342,20 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 ),
                 0.0,
                 egui::Color32::from_rgba_unmultiplied(255, 255, 255, 50),
+            );
+
+            painter.rect_stroke(
+                Rect::from_two_pos(
+                    context
+                        .layout_view_context
+                        .drag_context
+                        .as_ref()
+                        .unwrap()
+                        .mouse_pos,
+                    response.hover_pos().unwrap(),
+                ),
+                0.0,
+                egui::Stroke::new(1.0, egui::Color32::WHITE),
             );
         } else if response.dragged_by(egui::PointerButton::Middle) {
             let drag_start_world_point = context.layout_view_context.layout_projection.unproject(

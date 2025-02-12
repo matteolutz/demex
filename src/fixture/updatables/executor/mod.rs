@@ -16,15 +16,27 @@ pub struct SequenceRuntimeExecutor {
     #[serde(default)]
     priority: FixtureChannelValuePriority,
 
+    #[serde(default)]
+    stop_others: bool,
+
     runtime: SequenceRuntime,
+
+    fixtures: Vec<u32>,
 }
 
 impl SequenceRuntimeExecutor {
-    pub fn new(id: u32, sequence_id: u32, priority: FixtureChannelValuePriority) -> Self {
+    pub fn new(
+        id: u32,
+        sequence_id: u32,
+        fixtures: Vec<u32>,
+        priority: FixtureChannelValuePriority,
+    ) -> Self {
         Self {
             id,
             runtime: SequenceRuntime::new(sequence_id),
+            fixtures,
             priority,
+            stop_others: false,
         }
     }
 
@@ -44,8 +56,16 @@ impl SequenceRuntimeExecutor {
         &self.runtime
     }
 
+    pub fn stop_others(&self) -> bool {
+        self.stop_others
+    }
+
     pub fn is_started(&self) -> bool {
         self.runtime.is_started()
+    }
+
+    pub fn fixtures(&self) -> &Vec<u32> {
+        &self.fixtures
     }
 
     pub fn channel_value(
@@ -71,26 +91,18 @@ impl SequenceRuntimeExecutor {
         preset_handler: &PresetHandler,
     ) {
         if self.runtime.update(delta_time, 1.0, preset_handler) {
-            self.stop(fixture_handler, preset_handler);
+            self.stop(fixture_handler);
         }
     }
 
-    pub fn silent_start(&mut self) {
+    fn silent_start(&mut self) {
         self.runtime.start();
     }
 
-    pub fn start(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
+    pub fn start(&mut self, fixture_handler: &mut FixtureHandler) {
         self.silent_start();
 
-        for fixture_id in preset_handler
-            .get_sequence(self.runtime.sequence_id())
-            .unwrap()
-            .cues()
-            .iter()
-            .flat_map(|c| c.data().keys())
-            .collect::<Vec<_>>()
-            .drain(..)
-        {
+        for fixture_id in &self.fixtures {
             if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
                 fixture.push_value_source(FixtureChannelValueSource::Executor {
                     executor_id: self.id,
@@ -99,22 +111,14 @@ impl SequenceRuntimeExecutor {
         }
     }
 
-    pub fn silent_stop(&mut self) {
+    fn silent_stop(&mut self) {
         self.runtime.stop();
     }
 
-    pub fn stop(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
+    pub fn stop(&mut self, fixture_handler: &mut FixtureHandler) {
         self.silent_stop();
 
-        for fixture_id in preset_handler
-            .get_sequence(self.runtime.sequence_id())
-            .unwrap()
-            .cues()
-            .iter()
-            .flat_map(|c| c.data().keys())
-            .collect::<Vec<_>>()
-            .drain(..)
-        {
+        for fixture_id in &self.fixtures {
             if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
                 fixture.remove_value_source(FixtureChannelValueSource::Executor {
                     executor_id: self.id,
