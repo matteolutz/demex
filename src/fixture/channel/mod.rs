@@ -13,11 +13,12 @@ pub mod value;
 pub mod value_source;
 
 pub const FIXTURE_CHANNEL_INTENSITY_ID: u16 = 0;
-pub const FIXTURE_CHANNEL_STROBE: u16 = 1;
-pub const FIXTURE_CHANNEL_ZOOM: u16 = 2;
+pub const FIXTURE_CHANNEL_SHUTTER_ID: u16 = 1;
+pub const FIXTURE_CHANNEL_ZOOM_ID: u16 = 2;
 pub const FIXTURE_CHANNEL_COLOR_ID: u16 = 10;
 pub const FIXTURE_CHANNEL_POSITION_PAN_TILT_ID: u16 = 20;
 pub const FIXTURE_CHANNEL_TOGGLE_FLAGS: u16 = 30;
+pub const FIXTURE_CHANNEL_NO_FUNCTION_ID: u16 = 100;
 
 pub type FixtureId = u32;
 
@@ -30,7 +31,7 @@ pub enum FixtureColorChannelMode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SerializableFixtureChannelPatch {
     Intensity(bool),
-    Strobe,
+    Shutter,
     Zoom(bool),
     ColorRGB(bool),
     ColorRGBW(bool),
@@ -38,6 +39,7 @@ pub enum SerializableFixtureChannelPatch {
     PositionPanTilt(bool),
     Maintenance(String),
     ToggleFlags(HashMap<String, u8>),
+    NoFunction,
 }
 
 impl From<FixtureChannel> for SerializableFixtureChannelPatch {
@@ -46,7 +48,7 @@ impl From<FixtureChannel> for SerializableFixtureChannelPatch {
             FixtureChannel::Intensity(is_fine, _) => {
                 SerializableFixtureChannelPatch::Intensity(is_fine)
             }
-            FixtureChannel::Strobe(_) => SerializableFixtureChannelPatch::Strobe,
+            FixtureChannel::Shutter(_) => SerializableFixtureChannelPatch::Shutter,
             FixtureChannel::Zoom(is_fine, _) => SerializableFixtureChannelPatch::Zoom(is_fine),
             FixtureChannel::ColorRGB(is_fine, _) => {
                 SerializableFixtureChannelPatch::ColorRGB(is_fine)
@@ -64,6 +66,7 @@ impl From<FixtureChannel> for SerializableFixtureChannelPatch {
             FixtureChannel::ToggleFlags(flags, _) => {
                 SerializableFixtureChannelPatch::ToggleFlags(flags)
             }
+            FixtureChannel::NoFunction => SerializableFixtureChannelPatch::NoFunction,
         }
     }
 }
@@ -74,7 +77,7 @@ impl From<SerializableFixtureChannelPatch> for FixtureChannel {
             SerializableFixtureChannelPatch::Intensity(is_fine) => {
                 FixtureChannel::intensity(is_fine)
             }
-            SerializableFixtureChannelPatch::Strobe => FixtureChannel::strobe(),
+            SerializableFixtureChannelPatch::Shutter => FixtureChannel::strobe(),
             SerializableFixtureChannelPatch::Zoom(is_fine) => FixtureChannel::zoom(is_fine),
             SerializableFixtureChannelPatch::ColorRGB(is_fine) => {
                 FixtureChannel::color_rgb(is_fine)
@@ -94,6 +97,7 @@ impl From<SerializableFixtureChannelPatch> for FixtureChannel {
             SerializableFixtureChannelPatch::ToggleFlags(flags) => {
                 FixtureChannel::toggle_flags(flags)
             }
+            SerializableFixtureChannelPatch::NoFunction => FixtureChannel::NoFunction,
         }
     }
 }
@@ -101,7 +105,7 @@ impl From<SerializableFixtureChannelPatch> for FixtureChannel {
 #[derive(Debug, Clone, PartialEq)]
 pub enum FixtureChannel {
     Intensity(bool, FixtureChannelValue),
-    Strobe(FixtureChannelValue),
+    Shutter(FixtureChannelValue),
     Zoom(bool, FixtureChannelValue),
     ColorRGB(bool, FixtureChannelValue),
     ColorRGBW(bool, FixtureChannelValue),
@@ -109,6 +113,7 @@ pub enum FixtureChannel {
     PositionPanTilt(bool, FixtureChannelValue),
     Maintenance(String, u16, FixtureChannelValue),
     ToggleFlags(HashMap<String, u8>, FixtureChannelValue),
+    NoFunction,
 }
 
 impl Serialize for FixtureChannel {
@@ -135,7 +140,7 @@ impl FixtureChannel {
     }
 
     pub fn strobe() -> Self {
-        FixtureChannel::Strobe(FixtureChannelValue::any_home())
+        FixtureChannel::Shutter(FixtureChannelValue::any_home())
     }
 
     pub fn zoom(is_fine: bool) -> Self {
@@ -175,7 +180,7 @@ impl FixtureChannel {
     pub fn home(&mut self) {
         match self {
             FixtureChannel::Intensity(_, intens) => *intens = FixtureChannelValue::any_home(),
-            FixtureChannel::Strobe(strobe) => *strobe = FixtureChannelValue::any_home(),
+            FixtureChannel::Shutter(strobe) => *strobe = FixtureChannelValue::any_home(),
             FixtureChannel::Zoom(_, zoom) => *zoom = FixtureChannelValue::any_home(),
             FixtureChannel::ColorRGB(_, rgb) => *rgb = FixtureChannelValue::any_home(),
             FixtureChannel::ColorRGBW(_, rgbw) => *rgbw = FixtureChannelValue::any_home(),
@@ -185,13 +190,14 @@ impl FixtureChannel {
             }
             FixtureChannel::Maintenance(_, _, value) => *value = FixtureChannelValue::any_home(),
             FixtureChannel::ToggleFlags(_, value) => *value = FixtureChannelValue::any_home(),
+            FixtureChannel::NoFunction => {}
         }
     }
 
     pub fn is_home(&self) -> bool {
         match self {
             FixtureChannel::Intensity(_, intens) => intens.is_home(),
-            FixtureChannel::Strobe(strobe) => strobe.is_home(),
+            FixtureChannel::Shutter(strobe) => strobe.is_home(),
             FixtureChannel::Zoom(_, zoom) => zoom.is_home(),
             FixtureChannel::ColorRGB(_, color) | FixtureChannel::ColorRGBW(_, color) => {
                 color.is_home()
@@ -200,6 +206,7 @@ impl FixtureChannel {
             FixtureChannel::PositionPanTilt(_, position) => position.is_home(),
             FixtureChannel::Maintenance(_, _, value) => value.is_home(),
             FixtureChannel::ToggleFlags(_, value) => value.is_home(),
+            FixtureChannel::NoFunction => true,
         }
     }
 }
@@ -214,7 +221,7 @@ impl FixtureChannel {
                     1
                 }
             }
-            FixtureChannel::Strobe(_) => 1,
+            FixtureChannel::Shutter(_) => 1,
             FixtureChannel::Zoom(is_fine, _) => {
                 if *is_fine {
                     2
@@ -246,20 +253,22 @@ impl FixtureChannel {
             }
             FixtureChannel::Maintenance(_, _, _) => 1,
             FixtureChannel::ToggleFlags(_, _) => 1,
+            FixtureChannel::NoFunction => 1,
         }
     }
 
     pub fn type_id(&self) -> u16 {
         match self {
             FixtureChannel::Intensity(_, _) => FIXTURE_CHANNEL_INTENSITY_ID,
-            FixtureChannel::Strobe(_) => FIXTURE_CHANNEL_STROBE,
-            FixtureChannel::Zoom(_, _) => FIXTURE_CHANNEL_ZOOM,
+            FixtureChannel::Shutter(_) => FIXTURE_CHANNEL_SHUTTER_ID,
+            FixtureChannel::Zoom(_, _) => FIXTURE_CHANNEL_ZOOM_ID,
             FixtureChannel::ColorRGB(_, _)
             | FixtureChannel::ColorRGBW(_, _)
             | FixtureChannel::ColorMacro(_, _) => FIXTURE_CHANNEL_COLOR_ID,
             FixtureChannel::PositionPanTilt(_, _) => FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
             FixtureChannel::Maintenance(_, id, _) => *id,
             FixtureChannel::ToggleFlags(_, _) => FIXTURE_CHANNEL_TOGGLE_FLAGS,
+            FixtureChannel::NoFunction => FIXTURE_CHANNEL_NO_FUNCTION_ID,
         }
     }
 
@@ -289,11 +298,12 @@ impl FixtureChannel {
     pub fn name_by_id(id: u16) -> String {
         match id {
             FIXTURE_CHANNEL_INTENSITY_ID => "Intensity".to_owned(),
-            FIXTURE_CHANNEL_STROBE => "Strobe".to_owned(),
-            FIXTURE_CHANNEL_ZOOM => "Zoom".to_owned(),
+            FIXTURE_CHANNEL_SHUTTER_ID => "Shutter".to_owned(),
+            FIXTURE_CHANNEL_ZOOM_ID => "Zoom".to_owned(),
             FIXTURE_CHANNEL_COLOR_ID => "Color".to_owned(),
             FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => "PositionPanTilt".to_owned(),
             FIXTURE_CHANNEL_TOGGLE_FLAGS => "ToggleFlags".to_owned(),
+            FIXTURE_CHANNEL_NO_FUNCTION_ID => "NoFunction".to_owned(),
             _ => "Unknown".to_owned(),
         }
     }
@@ -335,23 +345,30 @@ impl FixtureChannel {
                     Ok(vec![intens_coarse])
                 }
             }
-            FixtureChannel::Strobe(_) => {
+            FixtureChannel::Shutter(_) => {
                 let channel_value = fixture
-                    .channel_value(FIXTURE_CHANNEL_STROBE, preset_handler, updatable_handler)
+                    .channel_value(
+                        FIXTURE_CHANNEL_SHUTTER_ID,
+                        preset_handler,
+                        updatable_handler,
+                    )
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 Ok(vec![
-                    (channel_value.as_single(preset_handler, fixture_id, FIXTURE_CHANNEL_STROBE)?
-                        * 255.0) as u8,
+                    (channel_value.as_single(
+                        preset_handler,
+                        fixture_id,
+                        FIXTURE_CHANNEL_SHUTTER_ID,
+                    )? * 255.0) as u8,
                 ])
             }
             FixtureChannel::Zoom(is_fine, _) => {
                 let channel_value = fixture
-                    .channel_value(FIXTURE_CHANNEL_ZOOM, preset_handler, updatable_handler)
+                    .channel_value(FIXTURE_CHANNEL_ZOOM_ID, preset_handler, updatable_handler)
                     .map_err(FixtureChannelError::FixtureError)?;
 
                 let (zoom_coarse, zoom_fine) = Self::float_to_coarse_and_fine(
-                    channel_value.as_single(preset_handler, fixture_id, FIXTURE_CHANNEL_ZOOM)?,
+                    channel_value.as_single(preset_handler, fixture_id, FIXTURE_CHANNEL_ZOOM_ID)?,
                 );
 
                 if *is_fine {
@@ -466,6 +483,7 @@ impl FixtureChannel {
 
                 Ok(vec![value])
             }
+            FixtureChannel::NoFunction => Ok(vec![0]),
         }
     }
 }

@@ -3,7 +3,8 @@ use channel::{
     value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait},
     value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait},
     FixtureId, SerializableFixtureChannelPatch, FIXTURE_CHANNEL_COLOR_ID,
-    FIXTURE_CHANNEL_INTENSITY_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+    FIXTURE_CHANNEL_INTENSITY_ID, FIXTURE_CHANNEL_NO_FUNCTION_ID,
+    FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
 };
 use itertools::Itertools;
 use presets::PresetHandler;
@@ -15,6 +16,7 @@ use self::{channel::FixtureChannel, error::FixtureError};
 pub mod channel;
 pub mod effect;
 pub mod error;
+pub mod feature;
 pub mod handler;
 pub mod layout;
 pub mod patch;
@@ -113,6 +115,10 @@ impl Fixture {
         let mut channel_types = Vec::with_capacity(patch.len());
 
         for channel in &patch {
+            if channel.type_id() == FIXTURE_CHANNEL_NO_FUNCTION_ID {
+                continue;
+            }
+
             if channel_types.contains(&channel.type_id()) {
                 return Err(FixtureError::DuplicateChannelType);
             }
@@ -349,7 +355,7 @@ impl Fixture {
         match self.patch.iter().find(|c| c.type_id() == channel_id) {
             Some(channel) => match channel {
                 FixtureChannel::Intensity(_, intens) => Ok(intens.clone()),
-                FixtureChannel::Strobe(strobe) => Ok(strobe.clone()),
+                FixtureChannel::Shutter(strobe) => Ok(strobe.clone()),
                 FixtureChannel::Zoom(_, zoom) => Ok(zoom.clone()),
                 FixtureChannel::ColorRGB(_, value)
                 | FixtureChannel::ColorRGBW(_, value)
@@ -357,6 +363,7 @@ impl Fixture {
                 FixtureChannel::PositionPanTilt(_, value) => Ok(value.clone()),
                 FixtureChannel::Maintenance(_, _, value) => Ok(value.clone()),
                 FixtureChannel::ToggleFlags(_, value) => Ok(value.clone()),
+                FixtureChannel::NoFunction => Err(FixtureError::NoFunctionAccess),
             },
             None => Err(FixtureError::ChannelNotFound(Some(
                 FixtureChannel::name_by_id(channel_id),
@@ -383,42 +390,45 @@ impl Fixture {
         self.push_value_source(FixtureChannelValueSource::Programmer);
 
         match self.patch.iter_mut().find(|c| c.type_id() == channel_id) {
-            Some(FixtureChannel::Intensity(_, intens)) => {
-                *intens = value;
-                Ok(())
-            }
-            Some(FixtureChannel::Strobe(strobe)) => {
-                *strobe = value;
-                Ok(())
-            }
-            Some(FixtureChannel::Zoom(_, zoom)) => {
-                *zoom = value;
-                Ok(())
-            }
-            Some(FixtureChannel::ColorRGB(_, color)) => {
-                *color = value;
-                Ok(())
-            }
-            Some(FixtureChannel::ColorRGBW(_, color)) => {
-                *color = value;
-                Ok(())
-            }
-            Some(FixtureChannel::ColorMacro(_, color)) => {
-                *color = value;
-                Ok(())
-            }
-            Some(FixtureChannel::PositionPanTilt(_, position)) => {
-                *position = value;
-                Ok(())
-            }
-            Some(FixtureChannel::Maintenance(_, _, maint)) => {
-                *maint = value;
-                Ok(())
-            }
-            Some(FixtureChannel::ToggleFlags(_, flags)) => {
-                *flags = value;
-                Ok(())
-            }
+            Some(channel) => match channel {
+                FixtureChannel::Intensity(_, intens) => {
+                    *intens = value;
+                    Ok(())
+                }
+                FixtureChannel::Shutter(strobe) => {
+                    *strobe = value;
+                    Ok(())
+                }
+                FixtureChannel::Zoom(_, zoom) => {
+                    *zoom = value;
+                    Ok(())
+                }
+                FixtureChannel::ColorRGB(_, color) => {
+                    *color = value;
+                    Ok(())
+                }
+                FixtureChannel::ColorRGBW(_, color) => {
+                    *color = value;
+                    Ok(())
+                }
+                FixtureChannel::ColorMacro(_, color) => {
+                    *color = value;
+                    Ok(())
+                }
+                FixtureChannel::PositionPanTilt(_, position) => {
+                    *position = value;
+                    Ok(())
+                }
+                FixtureChannel::Maintenance(_, _, maint) => {
+                    *maint = value;
+                    Ok(())
+                }
+                FixtureChannel::ToggleFlags(_, flags) => {
+                    *flags = value;
+                    Ok(())
+                }
+                FixtureChannel::NoFunction => Err(FixtureError::NoFunctionAccess),
+            },
             _ => Err(FixtureError::ChannelNotFound(Some(
                 FixtureChannel::name_by_id(channel_id),
             ))),

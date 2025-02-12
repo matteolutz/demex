@@ -8,6 +8,7 @@ pub enum FixtureError {
     EmptyPatch,
     DuplicateChannelType,
     InvalidDataLength,
+    NoFunctionAccess,
     FixtureChannelError(Box<FixtureChannelError>),
 }
 
@@ -25,6 +26,7 @@ impl std::fmt::Display for FixtureError {
             Self::DuplicateChannelType => write!(f, "Duplicate channel type"),
             Self::InvalidDataLength => write!(f, "Invalid data length"),
             Self::FixtureChannelError(e) => write!(f, "Fixture channel error: {}", e),
+            Self::NoFunctionAccess => write!(f, "Tried to access values for a NoFunction channel"),
         }
     }
 }

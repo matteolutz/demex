@@ -1,17 +1,13 @@
 use std::{
     collections::HashMap,
     net::{self, SocketAddr},
-    sync::{
-        mpsc::{self, TryRecvError},
-        Arc,
-    },
+    sync::mpsc::{self, TryRecvError},
     thread, time,
 };
 
 use artnet_protocol::{ArtCommand, Output, Poll, PortAddress};
 use egui::ahash::HashSet;
 use itertools::Itertools;
-use parking_lot::RwLock;
 
 use super::DmxData;
 
@@ -66,38 +62,52 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, bind_ip: Option<S
         socket.set_broadcast(true).unwrap();
         socket.set_nonblocking(true).unwrap();
 
-        let socket_lock = Arc::new(RwLock::new(socket));
-        let nodes_lock = Arc::new(RwLock::new(
-            HashMap::<PortAddress, HashSet<ArtNetOutputNode>>::new(),
-        ));
+        let mut nodes: HashMap<PortAddress, HashSet<ArtNetOutputNode>> = HashMap::new();
 
-        let socket_lock_cloned = socket_lock.clone();
-        let nodes_lock_cloned = nodes_lock.clone();
-        thread::spawn(move || {
-            let socket_lock = socket_lock_cloned;
-            let nodes_lock = nodes_lock_cloned;
+        let poll_buff = ArtCommand::Poll(Poll::default()).write_to_buffer().unwrap();
+        let mut last_poll_sent: Option<time::Instant> = None;
+        let mut input_buffer = [0u8; 512];
 
-            let mut poll_sent: Option<time::Instant> = None;
+        let mut last_socket_in_update = time::Instant::now();
 
-            loop {
-                if poll_sent.is_none() || poll_sent.unwrap().elapsed().as_secs_f64() >= 3.0 {
-                    // Send poll
-                    let poll_buff = ArtCommand::Poll(Poll::default()).write_to_buffer().unwrap();
-                    socket_lock
-                        .write()
-                        .send_to(&poll_buff, broadcast_addr)
-                        .unwrap();
-                    poll_sent = Some(time::Instant::now());
+        loop {
+            let recv_result = rx.try_recv();
+
+            if let Ok((send_universe, send_universe_data)) = recv_result {
+                let send_universe = send_universe.try_into().unwrap();
+
+                let output_command = ArtCommand::Output(Output {
+                    data: Vec::from(send_universe_data).into(),
+                    port_address: send_universe,
+                    ..Output::default()
+                });
+
+                let command_bytes = output_command.write_to_buffer().unwrap();
+
+                if let Some(nodes) = nodes.get(&send_universe) {
+                    for node in nodes {
+                        socket.send_to(&command_bytes, node.addr).unwrap();
+                    }
+                }
+            } else if recv_result.err().unwrap() == TryRecvError::Disconnected {
+                break;
+            }
+
+            // handle incoming artnet commands
+            if last_socket_in_update.elapsed().as_millis() > 40 {
+                // should we send a poll?
+                if last_poll_sent.is_none() || last_poll_sent.unwrap().elapsed().as_secs_f64() > 3.0
+                {
+                    socket.send_to(&poll_buff, broadcast_addr).unwrap();
+                    last_poll_sent = Some(time::Instant::now());
                 }
 
-                let mut buffer = [0u8; 1024];
+                // check for incoming data
+                if let Ok((length, _)) = socket.recv_from(&mut input_buffer) {
+                    let command = ArtCommand::from_buffer(&input_buffer[..length]).unwrap();
 
-                if let Ok((length, _addr)) = socket_lock.read().recv_from(&mut buffer) {
-                    let command = ArtCommand::from_buffer(&buffer[..length]).unwrap();
                     match command {
                         ArtCommand::PollReply(poll_reply) => {
-                            let mut nodes = nodes_lock.write();
-
                             let net_and_subnet: u16 = (poll_reply.port_address[0] as u16) << 8
                                 | (poll_reply.port_address[1] as u16) << 4;
 
@@ -116,32 +126,7 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, bind_ip: Option<S
                     }
                 }
 
-                thread::sleep(time::Duration::from_millis(40));
-            }
-        });
-
-        loop {
-            let recv_result = rx.try_recv();
-
-            if let Ok((send_universe, send_universe_data)) = recv_result {
-                let send_universe = send_universe.try_into().unwrap();
-
-                let output_command = ArtCommand::Output(Output {
-                    data: Vec::from(send_universe_data).into(),
-                    port_address: send_universe,
-                    ..Output::default()
-                });
-
-                let command_bytes = output_command.write_to_buffer().unwrap();
-
-                let socket = socket_lock.write();
-                if let Some(nodes) = nodes_lock.read().get(&send_universe) {
-                    for node in nodes {
-                        socket.send_to(&command_bytes, node.addr).unwrap();
-                    }
-                }
-            } else if recv_result.err().unwrap() == TryRecvError::Disconnected {
-                break;
+                last_socket_in_update = time::Instant::now();
             }
         }
     });

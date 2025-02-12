@@ -393,15 +393,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             .map(|(fixture, _)| fixture.fixture_id())
             .collect::<Vec<u32>>();
 
-        if let Some(global_fixture_select) = context.global_fixture_select.as_mut() {
-            *global_fixture_select = FixtureSelector::Additive(
-                AtomicFixtureSelector::FixtureIdList(selected_fixture_ids),
-                Box::new(global_fixture_select.clone()),
-            );
-        } else {
-            context.global_fixture_select = Some(FixtureSelector::Atomic(
-                AtomicFixtureSelector::FixtureIdList(selected_fixture_ids),
-            ));
+        if !selected_fixture_ids.is_empty() {
+            if let Some(global_fixture_select) = context.global_fixture_select.as_mut() {
+                *global_fixture_select = FixtureSelector::Additive(
+                    AtomicFixtureSelector::FixtureIdList(selected_fixture_ids),
+                    Box::new(global_fixture_select.clone()),
+                );
+            } else {
+                context.global_fixture_select = Some(FixtureSelector::Atomic(
+                    AtomicFixtureSelector::FixtureIdList(selected_fixture_ids),
+                ));
+            }
         }
 
         context.layout_view_context.drag_context = None;

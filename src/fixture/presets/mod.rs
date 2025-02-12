@@ -19,6 +19,7 @@ use super::{
         value::FixtureChannelDiscreteValue, FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
         FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
     },
+    feature::group::FeatureGroup,
     handler::FixtureHandler,
     sequence::{
         cue::{Cue, CueTiming, CueTrigger},
@@ -33,7 +34,7 @@ pub mod group;
 pub mod mmacro;
 pub mod preset;
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PresetHandler {
     groups: HashMap<u32, FixtureGroup>,
 
@@ -45,6 +46,18 @@ pub struct PresetHandler {
     command_slices: HashMap<u32, CommandSlice>,
 
     sequences: HashMap<u32, Sequence>,
+
+    feature_groups: HashMap<u32, FeatureGroup>,
+}
+
+impl Default for PresetHandler {
+    #[allow(unconditional_recursion)]
+    fn default() -> Self {
+        Self {
+            feature_groups: FeatureGroup::default_feature_groups(),
+            ..Default::default()
+        }
+    }
 }
 
 // Groups

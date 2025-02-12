@@ -18,7 +18,7 @@ use crate::{
 use self::{error::ActionRunError, result::ActionRunResult};
 
 use super::{
-    fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
     object::HomeableObject,
 };
 
@@ -290,7 +290,12 @@ impl Action {
             )),
 
             Self::ClearAll => Ok(ActionRunResult::new()),
-            Self::FixtureSelector(_) => Ok(ActionRunResult::new()),
+            Self::FixtureSelector(fixture_selector) => self.run_fixture_selector(
+                fixture_selector,
+                fixture_selector_context,
+                preset_handler,
+                fixture_handler,
+            ),
             Self::Test(_) => Ok(ActionRunResult::new()),
             Self::Save => Ok(ActionRunResult::new()),
 
@@ -651,5 +656,41 @@ impl Action {
         } else {
             Ok(ActionRunResult::new())
         }
+    }
+
+    fn run_fixture_selector(
+        &self,
+        fixture_selector: &FixtureSelector,
+        fixture_selector_context: FixtureSelectorContext,
+        preset_handler: &PresetHandler,
+        fixture_handler: &FixtureHandler,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        // flatten the fixture selector, so we don't have
+        // outdated references to the previously selected fixtures
+        let fixture_selector = fixture_selector
+            .flatten(preset_handler, fixture_selector_context.clone())
+            .map_err(ActionRunError::FixtureSelectorError)?;
+
+        let selected_fixtures = fixture_selector
+            .get_fixtures(preset_handler, fixture_selector_context)
+            .map_err(ActionRunError::FixtureSelectorError)?;
+
+        if selected_fixtures.is_empty() {
+            return Err(ActionRunError::FixtureSelectorError(
+                FixtureSelectorError::NoFixturesMatched,
+            ));
+        }
+
+        let unknown_fixtures = selected_fixtures
+            .into_iter()
+            .filter(|f_id| !fixture_handler.has_fixture(*f_id))
+            .collect::<Vec<_>>();
+        if !unknown_fixtures.is_empty() {
+            return Err(ActionRunError::FixtureSelectorError(
+                FixtureSelectorError::SomeFixturesFailedToMatch(unknown_fixtures),
+            ));
+        }
+
+        Ok(ActionRunResult::UpdateSelectedFixtures(fixture_selector))
     }
 }

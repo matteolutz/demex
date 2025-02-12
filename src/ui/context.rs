@@ -70,29 +70,6 @@ impl DemexUiContext {
         action: &Action,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match &action {
-            Action::FixtureSelector(fixture_selector) => {
-                let fixture_selector = fixture_selector.flatten(
-                    &self.preset_handler.read(),
-                    FixtureSelectorContext::new(&self.global_fixture_select),
-                );
-
-                if let Ok(fixture_selector) = fixture_selector {
-                    let selected_fixtures = fixture_selector.get_fixtures(
-                        &self.preset_handler.read(),
-                        FixtureSelectorContext::new(&self.global_fixture_select),
-                    );
-
-                    if selected_fixtures.is_ok() {
-                        self.global_fixture_select = Some(fixture_selector);
-                    } else if let Err(fixture_selector_err) = selected_fixtures {
-                        self.global_fixture_select = None;
-                        self.add_dialog_entry(DemexGlobalDialogEntry::error(&fixture_selector_err));
-                    }
-                } else if let Err(fixture_selector_err) = fixture_selector {
-                    self.global_fixture_select = None;
-                    self.add_dialog_entry(DemexGlobalDialogEntry::error(&fixture_selector_err));
-                }
-            }
             Action::ClearAll => {
                 self.global_fixture_select = None;
                 self.windows.retain(|el| !el.is_dialog());
@@ -204,7 +181,10 @@ impl DemexUiContext {
                     self.windows.push(demex_edit_window);
                 }
             }
-            _ => {}
+            ActionRunResult::UpdateSelectedFixtures(fixture_selector) => {
+                self.global_fixture_select = Some(fixture_selector)
+            }
+            ActionRunResult::Default => {}
         }
 
         Ok(())

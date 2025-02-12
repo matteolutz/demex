@@ -98,6 +98,10 @@ impl FixtureHandler {
         &self.fixtures
     }
 
+    pub fn has_fixture(&self, id: u32) -> bool {
+        self.fixtures.iter().any(|f| f.id() == id)
+    }
+
     pub fn outputs(&self) -> &Vec<DemexDmxOutput> {
         &self.outputs
     }

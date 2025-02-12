@@ -33,11 +33,6 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
         )
         .expect("fixture selection failed");
 
-    if selected_fixtures.is_empty() {
-        context.global_fixture_select = None;
-        return;
-    }
-
     let mut mutual_channel_types = fixture_handler
         .fixture_immut(selected_fixtures[0])
         .unwrap()
@@ -77,8 +72,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
             ui.vertical(|ui| {
                 match channel_type {
                     fixture::channel::FIXTURE_CHANNEL_INTENSITY_ID
-                    | fixture::channel::FIXTURE_CHANNEL_STROBE
-                    | fixture::channel::FIXTURE_CHANNEL_ZOOM => {
+                    | fixture::channel::FIXTURE_CHANNEL_SHUTTER_ID
+                    | fixture::channel::FIXTURE_CHANNEL_ZOOM_ID => {
                         ui.vertical(|ui| {
                             ui.set_width(100.0);
                             ui.label(egui::RichText::from(channel_name).color(
