@@ -13,8 +13,8 @@ use crate::parser::nodes::{
 };
 
 use super::{
-    channel::value_source::FixtureChannelValuePriority, handler::FixtureHandler,
-    presets::PresetHandler, sequence::runtime::SequenceRuntime,
+    handler::FixtureHandler, presets::PresetHandler, sequence::runtime::SequenceRuntime,
+    value_source::FixtureChannelValuePriority,
 };
 
 pub mod error;

@@ -2,9 +2,15 @@ use egui::RichText;
 use itertools::Itertools;
 
 use crate::{
-    fixture::channel::{
-        value::FixtureChannelValueTrait, FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
-        FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+    fixture::{
+        channel::{
+            FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
+            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+        },
+        channel2::{
+            channel_type::FixtureChannelType,
+            feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
+        },
     },
     parser::nodes::fixture_selector::FixtureSelectorContext,
 };
@@ -116,9 +122,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // Intens
                         row.col(|ui| {
-                            if let Ok(intensity) =
-                                fixture.intensity(&preset_handler, &updatable_handler)
-                            {
+                            if let Ok(intensity) = fixture.channel_value(
+                                FixtureChannelType::Intensity,
+                                &updatable_handler,
+                                &preset_handler,
+                            ) {
                                 ui.label(
                                     RichText::from(intensity.to_string(&preset_handler)).color(
                                         if intensity.is_home() {
@@ -135,28 +143,24 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // Color
                         row.col(|ui| {
-                            if let Ok(color) = fixture.color(&preset_handler, &updatable_handler) {
-                                ui.label(RichText::from(color.to_string(&preset_handler)).color(
+                            if let Ok(color) =
+                                fixture.display_color(&preset_handler, &updatable_handler)
+                            {
+                                /*ui.label(RichText::from(color.to_string(&preset_handler)).color(
                                     if color.is_home() {
                                         egui::Color32::GRAY
                                     } else {
                                         egui::Color32::YELLOW
                                     },
-                                ));
-
-                                let value = fixture
-                                    .display_color(&preset_handler, &updatable_handler)
-                                    .unwrap();
+                                ));*/
 
                                 let color_value = egui::Color32::from_rgb(
-                                    (value[0] * 255.0) as u8,
-                                    (value[1] * 255.0) as u8,
-                                    (value[2] * 255.0) as u8,
+                                    (color[0] * 255.0) as u8,
+                                    (color[1] * 255.0) as u8,
+                                    (color[2] * 255.0) as u8,
                                 );
 
-                                if !color.is_home() {
-                                    ui.label(RichText::from("     ").background_color(color_value));
-                                }
+                                ui.label(RichText::from("     ").background_color(color_value));
                             } else {
                                 ui.label("-");
                             }

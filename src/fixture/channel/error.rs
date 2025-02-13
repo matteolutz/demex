@@ -1,4 +1,4 @@
-use crate::fixture::error::FixtureError;
+use crate::fixture::{channel2::error::FixtureChannelError2, error::FixtureError};
 
 #[derive(Debug)]
 pub enum FixtureChannelError {
@@ -6,6 +6,7 @@ pub enum FixtureChannelError {
     FixtureError(FixtureError),
     FixtureChannelValueIsUnset,
     WrongFixtureChannelType,
+    FixtureChannelError2(FixtureChannelError2),
 }
 
 impl std::fmt::Display for FixtureChannelError {
@@ -26,6 +27,9 @@ impl std::fmt::Display for FixtureChannelError {
             }
             Self::WrongFixtureChannelType => {
                 write!(f, "Wrong fixture channel type.")
+            }
+            Self::FixtureChannelError2(error) => {
+                write!(f, "Fixture channel error: {}", error)
             }
         }
     }

@@ -2,21 +2,23 @@ use cue::{Cue, CueIdx};
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use super::channel::{value::FixtureChannelValue, value_source::FixtureChannelValuePriority};
+use super::{
+    channel2::channel_value::FixtureChannelValue2, value_source::FixtureChannelValuePriority,
+};
 
 pub mod cue;
 pub mod runtime;
 
 #[derive(Debug, Clone)]
 pub struct FadeFixtureChannelValue {
-    value: FixtureChannelValue,
+    value: FixtureChannelValue2,
     alpha: f32,
     priority: FixtureChannelValuePriority,
 }
 
 impl FadeFixtureChannelValue {
     pub fn new(
-        value: FixtureChannelValue,
+        value: FixtureChannelValue2,
         alpha: f32,
         priority: FixtureChannelValuePriority,
     ) -> Self {
@@ -27,7 +29,7 @@ impl FadeFixtureChannelValue {
         }
     }
 
-    pub fn value(&self) -> &FixtureChannelValue {
+    pub fn value(&self) -> &FixtureChannelValue2 {
         &self.value
     }
 

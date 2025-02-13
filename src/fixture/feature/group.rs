@@ -3,10 +3,7 @@ use std::collections::HashMap;
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::channel::{
-    FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-    FIXTURE_CHANNEL_SHUTTER_ID, FIXTURE_CHANNEL_TOGGLE_FLAGS, FIXTURE_CHANNEL_ZOOM_ID,
-};
+use crate::fixture::channel2::channel_type::FixtureChannelType;
 
 pub const DEFAULT_FEATURE_GROUP_INTENSITY_ID: u32 = 0;
 pub const DEFAULT_FEATURE_GROUP_POSITION_ID: u32 = 1;
@@ -19,7 +16,7 @@ pub const DEFAULT_FEATURE_GROUP_CONTROL_ID: u32 = 5;
 pub struct FeatureGroup {
     id: u32,
     name: String,
-    channel_types: Vec<u16>,
+    channel_types: Vec<FixtureChannelType>,
 }
 
 impl FeatureGroup {
@@ -35,7 +32,7 @@ impl FeatureGroup {
         &mut self.name
     }
 
-    pub fn channel_types(&self) -> &[u16] {
+    pub fn channel_types(&self) -> &[FixtureChannelType] {
         &self.channel_types
     }
 }
@@ -50,7 +47,10 @@ impl FeatureGroup {
             FeatureGroup {
                 id: DEFAULT_FEATURE_GROUP_INTENSITY_ID,
                 name: "Intensity".to_owned(),
-                channel_types: vec![FIXTURE_CHANNEL_INTENSITY_ID],
+                channel_types: vec![
+                    FixtureChannelType::Intensity,
+                    FixtureChannelType::IntensityFine,
+                ],
             },
         );
 
@@ -60,7 +60,12 @@ impl FeatureGroup {
             FeatureGroup {
                 id: DEFAULT_FEATURE_GROUP_POSITION_ID,
                 name: "Position".to_owned(),
-                channel_types: vec![FIXTURE_CHANNEL_POSITION_PAN_TILT_ID],
+                channel_types: vec![
+                    FixtureChannelType::Pan,
+                    FixtureChannelType::PanFine,
+                    FixtureChannelType::Tilt,
+                    FixtureChannelType::TiltFine,
+                ],
             },
         );
 
@@ -70,7 +75,14 @@ impl FeatureGroup {
             FeatureGroup {
                 id: DEFAULT_FEATURE_GROUP_COLOR_ID,
                 name: "Color".to_owned(),
-                channel_types: vec![FIXTURE_CHANNEL_COLOR_ID],
+                channel_types: vec![
+                    FixtureChannelType::Red,
+                    FixtureChannelType::RedFine,
+                    FixtureChannelType::Green,
+                    FixtureChannelType::GreenFine,
+                    FixtureChannelType::Blue,
+                    FixtureChannelType::BlueFine,
+                ],
             },
         );
 
@@ -80,7 +92,7 @@ impl FeatureGroup {
             FeatureGroup {
                 id: DEFAULT_FEATURE_GROUP_BEAM_ID,
                 name: "Beam".to_owned(),
-                channel_types: vec![FIXTURE_CHANNEL_SHUTTER_ID],
+                channel_types: vec![],
             },
         );
 
@@ -90,7 +102,7 @@ impl FeatureGroup {
             FeatureGroup {
                 id: DEFAULT_FEATURE_GROUP_FOCUS_ID,
                 name: "Focus".to_owned(),
-                channel_types: vec![FIXTURE_CHANNEL_ZOOM_ID],
+                channel_types: vec![],
             },
         );
 
@@ -100,7 +112,14 @@ impl FeatureGroup {
             FeatureGroup {
                 id: DEFAULT_FEATURE_GROUP_CONTROL_ID,
                 name: "Control".to_owned(),
-                channel_types: vec![FIXTURE_CHANNEL_TOGGLE_FLAGS],
+                channel_types: vec![
+                    FixtureChannelType::ToggleFlags(0),
+                    FixtureChannelType::ToggleFlags(1),
+                    FixtureChannelType::ToggleFlags(2),
+                    FixtureChannelType::ToggleFlags(3),
+                    FixtureChannelType::ToggleFlags(4),
+                    FixtureChannelType::ToggleFlags(5),
+                ],
             },
         );
 

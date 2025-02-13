@@ -4,7 +4,10 @@ use egui_probe::EguiProbe;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::channel::{value::FixtureChannelValue, FixtureId};
+use crate::fixture::{
+    channel::FixtureId,
+    channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, EguiProbe)]
 pub enum CueTrigger {
@@ -19,13 +22,13 @@ pub enum CueTrigger {
 
 #[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
 pub struct CueFixtureChannelValue {
-    value: FixtureChannelValue,
-    channel_type: u16,
+    value: FixtureChannelValue2,
+    channel_type: FixtureChannelType,
     snap: bool,
 }
 
 impl CueFixtureChannelValue {
-    pub fn new(value: FixtureChannelValue, channel_type: u16, snap: bool) -> Self {
+    pub fn new(value: FixtureChannelValue2, channel_type: FixtureChannelType, snap: bool) -> Self {
         Self {
             value,
             channel_type,
@@ -33,11 +36,11 @@ impl CueFixtureChannelValue {
         }
     }
 
-    pub fn value(&self) -> &FixtureChannelValue {
+    pub fn value(&self) -> &FixtureChannelValue2 {
         &self.value
     }
 
-    pub fn channel_type(&self) -> u16 {
+    pub fn channel_type(&self) -> FixtureChannelType {
         self.channel_type
     }
 
@@ -230,23 +233,27 @@ impl Cue {
     pub fn channel_value_for_fixture(
         &self,
         fixture_id: u32,
-        channel_id: u16,
-    ) -> Option<&FixtureChannelValue> {
+        channel_type: FixtureChannelType,
+    ) -> Option<&FixtureChannelValue2> {
         self.data.get(&fixture_id).and_then(|values| {
             values
                 .iter()
-                .find(|v| v.channel_type() == channel_id)
+                .find(|v| v.channel_type() == channel_type)
                 .map(|v| v.value())
         })
     }
 
-    pub fn should_snap_channel_value_for_fixture(&self, fixture_id: u32, channel_id: u16) -> bool {
+    pub fn should_snap_channel_value_for_fixture(
+        &self,
+        fixture_id: u32,
+        channel_type: FixtureChannelType,
+    ) -> bool {
         self.data
             .get(&fixture_id)
             .and_then(|values| {
                 values
                     .iter()
-                    .find(|v| v.channel_type() == channel_id)
+                    .find(|v| v.channel_type() == channel_type)
                     .map(|v| v.snap())
             })
             .unwrap_or(false)

@@ -2,9 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel::value::{
-            FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait,
-        },
+        channel::value::FixtureChannelValueTrait,
+        channel2::channel_value::FixtureChannelValue2,
         error::FixtureError,
         handler::FixtureHandler,
         presets::PresetHandler,
@@ -49,7 +48,7 @@ impl ChannelTypeSelectorActionData {
             match self {
                 Self::All => {
                     values.push(CueFixtureChannelValue::new(
-                        fixture.channel_value_programmer(*channel_type)?,
+                        fixture.channel_value_programmer(*channel_type)?.clone(),
                         *channel_type,
                         false,
                     ));
@@ -60,16 +59,14 @@ impl ChannelTypeSelectorActionData {
                         continue;
                     }
 
-                    values.push(CueFixtureChannelValue::new(value, *channel_type, false));
+                    values.push(CueFixtureChannelValue::new(
+                        value.clone(),
+                        *channel_type,
+                        false,
+                    ));
                 }
                 Self::Channels(channels) => {
-                    if channels.contains(channel_type) {
-                        values.push(CueFixtureChannelValue::new(
-                            fixture.channel_value_programmer(*channel_type)?,
-                            *channel_type,
-                            false,
-                        ));
-                    }
+                    todo!()
                 }
             }
         }
@@ -207,7 +204,6 @@ impl Action {
                 .run_record_preset(
                     preset_handler,
                     fixture_handler,
-                    updatable_handler,
                     fixture_selector,
                     fixture_selector_context,
                     *feature_group_id,
@@ -267,7 +263,6 @@ impl Action {
 
             Self::UpdatePreset(preset_id, fixture_selector, update_mode) => self.run_update_preset(
                 preset_handler,
-                updatable_handler,
                 fixture_handler,
                 fixture_selector,
                 fixture_selector_context,
@@ -355,15 +350,8 @@ impl Action {
                 }
             };
 
-            if let Some(f) = fixture_handler.fixture(*fixture) {
-                f.set_channel_value(
-                    channel_type,
-                    FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Single(
-                        discrete_value,
-                    )),
-                )
-                .map_err(ActionRunError::FixtureError)?;
-            }
+            // change this, to set features instead
+            todo!()
         }
 
         Ok(ActionRunResult::new())
@@ -392,11 +380,11 @@ impl Action {
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
                 for channel_type in feature_group.channel_types() {
-                    if !f.channel_types().contains(channel_type) {
+                    if !f.channel_types().contains(&channel_type) {
                         continue;
                     }
 
-                    f.set_channel_value(*channel_type, FixtureChannelValue::preset(preset.id()))
+                    f.set_channel_value(*channel_type, FixtureChannelValue2::Preset(preset.id()))
                         .map_err(ActionRunError::FixtureError)?;
                 }
             }
@@ -504,7 +492,6 @@ impl Action {
         &self,
         preset_handler: &mut PresetHandler,
         fixture_handler: &FixtureHandler,
-        updatable_handler: &UpdatableHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         feature_group_id: u32,
@@ -519,7 +506,6 @@ impl Action {
                 name.clone(),
                 fixture_handler,
                 feature_group_id,
-                updatable_handler,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 
@@ -693,7 +679,6 @@ impl Action {
     fn run_update_preset(
         &self,
         preset_handler: &mut PresetHandler,
-        updatable_handler: &UpdatableHandler,
         fixture_handler: &mut FixtureHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
@@ -706,7 +691,6 @@ impl Action {
                 fixture_selector_context,
                 preset_id,
                 fixture_handler,
-                updatable_handler,
                 update_mode,
             )
             .map_err(ActionRunError::PresetHandlerError)?;

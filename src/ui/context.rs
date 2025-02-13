@@ -3,17 +3,7 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 
 use crate::{
-    fixture::{
-        channel::{
-            value::{FixtureChannelDiscreteValue, FixtureChannelValue},
-            FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
-            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-        },
-        effect::FixtureChannelEffect,
-        handler::FixtureHandler,
-        presets::PresetHandler,
-        updatables::UpdatableHandler,
-    },
+    fixture::{handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler},
     lexer::token::Token,
     parser::nodes::{
         action::{result::ActionRunResult, Action},
@@ -110,7 +100,7 @@ impl DemexUiContext {
                 }
             }
             Action::Test(cmd) => match cmd.as_str() {
-                "effect" => {
+                /*"effect" => {
                     let _ = self
                         .fixture_handler
                         .write()
@@ -155,7 +145,7 @@ impl DemexUiContext {
                                 },
                             }),
                         );
-                }
+                }*/
                 _ => self.add_dialog_entry(DemexGlobalDialogEntry::error(
                     &DemexUiError::RuntimeError(format!("Unknown test command: \"{}\"", cmd)),
                 )),

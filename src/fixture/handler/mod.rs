@@ -61,7 +61,7 @@ impl FixtureHandler {
 
         for f in &fixtures {
             let start_address = f.start_address();
-            let end_address = start_address + f.address_bandwidth() - 1;
+            let end_address = start_address + f.channels().len() as u16 - 1;
             let address_set = fixture_addresses.entry(f.universe()).or_default();
 
             for i in start_address..=end_address {
@@ -148,7 +148,7 @@ impl FixtureHandler {
                     updatable_handler,
                     self.grand_master as f32 / 255.0,
                 )
-                .map_err(FixtureHandlerError::FixtureChannelError)?;
+                .map_err(FixtureHandlerError::FixtureError)?;
 
             if !force
                 && compare_universe_output_data(

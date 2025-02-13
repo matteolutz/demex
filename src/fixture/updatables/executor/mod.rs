@@ -2,10 +2,11 @@ use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
-    channel::value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
+    channel2::channel_type::FixtureChannelType,
     handler::FixtureHandler,
     presets::PresetHandler,
     sequence::{runtime::SequenceRuntime, FadeFixtureChannelValue},
+    value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, EguiProbe)]
@@ -71,12 +72,12 @@ impl SequenceRuntimeExecutor {
     pub fn channel_value(
         &self,
         fixture_id: u32,
-        channel_id: u16,
+        channel_type: FixtureChannelType,
         preset_handler: &PresetHandler,
     ) -> Option<FadeFixtureChannelValue> {
         self.runtime.channel_value(
             fixture_id,
-            channel_id,
+            channel_type,
             1.0,
             1.0,
             preset_handler,

@@ -6,14 +6,11 @@ pub mod config;
 pub mod overrides;
 
 use crate::fixture::{
-    channel::{
-        value::{FixtureChannelDiscreteValue, FixtureChannelValue},
-        value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
-        FIXTURE_CHANNEL_INTENSITY_ID,
-    },
+    channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
     error::FixtureError,
     handler::FixtureHandler,
     sequence::FadeFixtureChannelValue,
+    value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
     Fixture,
 };
 
@@ -158,21 +155,24 @@ impl DemexFader {
     pub fn get_channel_value(
         &self,
         fixture: &Fixture,
-        channel_id: u16,
+        channel_type: FixtureChannelType,
         preset_handler: &PresetHandler,
     ) -> Result<FadeFixtureChannelValue, FixtureError> {
         if !self.is_active() {
-            return Err(FixtureError::ChannelValueNotFound(channel_id));
+            return Err(FixtureError::ChannelValueNotFound(channel_type));
         }
 
         match &self.config {
             DemexFaderConfig::Submaster { fixtures } => {
-                if !fixtures.contains(&fixture.id()) || channel_id != FIXTURE_CHANNEL_INTENSITY_ID {
-                    return Err(FixtureError::ChannelValueNotFound(channel_id));
+                if !fixtures.contains(&fixture.id())
+                    || channel_type != FixtureChannelType::Intensity
+                    || channel_type != FixtureChannelType::IntensityFine
+                {
+                    return Err(FixtureError::ChannelValueNotFound(channel_type));
                 }
 
                 Ok(FadeFixtureChannelValue::new(
-                    FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Single(1.0)),
+                    FixtureChannelValue2::Discrete(255),
                     self.value,
                     self.priority,
                 ))
@@ -183,7 +183,7 @@ impl DemexFader {
                 function,
             } => {
                 if !fixtures.contains(&fixture.id()) {
-                    return Err(FixtureError::ChannelValueNotFound(channel_id));
+                    return Err(FixtureError::ChannelValueNotFound(channel_type));
                 }
 
                 let speed_multiplier = if *function == DemexFaderRuntimeFunction::Speed {
@@ -201,13 +201,13 @@ impl DemexFader {
                 runtime
                     .channel_value(
                         fixture.id(),
-                        channel_id,
+                        channel_type,
                         speed_multiplier,
                         intensity_multiplier,
                         preset_handler,
                         self.priority,
                     )
-                    .ok_or(FixtureError::ChannelValueNotFound(channel_id))
+                    .ok_or(FixtureError::ChannelValueNotFound(channel_type))
             }
         }
     }
