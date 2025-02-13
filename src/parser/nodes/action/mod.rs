@@ -358,7 +358,7 @@ impl Action {
             if let Some(f) = fixture_handler.fixture(*fixture) {
                 f.set_channel_value(
                     channel_type,
-                    FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(
+                    FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Single(
                         discrete_value,
                     )),
                 )
@@ -396,7 +396,7 @@ impl Action {
                         continue;
                     }
 
-                    f.set_channel_value(*channel_type, FixtureChannelValue::Preset(preset.id()))
+                    f.set_channel_value(*channel_type, FixtureChannelValue::preset(preset.id()))
                         .map_err(ActionRunError::FixtureError)?;
                 }
             }

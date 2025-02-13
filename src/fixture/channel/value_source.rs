@@ -8,7 +8,10 @@ use crate::fixture::{
     updatables::UpdatableHandler, Fixture,
 };
 
-use super::value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait};
+use super::value::{
+    FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait,
+    FixtureChannelValueVariant,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, EguiProbe, Default)]
 pub enum FixtureChannelValuePriority {
@@ -116,7 +119,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
 
         values.sort_by_key(|v| v.priority());
 
-        let mut value = FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::AnyHome);
+        let mut value = FixtureChannelValue::discrete(FixtureChannelDiscreteValue::AnyHome);
 
         for v in values {
             if v.value().is_home() {
@@ -124,11 +127,17 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
             }
 
             if !v.priority().is_htp() {
-                value = FixtureChannelValue::Mix {
-                    a: Box::new(FixtureChannelValue::any_home()),
-                    b: Box::new(v.value().clone()),
-                    mix: v.alpha(),
-                };
+                if v.alpha() == 0.0 {
+                    value = FixtureChannelValue::any_home();
+                } else if v.alpha() == 1.0 {
+                    value = v.value().clone()
+                } else {
+                    value = FixtureChannelValue::new(FixtureChannelValueVariant::Mix {
+                        a: Box::new(FixtureChannelValue::any_home()),
+                        b: Box::new(v.value().clone()),
+                        mix: v.alpha(),
+                    });
+                }
 
                 continue;
             }
@@ -142,11 +151,11 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                 continue;
             }
 
-            value = FixtureChannelValue::Mix {
+            value = FixtureChannelValue::new(FixtureChannelValueVariant::Mix {
                 a: Box::new(value),
                 b: Box::new(v.value().clone()),
                 mix: v.alpha(),
-            };
+            });
         }
 
         Ok(value)

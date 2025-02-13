@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time};
 
 use channel::{
     error::FixtureChannelError,
@@ -366,6 +366,7 @@ impl Fixture {
                 | FixtureChannel::ColorRGBW(_, value)
                 | FixtureChannel::ColorMacro(_, value) => Ok(value.clone()),
                 FixtureChannel::PositionPanTilt(_, value) => Ok(value.clone()),
+                FixtureChannel::PanTiltSpeed(_, value) => Ok(value.clone()),
                 FixtureChannel::Maintenance(_, _, value) => Ok(value.clone()),
                 FixtureChannel::ToggleFlags(_, value) => Ok(value.clone()),
                 FixtureChannel::NoFunction => Err(FixtureError::NoFunctionAccess),
@@ -374,6 +375,16 @@ impl Fixture {
                 FixtureChannel::name_by_id(channel_id),
             ))),
         }
+    }
+
+    pub fn channel_value_programmer_is_effect(
+        &self,
+        preset_handler: &PresetHandler,
+        channel_id: u16,
+    ) -> bool {
+        self.channel_value_programmer(channel_id)
+            .map(|val| val.is_effect(preset_handler, self.id, channel_id))
+            .unwrap_or(false)
     }
 
     pub fn channel_value(
@@ -394,7 +405,7 @@ impl Fixture {
         // make the programmer the first element in the sources vector
         self.push_value_source(FixtureChannelValueSource::Programmer);
 
-        value.start_effect();
+        value = value.with_effect_started(Some(time::Instant::now()));
 
         match self.patch.iter_mut().find(|c| c.type_id() == channel_id) {
             Some(channel) => match channel {
@@ -424,6 +435,10 @@ impl Fixture {
                 }
                 FixtureChannel::PositionPanTilt(_, position) => {
                     *position = value;
+                    Ok(())
+                }
+                FixtureChannel::PanTiltSpeed(_, speed) => {
+                    *speed = value;
                     Ok(())
                 }
                 FixtureChannel::Maintenance(_, _, maint) => {
@@ -470,7 +485,7 @@ impl Fixture {
     ) -> Result<(), FixtureError> {
         self.set_channel_value(
             channel_id,
-            FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(value)),
+            FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Single(value)),
         )
     }
 
@@ -506,7 +521,7 @@ impl Fixture {
             _ => false,
         }) {
             Some(FixtureChannel::ToggleFlags(_, value)) => {
-                *value = FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::ToggleFlag(
+                *value = FixtureChannelValue::discrete(FixtureChannelDiscreteValue::ToggleFlag(
                     flag_name.to_owned(),
                 ));
                 Ok(())
@@ -536,14 +551,14 @@ impl Fixture {
 
         if let Ok(intens) = self
             .intensity(preset_handler, updatable_handler)
-            .map(|value| value.to_string(preset_handler, FIXTURE_CHANNEL_INTENSITY_ID))
+            .map(|value| value.to_string(preset_handler))
         {
             state.push_str(intens.as_str());
         }
 
         if let Ok(color) = self
             .color(preset_handler, updatable_handler)
-            .map(|value| value.to_string(preset_handler, FIXTURE_CHANNEL_COLOR_ID))
+            .map(|value| value.to_string(preset_handler))
         {
             state.push('\n');
             state.push_str(color.as_str());
@@ -551,7 +566,7 @@ impl Fixture {
 
         if let Ok(position) = self
             .position_pan_tilt(preset_handler, updatable_handler)
-            .map(|value| value.to_string(preset_handler, FIXTURE_CHANNEL_POSITION_PAN_TILT_ID))
+            .map(|value| value.to_string(preset_handler))
         {
             state.push('\n');
             state.push_str(position.as_str());

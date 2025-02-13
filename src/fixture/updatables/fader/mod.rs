@@ -172,7 +172,7 @@ impl DemexFader {
                 }
 
                 Ok(FadeFixtureChannelValue::new(
-                    FixtureChannelValue::Discrete(FixtureChannelDiscreteValue::Single(1.0)),
+                    FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Single(1.0)),
                     self.value,
                     self.priority,
                 ))

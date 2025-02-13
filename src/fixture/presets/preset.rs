@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel::value::FixtureChannelDiscreteValue, handler::FixtureHandler,
+        channel::value::{FixtureChannelDiscreteValue, FixtureChannelValueTrait},
+        handler::FixtureHandler,
         updatables::UpdatableHandler,
     },
     parser::nodes::{
@@ -64,6 +65,10 @@ impl FixturePreset {
                     let fixture_channel_value = fixture
                         .channel_value(*channel_type, preset_handler, updatable_handler)
                         .map_err(PresetHandlerError::FixtureError)?;
+
+                    if fixture_channel_value.is_home() {
+                        continue;
+                    }
 
                     values.insert(
                         *channel_type,

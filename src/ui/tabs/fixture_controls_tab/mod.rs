@@ -8,6 +8,7 @@ use crate::{
         channel::value::{FixtureChannelValue, FixtureChannelValueTrait},
     },
     parser::nodes::fixture_selector::FixtureSelectorContext,
+    ui::components::slider::was_touched_slider,
 };
 
 pub mod color;
@@ -84,32 +85,21 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 },
                             ));
 
-                            ui.add(
-                                eframe::egui::Slider::from_get_set(0.0..=1.0, |val| {
-                                    if let Some(val) = val {
-                                        for fixture_id in selected_fixtures.iter() {
-                                            fixture_handler
-                                                .fixture(*fixture_id)
-                                                .unwrap()
-                                                .set_channel_single_value(channel_type, val as f32)
-                                                .expect("");
-                                        }
+                            let mut value = fixture_handler
+                                .fixture_immut(selected_fixtures[0])
+                                .unwrap()
+                                .channel_single_value_programmer(channel_type, &preset_handler)
+                                .unwrap();
 
-                                        val
-                                    } else {
-                                        fixture_handler
-                                            .fixture(selected_fixtures[0])
-                                            .unwrap()
-                                            .channel_single_value_programmer(
-                                                channel_type,
-                                                &preset_handler,
-                                            )
-                                            .expect("")
-                                            as f64
-                                    }
-                                })
-                                .vertical(),
-                            );
+                            if was_touched_slider(ui, &mut value) {
+                                for fixture_id in selected_fixtures.iter() {
+                                    fixture_handler
+                                        .fixture(*fixture_id)
+                                        .unwrap()
+                                        .set_channel_single_value(channel_type, value)
+                                        .expect("");
+                                }
+                            }
                         });
                     }
                     fixture::channel::FIXTURE_CHANNEL_COLOR_ID => {

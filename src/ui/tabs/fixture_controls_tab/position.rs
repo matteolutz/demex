@@ -33,7 +33,7 @@ pub fn position_controls_ui(
                     fixture_handler
                         .fixture(*fixture_id)
                         .unwrap()
-                        .set_position_pan_tilt(FixtureChannelValue::Discrete(
+                        .set_position_pan_tilt(FixtureChannelValue::discrete(
                             FixtureChannelDiscreteValue::Pair(val.into()),
                         ))
                         .expect("");

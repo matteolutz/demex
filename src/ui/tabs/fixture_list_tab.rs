@@ -120,13 +120,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 fixture.intensity(&preset_handler, &updatable_handler)
                             {
                                 ui.label(
-                                    RichText::from(
-                                        intensity.to_string(
-                                            &preset_handler,
-                                            FIXTURE_CHANNEL_INTENSITY_ID,
-                                        ),
-                                    )
-                                    .color(
+                                    RichText::from(intensity.to_string(&preset_handler)).color(
                                         if intensity.is_home() {
                                             egui::Color32::GRAY
                                         } else {
@@ -142,18 +136,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                         // Color
                         row.col(|ui| {
                             if let Ok(color) = fixture.color(&preset_handler, &updatable_handler) {
-                                ui.label(
-                                    RichText::from(
-                                        color.to_string(&preset_handler, FIXTURE_CHANNEL_COLOR_ID),
-                                    )
-                                    .color(
-                                        if color.is_home() {
-                                            egui::Color32::GRAY
-                                        } else {
-                                            egui::Color32::YELLOW
-                                        },
-                                    ),
-                                );
+                                ui.label(RichText::from(color.to_string(&preset_handler)).color(
+                                    if color.is_home() {
+                                        egui::Color32::GRAY
+                                    } else {
+                                        egui::Color32::YELLOW
+                                    },
+                                ));
 
                                 let value = fixture
                                     .display_color(&preset_handler, &updatable_handler)
@@ -178,17 +167,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             if let Ok(pos) =
                                 fixture.position_pan_tilt(&preset_handler, &updatable_handler)
                             {
-                                ui.label(
-                                    RichText::from(pos.to_string(
-                                        &preset_handler,
-                                        FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-                                    ))
-                                    .color(if pos.is_home() {
+                                ui.label(RichText::from(pos.to_string(&preset_handler)).color(
+                                    if pos.is_home() {
                                         egui::Color32::GRAY
                                     } else {
                                         egui::Color32::YELLOW
-                                    }),
-                                );
+                                    },
+                                ));
                             } else {
                                 ui.label("-");
                             }
@@ -221,10 +206,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     RichText::from(format!(
                                         "{}({})",
                                         fixture.channel_name(*channel_type).unwrap(),
-                                        channel_value
-                                            .as_ref()
-                                            .unwrap()
-                                            .to_string(&preset_handler, *channel_type)
+                                        channel_value.as_ref().unwrap().to_string(&preset_handler)
                                     ))
                                     .color(egui::Color32::YELLOW),
                                 );

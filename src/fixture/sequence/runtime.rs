@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
     channel::{
-        value::FixtureChannelValue, value_source::FixtureChannelValuePriority,
+        value::{FixtureChannelValue, FixtureChannelValueVariant},
+        value_source::FixtureChannelValuePriority,
         FIXTURE_CHANNEL_INTENSITY_ID,
     },
     presets::PresetHandler,
@@ -159,7 +160,7 @@ impl SequenceRuntime {
                     cue.channel_value_for_fixture(fixture_id, channel_id)
                         .map(|v| {
                             FadeFixtureChannelValue::new(
-                                FixtureChannelValue::Mix {
+                                FixtureChannelValue::new(FixtureChannelValueVariant::Mix {
                                     a: Box::new(
                                         prev_cue
                                             .channel_value_for_fixture(fixture_id, channel_id)
@@ -168,7 +169,7 @@ impl SequenceRuntime {
                                     ),
                                     b: Box::new(v.clone()),
                                     mix,
-                                },
+                                }),
                                 fade,
                                 priority,
                             )

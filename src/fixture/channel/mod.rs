@@ -17,6 +17,7 @@ pub const FIXTURE_CHANNEL_SHUTTER_ID: u16 = 1;
 pub const FIXTURE_CHANNEL_ZOOM_ID: u16 = 2;
 pub const FIXTURE_CHANNEL_COLOR_ID: u16 = 10;
 pub const FIXTURE_CHANNEL_POSITION_PAN_TILT_ID: u16 = 20;
+pub const FIXTURE_CHANNEL_PAN_TILT_SPEED_ID: u16 = 21;
 pub const FIXTURE_CHANNEL_TOGGLE_FLAGS: u16 = 30;
 pub const FIXTURE_CHANNEL_NO_FUNCTION_ID: u16 = 100;
 
@@ -37,6 +38,7 @@ pub enum SerializableFixtureChannelPatch {
     ColorRGBW(bool),
     ColorMacro(HashMap<u8, [f32; 4]>),
     PositionPanTilt(bool),
+    PanTiltSpeed(bool),
     Maintenance(String),
     ToggleFlags(HashMap<String, u8>),
     NoFunction,
@@ -59,6 +61,9 @@ impl From<FixtureChannel> for SerializableFixtureChannelPatch {
             FixtureChannel::ColorMacro(map, _) => SerializableFixtureChannelPatch::ColorMacro(map),
             FixtureChannel::PositionPanTilt(is_fine, _) => {
                 SerializableFixtureChannelPatch::PositionPanTilt(is_fine)
+            }
+            FixtureChannel::PanTiltSpeed(is_fine, _) => {
+                SerializableFixtureChannelPatch::PanTiltSpeed(is_fine)
             }
             FixtureChannel::Maintenance(name, _, _) => {
                 SerializableFixtureChannelPatch::Maintenance(name)
@@ -91,6 +96,9 @@ impl From<SerializableFixtureChannelPatch> for FixtureChannel {
             SerializableFixtureChannelPatch::PositionPanTilt(is_fine) => {
                 FixtureChannel::position_pan_tilt(is_fine)
             }
+            SerializableFixtureChannelPatch::PanTiltSpeed(is_fine) => {
+                FixtureChannel::pan_tilt_speed(is_fine)
+            }
             SerializableFixtureChannelPatch::Maintenance(name) => {
                 FixtureChannel::maintenance(&name)
             }
@@ -122,6 +130,9 @@ impl From<&SerializableFixtureChannelPatch> for FixtureChannel {
             SerializableFixtureChannelPatch::PositionPanTilt(is_fine) => {
                 FixtureChannel::position_pan_tilt(*is_fine)
             }
+            SerializableFixtureChannelPatch::PanTiltSpeed(is_fine) => {
+                FixtureChannel::pan_tilt_speed(*is_fine)
+            }
             SerializableFixtureChannelPatch::Maintenance(name) => FixtureChannel::maintenance(name),
             SerializableFixtureChannelPatch::ToggleFlags(flags) => {
                 FixtureChannel::toggle_flags(flags.clone())
@@ -140,6 +151,7 @@ pub enum FixtureChannel {
     ColorRGBW(bool, FixtureChannelValue),
     ColorMacro(HashMap<u8, [f32; 4]>, FixtureChannelValue),
     PositionPanTilt(bool, FixtureChannelValue),
+    PanTiltSpeed(bool, FixtureChannelValue),
     Maintenance(String, u16, FixtureChannelValue),
     ToggleFlags(HashMap<String, u8>, FixtureChannelValue),
     NoFunction,
@@ -188,6 +200,10 @@ impl FixtureChannel {
         FixtureChannel::PositionPanTilt(is_fine, FixtureChannelValue::any_home())
     }
 
+    pub fn pan_tilt_speed(is_fine: bool) -> Self {
+        FixtureChannel::PanTiltSpeed(is_fine, FixtureChannelValue::any_home())
+    }
+
     pub fn get_maintenance_id(name: &str) -> u16 {
         hash::hash(name) as u16
     }
@@ -217,6 +233,7 @@ impl FixtureChannel {
             FixtureChannel::PositionPanTilt(_, position) => {
                 *position = FixtureChannelValue::any_home()
             }
+            FixtureChannel::PanTiltSpeed(_, speed) => *speed = FixtureChannelValue::any_home(),
             FixtureChannel::Maintenance(_, _, value) => *value = FixtureChannelValue::any_home(),
             FixtureChannel::ToggleFlags(_, value) => *value = FixtureChannelValue::any_home(),
             FixtureChannel::NoFunction => {}
@@ -233,6 +250,7 @@ impl FixtureChannel {
             }
             FixtureChannel::ColorMacro(_, value) => value.is_home(),
             FixtureChannel::PositionPanTilt(_, position) => position.is_home(),
+            FixtureChannel::PanTiltSpeed(_, speed) => speed.is_home(),
             FixtureChannel::Maintenance(_, _, value) => value.is_home(),
             FixtureChannel::ToggleFlags(_, value) => value.is_home(),
             FixtureChannel::NoFunction => true,
@@ -280,6 +298,13 @@ impl FixtureChannel {
                     2
                 }
             }
+            FixtureChannel::PanTiltSpeed(is_fine, _) => {
+                if *is_fine {
+                    2
+                } else {
+                    1
+                }
+            }
             FixtureChannel::Maintenance(_, _, _) => 1,
             FixtureChannel::ToggleFlags(_, _) => 1,
             FixtureChannel::NoFunction => 1,
@@ -295,6 +320,7 @@ impl FixtureChannel {
             | FixtureChannel::ColorRGBW(_, _)
             | FixtureChannel::ColorMacro(_, _) => FIXTURE_CHANNEL_COLOR_ID,
             FixtureChannel::PositionPanTilt(_, _) => FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
+            FixtureChannel::PanTiltSpeed(_, _) => FIXTURE_CHANNEL_PAN_TILT_SPEED_ID,
             FixtureChannel::Maintenance(_, id, _) => *id,
             FixtureChannel::ToggleFlags(_, _) => FIXTURE_CHANNEL_TOGGLE_FLAGS,
             FixtureChannel::NoFunction => FIXTURE_CHANNEL_NO_FUNCTION_ID,
@@ -331,6 +357,7 @@ impl FixtureChannel {
             FIXTURE_CHANNEL_ZOOM_ID => "Zoom".to_owned(),
             FIXTURE_CHANNEL_COLOR_ID => "Color".to_owned(),
             FIXTURE_CHANNEL_POSITION_PAN_TILT_ID => "PositionPanTilt".to_owned(),
+            FIXTURE_CHANNEL_PAN_TILT_SPEED_ID => "PanTiltSpeed".to_owned(),
             FIXTURE_CHANNEL_TOGGLE_FLAGS => "ToggleFlags".to_owned(),
             FIXTURE_CHANNEL_NO_FUNCTION_ID => "NoFunction".to_owned(),
             _ => "Unknown".to_owned(),
@@ -490,6 +517,29 @@ impl FixtureChannel {
                     Ok(vec![pan, tilt])
                 }
             }
+            FixtureChannel::PanTiltSpeed(is_fine, _) => {
+                let channel_value = fixture
+                    .channel_value(
+                        FIXTURE_CHANNEL_PAN_TILT_SPEED_ID,
+                        preset_handler,
+                        updatable_handler,
+                    )
+                    .map_err(FixtureChannelError::FixtureError)?;
+
+                let pan_tilt_speed = channel_value.as_single(
+                    preset_handler,
+                    fixture_id,
+                    FIXTURE_CHANNEL_PAN_TILT_SPEED_ID,
+                )?;
+
+                let (value_coarse, value_fine) = Self::float_to_coarse_and_fine(pan_tilt_speed);
+
+                if *is_fine {
+                    Ok(vec![value_coarse, value_fine])
+                } else {
+                    Ok(vec![value_coarse])
+                }
+            }
             FixtureChannel::Maintenance(_, id, _) => {
                 let channel_value = fixture
                     .channel_value(*id, preset_handler, updatable_handler)
@@ -508,7 +558,7 @@ impl FixtureChannel {
                     )
                     .map_err(FixtureChannelError::FixtureError)?;
 
-                let flag_name = channel_value.as_toggle_flag(preset_handler, fixture_id)?;
+                let flag_name = channel_value.as_toggle_flag(fixture_id)?;
 
                 let value: u8 = flag_name.map(|f| *flags.get(&f).unwrap_or(&0)).unwrap_or(0);
 

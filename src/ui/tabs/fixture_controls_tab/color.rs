@@ -79,12 +79,25 @@ pub fn color_controls_ui(
                     );
 
                     ui.style_mut().spacing.item_spacing = [10.0, 0.0].into();
-                    if color_picker_color32(ui, &mut color, egui::color_picker::Alpha::Opaque) {
+                    if color_picker_color32(ui, &mut color, egui::color_picker::Alpha::Opaque)
+                        && !selected_fixtures
+                            .iter()
+                            .map(|f_id| {
+                                fixture_handler
+                                    .fixture_immut(*f_id)
+                                    .unwrap()
+                                    .channel_value_programmer_is_effect(
+                                        preset_handler,
+                                        FIXTURE_CHANNEL_COLOR_ID,
+                                    )
+                            })
+                            .any(|is_effect| is_effect)
+                    {
                         for fixture_id in selected_fixtures.iter() {
                             fixture_handler
                                 .fixture(*fixture_id)
                                 .unwrap()
-                                .set_color(FixtureChannelValue::Discrete(
+                                .set_color(FixtureChannelValue::discrete(
                                     FixtureChannelDiscreteValue::Quadruple([
                                         color.r() as f32 / 255.0,
                                         color.g() as f32 / 255.0,
@@ -126,7 +139,7 @@ pub fn color_controls_ui(
                                     fixture_handler
                                         .fixture(*fixture_id)
                                         .unwrap()
-                                        .set_color(FixtureChannelValue::Discrete(
+                                        .set_color(FixtureChannelValue::discrete(
                                             FixtureChannelDiscreteValue::Single(
                                                 *byte_value as f32 / 255.0,
                                             ),

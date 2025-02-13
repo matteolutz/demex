@@ -15,7 +15,7 @@ use crate::parser::nodes::{
 };
 
 use super::{
-    channel::value::FixtureChannelDiscreteValue,
+    channel::value::{FixtureChannelDiscreteValue, FixtureChannelValueTrait},
     feature::group::FeatureGroup,
     handler::FixtureHandler,
     sequence::{
@@ -166,6 +166,10 @@ impl PresetHandler {
                     let fixture_channel_value = fixture
                         .channel_value(*channel_type, self, updatable_handler)
                         .map_err(PresetHandlerError::FixtureError)?;
+
+                    if fixture_channel_value.is_home() {
+                        continue;
+                    }
 
                     new_values.insert(
                         *channel_type,

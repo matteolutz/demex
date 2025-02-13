@@ -1,11 +1,12 @@
-use std::{sync::Arc, time};
+use std::sync::Arc;
 
 use parking_lot::RwLock;
 
 use crate::{
     fixture::{
         channel::{
-            value::FixtureChannelValue, FIXTURE_CHANNEL_COLOR_ID,
+            value::{FixtureChannelDiscreteValue, FixtureChannelValue},
+            FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
             FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
         },
         effect::FixtureChannelEffect,
@@ -117,14 +118,13 @@ impl DemexUiContext {
                         .unwrap()
                         .set_channel_value(
                             FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-                            FixtureChannelValue::Effect {
+                            FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Effect {
                                 effect: FixtureChannelEffect::PairFigureEight {
                                     speed: 1.0,
                                     center_a: 0.5,
                                     center_b: 0.5,
                                 },
-                                started: Some(time::Instant::now()),
-                            },
+                            }),
                         );
 
                     let _ = self
@@ -134,10 +134,26 @@ impl DemexUiContext {
                         .unwrap()
                         .set_channel_value(
                             FIXTURE_CHANNEL_COLOR_ID,
-                            FixtureChannelValue::Effect {
+                            FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Effect {
                                 effect: FixtureChannelEffect::QuadrupleHueRotate { speed: 1.0 },
-                                started: Some(time::Instant::now()),
-                            },
+                            }),
+                        );
+
+                    let _ = self
+                        .fixture_handler
+                        .write()
+                        .fixture(1)
+                        .unwrap()
+                        .set_channel_value(
+                            FIXTURE_CHANNEL_INTENSITY_ID,
+                            FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Effect {
+                                effect: FixtureChannelEffect::SingleSine {
+                                    a: 1.0,
+                                    b: 1.0,
+                                    c: 1.0,
+                                    d: 1.0,
+                                },
+                            }),
                         );
                 }
                 _ => self.add_dialog_entry(DemexGlobalDialogEntry::error(
