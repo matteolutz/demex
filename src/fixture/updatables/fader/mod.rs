@@ -3,7 +3,6 @@ use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 pub mod config;
-pub mod overrides;
 
 use crate::fixture::{
     channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},

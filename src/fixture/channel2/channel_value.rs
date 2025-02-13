@@ -1,3 +1,5 @@
+use std::hash::Hash;
+
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
@@ -17,6 +19,38 @@ pub enum FixtureChannelValue2 {
         b: Box<FixtureChannelValue2>,
         mix: f32,
     },
+}
+
+impl PartialEq for FixtureChannelValue2 {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Home, Self::Home) => true,
+            (Self::Preset(preset_a), Self::Preset(preset_b)) => preset_a == preset_b,
+            (Self::Discrete(value_a), Self::Discrete(value_b)) => value_a == value_b,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for FixtureChannelValue2 {}
+
+impl Hash for FixtureChannelValue2 {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Self::Home => 0.hash(state),
+            Self::Preset(preset_id) => {
+                1.hash(state);
+                preset_id.hash(state);
+            }
+            Self::Discrete(value) => {
+                2.hash(state);
+                value.hash(state);
+            }
+            Self::Mix { .. } => {
+                3.hash(state);
+            }
+        }
+    }
 }
 
 impl FixtureChannelValue2 {

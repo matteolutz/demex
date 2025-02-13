@@ -491,6 +491,10 @@ impl PresetHandler {
         &self.feature_groups
     }
 
+    pub fn feature_groups_mut(&mut self) -> &mut HashMap<u32, FeatureGroup> {
+        &mut self.feature_groups
+    }
+
     pub fn get_feature_group(&self, id: u32) -> Result<&FeatureGroup, PresetHandlerError> {
         self.feature_groups
             .get(&id)

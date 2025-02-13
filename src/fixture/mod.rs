@@ -1,12 +1,11 @@
 use std::collections::{hash_map::Keys, HashMap};
 
-use channel::FixtureId;
 use channel2::{
     channel_type::FixtureChannelType,
     channel_value::FixtureChannelValue2,
     feature::{
-        feature_config::FixtureFeatureConfig, feature_type::FixtureFeatureType,
-        feature_value::FixtureFeatureValue,
+        feature_config::FixtureFeatureConfig, feature_state::FixtureFeatureDisplayState,
+        feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue, IntoFeatureType,
     },
 };
 use itertools::Itertools;
@@ -18,7 +17,6 @@ use value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait};
 
 use self::error::FixtureError;
 
-pub mod channel;
 pub mod channel2;
 pub mod effect;
 pub mod error;
@@ -33,7 +31,7 @@ pub mod value_source;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerializableFixturePatch {
-    id: FixtureId,
+    id: u32,
     name: String,
     fixture_type: String,
     fixture_mode: u32,
@@ -83,7 +81,7 @@ impl SerializableFixturePatch {
 
 #[derive(Debug, Clone)]
 pub struct Fixture {
-    id: FixtureId,
+    id: u32,
     name: String,
 
     fixture_type: String,
@@ -100,7 +98,7 @@ pub struct Fixture {
 
 impl Fixture {
     pub fn new(
-        id: FixtureId,
+        id: u32,
         name: String,
         patch: FixturePatchTypeMode,
         fixture_type: String,
@@ -113,33 +111,20 @@ impl Fixture {
             return Err(FixtureError::EmptyPatch);
         }
 
-        if patch.channel_types.len()
+        if patch
+            .channel_types
+            .iter()
+            .filter(|channel_type| **channel_type != FixtureChannelType::Unused)
+            .count()
             != patch
                 .channel_types
                 .iter()
+                .filter(|channel_type| **channel_type != FixtureChannelType::Unused)
                 .unique()
-                .collect::<Vec<_>>()
-                .len()
+                .count()
         {
             return Err(FixtureError::DuplicateChannelType);
         }
-
-        /*
-        // check, that each channel type is unique
-        let mut channel_types = Vec::with_capacity(patch.len());
-
-        for channel in &patch {
-            if channel.type_id() == FIXTURE_CHANNEL_NO_FUNCTION_ID {
-                continue;
-            }
-
-            if channel_types.contains(&channel.type_id()) {
-                return Err(FixtureError::DuplicateChannelType);
-            }
-
-            channel_types.push(channel.type_id());
-        }
-        */
 
         Ok(Self {
             id,
@@ -178,6 +163,13 @@ impl Fixture {
             .collect::<Vec<_>>()
     }
 
+    pub fn feature_types(&self) -> Vec<FixtureFeatureType> {
+        self.feature_configs
+            .iter()
+            .map(|config| config.feature_type())
+            .collect::<Vec<_>>()
+    }
+
     pub fn universe(&self) -> u16 {
         self.universe
     }
@@ -197,12 +189,13 @@ impl Fixture {
     pub fn generate_data_packet(
         &self,
         preset_handler: &PresetHandler,
-        updatable_handler: &UpdatableHandler,
-        grand_master: f32,
+        _updatable_handler: &UpdatableHandler,
+        _grand_master: f32,
     ) -> Result<Vec<u8>, FixtureError> {
         let mut data = Vec::with_capacity(self.channels.len());
 
         // TODO: get data from other sources
+        // TODO: optimize this
         for (channel_type, channel_value) in &self.channels {
             let discrete_value = channel_value
                 .to_discrete_value(self.id, *channel_type, preset_handler)
@@ -238,7 +231,24 @@ impl Fixture {
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
     ) -> Result<[f32; 3], FixtureError> {
-        Err(FixtureError::EmptyPatch)
+        if let Ok(FixtureFeatureValue::ColorRGB { r, g, b }) = self.feature_value(
+            FixtureFeatureType::ColorRGB,
+            preset_handler,
+            updatable_handler,
+        ) {
+            Ok([r, g, b])
+        } else {
+            Err(FixtureError::FeatureNotFound(FixtureFeatureType::ColorRGB))
+        }
+    }
+
+    pub fn feature_display_state(
+        &self,
+        feature_type: FixtureFeatureType,
+    ) -> Result<FixtureFeatureDisplayState, FixtureError> {
+        feature_type
+            .get_display_state(&self.channels)
+            .map_err(FixtureError::FixtureChannelError2)
     }
 
     pub fn channel_value_programmer(
@@ -316,6 +326,14 @@ impl Fixture {
             .write_back(&mut self.channels)
             .map_err(FixtureError::FixtureChannelError2)
     }
+
+    pub fn home_feature(&mut self, feature_type: FixtureFeatureType) -> Result<(), FixtureError> {
+        // make the programmer the first element in the sources vector
+        self.push_value_source(FixtureChannelValueSource::Programmer);
+
+        feature_type.home(&mut self.channels);
+        Ok(())
+    }
 }
 
 impl Fixture {
@@ -331,7 +349,7 @@ impl Fixture {
         Ok(())
     }
 
-    pub fn set_toggle_flag(&mut self, flag_name: &str) -> Result<(), FixtureError> {
+    pub fn set_toggle_flag(&mut self, _flag_name: &str) -> Result<(), FixtureError> {
         todo!()
     }
 
@@ -343,39 +361,12 @@ impl Fixture {
 impl Fixture {
     pub fn to_string(
         &self,
-        preset_handler: &PresetHandler,
-        updatable_handler: &UpdatableHandler,
+        _preset_handler: &PresetHandler,
+        _updatable_handler: &UpdatableHandler,
     ) -> String {
-        let mut state = String::new();
-
-        /*
-            if let Ok(intens) = self
-                .intensity(preset_handler, updatable_handler)
-                .map(|value| value.to_string(preset_handler))
-            {
-                state.push_str(intens.as_str());
-            }
-
-            if let Ok(color) = self
-                .color(preset_handler, updatable_handler)
-                .map(|value| value.to_string(preset_handler))
-            {
-                state.push('\n');
-                state.push_str(color.as_str());
-            }
-
-            if let Ok(position) = self
-                .position_pan_tilt(preset_handler, updatable_handler)
-                .map(|value| value.to_string(preset_handler))
-            {
-                state.push('\n');
-                state.push_str(position.as_str());
-            }
-        */
-
         format!(
-            "{}\n{} (U{}.{})\n\n{}",
-            self.name, self.id, self.universe, self.start_address, state
+            "{}\n{} (U{}.{})",
+            self.name, self.id, self.universe, self.start_address
         )
     }
 }

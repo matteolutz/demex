@@ -4,9 +4,8 @@ use egui_probe::EguiProbe;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::{
-    channel::FixtureId,
-    channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
+use crate::fixture::channel2::{
+    channel_type::FixtureChannelType, channel_value::FixtureChannelValue2,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, EguiProbe)]
@@ -123,7 +122,7 @@ pub struct Cue {
     cue_idx: CueIdx,
 
     #[egui_probe(skip)]
-    data: HashMap<FixtureId, Vec<CueFixtureChannelValue>>,
+    data: HashMap<u32, Vec<CueFixtureChannelValue>>,
 
     // Time, to fade into the cue
     in_fade: f32,
@@ -149,7 +148,7 @@ pub struct Cue {
 impl Cue {
     pub fn new(
         cue_idx: CueIdx,
-        data: HashMap<FixtureId, Vec<CueFixtureChannelValue>>,
+        data: HashMap<u32, Vec<CueFixtureChannelValue>>,
         in_fade: f32,
         out_fade: Option<f32>,
         in_delay: f32,
@@ -176,7 +175,7 @@ impl Cue {
         self.cue_idx
     }
 
-    pub fn data(&self) -> &HashMap<FixtureId, Vec<CueFixtureChannelValue>> {
+    pub fn data(&self) -> &HashMap<u32, Vec<CueFixtureChannelValue>> {
         &self.data
     }
 
@@ -226,7 +225,7 @@ impl Cue {
         self.data.keys().sorted().position(|id| *id == fixture_id)
     }
 
-    pub fn data_for_fixture(&self, fixture_id: FixtureId) -> Option<&Vec<CueFixtureChannelValue>> {
+    pub fn data_for_fixture(&self, fixture_id: u32) -> Option<&Vec<CueFixtureChannelValue>> {
         self.data.get(&fixture_id)
     }
 

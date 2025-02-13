@@ -2,8 +2,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel::value::FixtureChannelValueTrait,
-        channel2::channel_value::FixtureChannelValue2,
+        channel2::{
+            channel_value::FixtureChannelValue2,
+            feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
+        },
         error::FixtureError,
         handler::FixtureHandler,
         presets::PresetHandler,
@@ -34,7 +36,7 @@ pub enum CueIdxSelectorActionData {
 pub enum ChannelTypeSelectorActionData {
     All,
     Active,
-    Channels(Vec<u16>),
+    Features(Vec<FixtureFeatureType>),
 }
 
 impl ChannelTypeSelectorActionData {
@@ -65,7 +67,7 @@ impl ChannelTypeSelectorActionData {
                         false,
                     ));
                 }
-                Self::Channels(channels) => {
+                Self::Features(_channels) => {
                     todo!()
                 }
             }
@@ -100,7 +102,11 @@ pub enum FaderCreationConfigActionData {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Action {
-    SetChannelValue(FixtureSelector, u16, ChannelValueSingleActionData),
+    SetFeatureValue(
+        FixtureSelector,
+        FixtureFeatureType,
+        ChannelValueSingleActionData,
+    ),
     SetChannelValuePreset(FixtureSelector, u32),
     SetChannelValuePresetRange(FixtureSelector, u32, u32),
 
@@ -164,7 +170,7 @@ impl Action {
         updatable_handler: &mut UpdatableHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
-            Self::SetChannelValue(fixture_selector, channel_type, value) => self
+            Self::SetFeatureValue(fixture_selector, channel_type, value) => self
                 .run_set_channel_value(
                     preset_handler,
                     fixture_handler,
@@ -333,14 +339,14 @@ impl Action {
         fixture_handler: &mut FixtureHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        channel_type: u16,
+        feature_type: FixtureFeatureType,
         value: &ChannelValueSingleActionData,
     ) -> Result<ActionRunResult, ActionRunError> {
         let fixtures = fixture_selector
             .get_fixtures(preset_handler, fixture_selector_context)
             .map_err(ActionRunError::FixtureSelectorError)?;
 
-        for (idx, fixture) in fixtures.iter().enumerate() {
+        for (idx, fixture_id) in fixtures.iter().enumerate() {
             let discrete_value = match value {
                 ChannelValueSingleActionData::Single(value) => *value,
                 ChannelValueSingleActionData::Thru(start, end) => {
@@ -350,8 +356,21 @@ impl Action {
                 }
             };
 
-            // change this, to set features instead
-            todo!()
+            if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
+                match feature_type {
+                    FixtureFeatureType::Intensity => fixture
+                        .set_feature_value(FixtureFeatureValue::Intensity {
+                            intensity: discrete_value,
+                        })
+                        .map_err(ActionRunError::FixtureError)?,
+                    unhandled_feature_type => {
+                        Err(ActionRunError::Todo(format!(
+                            "Handle set of feature type {:?}",
+                            unhandled_feature_type
+                        )))?;
+                    }
+                }
+            }
         }
 
         Ok(ActionRunResult::new())

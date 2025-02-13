@@ -5,10 +5,7 @@ use egui::{
 
 use crate::{
     fixture::{
-        channel::{
-            value::FixtureChannelValueTrait, FIXTURE_CHANNEL_INTENSITY_ID,
-            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-        },
+        channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
         layout::{FixtureLayoutDecoration, FixtureLayoutEntry, FixtureLayoutEntryType},
     },
     parser::nodes::fixture_selector::{
@@ -282,10 +279,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             .expect("todo: error handling");
 
         let intensity = fixture
-            .intensity(&preset_handler, &updatable_handler)
-            .expect("error handling")
-            .as_single(&preset_handler, fixture.id(), FIXTURE_CHANNEL_INTENSITY_ID)
-            .expect("error handling");
+            .feature_value(
+                FixtureFeatureType::Intensity,
+                &preset_handler,
+                &updatable_handler,
+            )
+            .ok()
+            .and_then(|val| match val {
+                FixtureFeatureValue::Intensity { intensity } => Some(intensity),
+                _ => None,
+            })
+            .unwrap();
 
         let rect_color =
             if let Ok(color) = fixture.display_color(&preset_handler, &updatable_handler) {
@@ -300,17 +304,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             };
 
         let position: Option<egui::Vec2> = fixture
-            .position_pan_tilt(&preset_handler, &updatable_handler)
-            .map(|val| {
-                val.as_pair(
-                    &preset_handler,
-                    fixture.id(),
-                    FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-                )
-                .unwrap()
+            .feature_value(
+                FixtureFeatureType::PositionPanTilt,
+                &preset_handler,
+                &updatable_handler,
+            )
+            .ok()
+            .and_then(|val| match val {
+                FixtureFeatureValue::PositionPanTilt { pan, tilt, .. } => Some((pan, tilt)),
+                _ => None,
             })
-            .map(|val| Into::<egui::Vec2>::into(val) - egui::vec2(0.5, 0.5))
-            .ok();
+            .map(|val| Into::<egui::Vec2>::into(val) - egui::vec2(0.5, 0.5));
 
         fixture_layout_entry.draw(
             &context.layout_view_context.layout_projection,
