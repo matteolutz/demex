@@ -1,14 +1,23 @@
-pub fn f32_to_coarse_fine(value: f32) -> (u8, u8) {
-    /*
-    let val_16 = (value.max(1.0).min(0.0) * u16::MAX as f32) as u16;
-    let coarse = (val_16 & (0xFF << 8)) >> 8;
-    let fine = val_16 & 0xFF;
-    */
+use std::u16;
 
-    let coarse = (value * 255.0) as u8;
-    let fine = ((value * 255.0 - coarse as f32) * 255.0) as u8;
+pub fn f32_to_coarse(value: f32) -> u8 {
+    (value * 255.0) as u8
+}
+
+pub fn f32_to_coarse_fine(value: f32) -> (u8, u8) {
+    let combined_u16 = (value * u16::MAX as f32) as u16;
+
+    // shift to the right, so we get the upper byte
+    let coarse: u8 = (combined_u16 >> 8) as u8;
+
+    // mask out the lower byte
+    let fine: u8 = (combined_u16 & 0xFF) as u8;
 
     (coarse, fine)
+}
+
+pub fn coarse_to_f32(coarse: u8) -> f32 {
+    coarse as f32 / 255.0
 }
 
 pub fn coarse_fine_to_f32(coarse: u8, fine: u8) -> f32 {

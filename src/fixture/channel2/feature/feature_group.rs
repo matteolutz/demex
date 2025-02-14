@@ -5,7 +5,7 @@ use strum_macros::EnumIter;
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::channel2::channel_type::FixtureChannelType;
+use crate::fixture::channel2::feature::feature_type::FixtureFeatureType;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, EnumIter)]
 pub enum DefaultFeatureGroup {
@@ -45,7 +45,7 @@ impl DefaultFeatureGroup {
 pub struct FeatureGroup {
     id: u32,
     name: String,
-    channel_types: Vec<FixtureChannelType>,
+    feature_types: Vec<FixtureFeatureType>,
 }
 
 impl FeatureGroup {
@@ -61,8 +61,8 @@ impl FeatureGroup {
         &mut self.name
     }
 
-    pub fn channel_types(&self) -> &[FixtureChannelType] {
-        &self.channel_types
+    pub fn feature_types(&self) -> &[FixtureFeatureType] {
+        &self.feature_types
     }
 }
 
@@ -75,11 +75,9 @@ impl FeatureGroup {
                     FeatureGroup {
                         id: default_feature_group.id(),
                         name: format!("{:?}", default_feature_group),
-                        channel_types: FixtureChannelType::iter()
+                        feature_types: FixtureFeatureType::iter()
                             .filter(|channel_type| {
-                                channel_type.get_default_feature_group().is_some_and(
-                                    |feature_group| feature_group == default_feature_group,
-                                )
+                                channel_type.default_feature_group() == default_feature_group
                             })
                             .collect::<Vec<_>>(),
                     },

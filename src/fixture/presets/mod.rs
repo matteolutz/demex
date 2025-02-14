@@ -15,8 +15,8 @@ use crate::parser::nodes::{
 };
 
 use super::{
-    channel2::channel_type::FixtureChannelType,
-    feature::group::FeatureGroup,
+    channel2::{channel_type::FixtureChannelType, feature::feature_group::FeatureGroup},
+    error::FixtureError,
     handler::FixtureHandler,
     sequence::{
         cue::{Cue, CueTiming, CueTrigger},
@@ -154,23 +154,32 @@ impl PresetHandler {
             if let Some(fixture) = fixture {
                 let mut new_values = HashMap::new();
 
-                for channel_type in feature_group.channel_types() {
-                    if !fixture.channel_types().contains(&channel_type) {
+                for feature_type in feature_group.feature_types() {
+                    if !fixture.feature_types().contains(feature_type) {
                         continue;
                     }
 
-                    let fixture_channel_value = fixture
-                        .channel_value_programmer(*channel_type)
-                        .map_err(PresetHandlerError::FixtureError)?;
-
-                    if fixture_channel_value.is_home() {
-                        continue;
-                    }
-
-                    if let Ok(discrete_value) =
-                        fixture_channel_value.to_discrete_value(fixture_id, *channel_type, self)
+                    if fixture
+                        .feature_is_home_programmer(*feature_type)
+                        .map_err(PresetHandlerError::FixtureError)?
                     {
-                        new_values.insert(*channel_type, discrete_value);
+                        continue;
+                    }
+
+                    for channel_type in fixture
+                        .feature_get_channel_types(*feature_type)
+                        .map_err(PresetHandlerError::FixtureError)?
+                    {
+                        let discrete_value = fixture
+                            .channel_value_programmer(channel_type)
+                            .and_then(|value| {
+                                value
+                                    .to_discrete_value(fixture_id, channel_type, self)
+                                    .map_err(FixtureError::FixtureChannelError2)
+                            })
+                            .map_err(PresetHandlerError::FixtureError)?;
+
+                        new_values.insert(channel_type, discrete_value);
                     }
                 }
 

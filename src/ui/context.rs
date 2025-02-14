@@ -3,7 +3,10 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 
 use crate::{
-    fixture::{handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler},
+    fixture::{
+        channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler,
+        presets::PresetHandler, updatables::UpdatableHandler,
+    },
     lexer::token::Token,
     parser::nodes::{
         action::{result::ActionRunResult, Action},
@@ -78,8 +81,10 @@ impl DemexUiContext {
             }
             Action::Save => {
                 let fixture_handler_lock = self.fixture_handler.read();
-                let preset_handler_lock = self.preset_handler.read();
+                let mut preset_handler_lock = self.preset_handler.write();
                 let updatable_handler_lock = self.updatable_handler.read();
+
+                *preset_handler_lock.feature_groups_mut() = FeatureGroup::default_feature_groups();
 
                 let show = DemexShow {
                     preset_handler: preset_handler_lock.clone(),

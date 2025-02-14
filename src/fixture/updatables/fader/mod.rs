@@ -4,13 +4,16 @@ use serde::{Deserialize, Serialize};
 
 pub mod config;
 
-use crate::fixture::{
-    channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
-    error::FixtureError,
-    handler::FixtureHandler,
-    sequence::FadeFixtureChannelValue,
-    value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
-    Fixture,
+use crate::{
+    fixture::{
+        channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
+        error::FixtureError,
+        handler::FixtureHandler,
+        sequence::FadeFixtureChannelValue,
+        value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
+        Fixture,
+    },
+    utils::math::f32_to_coarse_fine,
 };
 
 use super::PresetHandler;
@@ -164,15 +167,23 @@ impl DemexFader {
         match &self.config {
             DemexFaderConfig::Submaster { fixtures } => {
                 if !fixtures.contains(&fixture.id())
-                    || channel_type != FixtureChannelType::Intensity
-                    || channel_type != FixtureChannelType::IntensityFine
+                    || (channel_type != FixtureChannelType::Intensity
+                        && channel_type != FixtureChannelType::IntensityFine)
                 {
                     return Err(FixtureError::ChannelValueNotFound(channel_type));
                 }
 
+                let (coarse, fine) = f32_to_coarse_fine(self.value);
+
+                let value = match channel_type {
+                    FixtureChannelType::Intensity => coarse,
+                    FixtureChannelType::IntensityFine => fine,
+                    _ => unreachable!(),
+                };
+
                 Ok(FadeFixtureChannelValue::new(
-                    FixtureChannelValue2::Discrete(255),
-                    self.value,
+                    FixtureChannelValue2::Discrete(value),
+                    1.0,
                     self.priority,
                 ))
             }

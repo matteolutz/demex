@@ -3,6 +3,7 @@ use std::collections::{hash_map::Keys, HashMap};
 use channel2::{
     channel_type::FixtureChannelType,
     channel_value::FixtureChannelValue2,
+    color::color_gel::ColorGelTrait,
     feature::{
         feature_config::FixtureFeatureConfig, feature_state::FixtureFeatureDisplayState,
         feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue, IntoFeatureType,
@@ -20,7 +21,6 @@ use self::error::FixtureError;
 pub mod channel2;
 pub mod effect;
 pub mod error;
-pub mod feature;
 pub mod handler;
 pub mod layout;
 pub mod patch;
@@ -152,6 +152,14 @@ impl Fixture {
         &self.name
     }
 
+    pub fn fixture_type(&self) -> &str {
+        &self.fixture_type
+    }
+
+    pub fn fixture_mode(&self) -> u32 {
+        self.fixture_mode
+    }
+
     pub fn channels(&self) -> &[(FixtureChannelType, FixtureChannelValue2)] {
         &self.channels
     }
@@ -198,15 +206,17 @@ impl Fixture {
     pub fn generate_data_packet(
         &self,
         preset_handler: &PresetHandler,
-        _updatable_handler: &UpdatableHandler,
+        updatable_handler: &UpdatableHandler,
         _grand_master: f32,
     ) -> Result<Vec<u8>, FixtureError> {
         let mut data = Vec::with_capacity(self.channels.len());
 
         // TODO: get data from other sources
         // TODO: optimize this
-        for (channel_type, channel_value) in &self.channels {
-            let discrete_value = channel_value
+        for (channel_type, _) in &self.channels {
+            let discrete_value = self
+                .sources
+                .get_channel_value(self, *channel_type, updatable_handler, preset_handler)?
                 .to_discrete_value(self.id, *channel_type, preset_handler)
                 .map_err(FixtureError::FixtureChannelError2)?;
             data.push(discrete_value);
@@ -248,7 +258,7 @@ impl Fixture {
             return Ok([r, g, b]);
         }
 
-        if let Ok(FixtureFeatureValue::ColorMacro { macro_val }) = self.feature_value(
+        if let Ok(FixtureFeatureValue::ColorMacro { macro_idx }) = self.feature_value(
             FixtureFeatureType::ColorMacro,
             preset_handler,
             updatable_handler,
@@ -256,9 +266,7 @@ impl Fixture {
             if let Some(FixtureFeatureConfig::ColorMacro { macros }) =
                 self.feature_config_by_type(FixtureFeatureType::ColorMacro)
             {
-                if let Some(color) = macros.get(&macro_val) {
-                    return Ok(*color);
-                }
+                return Ok(macros[macro_idx].1.get_rgb());
             }
         }
 
@@ -268,9 +276,20 @@ impl Fixture {
     pub fn feature_display_state(
         &self,
         feature_type: FixtureFeatureType,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<FixtureFeatureDisplayState, FixtureError> {
         feature_type
-            .get_display_state(&self.channels)
+            .get_display_state(
+                self.id,
+                &self.feature_configs,
+                &(|channel_type| {
+                    self.sources
+                        .get_channel_value(self, channel_type, updatable_handler, preset_handler)
+                        .ok()
+                }),
+                preset_handler,
+            )
             .map_err(FixtureError::FixtureChannelError2)
     }
 
@@ -322,7 +341,13 @@ impl Fixture {
         feature_type
             .get_value(
                 &self.feature_configs,
-                &self.channels,
+                &(|channel_type| {
+                    self.channels
+                        .iter()
+                        .find(|(find_channel_type, _)| *find_channel_type == channel_type)
+                        .map(|(_, value)| value)
+                        .cloned()
+                }),
                 self.id,
                 preset_handler,
             )
@@ -333,9 +358,20 @@ impl Fixture {
         &self,
         feature_type: FixtureFeatureType,
         preset_handler: &PresetHandler,
-        _updatable_handler: &UpdatableHandler,
+        updatable_handler: &UpdatableHandler,
     ) -> Result<FixtureFeatureValue, FixtureError> {
-        self.feature_value_programmer(feature_type, preset_handler)
+        feature_type
+            .get_value(
+                &self.feature_configs,
+                &(|channel_type| {
+                    self.sources
+                        .get_channel_value(self, channel_type, updatable_handler, preset_handler)
+                        .ok()
+                }),
+                self.id,
+                preset_handler,
+            )
+            .map_err(FixtureError::FixtureChannelError2)
     }
 
     pub fn set_feature_value(
@@ -346,7 +382,7 @@ impl Fixture {
         self.push_value_source(FixtureChannelValueSource::Programmer);
 
         feature_value
-            .write_back(&mut self.channels)
+            .write_back(&self.feature_configs, &mut self.channels)
             .map_err(FixtureError::FixtureChannelError2)
     }
 
@@ -354,8 +390,36 @@ impl Fixture {
         // make the programmer the first element in the sources vector
         self.push_value_source(FixtureChannelValueSource::Programmer);
 
-        feature_type.home(&mut self.channels);
-        Ok(())
+        feature_type
+            .home(&self.feature_configs, &mut self.channels)
+            .map_err(FixtureError::FixtureChannelError2)
+    }
+
+    pub fn feature_is_home_programmer(
+        &self,
+        feature_type: FixtureFeatureType,
+    ) -> Result<bool, FixtureError> {
+        feature_type
+            .is_home(
+                &self.feature_configs,
+                &(|channel_type| {
+                    self.channels
+                        .iter()
+                        .find(|(find_channel_type, _)| *find_channel_type == channel_type)
+                        .map(|(_, value)| value)
+                        .cloned()
+                }),
+            )
+            .map_err(FixtureError::FixtureChannelError2)
+    }
+
+    pub fn feature_get_channel_types(
+        &self,
+        feature_type: FixtureFeatureType,
+    ) -> Result<Vec<FixtureChannelType>, FixtureError> {
+        feature_type
+            .get_channel_types(&self.feature_configs)
+            .map_err(FixtureError::FixtureChannelError2)
     }
 }
 

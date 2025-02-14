@@ -4,7 +4,7 @@ use nodes::action::{
 
 use crate::{
     fixture::{
-        channel2::feature::feature_type::FixtureFeatureType, feature::group::DefaultFeatureGroup,
+        channel2::feature::{feature_group::DefaultFeatureGroup, feature_type::FixtureFeatureType},
         sequence::cue::CueIdx,
     },
     lexer::token::Token,

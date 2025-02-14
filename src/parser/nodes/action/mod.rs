@@ -2,10 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel2::{
-            channel_value::FixtureChannelValue2,
-            feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
-        },
+        channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
         error::FixtureError,
         handler::FixtureHandler,
         presets::PresetHandler,
@@ -392,20 +389,11 @@ impl Action {
             .get_preset(preset_id)
             .map_err(ActionRunError::PresetHandlerError)?;
 
-        let feature_group = preset_handler
-            .get_feature_group(preset.feature_group_id())
-            .map_err(ActionRunError::PresetHandlerError)?;
-
         for fixture in fixtures {
             if let Some(f) = fixture_handler.fixture(fixture) {
-                for channel_type in feature_group.channel_types() {
-                    if !f.channel_types().contains(&channel_type) {
-                        continue;
-                    }
-
-                    f.set_channel_value(*channel_type, FixtureChannelValue2::Preset(preset.id()))
-                        .map_err(ActionRunError::FixtureError)?;
-                }
+                preset
+                    .apply(f)
+                    .map_err(ActionRunError::PresetHandlerError)?;
             }
         }
 

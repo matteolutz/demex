@@ -1,12 +1,19 @@
-use egui::color_picker::color_picker_color32;
+use egui::color_picker::color_edit_button_rgb;
+use itertools::Itertools;
 
-use crate::fixture::{
-    channel2::feature::{
-        feature_config::FixtureFeatureConfig, feature_type::FixtureFeatureType,
-        feature_value::FixtureFeatureValue,
+use crate::{
+    fixture::{
+        channel2::{
+            color::color_gel::ColorGelTrait,
+            feature::{
+                feature_config::FixtureFeatureConfig, feature_type::FixtureFeatureType,
+                feature_value::FixtureFeatureValue,
+            },
+        },
+        handler::FixtureHandler,
+        presets::PresetHandler,
     },
-    handler::FixtureHandler,
-    presets::PresetHandler,
+    ui::constants::PLEASE_SELECT_FIXTURES_OF_SAME_TYPE_AND_MODE,
 };
 
 pub fn color_macro_ui(
@@ -24,37 +31,59 @@ pub fn color_macro_ui(
             }),
         );
 
+        if selected_fixtures
+            .iter()
+            .map(|f_id| {
+                let f = fixture_handler.fixture_immut(*f_id).unwrap();
+                (f.fixture_type(), f.fixture_mode())
+            })
+            .unique()
+            .count()
+            > 1
+        {
+            ui.colored_label(
+                egui::Color32::YELLOW,
+                PLEASE_SELECT_FIXTURES_OF_SAME_TYPE_AND_MODE,
+            );
+            return;
+        }
+
         if let Some(FixtureFeatureConfig::ColorMacro { macros }) = fixture_handler
             .fixture_immut(selected_fixtures[0])
             .unwrap()
             .feature_config_by_type(FixtureFeatureType::ColorMacro)
             .cloned()
         {
-            for (macro_val, macro_color) in macros.iter() {
+            for (macro_idx, (_, macro_color)) in macros.iter().enumerate() {
                 ui.scope(|ui| {
+                    let macro_color_rgb = macro_color.get_rgb();
                     let egui_color = egui::Color32::from_rgb(
-                        (macro_color[0] * 255.0) as u8,
-                        (macro_color[1] * 255.0) as u8,
-                        (macro_color[2] * 255.0) as u8,
+                        (macro_color_rgb[0] * 255.0) as u8,
+                        (macro_color_rgb[1] * 255.0) as u8,
+                        (macro_color_rgb[2] * 255.0) as u8,
                     );
 
                     ui.style_mut().visuals.widgets.inactive.weak_bg_fill = egui_color;
                     ui.style_mut().visuals.widgets.hovered.weak_bg_fill = egui_color;
                     ui.style_mut().visuals.widgets.active.weak_bg_fill = egui_color;
 
-                    let color_button = ui.button("     ");
+                    ui.horizontal(|ui| {
+                        let color_button = ui.button("     ");
 
-                    if color_button.clicked() {
-                        for fixture_id in selected_fixtures.iter() {
-                            fixture_handler
-                                .fixture(*fixture_id)
-                                .unwrap()
-                                .set_feature_value(FixtureFeatureValue::ColorMacro {
-                                    macro_val: *macro_val,
-                                })
-                                .unwrap();
+                        if color_button.clicked() {
+                            for fixture_id in selected_fixtures.iter() {
+                                fixture_handler
+                                    .fixture(*fixture_id)
+                                    .unwrap()
+                                    .set_feature_value(FixtureFeatureValue::ColorMacro {
+                                        macro_idx,
+                                    })
+                                    .unwrap();
+                            }
                         }
-                    }
+
+                        ui.label(macro_color.to_string())
+                    });
                 });
             }
         }
@@ -87,22 +116,20 @@ pub fn color_rgb_controls_ui(
             .collect::<Vec<_>>();
 
         if let FixtureFeatureValue::ColorRGB { r, g, b } = colors[0] {
-            let mut color = eframe::egui::Color32::from_rgb(
-                (r * 255.0) as u8,
-                (g * 255.0) as u8,
-                (b * 255.0) as u8,
-            );
+            let mut color = [r, g, b];
 
             ui.style_mut().spacing.item_spacing = [10.0, 0.0].into();
-            if color_picker_color32(ui, &mut color, egui::color_picker::Alpha::Opaque) {
+            color_edit_button_rgb(ui, &mut color);
+
+            if color != [r, g, b] {
                 for fixture_id in selected_fixtures.iter() {
                     fixture_handler
                         .fixture(*fixture_id)
                         .unwrap()
                         .set_feature_value(FixtureFeatureValue::ColorRGB {
-                            r: color.r() as f32 / 255.0,
-                            g: color.g() as f32 / 255.0,
-                            b: color.b() as f32 / 255.0,
+                            r: color[0],
+                            g: color[1],
+                            b: color[2],
                         })
                         .expect("");
                 }

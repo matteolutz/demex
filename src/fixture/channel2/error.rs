@@ -6,6 +6,7 @@ pub enum FixtureChannelError2 {
     ChannelNotFound(FixtureChannelType),
     FeatureNotFound(FixtureFeatureType),
     FeatureConfigNotFound(FixtureFeatureType),
+    InvalidFeatureValue(FixtureFeatureType),
     PresetNotFound(u32),
 }
 
@@ -27,6 +28,13 @@ impl std::fmt::Display for FixtureChannelError2 {
             }
             Self::FeatureConfigNotFound(feature_type) => {
                 write!(f, "Feature config for type {:?} not found", feature_type)
+            }
+            Self::InvalidFeatureValue(feature_type) => {
+                write!(
+                    f,
+                    "Invalid feature value for feature of type {:?}",
+                    feature_type
+                )
             }
             Self::PresetNotFound(preset_id) => {
                 write!(f, "Preset with id {} was not found", preset_id)

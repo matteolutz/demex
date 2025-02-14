@@ -1,12 +1,7 @@
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
-use strum::EnumIter;
 
-use crate::fixture::feature::group::DefaultFeatureGroup;
-
-#[derive(
-    Debug, Hash, PartialEq, Eq, Serialize, Deserialize, Copy, Clone, EguiProbe, Default, EnumIter,
-)]
+#[derive(Debug, Hash, PartialEq, Eq, Serialize, Deserialize, Copy, Clone, EguiProbe, Default)]
 pub enum FixtureChannelType {
     #[default]
     Unused,
@@ -51,34 +46,47 @@ pub enum FixtureChannelType {
 }
 
 impl FixtureChannelType {
-    pub fn get_default_feature_group(&self) -> Option<DefaultFeatureGroup> {
+    pub fn short_name(&self) -> String {
         match self {
-            Self::Unused => None,
-            Self::Intensity | Self::IntensityFine => Some(DefaultFeatureGroup::Intensity),
-            Self::Pan | Self::PanFine | Self::Tilt | Self::TiltFine | Self::PanTiltSpeed => {
-                Some(DefaultFeatureGroup::Position)
-            }
-            Self::Red
-            | Self::RedFine
-            | Self::Green
-            | Self::GreenFine
-            | Self::Blue
-            | Self::BlueFine
-            | Self::White
-            | Self::WhiteFine
-            | Self::ColorMacro
-            | Self::ColorMacroCrossfade
-            | Self::ColorTint
-            | Self::ColorTemp => Some(DefaultFeatureGroup::Color),
-            Self::Prism
-            | Self::PrismRotation
-            | Self::RotatingGobos
-            | Self::GoboRotation
-            | Self::Shutter => Some(DefaultFeatureGroup::Beam),
-            Self::Focus | Self::FocusFine | Self::Zoom | Self::ZoomFine => {
-                Some(DefaultFeatureGroup::Focus)
-            }
-            Self::ToggleFlags(_) => Some(DefaultFeatureGroup::Control),
+            Self::Unused => "X".to_string(),
+
+            Self::Intensity => "Int".to_string(),
+
+            Self::IntensityFine => "IntF".to_string(),
+
+            Self::Pan => "Pa".to_string(),
+            Self::PanFine => "PaF".to_string(),
+            Self::Tilt => "Ti".to_string(),
+            Self::TiltFine => "TiF".to_string(),
+            Self::PanTiltSpeed => "PaTiSp".to_string(),
+
+            Self::Red => "Re".to_string(),
+            Self::RedFine => "ReF".to_string(),
+            Self::Green => "Gr".to_string(),
+            Self::GreenFine => "GrF".to_string(),
+            Self::Blue => "Bl".to_string(),
+            Self::BlueFine => "BlF".to_string(),
+            Self::White => "Wh".to_string(),
+            Self::WhiteFine => "WhF".to_string(),
+
+            Self::ColorMacro => "CoMa".to_string(),
+            Self::ColorMacroCrossfade => "CMCr".to_string(),
+            Self::ColorTemp => "CoTe".to_string(),
+            Self::ColorTint => "CoTi".to_string(),
+
+            Self::Prism => "Pr".to_string(),
+            Self::PrismRotation => "PrR".to_string(),
+            Self::RotatingGobos => "RoGo".to_string(),
+            Self::GoboRotation => "GoRo".to_string(),
+            Self::Zoom => "Zo".to_string(),
+            Self::ZoomFine => "ZoF".to_string(),
+
+            Self::Focus => "Fo".to_string(),
+            Self::FocusFine => "FoF".to_string(),
+
+            Self::Shutter => "Sh".to_string(),
+
+            Self::ToggleFlags(idx) => format!("TF{}", idx),
         }
     }
 }
