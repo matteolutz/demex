@@ -94,7 +94,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                         row.col(|ui| {
                             for source in fixture.sources() {
                                 ui.label(
-                                    RichText::from(source.to_string()).color(source.get_color()),
+                                    RichText::from(source.to_short_string())
+                                        .color(source.get_color()),
                                 );
                             }
                         });

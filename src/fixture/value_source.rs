@@ -159,6 +159,16 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
     }
 }
 
+impl FixtureChannelValueSource {
+    pub fn to_short_string(&self) -> String {
+        match self {
+            Self::Programmer => "P".to_string(),
+            Self::Executor { executor_id } => executor_id.to_string(),
+            Self::Fader { fader_id } => fader_id.to_string(),
+        }
+    }
+}
+
 impl fmt::Display for FixtureChannelValueSource {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

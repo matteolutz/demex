@@ -8,9 +8,12 @@ use crate::{
         presets::PresetHandler, updatables::UpdatableHandler,
     },
     lexer::token::Token,
-    parser::nodes::{
-        action::{result::ActionRunResult, Action},
-        fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    parser::{
+        nodes::{
+            action::{result::ActionRunResult, Action},
+            fixture_selector::{FixtureSelector, FixtureSelectorContext},
+        },
+        Parser2,
     },
     show::DemexShow,
     ui::error::DemexUiError,
@@ -24,6 +27,9 @@ use super::{
 };
 
 pub struct DemexUiContext {
+    pub command_input: String,
+    pub is_command_input_empty: bool,
+
     pub fixture_handler: Arc<RwLock<FixtureHandler>>,
     pub preset_handler: Arc<RwLock<PresetHandler>>,
     pub updatable_handler: Arc<RwLock<UpdatableHandler>>,
@@ -60,6 +66,24 @@ impl DemexUiContext {
             .push(DemexLogEntry::new(DemexLogEntryType::DialogEntry(
                 dialog_entry,
             )));
+    }
+
+    pub fn run_cmd(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        self.logs
+            .push(DemexLogEntry::new(DemexLogEntryType::CommandEntry(
+                self.command.clone(),
+            )));
+
+        let mut p = Parser2::new(&self.command);
+
+        let action = p.parse().inspect_err(|err| {
+            self.logs
+                .push(DemexLogEntry::new(DemexLogEntryType::CommandFailedEntry(
+                    err.to_string(),
+                )))
+        })?;
+
+        self.run_and_handle_action(&action)
     }
 
     pub fn run_and_handle_action(
