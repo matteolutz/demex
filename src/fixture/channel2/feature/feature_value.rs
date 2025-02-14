@@ -142,7 +142,9 @@ impl FixtureFeatureValue {
 
                 Ok(())
             }
-            _ => Err(FixtureChannelError2::FeatureNotFound(self.feature_type())),
+            Self::ColorMacro { macro_val } => {
+                Self::write_to_channel(channels, FixtureChannelType::ColorMacro, *macro_val)
+            }
         }
     }
 }

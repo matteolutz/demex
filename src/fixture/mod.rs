@@ -170,6 +170,15 @@ impl Fixture {
             .collect::<Vec<_>>()
     }
 
+    pub fn feature_config_by_type(
+        &self,
+        feature_type: FixtureFeatureType,
+    ) -> Option<&FixtureFeatureConfig> {
+        self.feature_configs
+            .iter()
+            .find(|config| config.feature_type() == feature_type)
+    }
+
     pub fn universe(&self) -> u16 {
         self.universe
     }
@@ -236,10 +245,24 @@ impl Fixture {
             preset_handler,
             updatable_handler,
         ) {
-            Ok([r, g, b])
-        } else {
-            Err(FixtureError::FeatureNotFound(FixtureFeatureType::ColorRGB))
+            return Ok([r, g, b]);
         }
+
+        if let Ok(FixtureFeatureValue::ColorMacro { macro_val }) = self.feature_value(
+            FixtureFeatureType::ColorMacro,
+            preset_handler,
+            updatable_handler,
+        ) {
+            if let Some(FixtureFeatureConfig::ColorMacro { macros }) =
+                self.feature_config_by_type(FixtureFeatureType::ColorMacro)
+            {
+                if let Some(color) = macros.get(&macro_val) {
+                    return Ok(*color);
+                }
+            }
+        }
+
+        Err(FixtureError::FeatureNotFound(FixtureFeatureType::ColorRGB))
     }
 
     pub fn feature_display_state(

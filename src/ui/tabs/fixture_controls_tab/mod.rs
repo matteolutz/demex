@@ -1,4 +1,4 @@
-use color::color_rgb_controls_ui;
+use color::{color_macro_ui, color_rgb_controls_ui};
 use position::position_pan_tilt_controls_ui;
 
 use crate::{
@@ -68,6 +68,16 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             is_channel_home,
                             &selected_fixtures,
                             &preset_handler,
+                            &mut fixture_handler,
+                        );
+                    }
+                    FixtureFeatureType::ColorMacro => {
+                        ui.set_width(100.0);
+
+                        color_macro_ui(
+                            ui,
+                            is_channel_home,
+                            &selected_fixtures,
                             &mut fixture_handler,
                         );
                     }
