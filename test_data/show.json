@@ -822,7 +822,7 @@
                 }
               },
               { "Intensity": { "is_fine": false } },
-              { "PositionPanTilt": { "is_fine": false, "has_speed": true } },
+              { "PositionPanTilt": { "is_fine": true, "has_speed": true } },
               "Shutter"
             ]
           }
