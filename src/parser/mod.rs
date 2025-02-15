@@ -146,7 +146,7 @@ impl<'a> Parser2<'a> {
         }
     }
 
-    fn parse_fixture_selector(&mut self) -> Result<FixtureSelector, ParseError> {
+    pub fn parse_fixture_selector(&mut self) -> Result<FixtureSelector, ParseError> {
         let atomic_selector = self.parse_atomic_fixture_selector()?;
 
         match self.current_token()? {

@@ -51,7 +51,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
     ui.style_mut().spacing.item_spacing = [0.0, 20.0].into();
 
-    ui.heading("Fixture Controls");
+    ui.heading(format!(
+        "Fixture Controls - {}",
+        context.global_fixture_select.as_ref().unwrap()
+    ));
 
     ui.vertical(|ui| {
         ui.style_mut().spacing.item_spacing = [20.0, 10.0].into();

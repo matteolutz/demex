@@ -18,6 +18,13 @@ use crate::{
 
 use super::{error::PresetHandlerError, PresetHandler};
 
+#[derive(Debug)]
+pub enum FixturePresetTarget {
+    AllSelected,
+    SomeSelected,
+    None,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
 pub struct FixturePreset {
     #[egui_probe(skip)]
@@ -108,6 +115,22 @@ impl FixturePreset {
         }
 
         Ok(())
+    }
+
+    pub fn get_target(&self, selected_fixtures: &[u32]) -> FixturePresetTarget {
+        let mutual = self
+            .data
+            .keys()
+            .filter(|k| selected_fixtures.contains(k))
+            .collect::<Vec<_>>();
+
+        if mutual.is_empty() {
+            FixturePresetTarget::None
+        } else if mutual.len() == selected_fixtures.len() {
+            FixturePresetTarget::AllSelected
+        } else {
+            FixturePresetTarget::SomeSelected
+        }
     }
 
     pub fn id(&self) -> u32 {

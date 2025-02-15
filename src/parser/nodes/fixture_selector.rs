@@ -96,9 +96,19 @@ impl AtomicFixtureSelector {
     }
 
     pub fn is_flat(&self) -> bool {
+        !matches!(self, Self::CurrentFixturesSelected)
+    }
+}
+
+impl std::fmt::Display for AtomicFixtureSelector {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::CurrentFixturesSelected => false,
-            _ => true,
+            Self::CurrentFixturesSelected => write!(f, "~"),
+            Self::FixtureGroup(group_id) => write!(f, "Group {}", group_id),
+            Self::FixtureIdList(id_list) => write!(f, "{:?}", id_list),
+            Self::FixtureRange(from, to) => write!(f, "{} thru {}", from, to),
+            Self::SelectorGroup(selector) => write!(f, "({})", selector),
+            Self::SingleFixture(id) => write!(f, "{}", id),
         }
     }
 }
@@ -173,6 +183,19 @@ impl FixtureSelector {
             Self::Additive(a, b) => a.is_flat() && b.is_flat(),
             Self::Subtractive(a, b) => a.is_flat() && b.is_flat(),
             Self::Modulus(fixture_selector, _, _) => fixture_selector.is_flat(),
+        }
+    }
+}
+
+impl std::fmt::Display for FixtureSelector {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Additive(a, b) => write!(f, "{} + {}", a, b),
+            Self::Atomic(a) => write!(f, "{}", a),
+            Self::Subtractive(a, b) => write!(f, "{} - {}", a, b),
+            Self::Modulus(a, d, invert) => {
+                write!(f, "{} %{} {}", a, if *invert { "!" } else { "" }, d)
+            }
         }
     }
 }

@@ -1,7 +1,20 @@
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Hash, PartialEq, Eq, Serialize, Deserialize, Copy, Clone, EguiProbe, Default)]
+#[derive(
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    Copy,
+    Clone,
+    EguiProbe,
+    Default,
+)]
 pub enum FixtureChannelType {
     #[default]
     Unused,

@@ -33,10 +33,7 @@ pub fn color_macro_ui(
 
         if selected_fixtures
             .iter()
-            .map(|f_id| {
-                let f = fixture_handler.fixture_immut(*f_id).unwrap();
-                (f.fixture_type(), f.fixture_mode())
-            })
+            .map(|f_id| fixture_handler.fixture_immut(*f_id).unwrap().fixture_type())
             .unique()
             .count()
             > 1

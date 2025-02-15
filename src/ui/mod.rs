@@ -70,7 +70,9 @@ impl DemexUiApp {
                 fixture_handler,
                 preset_handler,
                 updatable_handler,
+
                 global_fixture_select: None,
+
                 command: Vec::new(),
                 layout_view_context: LayoutViewContext::default(),
                 macro_execution_queue: Vec::new(),

@@ -2,7 +2,7 @@ use egui::RichText;
 use itertools::Itertools;
 
 use crate::{
-    fixture::channel2::feature::feature_type::FixtureFeatureType,
+    fixture::channel2::feature::feature_group::DefaultFeatureGroup,
     parser::nodes::fixture_selector::FixtureSelectorContext,
 };
 
@@ -102,19 +102,21 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // Intens
                         row.col(|ui| {
-                            if let Ok(intensity_state) = fixture.feature_display_state(
-                                FixtureFeatureType::Intensity,
+                            if let Ok(intensity_states) = fixture.feature_group_display_state(
+                                DefaultFeatureGroup::Intensity.id(),
                                 &preset_handler,
                                 &updatable_handler,
                             ) {
-                                ui.label(
-                                    RichText::from(intensity_state.to_string(&preset_handler))
-                                        .color(if intensity_state.is_home() {
-                                            egui::Color32::GRAY
-                                        } else {
-                                            egui::Color32::YELLOW
-                                        }),
-                                );
+                                for intensity_state in intensity_states {
+                                    ui.label(
+                                        RichText::from(intensity_state.to_string(&preset_handler))
+                                            .color(if intensity_state.is_home() {
+                                                egui::Color32::GRAY
+                                            } else {
+                                                egui::Color32::YELLOW
+                                            }),
+                                    );
+                                }
                             } else {
                                 ui.label("-");
                             }
@@ -122,53 +124,56 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // Color
                         row.col(|ui| {
-                            if let Ok(color_state) = fixture.feature_display_state(
-                                FixtureFeatureType::ColorRGB,
+                            if let Ok(color_states) = fixture.feature_group_display_state(
+                                DefaultFeatureGroup::Color.id(),
                                 &preset_handler,
                                 &updatable_handler,
                             ) {
-                                ui.label(
-                                    RichText::from(color_state.to_string(&preset_handler)).color(
-                                        if color_state.is_home() {
-                                            egui::Color32::GRAY
-                                        } else {
-                                            egui::Color32::YELLOW
-                                        },
-                                    ),
-                                );
-
-                                if let Ok(color) =
-                                    fixture.display_color(&preset_handler, &updatable_handler)
-                                {
-                                    let color_value = egui::Color32::from_rgb(
-                                        (color[0] * 255.0) as u8,
-                                        (color[1] * 255.0) as u8,
-                                        (color[2] * 255.0) as u8,
+                                for color_state in color_states {
+                                    ui.label(
+                                        RichText::from(color_state.to_string(&preset_handler))
+                                            .color(if color_state.is_home() {
+                                                egui::Color32::GRAY
+                                            } else {
+                                                egui::Color32::YELLOW
+                                            }),
                                     );
-
-                                    ui.label(RichText::from("     ").background_color(color_value));
                                 }
                             } else {
                                 ui.label("-");
+                            }
+
+                            if let Ok(color) =
+                                fixture.display_color(&preset_handler, &updatable_handler)
+                            {
+                                let color_value = egui::Color32::from_rgb(
+                                    (color[0] * 255.0) as u8,
+                                    (color[1] * 255.0) as u8,
+                                    (color[2] * 255.0) as u8,
+                                );
+
+                                ui.label(RichText::from("     ").background_color(color_value));
                             }
                         });
 
                         // Position
                         row.col(|ui| {
-                            if let Ok(pos_state) = fixture.feature_display_state(
-                                FixtureFeatureType::PositionPanTilt,
+                            if let Ok(pos_states) = fixture.feature_group_display_state(
+                                DefaultFeatureGroup::Position.id(),
                                 &preset_handler,
                                 &updatable_handler,
                             ) {
-                                ui.label(
-                                    RichText::from(pos_state.to_string(&preset_handler)).color(
-                                        if pos_state.is_home() {
-                                            egui::Color32::GRAY
-                                        } else {
-                                            egui::Color32::YELLOW
-                                        },
-                                    ),
-                                );
+                                for pos_state in pos_states {
+                                    ui.label(
+                                        RichText::from(pos_state.to_string(&preset_handler)).color(
+                                            if pos_state.is_home() {
+                                                egui::Color32::GRAY
+                                            } else {
+                                                egui::Color32::YELLOW
+                                            },
+                                        ),
+                                    );
+                                }
                             } else {
                                 ui.label("-");
                             }
@@ -176,9 +181,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // All channels
                         row.col(|ui| {
-                            for channel_type in fixture.channel_types() {
+                            for channel_type in fixture.channel_types().iter().sorted() {
                                 let channel_value = fixture.channel_value(
-                                    *channel_type,
+                                    **channel_type,
                                     &updatable_handler,
                                     &preset_handler,
                                 );

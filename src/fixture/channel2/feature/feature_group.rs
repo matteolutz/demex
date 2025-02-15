@@ -5,7 +5,15 @@ use strum_macros::EnumIter;
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::channel2::feature::feature_type::FixtureFeatureType;
+use crate::fixture::{
+    channel2::{
+        channel_type::FixtureChannelType, channel_value::FixtureChannelValue2,
+        error::FixtureChannelError2, feature::feature_type::FixtureFeatureType,
+    },
+    presets::PresetHandler,
+};
+
+use super::{feature_config::FixtureFeatureConfig, feature_state::FixtureFeatureDisplayState};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, EnumIter)]
 pub enum DefaultFeatureGroup {
@@ -84,5 +92,27 @@ impl FeatureGroup {
                 )
             })
             .collect::<HashMap<_, _>>()
+    }
+
+    pub fn get_display_state(
+        &self,
+        fixture_id: u32,
+        feature_configs: &[FixtureFeatureConfig],
+        channels: &impl Fn(FixtureChannelType) -> Option<FixtureChannelValue2>,
+        preset_handler: &PresetHandler,
+    ) -> Result<Vec<FixtureFeatureDisplayState>, FixtureChannelError2> {
+        Ok(self
+            .feature_types
+            .iter()
+            .map(|feature_type| {
+                feature_type.get_display_state(
+                    fixture_id,
+                    feature_configs,
+                    channels,
+                    preset_handler,
+                )
+            })
+            .filter_map(|display_state| display_state.ok())
+            .collect::<Vec<_>>())
     }
 }

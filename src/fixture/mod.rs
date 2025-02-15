@@ -10,7 +10,7 @@ use channel2::{
     },
 };
 use itertools::Itertools;
-use patch::{FixturePatchType, FixturePatchTypeMode};
+use patch::{FixturePatchType, FixturePatchTypeMode, FixtureTypeAndMode};
 use presets::PresetHandler;
 use serde::{Deserialize, Serialize};
 use updatables::UpdatableHandler;
@@ -33,8 +33,11 @@ pub mod value_source;
 pub struct SerializableFixturePatch {
     id: u32,
     name: String,
+
+    // TODO: refactor this, to use FixtureTypeAndMode
     fixture_type: String,
     fixture_mode: u32,
+
     universe: u16,
     start_address: u16,
 }
@@ -44,8 +47,8 @@ impl From<Fixture> for SerializableFixturePatch {
         Self {
             id: value.id,
             name: value.name,
-            fixture_type: value.fixture_type,
-            fixture_mode: value.fixture_mode,
+            fixture_type: value.fixture_type.name,
+            fixture_mode: value.fixture_type.mode,
             universe: value.universe,
             start_address: value.start_address,
         }
@@ -71,8 +74,10 @@ impl SerializableFixturePatch {
             self.id,
             self.name,
             patch.clone(),
-            self.fixture_type,
-            self.fixture_mode,
+            FixtureTypeAndMode {
+                name: self.fixture_type,
+                mode: self.fixture_mode,
+            },
             self.universe,
             self.start_address,
         )
@@ -84,8 +89,7 @@ pub struct Fixture {
     id: u32,
     name: String,
 
-    fixture_type: String,
-    fixture_mode: u32,
+    fixture_type: FixtureTypeAndMode,
 
     channels: Vec<(FixtureChannelType, FixtureChannelValue2)>,
     feature_configs: Vec<FixtureFeatureConfig>,
@@ -101,8 +105,7 @@ impl Fixture {
         id: u32,
         name: String,
         patch: FixturePatchTypeMode,
-        fixture_type: String,
-        fixture_mode: u32,
+        fixture_type: FixtureTypeAndMode,
         universe: u16,
         start_address: u16,
     ) -> Result<Self, FixtureError> {
@@ -137,7 +140,6 @@ impl Fixture {
             toggle_flags: patch.toggle_flags,
             feature_configs: patch.feature_configs,
             fixture_type,
-            fixture_mode,
             universe,
             start_address,
             sources: vec![FixtureChannelValueSource::Programmer],
@@ -152,12 +154,8 @@ impl Fixture {
         &self.name
     }
 
-    pub fn fixture_type(&self) -> &str {
+    pub fn fixture_type(&self) -> &FixtureTypeAndMode {
         &self.fixture_type
-    }
-
-    pub fn fixture_mode(&self) -> u32 {
-        self.fixture_mode
     }
 
     pub fn channels(&self) -> &[(FixtureChannelType, FixtureChannelValue2)] {
@@ -250,14 +248,6 @@ impl Fixture {
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
     ) -> Result<[f32; 3], FixtureError> {
-        if let Ok(FixtureFeatureValue::ColorRGB { r, g, b }) = self.feature_value(
-            FixtureFeatureType::ColorRGB,
-            preset_handler,
-            updatable_handler,
-        ) {
-            return Ok([r, g, b]);
-        }
-
         if let Ok(FixtureFeatureValue::ColorMacro { macro_idx }) = self.feature_value(
             FixtureFeatureType::ColorMacro,
             preset_handler,
@@ -270,7 +260,15 @@ impl Fixture {
             }
         }
 
-        Err(FixtureError::FeatureNotFound(FixtureFeatureType::ColorRGB))
+        if let Ok(FixtureFeatureValue::ColorRGB { r, g, b }) = self.feature_value(
+            FixtureFeatureType::ColorRGB,
+            preset_handler,
+            updatable_handler,
+        ) {
+            return Ok([r, g, b]);
+        }
+
+        Err(FixtureError::NoDisplayColor(self.id))
     }
 
     pub fn feature_display_state(
@@ -280,6 +278,28 @@ impl Fixture {
         updatable_handler: &UpdatableHandler,
     ) -> Result<FixtureFeatureDisplayState, FixtureError> {
         feature_type
+            .get_display_state(
+                self.id,
+                &self.feature_configs,
+                &(|channel_type| {
+                    self.sources
+                        .get_channel_value(self, channel_type, updatable_handler, preset_handler)
+                        .ok()
+                }),
+                preset_handler,
+            )
+            .map_err(FixtureError::FixtureChannelError2)
+    }
+
+    pub fn feature_group_display_state(
+        &self,
+        feature_group_id: u32,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+    ) -> Result<Vec<FixtureFeatureDisplayState>, FixtureError> {
+        preset_handler
+            .get_feature_group(feature_group_id)
+            .map_err(|err| FixtureError::PresetHandlerError(Box::new(err)))?
             .get_display_state(
                 self.id,
                 &self.feature_configs,

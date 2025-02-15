@@ -11,6 +11,12 @@ use super::{
     Fixture, SerializableFixturePatch,
 };
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct FixtureTypeAndMode {
+    pub name: String,
+    pub mode: u32,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FixturePatchTypeMode {
     pub name: String,

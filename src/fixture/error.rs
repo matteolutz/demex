@@ -1,6 +1,9 @@
-use super::channel2::{
-    channel_type::FixtureChannelType, error::FixtureChannelError2,
-    feature::feature_type::FixtureFeatureType,
+use super::{
+    channel2::{
+        channel_type::FixtureChannelType, error::FixtureChannelError2,
+        feature::feature_type::FixtureFeatureType,
+    },
+    presets::error::PresetHandlerError,
 };
 
 #[derive(Debug)]
@@ -16,6 +19,9 @@ pub enum FixtureError {
     FixtureChannelError2(FixtureChannelError2),
     FixtureTypeNotFound(String),
     FixtureTypeModeNotFound(String, u32),
+
+    NoDisplayColor(u32),
+    PresetHandlerError(Box<PresetHandlerError>),
 }
 
 impl std::fmt::Display for FixtureError {
@@ -32,10 +38,18 @@ impl std::fmt::Display for FixtureError {
             Self::InvalidDataLength => write!(f, "Invalid data length"),
             Self::FixtureChannelError2(e) => write!(f, "Fixture channel error: {}", e),
             Self::NoFunctionAccess => write!(f, "Tried to access values for a NoFunction channel"),
-            Self::FixtureTypeNotFound(s) => write!(f, "Fixture type ({}) not found", s),
-            Self::FixtureTypeModeNotFound(s, id) => {
-                write!(f, "Fixture type mode ({}) with id ({}) not found", s, id)
+            Self::FixtureTypeNotFound(s) => write!(f, "Fixture type {} not found", s),
+            Self::FixtureTypeModeNotFound(fixture_type, fixture_mode) => {
+                write!(
+                    f,
+                    "Fixture type mode {} for type {} not found",
+                    fixture_type, fixture_mode
+                )
             }
+            Self::NoDisplayColor(fixture_id) => {
+                write!(f, "Fixture {} has no color feature", fixture_id)
+            }
+            Self::PresetHandlerError(err) => write!(f, "Preset handler error: {}", err),
         }
     }
 }

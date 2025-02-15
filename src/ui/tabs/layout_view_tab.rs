@@ -66,10 +66,19 @@ impl FixtureLayoutEntry {
         fixture_color: egui::Color32,
         fixture_direction: Option<egui::Vec2>,
         is_selected: bool,
+        is_about_to_selected: bool,
         label: impl ToString,
     ) {
         let (pos, size) = self.get_pos_and_size(projection, screen);
+
         let stroke_width = 0.25 * projection.zoom();
+        let stroke_color = if is_selected {
+            egui::Color32::DARK_GREEN
+        } else if is_about_to_selected {
+            egui::Color32::BLUE
+        } else {
+            egui::Color32::WHITE
+        };
 
         match self.entry_type() {
             FixtureLayoutEntryType::Rect => {
@@ -77,14 +86,7 @@ impl FixtureLayoutEntry {
                 painter.rect_stroke(
                     Rect::from_min_size(top_left, size),
                     0.0,
-                    (
-                        stroke_width,
-                        if is_selected {
-                            egui::Color32::DARK_GREEN
-                        } else {
-                            egui::Color32::WHITE
-                        },
-                    ),
+                    (stroke_width, stroke_color),
                 );
 
                 painter.rect_filled(
@@ -99,18 +101,7 @@ impl FixtureLayoutEntry {
             FixtureLayoutEntryType::Circle => {
                 let radius = size.x.min(size.y) / 2.0;
 
-                painter.circle_stroke(
-                    pos,
-                    radius,
-                    (
-                        stroke_width,
-                        if is_selected {
-                            egui::Color32::DARK_GREEN
-                        } else {
-                            egui::Color32::WHITE
-                        },
-                    ),
-                );
+                painter.circle_stroke(pos, radius, (stroke_width, stroke_color));
 
                 painter.circle_filled(pos, radius - stroke_width, fixture_color);
             }
@@ -132,14 +123,7 @@ impl FixtureLayoutEntry {
 
                 painter.add(PathShape::closed_line(
                     points_outer,
-                    (
-                        stroke_width,
-                        if is_selected {
-                            egui::Color32::DARK_GREEN
-                        } else {
-                            egui::Color32::WHITE
-                        },
-                    ),
+                    (stroke_width, stroke_color),
                 ));
             }
         }
@@ -249,17 +233,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
     painter.rect_filled(rect, 0.0, egui::Color32::BLACK);
 
-    let mut global_fixture_select_fixtures: Vec<u32> = Vec::new();
-    if let Some(global_fixture_select) = &context.global_fixture_select {
-        global_fixture_select_fixtures.extend(
-            global_fixture_select
-                .get_fixtures(
-                    &preset_handler,
-                    FixtureSelectorContext::new(&context.global_fixture_select),
-                )
-                .expect(""),
-        );
-    }
+    let global_fixture_select_fixtures = context
+        .global_fixture_select
+        .as_ref()
+        .and_then(|fs| {
+            fs.get_fixtures(
+                &preset_handler,
+                FixtureSelectorContext::new(&context.global_fixture_select),
+            )
+            .ok()
+        })
+        .unwrap_or_default();
 
     for decoration in fixture_layout.decorations() {
         decoration.draw(
@@ -323,6 +307,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             rect_color,
             position,
             is_selected,
+            false,
             fixture.name(),
         );
     }
