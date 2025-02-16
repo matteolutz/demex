@@ -6,6 +6,7 @@ use crate::fixture::{
     channel2::{channel_type::FixtureChannelType, feature::feature_config::FixtureFeatureConfig},
     handler::FixtureHandler,
     presets::PresetHandler,
+    selection::FixtureSelection,
     sequence::{runtime::SequenceRuntime, FadeFixtureChannelValue},
     value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
 };
@@ -25,7 +26,7 @@ pub struct Executor {
 
     config: ExecutorConfig,
 
-    fixtures: Vec<u32>,
+    selection: FixtureSelection,
 }
 
 impl Executor {
@@ -40,7 +41,7 @@ impl Executor {
             config: ExecutorConfig::Sequence {
                 runtime: SequenceRuntime::new(sequence_id),
             },
-            fixtures,
+            selection: fixtures.into(),
             priority,
             stop_others: false,
         }
@@ -59,6 +60,10 @@ impl Executor {
                 .to_owned(),
             ExecutorConfig::FeatureEffect { runtime } => format!("{}", runtime.effect()),
         }
+    }
+
+    pub fn selection(&self) -> &FixtureSelection {
+        &self.selection
     }
 
     pub fn refers_to_sequence(&self, sequence_id: u32) -> bool {
@@ -80,10 +85,6 @@ impl Executor {
         }
     }
 
-    pub fn fixtures(&self) -> &Vec<u32> {
-        &self.fixtures
-    }
-
     pub fn channel_value(
         &self,
         fixture_id: u32,
@@ -91,34 +92,38 @@ impl Executor {
         channel_type: FixtureChannelType,
         preset_handler: &PresetHandler,
     ) -> Option<FadeFixtureChannelValue> {
-        if !self.fixtures.contains(&fixture_id) {
+        if !self.selection.has_fixture(fixture_id) {
             return None;
         }
 
         match &self.config {
             ExecutorConfig::Sequence { runtime } => runtime.channel_value(
                 fixture_id,
+                self.selection.offset_idx(fixture_id)?,
                 channel_type,
                 1.0,
                 1.0,
                 preset_handler,
                 self.priority,
             ),
-            ExecutorConfig::FeatureEffect { runtime } => {
-                runtime.get_channel_value(channel_type, fixture_feature_configs, self.priority)
-            }
+            ExecutorConfig::FeatureEffect { runtime } => runtime.get_channel_value(
+                channel_type,
+                fixture_feature_configs,
+                self.selection.offset_idx(fixture_id)?,
+                self.priority,
+            ),
         }
     }
 
     pub fn update(
         &mut self,
-        delta_time: f64,
+        _delta_time: f64,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
     ) {
         match &mut self.config {
             ExecutorConfig::Sequence { runtime } => {
-                if runtime.update(delta_time, 1.0, preset_handler) {
+                if runtime.update(self.selection.num_offsets(), 1.0, preset_handler) {
                     self.stop(fixture_handler);
                 }
             }
@@ -136,7 +141,7 @@ impl Executor {
     pub fn start(&mut self, fixture_handler: &mut FixtureHandler) {
         self.child_start();
 
-        for fixture_id in &self.fixtures {
+        for fixture_id in self.selection.fixtures() {
             if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
                 fixture.push_value_source(FixtureChannelValueSource::Executor {
                     executor_id: self.id,
@@ -155,7 +160,7 @@ impl Executor {
     pub fn stop(&mut self, fixture_handler: &mut FixtureHandler) {
         self.child_stop();
 
-        for fixture_id in &self.fixtures {
+        for fixture_id in self.selection.fixtures() {
             if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
                 fixture.remove_value_source(FixtureChannelValueSource::Executor {
                     executor_id: self.id,
@@ -173,7 +178,7 @@ impl Executor {
     pub fn to_string(&self, preset_handler: &PresetHandler) -> String {
         match &self.config {
             ExecutorConfig::Sequence { runtime } => format!(
-                "{}\n{}/{}",
+                "{}\nSeq - ({}/{})",
                 self.name(preset_handler),
                 runtime
                     .current_cue()
@@ -181,7 +186,9 @@ impl Executor {
                     .unwrap_or("-".to_owned()),
                 runtime.num_cues(preset_handler),
             ),
-            ExecutorConfig::FeatureEffect { .. } => self.name(preset_handler),
+            ExecutorConfig::FeatureEffect { .. } => {
+                format!("{}\nEffect", self.name(preset_handler))
+            }
         }
     }
 }

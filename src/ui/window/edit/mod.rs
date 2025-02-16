@@ -6,6 +6,7 @@ use crate::{
         updatables::UpdatableHandler,
     },
     parser::nodes::action::ConfigTypeActionData,
+    ui::error::DemexUiError,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,10 +45,10 @@ impl DemexEditWindow {
         fixture_handler: &mut FixtureHandler,
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
-    ) {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Self::EditSequence(sequence_id) => {
-                Probe::new(preset_handler.get_sequence_mut(*sequence_id).unwrap()).show(ui);
+                Probe::new(preset_handler.get_sequence_mut(*sequence_id)?).show(ui);
             }
             Self::EditSequenceCue(sequence_id, cue_idx) => {
                 Probe::new(
@@ -55,18 +56,23 @@ impl DemexEditWindow {
                         .get_sequence_mut(*sequence_id)
                         .unwrap()
                         .find_cue_mut(*cue_idx)
-                        .unwrap(),
+                        .ok_or(DemexUiError::RuntimeError("cue not found".to_owned()))?,
                 )
                 .show(ui);
             }
             Self::EditExecutor(executor_id) => {
-                Probe::new(updatable_handler.executor_mut(*executor_id).unwrap()).show(ui);
+                Probe::new(
+                    updatable_handler
+                        .executor_mut(*executor_id)
+                        .ok_or(DemexUiError::RuntimeError("executor not found".to_owned()))?,
+                )
+                .show(ui);
             }
             Self::EditFader(fader_id) => {
-                Probe::new(updatable_handler.fader_mut(*fader_id).unwrap()).show(ui);
+                Probe::new(updatable_handler.fader_mut(*fader_id)?).show(ui);
             }
             Self::EditPreset(preset_id) => {
-                Probe::new(preset_handler.get_preset_mut(*preset_id).unwrap()).show(ui);
+                Probe::new(preset_handler.get_preset_mut(*preset_id)?).show(ui);
             }
             Self::Config(config_type) => match config_type {
                 ConfigTypeActionData::Output => {
@@ -82,33 +88,8 @@ impl DemexEditWindow {
                         .show(ui);
                 }
             },
-        }
-    }
+        };
 
-    pub fn ui(
-        &self,
-        ctx: &egui::Context,
-        fixture_handler: &mut FixtureHandler,
-        preset_handler: &mut PresetHandler,
-        updatable_handler: &mut UpdatableHandler,
-    ) -> bool {
-        egui::Window::new(self.title())
-            .show(ctx, |ui| {
-                if ui.input(|reader| reader.key_pressed(egui::Key::Escape)) {
-                    return true;
-                }
-
-                self.window_ui(ui, fixture_handler, preset_handler, updatable_handler);
-
-                let close_button = ui.button("Close");
-                if close_button.clicked() {
-                    return true;
-                }
-
-                false
-            })
-            .map(|inner| inner.inner)
-            .unwrap_or(None)
-            .unwrap_or(false)
+        Ok(())
     }
 }

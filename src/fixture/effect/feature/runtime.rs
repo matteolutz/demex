@@ -20,6 +20,9 @@ use super::FeatureEffect;
 pub struct FeatureEffectRuntime {
     effect: FeatureEffect,
 
+    #[serde(default)]
+    offset: f64,
+
     #[serde(default, skip_serializing, skip_deserializing)]
     #[egui_probe(skip)]
     effect_started: Option<time::Instant>,
@@ -46,6 +49,7 @@ impl FeatureEffectRuntime {
         &self,
         find_channel_type: FixtureChannelType,
         fixture_feature_configs: &[FixtureFeatureConfig],
+        feature_offset_idx: usize,
         priority: FixtureChannelValuePriority,
     ) -> Option<FadeFixtureChannelValue> {
         let channel_types = self
@@ -63,7 +67,7 @@ impl FeatureEffectRuntime {
             .map(|channel_type| (channel_type, FixtureChannelValue2::Home))
             .collect::<Vec<_>>();
 
-        let feature_value = self.get_feature_value().ok()?;
+        let feature_value = self.get_feature_value(feature_offset_idx).ok()?;
         feature_value
             .write_back(fixture_feature_configs, &mut channel_values)
             .map_err(EffectError::FixtureChannelError)
@@ -75,12 +79,17 @@ impl FeatureEffectRuntime {
             .map(|(_, channel_value)| FadeFixtureChannelValue::new(channel_value, 1.0, priority))
     }
 
-    pub fn get_feature_value(&self) -> Result<FixtureFeatureValue, EffectError> {
+    pub fn get_feature_value(
+        &self,
+        fixture_offset_idx: usize,
+    ) -> Result<FixtureFeatureValue, EffectError> {
         self.effect_started
             .ok_or(EffectError::EffectNotStarted)
             .and_then(|effect_started| {
-                self.effect
-                    .get_feature_value(effect_started.elapsed().as_secs_f64())
+                self.effect.get_feature_value(
+                    effect_started.elapsed().as_secs_f64()
+                        + (fixture_offset_idx as f64 * self.offset),
+                )
             })
     }
 }

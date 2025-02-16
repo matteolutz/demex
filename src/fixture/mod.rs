@@ -25,6 +25,7 @@ pub mod handler;
 pub mod layout;
 pub mod patch;
 pub mod presets;
+pub mod selection;
 pub mod sequence;
 pub mod updatables;
 pub mod value_source;

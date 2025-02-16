@@ -90,12 +90,17 @@ impl DemexWindow {
                         let mut preset_handler = preset_handler.write();
                         let mut updatable_handler = updatable_handler.write();
 
-                        edit_window.window_ui(
+                        if let Err(err) = edit_window.window_ui(
                             ui,
                             &mut fixture_handler,
                             &mut preset_handler,
                             &mut updatable_handler,
-                        );
+                        ) {
+                            ui.vertical(|ui| {
+                                ui.colored_label(egui::Color32::LIGHT_RED, "Something went wrong.");
+                                ui.label(err.to_string());
+                            });
+                        }
                     }
                     Self::AboutDemex => {
                         ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {

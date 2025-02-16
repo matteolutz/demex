@@ -1,8 +1,3 @@
-use egui::{
-    epaint::{PathShape, PathStroke},
-    Rect, Stroke,
-};
-
 use crate::{
     fixture::{
         channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
@@ -11,7 +6,13 @@ use crate::{
     parser::nodes::fixture_selector::{
         AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
     },
-    ui::{graphics::layout_projection::LayoutProjection, DemexUiContext},
+    ui::{
+        graphics::layout_projection::LayoutProjection, utils::rect::rect_vertices, DemexUiContext,
+    },
+};
+use egui::{
+    epaint::{PathShape, PathStroke},
+    Rect, Stroke,
 };
 
 impl FixtureLayoutDecoration {
@@ -83,11 +84,9 @@ impl FixtureLayoutEntry {
         match self.entry_type() {
             FixtureLayoutEntryType::Rect => {
                 let top_left = pos - (size / 2.0);
-                painter.rect_stroke(
-                    Rect::from_min_size(top_left, size),
-                    0.0,
-                    (stroke_width, stroke_color),
-                );
+                let rect = Rect::from_min_size(top_left, size);
+
+                painter.rect_stroke(rect, 0.0, (stroke_width, stroke_color));
 
                 painter.rect_filled(
                     Rect::from_min_size(
@@ -97,6 +96,24 @@ impl FixtureLayoutEntry {
                     0.0,
                     fixture_color,
                 );
+
+                if let Some(fixture_direction) = fixture_direction {
+                    let pos_in_rect = rect.left_top() + (fixture_direction * size);
+
+                    for pos in rect_vertices(&rect) {
+                        // draw line from pos to pos_in_rect
+                        painter.line_segment(
+                            [pos, pos_in_rect],
+                            Stroke::new(0.25 * projection.zoom(), egui::Color32::YELLOW),
+                        );
+                    }
+
+                    painter.circle_filled(
+                        pos_in_rect,
+                        0.5 * projection.zoom(),
+                        egui::Color32::YELLOW,
+                    );
+                }
             }
             FixtureLayoutEntryType::Circle => {
                 let radius = size.x.min(size.y) / 2.0;
@@ -139,19 +156,6 @@ impl FixtureLayoutEntry {
                 egui::Color32::WHITE
             },
         );
-
-        if let Some(mut fixture_direction) = fixture_direction {
-            let line_len = 7.5 * projection.zoom();
-
-            if fixture_direction.length() > 1.0 {
-                fixture_direction = fixture_direction.normalized();
-            }
-
-            painter.line_segment(
-                [pos, pos + (fixture_direction * line_len)],
-                Stroke::new(2.0, egui::Color32::YELLOW),
-            );
-        }
     }
 }
 
@@ -298,7 +302,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 FixtureFeatureValue::PositionPanTilt { pan, tilt, .. } => Some((pan, tilt)),
                 _ => None,
             })
-            .map(|val| Into::<egui::Vec2>::into(val) - egui::vec2(0.5, 0.5));
+            .map(Into::<egui::Vec2>::into);
 
         fixture_layout_entry.draw(
             &context.layout_view_context.layout_projection,
