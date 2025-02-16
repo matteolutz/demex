@@ -6,14 +6,23 @@ use serde::{Deserialize, Serialize};
 use crate::dmx::{DemexDmxOutput, DemexDmxOutputConfig};
 
 use super::{
-    channel::SerializableFixtureChannelPatch, layout::FixtureLayout, Fixture,
-    SerializableFixturePatch,
+    channel2::{channel_type::FixtureChannelType, feature::feature_config::FixtureFeatureConfig},
+    layout::FixtureLayout,
+    Fixture, SerializableFixturePatch,
 };
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct FixtureTypeAndMode {
+    pub name: String,
+    pub mode: u32,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FixturePatchTypeMode {
     pub name: String,
-    pub channels: Vec<SerializableFixtureChannelPatch>,
+    pub channel_types: Vec<FixtureChannelType>,
+    pub toggle_flags: Vec<HashMap<String, u8>>,
+    pub feature_configs: Vec<FixtureFeatureConfig>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

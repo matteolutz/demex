@@ -4,15 +4,7 @@ use nodes::action::{
 
 use crate::{
     fixture::{
-        channel::{
-            FixtureChannel, FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
-            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-        },
-        feature::group::{
-            DEFAULT_FEATURE_GROUP_BEAM_ID, DEFAULT_FEATURE_GROUP_COLOR_ID,
-            DEFAULT_FEATURE_GROUP_CONTROL_ID, DEFAULT_FEATURE_GROUP_FOCUS_ID,
-            DEFAULT_FEATURE_GROUP_INTENSITY_ID, DEFAULT_FEATURE_GROUP_POSITION_ID,
-        },
+        channel2::feature::{feature_group::DefaultFeatureGroup, feature_type::FixtureFeatureType},
         sequence::cue::CueIdx,
     },
     lexer::token::Token,
@@ -154,7 +146,7 @@ impl<'a> Parser2<'a> {
         }
     }
 
-    fn parse_fixture_selector(&mut self) -> Result<FixtureSelector, ParseError> {
+    pub fn parse_fixture_selector(&mut self) -> Result<FixtureSelector, ParseError> {
         let atomic_selector = self.parse_atomic_fixture_selector()?;
 
         match self.current_token()? {
@@ -275,19 +267,11 @@ impl<'a> Parser2<'a> {
         }
     }
 
-    fn parse_discrete_channel_type(&mut self) -> Result<u16, ParseError> {
+    fn parse_discrete_feature_type(&mut self) -> Result<FixtureFeatureType, ParseError> {
         match self.current_token()? {
             &Token::KeywordIntens => {
                 self.advance();
-                Ok(FIXTURE_CHANNEL_INTENSITY_ID)
-            }
-            &Token::KeywordPosition => {
-                self.advance();
-                Ok(FIXTURE_CHANNEL_POSITION_PAN_TILT_ID)
-            }
-            &Token::KeywordColor => {
-                self.advance();
-                Ok(FIXTURE_CHANNEL_COLOR_ID)
+                Ok(FixtureFeatureType::Intensity)
             }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
@@ -296,8 +280,8 @@ impl<'a> Parser2<'a> {
         }
     }
 
-    fn parse_channel_type(&mut self) -> Result<u16, ParseError> {
-        let channel_type = self.try_parse(Self::parse_discrete_channel_type);
+    fn parse_feature_type(&mut self) -> Result<FixtureFeatureType, ParseError> {
+        /*let channel_type = self.try_parse(Self::parse_discrete_feature_type);
         if let Ok(channel_type) = channel_type {
             return Ok(channel_type);
         }
@@ -307,12 +291,10 @@ impl<'a> Parser2<'a> {
                 self.advance();
 
                 match self.current_token()?.clone() {
-                    Token::String(channel_name) => {
+                    Token::String(_) => {
                         self.advance();
 
-                        Ok(FixtureChannel::get_maintenance_id(
-                            channel_name.clone().as_str(),
-                        ))
+                        Ok(0)
                     }
                     unexpected_token => Err(ParseError::UnexpectedToken(
                         unexpected_token,
@@ -324,10 +306,11 @@ impl<'a> Parser2<'a> {
                 unexpected_token.clone(),
                 "Expected channel type".to_string(),
             )),
-        }
+        }*/
+        self.parse_discrete_feature_type()
     }
 
-    fn parse_channel_type_list(&mut self) -> Result<Vec<u16>, ParseError> {
+    fn parse_feature_type_list(&mut self) -> Result<Vec<FixtureFeatureType>, ParseError> {
         expect_and_consume_token!(self, Token::ParenOpen, "(");
 
         let mut channel_types = Vec::new();
@@ -338,7 +321,7 @@ impl<'a> Parser2<'a> {
         }
 
         loop {
-            let channel_type = self.parse_channel_type()?;
+            let channel_type = self.parse_feature_type()?;
             channel_types.push(channel_type);
 
             if matches!(self.current_token()?, Token::ParenClose) {
@@ -376,27 +359,27 @@ impl<'a> Parser2<'a> {
         match self.current_token()? {
             Token::KeywordIntens => {
                 self.advance();
-                Ok(DEFAULT_FEATURE_GROUP_INTENSITY_ID)
+                Ok(DefaultFeatureGroup::Intensity.id())
             }
             Token::KeywordPosition => {
                 self.advance();
-                Ok(DEFAULT_FEATURE_GROUP_POSITION_ID)
+                Ok(DefaultFeatureGroup::Position.id())
             }
             Token::KeywordColor => {
                 self.advance();
-                Ok(DEFAULT_FEATURE_GROUP_COLOR_ID)
+                Ok(DefaultFeatureGroup::Color.id())
             }
             Token::KeywordBeam => {
                 self.advance();
-                Ok(DEFAULT_FEATURE_GROUP_BEAM_ID)
+                Ok(DefaultFeatureGroup::Beam.id())
             }
             Token::KeywordFocus => {
                 self.advance();
-                Ok(DEFAULT_FEATURE_GROUP_FOCUS_ID)
+                Ok(DefaultFeatureGroup::Focus.id())
             }
             Token::KeywordControl => {
                 self.advance();
-                Ok(DEFAULT_FEATURE_GROUP_CONTROL_ID)
+                Ok(DefaultFeatureGroup::Control.id())
             }
             Token::KeywordFeature => {
                 self.advance();
@@ -476,11 +459,11 @@ impl<'a> Parser2<'a> {
             ));
         }
 
-        let channel_type = self.parse_channel_type()?;
+        let channel_type = self.parse_feature_type()?;
 
         let value = self.try_parse(Self::parse_channel_value_single);
         if let Ok(value) = value {
-            return Ok(Action::SetChannelValue(
+            return Ok(Action::SetFeatureValue(
                 fixture_selector,
                 channel_type,
                 value,
@@ -675,7 +658,7 @@ impl<'a> Parser2<'a> {
                         self.advance();
                         ChannelTypeSelectorActionData::All
                     } else {
-                        ChannelTypeSelectorActionData::Channels(self.parse_channel_type_list()?)
+                        ChannelTypeSelectorActionData::Features(self.parse_feature_type_list()?)
                     }
                 } else {
                     ChannelTypeSelectorActionData::Active

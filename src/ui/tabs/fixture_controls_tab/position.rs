@@ -1,18 +1,14 @@
 use crate::{
     fixture::{
-        channel::{
-            value::{FixtureChannelDiscreteValue, FixtureChannelValue, FixtureChannelValueTrait},
-            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-        },
+        channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
         handler::FixtureHandler,
         presets::PresetHandler,
     },
     ui::components::position_selector::PositionSelector,
 };
 
-pub fn position_controls_ui(
+pub fn position_pan_tilt_controls_ui(
     ui: &mut eframe::egui::Ui,
-    channel_name: &str,
     is_channel_home: bool,
     selected_fixtures: &[u32],
     preset_handler: &PresetHandler,
@@ -20,7 +16,7 @@ pub fn position_controls_ui(
 ) {
     ui.vertical(|ui| {
         ui.label(
-            egui::RichText::from(channel_name).color(if is_channel_home {
+            egui::RichText::from("Position Pan Tilt").color(if is_channel_home {
                 egui::Color32::PLACEHOLDER
             } else {
                 egui::Color32::YELLOW
@@ -33,30 +29,26 @@ pub fn position_controls_ui(
                     fixture_handler
                         .fixture(*fixture_id)
                         .unwrap()
-                        .set_position_pan_tilt(FixtureChannelValue::discrete(
-                            FixtureChannelDiscreteValue::Pair(val.into()),
-                        ))
+                        .set_feature_value(FixtureFeatureValue::PositionPanTilt {
+                            pan: val.x,
+                            tilt: val.y,
+                            pan_tilt_speed: None,
+                        })
                         .expect("");
                 }
 
-                Some(eframe::egui::vec2(0.0, 0.0))
+                Some(egui::vec2(0.0, 0.0))
             } else {
-                let pos_val = fixture_handler
+                if let FixtureFeatureValue::PositionPanTilt { pan, tilt, .. } = fixture_handler
                     .fixture(selected_fixtures[0])
                     .unwrap()
-                    .position_pan_tilt_programmer()
-                    .expect("");
-
-                let pos = pos_val
-                    // TODO: change this, to use the corresponding fixture
-                    .as_pair(
-                        preset_handler,
-                        selected_fixtures[0],
-                        FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-                    )
-                    .expect("");
-
-                Some(eframe::egui::vec2(pos[0], pos[1]))
+                    .feature_value_programmer(FixtureFeatureType::PositionPanTilt, preset_handler)
+                    .expect("")
+                {
+                    Some(egui::vec2(pan, tilt))
+                } else {
+                    None
+                }
             }
         }));
     });

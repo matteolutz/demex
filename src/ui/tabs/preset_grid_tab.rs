@@ -2,7 +2,9 @@ use itertools::Itertools;
 
 use crate::{
     lexer::token::Token,
-    parser::nodes::fixture_selector::{AtomicFixtureSelector, FixtureSelector},
+    parser::nodes::fixture_selector::{
+        AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
+    },
     ui::DemexUiContext,
 };
 
@@ -23,6 +25,14 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
     let preset_handler = context.preset_handler.read();
     let mut updatable_handler = context.updatable_handler.write();
+
+    let selected_fixtures = context.global_fixture_select.as_ref().and_then(|fs| {
+        fs.get_fixtures(
+            &preset_handler,
+            FixtureSelectorContext::new(&context.global_fixture_select),
+        )
+        .ok()
+    });
 
     eframe::egui::Grid::new("preset_grid")
         .spacing((5.0, 5.0))
@@ -55,6 +65,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
                 if group_button.double_clicked() {
                     context.command.clear();
+                    context.command_input.clear();
+                    context.is_command_input_empty = true;
+
                     context.global_fixture_select = Some(FixtureSelector::Atomic(
                         AtomicFixtureSelector::FixtureGroup(group.id()),
                     ))
@@ -95,14 +108,48 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     .iter()
                     .sorted_by_key(|p| p.id())
                 {
+                    let mut preset_button_text = egui::text::LayoutJob::single_section(
+                        preset.name().to_owned(),
+                        egui::TextFormat::simple(
+                            egui::FontId::proportional(12.0),
+                            egui::Color32::PLACEHOLDER,
+                        ),
+                    );
+
+                    if let Some(selected_fixtures) = &selected_fixtures {
+                        let target_mode = preset.get_target(selected_fixtures);
+
+                        preset_button_text.append(
+                            format!("\n{}", target_mode.get_short_name()).as_str(),
+                            0.0,
+                            egui::TextFormat::simple(
+                                egui::FontId::monospace(8.0),
+                                target_mode.get_color(),
+                            ),
+                        );
+                    }
+
                     let preset_button = ui.add_sized(
                         [80.0, 80.0],
-                        eframe::egui::Button::new(preset.name()).wrap(),
+                        eframe::egui::Button::new(preset_button_text).wrap(),
                     );
+
                     if preset_button.clicked() {
                         context
                             .command
                             .extend_from_slice(&[Token::KeywordPreset, Token::Integer(preset.id())])
+                    }
+
+                    if preset_button.double_clicked() && selected_fixtures.is_some() {
+                        context.command.clear();
+                        context.command_input.clear();
+                        context.is_command_input_empty = true;
+
+                        for fixture_id in selected_fixtures.as_ref().unwrap() {
+                            preset
+                                .apply(fixture_handler.fixture(*fixture_id).unwrap())
+                                .unwrap();
+                        }
                     }
                 }
 
@@ -227,25 +274,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
                 let preset_button = ui.add_sized(
                     [80.0, 80.0],
-                    eframe::egui::Button::new(format!(
-                        "{}\n{}/{}",
+                    eframe::egui::Button::new(
                         updatable_handler
                             .executor(*preset_id)
                             .unwrap()
-                            .name(&preset_handler),
-                        updatable_handler
-                            .executor(*preset_id)
-                            .unwrap()
-                            .runtime()
-                            .current_cue()
-                            .map(|c| (c + 1).to_string())
-                            .unwrap_or("-".to_owned()),
-                        updatable_handler
-                            .executor(*preset_id)
-                            .unwrap()
-                            .runtime()
-                            .num_cues(&preset_handler),
-                    ))
+                            .to_string(&preset_handler),
+                    )
                     .wrap()
                     .stroke(if is_started {
                         eframe::egui::Stroke::new(1.0, eframe::egui::Color32::RED)

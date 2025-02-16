@@ -4,20 +4,16 @@ use parking_lot::RwLock;
 
 use crate::{
     fixture::{
-        channel::{
-            value::{FixtureChannelDiscreteValue, FixtureChannelValue},
-            FIXTURE_CHANNEL_COLOR_ID, FIXTURE_CHANNEL_INTENSITY_ID,
-            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-        },
-        effect::FixtureChannelEffect,
-        handler::FixtureHandler,
-        presets::PresetHandler,
-        updatables::UpdatableHandler,
+        channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler,
+        presets::PresetHandler, updatables::UpdatableHandler,
     },
     lexer::token::Token,
-    parser::nodes::{
-        action::{result::ActionRunResult, Action},
-        fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    parser::{
+        nodes::{
+            action::{result::ActionRunResult, Action},
+            fixture_selector::{FixtureSelector, FixtureSelectorContext},
+        },
+        Parser2,
     },
     show::DemexShow,
     ui::error::DemexUiError,
@@ -31,6 +27,9 @@ use super::{
 };
 
 pub struct DemexUiContext {
+    pub command_input: String,
+    pub is_command_input_empty: bool,
+
     pub fixture_handler: Arc<RwLock<FixtureHandler>>,
     pub preset_handler: Arc<RwLock<PresetHandler>>,
     pub updatable_handler: Arc<RwLock<UpdatableHandler>>,
@@ -69,6 +68,24 @@ impl DemexUiContext {
             )));
     }
 
+    pub fn run_cmd(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        self.logs
+            .push(DemexLogEntry::new(DemexLogEntryType::CommandEntry(
+                self.command.clone(),
+            )));
+
+        let mut p = Parser2::new(&self.command);
+
+        let action = p.parse().inspect_err(|err| {
+            self.logs
+                .push(DemexLogEntry::new(DemexLogEntryType::CommandFailedEntry(
+                    err.to_string(),
+                )))
+        })?;
+
+        self.run_and_handle_action(&action)
+    }
+
     pub fn run_and_handle_action(
         &mut self,
         action: &Action,
@@ -88,8 +105,10 @@ impl DemexUiContext {
             }
             Action::Save => {
                 let fixture_handler_lock = self.fixture_handler.read();
-                let preset_handler_lock = self.preset_handler.read();
+                let mut preset_handler_lock = self.preset_handler.write();
                 let updatable_handler_lock = self.updatable_handler.read();
+
+                *preset_handler_lock.feature_groups_mut() = FeatureGroup::default_feature_groups();
 
                 let show = DemexShow {
                     preset_handler: preset_handler_lock.clone(),
@@ -110,52 +129,6 @@ impl DemexUiContext {
                 }
             }
             Action::Test(cmd) => match cmd.as_str() {
-                "effect" => {
-                    let _ = self
-                        .fixture_handler
-                        .write()
-                        .fixture(1)
-                        .unwrap()
-                        .set_channel_value(
-                            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-                            FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Effect {
-                                effect: FixtureChannelEffect::PairFigureEight {
-                                    speed: 1.0,
-                                    center_a: 0.5,
-                                    center_b: 0.5,
-                                },
-                            }),
-                        );
-
-                    let _ = self
-                        .fixture_handler
-                        .write()
-                        .fixture(1)
-                        .unwrap()
-                        .set_channel_value(
-                            FIXTURE_CHANNEL_COLOR_ID,
-                            FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Effect {
-                                effect: FixtureChannelEffect::QuadrupleHueRotate { speed: 1.0 },
-                            }),
-                        );
-
-                    let _ = self
-                        .fixture_handler
-                        .write()
-                        .fixture(1)
-                        .unwrap()
-                        .set_channel_value(
-                            FIXTURE_CHANNEL_INTENSITY_ID,
-                            FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Effect {
-                                effect: FixtureChannelEffect::SingleSine {
-                                    a: 1.0,
-                                    b: 1.0,
-                                    c: 1.0,
-                                    d: 1.0,
-                                },
-                            }),
-                        );
-                }
                 _ => self.add_dialog_entry(DemexGlobalDialogEntry::error(
                     &DemexUiError::RuntimeError(format!("Unknown test command: \"{}\"", cmd)),
                 )),

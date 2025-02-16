@@ -4,12 +4,9 @@ use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
-    channel::{
-        value::{FixtureChannelValue, FixtureChannelValueVariant},
-        value_source::FixtureChannelValuePriority,
-        FIXTURE_CHANNEL_INTENSITY_ID,
-    },
+    channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
     presets::PresetHandler,
+    value_source::FixtureChannelValuePriority,
 };
 
 use super::{cue::CueTrigger, FadeFixtureChannelValue, SequenceStopBehavior};
@@ -88,7 +85,8 @@ impl SequenceRuntime {
     pub fn channel_value(
         &self,
         fixture_id: u32,
-        channel_id: u16,
+        fixture_offset_idx: usize,
+        channel_type: FixtureChannelType,
         speed_multiplier: f32,
         intensity_multiplier: f32,
         preset_handler: &PresetHandler,
@@ -110,9 +108,9 @@ impl SequenceRuntime {
 
             delta *= speed_multiplier;
 
-            delta = f32::max(delta - cue.offset_for_fixture(fixture_id), 0.0);
+            delta = f32::max(delta - cue.offset_for_fixture_idx(fixture_offset_idx), 0.0);
 
-            let should_snap = cue.should_snap_channel_value_for_fixture(fixture_id, channel_id);
+            let should_snap = cue.should_snap_channel_value_for_fixture(fixture_id, channel_type);
 
             // its the first cue, so we want to fade in from black
             // TODO: this wont work like this
@@ -123,7 +121,9 @@ impl SequenceRuntime {
                     ((delta - cue.in_delay()) / cue.in_fade()).min(1.0)
                 };
 
-                if channel_id == FIXTURE_CHANNEL_INTENSITY_ID {
+                if channel_type == FixtureChannelType::Intensity
+                    || channel_type == FixtureChannelType::IntensityFine
+                {
                     fade *= intensity_multiplier;
                 }
 
@@ -131,7 +131,7 @@ impl SequenceRuntime {
                     fade = if fade >= cue.snap_percent() { 1.0 } else { 0.0 };
                 }
 
-                cue.channel_value_for_fixture(fixture_id, channel_id)
+                cue.channel_value_for_fixture(fixture_id, channel_type)
                     .map(|v| FadeFixtureChannelValue::new(v.clone(), fade, priority))
             } else if prev_cue_idx.is_some() {
                 // this isn't the first cue, meaning we should fade between the value of the previous cue
@@ -150,34 +150,36 @@ impl SequenceRuntime {
                     mix = if mix >= cue.snap_percent() { 1.0 } else { 0.0 };
                 }
 
-                let fade = if channel_id == FIXTURE_CHANNEL_INTENSITY_ID {
+                let fade = if channel_type == FixtureChannelType::Intensity
+                    || channel_type == FixtureChannelType::IntensityFine
+                {
                     intensity_multiplier
                 } else {
                     1.0
                 };
 
-                let current_cue_value =
-                    cue.channel_value_for_fixture(fixture_id, channel_id)
-                        .map(|v| {
-                            FadeFixtureChannelValue::new(
-                                FixtureChannelValue::new(FixtureChannelValueVariant::Mix {
-                                    a: Box::new(
-                                        prev_cue
-                                            .channel_value_for_fixture(fixture_id, channel_id)
-                                            .cloned()
-                                            .unwrap_or(FixtureChannelValue::any_home()),
-                                    ),
-                                    b: Box::new(v.clone()),
-                                    mix,
-                                }),
-                                fade,
-                                priority,
-                            )
-                        });
+                let current_cue_value = cue
+                    .channel_value_for_fixture(fixture_id, channel_type)
+                    .map(|v| {
+                        FadeFixtureChannelValue::new(
+                            FixtureChannelValue2::Mix {
+                                a: Box::new(
+                                    prev_cue
+                                        .channel_value_for_fixture(fixture_id, channel_type)
+                                        .cloned()
+                                        .unwrap_or(FixtureChannelValue2::Home),
+                                ),
+                                b: Box::new(v.clone()),
+                                mix,
+                            },
+                            fade,
+                            priority,
+                        )
+                    });
 
                 if current_cue_value.is_none() {
                     prev_cue
-                        .channel_value_for_fixture(fixture_id, channel_id)
+                        .channel_value_for_fixture(fixture_id, channel_type)
                         .map(|v| {
                             FadeFixtureChannelValue::new(v.clone(), (1.0 - mix) * fade, priority)
                         })
@@ -194,7 +196,7 @@ impl SequenceRuntime {
 
     pub fn update(
         &mut self,
-        _delta_time: f64,
+        num_offsets: usize,
         speed_multiplier: f32,
         preset_handler: &PresetHandler,
     ) -> bool {
@@ -215,10 +217,10 @@ impl SequenceRuntime {
             let next_cue_idx = self.next_cue_idx(preset_handler);
 
             let previous_cue_out_time = previous_cue_idx
-                .map(|i| sequence.cue(i).out_time())
+                .map(|i| sequence.cue(i).out_time(num_offsets))
                 .unwrap_or(0.0);
 
-            let cue_time = previous_cue_out_time + current_cue.in_time();
+            let cue_time = previous_cue_out_time + current_cue.in_time(num_offsets);
 
             if delta > cue_time {
                 // is the next cue, a follow cue?
@@ -229,7 +231,7 @@ impl SequenceRuntime {
                     // it's the last cue, so we should wait for the out time of the last cue
                     // and then stop the sequence, if the sequence is set to auto stop
                 } else if sequence.stop_behavior() == SequenceStopBehavior::AutoStop
-                    && delta > cue_time + current_cue.out_time()
+                    && delta > cue_time + current_cue.out_time(num_offsets)
                 {
                     self.stop();
                     return true;

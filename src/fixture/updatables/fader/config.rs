@@ -1,7 +1,7 @@
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::sequence::runtime::SequenceRuntime;
+use crate::fixture::{selection::FixtureSelection, sequence::runtime::SequenceRuntime};
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, EguiProbe, Default)]
 pub enum DemexFaderRuntimeFunction {
@@ -16,7 +16,7 @@ pub enum DemexFaderConfig {
         fixtures: Vec<u32>,
     },
     SequenceRuntime {
-        fixtures: Vec<u32>,
+        selection: FixtureSelection,
         runtime: SequenceRuntime,
         function: DemexFaderRuntimeFunction,
     },
@@ -35,7 +35,7 @@ impl std::fmt::Display for DemexFaderConfig {
         match self {
             Self::Submaster { fixtures: _ } => write!(f, "Sub"),
             Self::SequenceRuntime {
-                fixtures: _,
+                selection: _,
                 runtime: _,
                 function: _,
             } => write!(f, "Seq"),

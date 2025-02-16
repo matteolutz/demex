@@ -30,7 +30,7 @@ struct Args {
     #[arg(short, long)]
     show: Option<PathBuf>,
 
-    /// Run a additional thread to periodically check for RwLock deadlocks
+    /// Run an additional thread to periodically check for RwLock deadlocks
     #[arg(long)]
     deadlock_test: bool,
 }

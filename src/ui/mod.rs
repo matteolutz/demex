@@ -1,5 +1,6 @@
 use std::{collections::HashSet, sync::Arc, thread, time};
 
+use command::ui_command_input;
 use constants::VERSION_STR;
 use context::DemexUiContext;
 use egui::IconData;
@@ -20,6 +21,7 @@ use crate::{
     utils::thread::DemexThreadStatsHandler,
 };
 
+pub mod command;
 pub mod components;
 pub mod constants;
 pub mod context;
@@ -35,8 +37,6 @@ pub mod window;
 const UI_THREAD_NAME: &str = "demex-ui";
 
 pub struct DemexUiApp {
-    command_input: String,
-    is_command_input_empty: bool,
     context: DemexUiContext,
 
     tabs: DemexTabs,
@@ -64,21 +64,24 @@ impl DemexUiApp {
             .register_thread(UI_THREAD_NAME.to_owned(), thread::current().id());
 
         Self {
-            command_input: String::new(),
-            is_command_input_empty: true,
             context: DemexUiContext {
                 stats,
                 gm_slider_val: FixtureHandler::default_grandmaster_value(),
                 fixture_handler,
                 preset_handler,
                 updatable_handler,
+
                 global_fixture_select: None,
+
                 command: Vec::new(),
                 layout_view_context: LayoutViewContext::default(),
                 macro_execution_queue: Vec::new(),
                 save_show,
                 logs: Vec::new(),
                 windows: Vec::new(),
+
+                command_input: String::new(),
+                is_command_input_empty: true,
             },
             tabs: DemexTabs::default(),
             detached_tabs: HashSet::new(),
@@ -142,7 +145,6 @@ impl eframe::App for DemexUiApp {
                 egui::ViewportId::from_hash_of(tab_title.as_str()),
                 egui::ViewportBuilder::default()
                     .with_title(format!("demex - {}", tab_title))
-                    .with_maximized(true)
                     .with_icon(self.icon.clone())
                     .with_window_level(egui::WindowLevel::AlwaysOnTop),
                 |ctx, _| {
@@ -150,6 +152,8 @@ impl eframe::App for DemexUiApp {
                         self.detached_tabs.remove(&detached_tab);
                         self.tabs.re_attach(detached_tab);
                     }
+
+                    ui_command_input(ctx, &mut self.context);
 
                     egui::CentralPanel::default().show(ctx, |ui| {
                         egui::ScrollArea::both().auto_shrink(false).show(ui, |ui| {
@@ -200,98 +204,7 @@ impl eframe::App for DemexUiApp {
             });
         });
 
-        eframe::egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
-            ui.add_space(10.0);
-
-            let command_label = ui.label("Command");
-
-            let command_font = eframe::egui::FontId::new(16.0, eframe::egui::FontFamily::Monospace);
-
-            ui.horizontal(|ui| {
-                if !self.context.command.is_empty() {
-                    ui.horizontal(|ui| {
-                        for token in &self.context.command {
-                            ui.label(
-                                eframe::egui::RichText::from(token.to_string())
-                                    .background_color(eframe::egui::Color32::BLACK)
-                                    .color(token)
-                                    .font(command_font.clone()),
-                            );
-                        }
-                    });
-                }
-
-                let command_input_field = ui
-                    .add_sized(
-                        ui.available_size(),
-                        eframe::egui::TextEdit::singleline(&mut self.command_input)
-                            .font(command_font)
-                            .text_color(eframe::egui::Color32::YELLOW),
-                    )
-                    .labelled_by(command_label.id);
-
-                if self.context.windows.is_empty() {
-                    if command_input_field
-                        .ctx
-                        .input(|i| i.key_pressed(eframe::egui::Key::Space))
-                    {
-                        let mut lexer = Lexer::new(&self.command_input);
-                        let tokens = lexer.tokenize();
-
-                        if let Ok(tokens) = tokens {
-                            self.context
-                                .command
-                                .extend(tokens.iter().take(tokens.len() - 1).cloned());
-
-                            self.command_input.clear();
-                        }
-                    }
-
-                    if self.is_command_input_empty
-                        && command_input_field
-                            .ctx
-                            .input(|i| i.key_pressed(eframe::egui::Key::Backspace))
-                    {
-                        if command_input_field
-                            .ctx
-                            .input(|i| i.modifiers.ctrl || i.modifiers.mac_cmd)
-                        {
-                            self.context.command.clear();
-                        } else {
-                            self.context.command.pop();
-                        }
-                    }
-
-                    self.is_command_input_empty = self.command_input.is_empty();
-
-                    if !command_input_field.has_focus() {
-                        command_input_field.request_focus();
-                    }
-
-                    if command_input_field
-                        .ctx
-                        .input(|i| i.key_pressed(eframe::egui::Key::Enter))
-                    {
-                        let mut lexer = Lexer::new(&self.command_input);
-                        let tokens = lexer.tokenize();
-
-                        if let Ok(tokens) = tokens {
-                            self.context.command.extend(tokens);
-
-                            self.command_input.clear();
-
-                            if let Err(e) = self.run_cmd() {
-                                eprintln!("{}", e);
-                                self.context
-                                    .add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));
-                            }
-
-                            self.context.command.clear();
-                        }
-                    }
-                }
-            });
-        });
+        ui_command_input(ctx, &mut self.context);
 
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
             self.tabs

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use error::UpdatableHandlerError;
-use executor::SequenceRuntimeExecutor;
+use executor::Executor;
 use fader::{
     config::{DemexFaderConfig, DemexFaderRuntimeFunction},
     DemexFader,
@@ -13,8 +13,8 @@ use crate::parser::nodes::{
 };
 
 use super::{
-    channel::value_source::FixtureChannelValuePriority, handler::FixtureHandler,
-    presets::PresetHandler, sequence::runtime::SequenceRuntime,
+    handler::FixtureHandler, presets::PresetHandler, sequence::runtime::SequenceRuntime,
+    value_source::FixtureChannelValuePriority,
 };
 
 pub mod error;
@@ -23,7 +23,7 @@ pub mod fader;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct UpdatableHandler {
-    executors: HashMap<u32, SequenceRuntimeExecutor>,
+    executors: HashMap<u32, Executor>,
     faders: HashMap<u32, DemexFader>,
 }
 
@@ -32,7 +32,7 @@ impl UpdatableHandler {
         !(self
             .executors
             .iter()
-            .any(|(_, v)| v.runtime().sequence_id() == sequence_id)
+            .any(|(_, v)| v.refers_to_sequence(sequence_id))
             || self.faders.iter().any(|(_, v)| match v.config() {
                 DemexFaderConfig::SequenceRuntime { runtime, .. } => {
                     sequence_id == runtime.sequence_id()
@@ -56,7 +56,7 @@ impl UpdatableHandler {
 
         self.executors.insert(
             id,
-            SequenceRuntimeExecutor::new(
+            Executor::new(
                 id,
                 sequence_id,
                 fixtures,
@@ -66,11 +66,11 @@ impl UpdatableHandler {
         Ok(())
     }
 
-    pub fn executor(&self, id: u32) -> Option<&SequenceRuntimeExecutor> {
+    pub fn executor(&self, id: u32) -> Option<&Executor> {
         self.executors.get(&id)
     }
 
-    pub fn executor_mut(&mut self, id: u32) -> Option<&mut SequenceRuntimeExecutor> {
+    pub fn executor_mut(&mut self, id: u32) -> Option<&mut Executor> {
         self.executors.get_mut(&id)
     }
 
@@ -111,7 +111,7 @@ impl UpdatableHandler {
         Ok(())
     }
 
-    pub fn executors(&self) -> &HashMap<u32, SequenceRuntimeExecutor> {
+    pub fn executors(&self) -> &HashMap<u32, Executor> {
         &self.executors
     }
 
@@ -180,7 +180,7 @@ impl UpdatableHandler {
                     .map_err(UpdatableHandlerError::FixtureSelectorError)?;
 
                 DemexFaderConfig::SequenceRuntime {
-                    fixtures,
+                    selection: fixtures.into(),
                     runtime: SequenceRuntime::new(*sequence_id),
                     function: DemexFaderRuntimeFunction::default(),
                 }

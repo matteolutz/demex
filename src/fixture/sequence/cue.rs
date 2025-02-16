@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use egui_probe::EguiProbe;
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::channel::{value::FixtureChannelValue, FixtureId};
+use crate::fixture::channel2::{
+    channel_type::FixtureChannelType, channel_value::FixtureChannelValue2,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, EguiProbe)]
 pub enum CueTrigger {
@@ -19,13 +20,13 @@ pub enum CueTrigger {
 
 #[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
 pub struct CueFixtureChannelValue {
-    value: FixtureChannelValue,
-    channel_type: u16,
+    value: FixtureChannelValue2,
+    channel_type: FixtureChannelType,
     snap: bool,
 }
 
 impl CueFixtureChannelValue {
-    pub fn new(value: FixtureChannelValue, channel_type: u16, snap: bool) -> Self {
+    pub fn new(value: FixtureChannelValue2, channel_type: FixtureChannelType, snap: bool) -> Self {
         Self {
             value,
             channel_type,
@@ -33,11 +34,11 @@ impl CueFixtureChannelValue {
         }
     }
 
-    pub fn value(&self) -> &FixtureChannelValue {
+    pub fn value(&self) -> &FixtureChannelValue2 {
         &self.value
     }
 
-    pub fn channel_type(&self) -> u16 {
+    pub fn channel_type(&self) -> FixtureChannelType {
         self.channel_type
     }
 
@@ -74,14 +75,14 @@ impl CueTiming {
         self.direction
     }
 
-    pub fn total_offset(&self, num_fixtures: usize) -> f32 {
+    pub fn total_offset(&self, num_offsets: usize) -> f32 {
         let offset = match self.direction {
             CueTimingOriginDirection::LowToHigh | CueTimingOriginDirection::HighToLow => {
-                self.offset * (num_fixtures as f32 - 1.0)
+                self.offset * (num_offsets as f32 - 1.0)
             }
             CueTimingOriginDirection::CenterToOutside
             | CueTimingOriginDirection::OutsideToCenter => {
-                let half_fixtures = f32::ceil(num_fixtures as f32 / 2.0);
+                let half_fixtures = f32::ceil(num_offsets as f32 / 2.0);
 
                 self.offset * (half_fixtures - 1.0)
             }
@@ -90,21 +91,21 @@ impl CueTiming {
         f32::max(offset, 0.0)
     }
 
-    pub fn offset_for_fixture(&self, fixture_idx: usize, num_fixtures: usize) -> f32 {
+    pub fn offset_for_fixture(&self, fixture_offset_idx: usize, num_fixtures: usize) -> f32 {
         match self.direction {
-            CueTimingOriginDirection::LowToHigh => self.offset * fixture_idx as f32,
+            CueTimingOriginDirection::LowToHigh => self.offset * fixture_offset_idx as f32,
             CueTimingOriginDirection::HighToLow => {
-                self.offset * (num_fixtures as f32 - 1.0 - fixture_idx as f32)
+                self.offset * (num_fixtures as f32 - 1.0 - fixture_offset_idx as f32)
             }
             CueTimingOriginDirection::CenterToOutside => {
                 let center = f32::max((num_fixtures as f32 / 2.0) + 0.5, 0.0);
-                let center_offset = f32::floor(f32::abs(center - (fixture_idx + 1) as f32));
+                let center_offset = f32::floor(f32::abs(center - (fixture_offset_idx + 1) as f32));
 
                 self.offset * center_offset
             }
             CueTimingOriginDirection::OutsideToCenter => {
                 let center = f32::max((num_fixtures as f32 / 2.0) + 0.5, 0.0);
-                let center_offset = f32::floor(f32::abs(center - (fixture_idx + 1) as f32));
+                let center_offset = f32::floor(f32::abs(center - (fixture_offset_idx + 1) as f32));
 
                 self.offset * ((num_fixtures / 2) as f32 - 1.0 - center_offset)
             }
@@ -120,7 +121,7 @@ pub struct Cue {
     cue_idx: CueIdx,
 
     #[egui_probe(skip)]
-    data: HashMap<FixtureId, Vec<CueFixtureChannelValue>>,
+    data: HashMap<u32, Vec<CueFixtureChannelValue>>,
 
     // Time, to fade into the cue
     in_fade: f32,
@@ -146,7 +147,7 @@ pub struct Cue {
 impl Cue {
     pub fn new(
         cue_idx: CueIdx,
-        data: HashMap<FixtureId, Vec<CueFixtureChannelValue>>,
+        data: HashMap<u32, Vec<CueFixtureChannelValue>>,
         in_fade: f32,
         out_fade: Option<f32>,
         in_delay: f32,
@@ -173,7 +174,7 @@ impl Cue {
         self.cue_idx
     }
 
-    pub fn data(&self) -> &HashMap<FixtureId, Vec<CueFixtureChannelValue>> {
+    pub fn data(&self) -> &HashMap<u32, Vec<CueFixtureChannelValue>> {
         &self.data
     }
 
@@ -209,54 +210,53 @@ impl Cue {
         self.data.len()
     }
 
-    pub fn total_offset(&self) -> f32 {
-        self.timing.total_offset(self.num_fixtures())
+    pub fn total_offset(&self, num_offsets: usize) -> f32 {
+        self.timing.total_offset(num_offsets)
     }
 
-    pub fn offset_for_fixture(&self, fixture_id: u32) -> f32 {
-        self.fixture_idx(fixture_id)
-            .map(|idx| self.timing.offset_for_fixture(idx, self.num_fixtures()))
-            .unwrap_or(0.0)
+    pub fn offset_for_fixture_idx(&self, fixture_offset_idx: usize) -> f32 {
+        self.timing
+            .offset_for_fixture(fixture_offset_idx, self.num_fixtures())
     }
 
-    pub fn fixture_idx(&self, fixture_id: u32) -> Option<usize> {
-        self.data.keys().sorted().position(|id| *id == fixture_id)
-    }
-
-    pub fn data_for_fixture(&self, fixture_id: FixtureId) -> Option<&Vec<CueFixtureChannelValue>> {
+    pub fn data_for_fixture(&self, fixture_id: u32) -> Option<&Vec<CueFixtureChannelValue>> {
         self.data.get(&fixture_id)
     }
 
     pub fn channel_value_for_fixture(
         &self,
         fixture_id: u32,
-        channel_id: u16,
-    ) -> Option<&FixtureChannelValue> {
+        channel_type: FixtureChannelType,
+    ) -> Option<&FixtureChannelValue2> {
         self.data.get(&fixture_id).and_then(|values| {
             values
                 .iter()
-                .find(|v| v.channel_type() == channel_id)
+                .find(|v| v.channel_type() == channel_type)
                 .map(|v| v.value())
         })
     }
 
-    pub fn should_snap_channel_value_for_fixture(&self, fixture_id: u32, channel_id: u16) -> bool {
+    pub fn should_snap_channel_value_for_fixture(
+        &self,
+        fixture_id: u32,
+        channel_type: FixtureChannelType,
+    ) -> bool {
         self.data
             .get(&fixture_id)
             .and_then(|values| {
                 values
                     .iter()
-                    .find(|v| v.channel_type() == channel_id)
+                    .find(|v| v.channel_type() == channel_type)
                     .map(|v| v.snap())
             })
             .unwrap_or(false)
     }
 
-    pub fn in_time(&self) -> f32 {
-        self.in_delay + self.in_fade + self.total_offset()
+    pub fn in_time(&self, num_offsets: usize) -> f32 {
+        self.in_delay + self.in_fade + self.total_offset(num_offsets)
     }
 
-    pub fn out_time(&self) -> f32 {
-        self.out_delay() + self.out_fade() + self.total_offset()
+    pub fn out_time(&self, num_offsets: usize) -> f32 {
+        self.out_delay() + self.out_fade() + self.total_offset(num_offsets)
     }
 }

@@ -36,6 +36,10 @@ impl<'a> eframe::egui::Widget for PositionSelector<'a> {
             }
         }
 
+        if response.hovered() {
+            ui.output_mut(|o| o.cursor_icon = egui::CursorIcon::Crosshair);
+        }
+
         ui.painter().rect_stroke(
             rect,
             5.0,

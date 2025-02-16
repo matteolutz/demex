@@ -1,20 +1,18 @@
-use egui::{
-    epaint::{PathShape, PathStroke},
-    Rect, Stroke,
-};
-
 use crate::{
     fixture::{
-        channel::{
-            value::FixtureChannelValueTrait, FIXTURE_CHANNEL_INTENSITY_ID,
-            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-        },
+        channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
         layout::{FixtureLayoutDecoration, FixtureLayoutEntry, FixtureLayoutEntryType},
     },
     parser::nodes::fixture_selector::{
         AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
     },
-    ui::{graphics::layout_projection::LayoutProjection, DemexUiContext},
+    ui::{
+        graphics::layout_projection::LayoutProjection, utils::rect::rect_vertices, DemexUiContext,
+    },
+};
+use egui::{
+    epaint::{PathShape, PathStroke},
+    Rect, Stroke,
 };
 
 impl FixtureLayoutDecoration {
@@ -69,26 +67,26 @@ impl FixtureLayoutEntry {
         fixture_color: egui::Color32,
         fixture_direction: Option<egui::Vec2>,
         is_selected: bool,
+        is_about_to_selected: bool,
         label: impl ToString,
     ) {
         let (pos, size) = self.get_pos_and_size(projection, screen);
+
         let stroke_width = 0.25 * projection.zoom();
+        let stroke_color = if is_selected {
+            egui::Color32::DARK_GREEN
+        } else if is_about_to_selected {
+            egui::Color32::BLUE
+        } else {
+            egui::Color32::WHITE
+        };
 
         match self.entry_type() {
             FixtureLayoutEntryType::Rect => {
                 let top_left = pos - (size / 2.0);
-                painter.rect_stroke(
-                    Rect::from_min_size(top_left, size),
-                    0.0,
-                    (
-                        stroke_width,
-                        if is_selected {
-                            egui::Color32::DARK_GREEN
-                        } else {
-                            egui::Color32::WHITE
-                        },
-                    ),
-                );
+                let rect = Rect::from_min_size(top_left, size);
+
+                painter.rect_stroke(rect, 0.0, (stroke_width, stroke_color));
 
                 painter.rect_filled(
                     Rect::from_min_size(
@@ -98,22 +96,29 @@ impl FixtureLayoutEntry {
                     0.0,
                     fixture_color,
                 );
+
+                if let Some(fixture_direction) = fixture_direction {
+                    let pos_in_rect = rect.left_top() + (fixture_direction * size);
+
+                    for pos in rect_vertices(&rect) {
+                        // draw line from pos to pos_in_rect
+                        painter.line_segment(
+                            [pos, pos_in_rect],
+                            Stroke::new(0.25 * projection.zoom(), egui::Color32::YELLOW),
+                        );
+                    }
+
+                    painter.circle_filled(
+                        pos_in_rect,
+                        0.5 * projection.zoom(),
+                        egui::Color32::YELLOW,
+                    );
+                }
             }
             FixtureLayoutEntryType::Circle => {
                 let radius = size.x.min(size.y) / 2.0;
 
-                painter.circle_stroke(
-                    pos,
-                    radius,
-                    (
-                        stroke_width,
-                        if is_selected {
-                            egui::Color32::DARK_GREEN
-                        } else {
-                            egui::Color32::WHITE
-                        },
-                    ),
-                );
+                painter.circle_stroke(pos, radius, (stroke_width, stroke_color));
 
                 painter.circle_filled(pos, radius - stroke_width, fixture_color);
             }
@@ -135,14 +140,7 @@ impl FixtureLayoutEntry {
 
                 painter.add(PathShape::closed_line(
                     points_outer,
-                    (
-                        stroke_width,
-                        if is_selected {
-                            egui::Color32::DARK_GREEN
-                        } else {
-                            egui::Color32::WHITE
-                        },
-                    ),
+                    (stroke_width, stroke_color),
                 ));
             }
         }
@@ -158,19 +156,6 @@ impl FixtureLayoutEntry {
                 egui::Color32::WHITE
             },
         );
-
-        if let Some(mut fixture_direction) = fixture_direction {
-            let line_len = 7.5 * projection.zoom();
-
-            if fixture_direction.length() > 1.0 {
-                fixture_direction = fixture_direction.normalized();
-            }
-
-            painter.line_segment(
-                [pos, pos + (fixture_direction * line_len)],
-                Stroke::new(2.0, egui::Color32::YELLOW),
-            );
-        }
     }
 }
 
@@ -252,17 +237,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
     painter.rect_filled(rect, 0.0, egui::Color32::BLACK);
 
-    let mut global_fixture_select_fixtures: Vec<u32> = Vec::new();
-    if let Some(global_fixture_select) = &context.global_fixture_select {
-        global_fixture_select_fixtures.extend(
-            global_fixture_select
-                .get_fixtures(
-                    &preset_handler,
-                    FixtureSelectorContext::new(&context.global_fixture_select),
-                )
-                .expect(""),
-        );
-    }
+    let global_fixture_select_fixtures = context
+        .global_fixture_select
+        .as_ref()
+        .and_then(|fs| {
+            fs.get_fixtures(
+                &preset_handler,
+                FixtureSelectorContext::new(&context.global_fixture_select),
+            )
+            .ok()
+        })
+        .unwrap_or_default();
 
     for decoration in fixture_layout.decorations() {
         decoration.draw(
@@ -282,10 +267,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             .expect("todo: error handling");
 
         let intensity = fixture
-            .intensity(&preset_handler, &updatable_handler)
-            .expect("error handling")
-            .as_single(&preset_handler, fixture.id(), FIXTURE_CHANNEL_INTENSITY_ID)
-            .expect("error handling");
+            .feature_value(
+                FixtureFeatureType::Intensity,
+                &preset_handler,
+                &updatable_handler,
+            )
+            .ok()
+            .and_then(|val| match val {
+                FixtureFeatureValue::Intensity { intensity } => Some(intensity),
+                _ => None,
+            })
+            .unwrap();
 
         let rect_color =
             if let Ok(color) = fixture.display_color(&preset_handler, &updatable_handler) {
@@ -300,17 +292,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             };
 
         let position: Option<egui::Vec2> = fixture
-            .position_pan_tilt(&preset_handler, &updatable_handler)
-            .map(|val| {
-                val.as_pair(
-                    &preset_handler,
-                    fixture.id(),
-                    FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-                )
-                .unwrap()
+            .feature_value(
+                FixtureFeatureType::PositionPanTilt,
+                &preset_handler,
+                &updatable_handler,
+            )
+            .ok()
+            .and_then(|val| match val {
+                FixtureFeatureValue::PositionPanTilt { pan, tilt, .. } => Some((pan, tilt)),
+                _ => None,
             })
-            .map(|val| Into::<egui::Vec2>::into(val) - egui::vec2(0.5, 0.5))
-            .ok();
+            .map(Into::<egui::Vec2>::into);
 
         fixture_layout_entry.draw(
             &context.layout_view_context.layout_projection,
@@ -319,6 +311,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             rect_color,
             position,
             is_selected,
+            false,
             fixture.name(),
         );
     }

@@ -16,7 +16,7 @@ git clone https://github.com/matteolutz/demex
 and run the proejct using
 
 ```bash
-cargo run
+cargo run -- -s test_data/show.json
 ```
 
 There will be test data loaded and you can start playing around with the commands and the UI.

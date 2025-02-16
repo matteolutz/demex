@@ -19,6 +19,7 @@ pub enum ActionRunError {
     FaderIsActive(u32),
     SequenceDeleteDependencies(u32),
     UnimplementedAction(Action),
+    Todo(String),
 }
 
 impl std::fmt::Display for ActionRunError {
@@ -51,6 +52,7 @@ impl std::fmt::Display for ActionRunError {
             ActionRunError::SequenceDeleteDependencies(seq_id) => {
                 write!(f, "Sequence with id {} can't be deleted, because there are other objects (executors, faders) referencing it. Delete these first", seq_id)
             }
+            ActionRunError::Todo(s) => write!(f, "To do: {}", s),
         }
     }
 }
