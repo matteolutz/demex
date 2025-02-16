@@ -129,52 +129,6 @@ impl DemexUiContext {
                 }
             }
             Action::Test(cmd) => match cmd.as_str() {
-                /*"effect" => {
-                    let _ = self
-                        .fixture_handler
-                        .write()
-                        .fixture(1)
-                        .unwrap()
-                        .set_channel_value(
-                            FIXTURE_CHANNEL_POSITION_PAN_TILT_ID,
-                            FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Effect {
-                                effect: FixtureChannelEffect::PairFigureEight {
-                                    speed: 1.0,
-                                    center_a: 0.5,
-                                    center_b: 0.5,
-                                },
-                            }),
-                        );
-
-                    let _ = self
-                        .fixture_handler
-                        .write()
-                        .fixture(1)
-                        .unwrap()
-                        .set_channel_value(
-                            FIXTURE_CHANNEL_COLOR_ID,
-                            FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Effect {
-                                effect: FixtureChannelEffect::QuadrupleHueRotate { speed: 1.0 },
-                            }),
-                        );
-
-                    let _ = self
-                        .fixture_handler
-                        .write()
-                        .fixture(1)
-                        .unwrap()
-                        .set_channel_value(
-                            FIXTURE_CHANNEL_INTENSITY_ID,
-                            FixtureChannelValue::discrete(FixtureChannelDiscreteValue::Effect {
-                                effect: FixtureChannelEffect::SingleSine {
-                                    a: 1.0,
-                                    b: 1.0,
-                                    c: 1.0,
-                                    d: 1.0,
-                                },
-                            }),
-                        );
-                }*/
                 _ => self.add_dialog_entry(DemexGlobalDialogEntry::error(
                     &DemexUiError::RuntimeError(format!("Unknown test command: \"{}\"", cmd)),
                 )),

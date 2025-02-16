@@ -169,6 +169,10 @@ impl Fixture {
             .collect::<Vec<_>>()
     }
 
+    pub fn feature_configs(&self) -> &[FixtureFeatureConfig] {
+        &self.feature_configs
+    }
+
     pub fn feature_types(&self) -> Vec<FixtureFeatureType> {
         self.feature_configs
             .iter()

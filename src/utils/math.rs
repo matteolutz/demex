@@ -24,3 +24,7 @@ pub fn coarse_fine_to_f32(coarse: u8, fine: u8) -> f32 {
     let combined: u16 = (coarse as u16) << 8 | (fine as u16);
     combined as f32 / u16::MAX as f32
 }
+
+pub fn zero_one_sin(x: f32) -> f32 {
+    (x.sin() + 1.0) / 2.0
+}

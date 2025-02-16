@@ -92,7 +92,12 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
 
                     if let Some(runtime) = runtime {
                         runtime
-                            .channel_value(fixture.id(), channel_type, preset_handler)
+                            .channel_value(
+                                fixture.id(),
+                                fixture.feature_configs(),
+                                channel_type,
+                                preset_handler,
+                            )
                             .ok_or(FixtureError::ChannelValueNotFound(channel_type))
                     } else {
                         Err(FixtureError::ChannelValueNotFound(channel_type))

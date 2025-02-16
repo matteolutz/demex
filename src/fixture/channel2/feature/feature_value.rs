@@ -192,14 +192,12 @@ impl FixtureFeatureValue {
                     *tilt,
                 )?;
 
-                if let Some(pan_tilt_speed) = pan_tilt_speed {
-                    if *has_speed {
-                        Self::write_to_channel(
-                            channels,
-                            FixtureChannelType::PanTiltSpeed,
-                            f32_to_coarse(*pan_tilt_speed),
-                        )?;
-                    }
+                if *has_speed {
+                    Self::write_to_channel(
+                        channels,
+                        FixtureChannelType::PanTiltSpeed,
+                        f32_to_coarse(pan_tilt_speed.unwrap_or(0.0)),
+                    )?;
                 }
 
                 Ok(())

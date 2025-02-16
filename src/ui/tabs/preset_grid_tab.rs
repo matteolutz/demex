@@ -274,25 +274,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
                 let preset_button = ui.add_sized(
                     [80.0, 80.0],
-                    eframe::egui::Button::new(format!(
-                        "{}\n{}/{}",
+                    eframe::egui::Button::new(
                         updatable_handler
                             .executor(*preset_id)
                             .unwrap()
-                            .name(&preset_handler),
-                        updatable_handler
-                            .executor(*preset_id)
-                            .unwrap()
-                            .runtime()
-                            .current_cue()
-                            .map(|c| (c + 1).to_string())
-                            .unwrap_or("-".to_owned()),
-                        updatable_handler
-                            .executor(*preset_id)
-                            .unwrap()
-                            .runtime()
-                            .num_cues(&preset_handler),
-                    ))
+                            .to_string(&preset_handler),
+                    )
                     .wrap()
                     .stroke(if is_started {
                         eframe::egui::Stroke::new(1.0, eframe::egui::Color32::RED)

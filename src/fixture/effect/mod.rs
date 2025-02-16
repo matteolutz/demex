@@ -3,6 +3,9 @@ use std::{f32, time};
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
+pub mod error;
+pub mod feature;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, EguiProbe)]
 pub enum FixtureChannelEffect {
     SingleSine {

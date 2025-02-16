@@ -1,16 +1,19 @@
+use config::ExecutorConfig;
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
-    channel2::channel_type::FixtureChannelType,
+    channel2::{channel_type::FixtureChannelType, feature::feature_config::FixtureFeatureConfig},
     handler::FixtureHandler,
     presets::PresetHandler,
     sequence::{runtime::SequenceRuntime, FadeFixtureChannelValue},
     value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
 };
 
+pub mod config;
+
 #[derive(Debug, Clone, Serialize, Deserialize, EguiProbe)]
-pub struct SequenceRuntimeExecutor {
+pub struct Executor {
     #[egui_probe(skip)]
     id: u32,
 
@@ -20,12 +23,12 @@ pub struct SequenceRuntimeExecutor {
     #[serde(default)]
     stop_others: bool,
 
-    runtime: SequenceRuntime,
+    config: ExecutorConfig,
 
     fixtures: Vec<u32>,
 }
 
-impl SequenceRuntimeExecutor {
+impl Executor {
     pub fn new(
         id: u32,
         sequence_id: u32,
@@ -34,7 +37,9 @@ impl SequenceRuntimeExecutor {
     ) -> Self {
         Self {
             id,
-            runtime: SequenceRuntime::new(sequence_id),
+            config: ExecutorConfig::Sequence {
+                runtime: SequenceRuntime::new(sequence_id),
+            },
             fixtures,
             priority,
             stop_others: false,
@@ -46,15 +51,22 @@ impl SequenceRuntimeExecutor {
     }
 
     pub fn name(&self, preset_handler: &PresetHandler) -> String {
-        preset_handler
-            .get_sequence(self.runtime.sequence_id())
-            .unwrap()
-            .name()
-            .to_owned()
+        match &self.config {
+            ExecutorConfig::Sequence { runtime } => preset_handler
+                .get_sequence(runtime.sequence_id())
+                .unwrap()
+                .name()
+                .to_owned(),
+            ExecutorConfig::FeatureEffect { runtime } => format!("{}", runtime.effect()),
+        }
     }
 
-    pub fn runtime(&self) -> &SequenceRuntime {
-        &self.runtime
+    pub fn refers_to_sequence(&self, sequence_id: u32) -> bool {
+        if let ExecutorConfig::Sequence { runtime } = &self.config {
+            runtime.sequence_id() == sequence_id
+        } else {
+            false
+        }
     }
 
     pub fn stop_others(&self) -> bool {
@@ -62,7 +74,10 @@ impl SequenceRuntimeExecutor {
     }
 
     pub fn is_started(&self) -> bool {
-        self.runtime.is_started()
+        match &self.config {
+            ExecutorConfig::Sequence { runtime } => runtime.is_started(),
+            ExecutorConfig::FeatureEffect { runtime } => runtime.is_started(),
+        }
     }
 
     pub fn fixtures(&self) -> &Vec<u32> {
@@ -72,17 +87,27 @@ impl SequenceRuntimeExecutor {
     pub fn channel_value(
         &self,
         fixture_id: u32,
+        fixture_feature_configs: &[FixtureFeatureConfig],
         channel_type: FixtureChannelType,
         preset_handler: &PresetHandler,
     ) -> Option<FadeFixtureChannelValue> {
-        self.runtime.channel_value(
-            fixture_id,
-            channel_type,
-            1.0,
-            1.0,
-            preset_handler,
-            self.priority,
-        )
+        if !self.fixtures.contains(&fixture_id) {
+            return None;
+        }
+
+        match &self.config {
+            ExecutorConfig::Sequence { runtime } => runtime.channel_value(
+                fixture_id,
+                channel_type,
+                1.0,
+                1.0,
+                preset_handler,
+                self.priority,
+            ),
+            ExecutorConfig::FeatureEffect { runtime } => {
+                runtime.get_channel_value(channel_type, fixture_feature_configs, self.priority)
+            }
+        }
     }
 
     pub fn update(
@@ -91,17 +116,25 @@ impl SequenceRuntimeExecutor {
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
     ) {
-        if self.runtime.update(delta_time, 1.0, preset_handler) {
-            self.stop(fixture_handler);
+        match &mut self.config {
+            ExecutorConfig::Sequence { runtime } => {
+                if runtime.update(delta_time, 1.0, preset_handler) {
+                    self.stop(fixture_handler);
+                }
+            }
+            ExecutorConfig::FeatureEffect { .. } => {}
         }
     }
 
-    fn silent_start(&mut self) {
-        self.runtime.start();
+    fn child_start(&mut self) {
+        match &mut self.config {
+            ExecutorConfig::Sequence { runtime } => runtime.start(),
+            ExecutorConfig::FeatureEffect { runtime } => runtime.start(),
+        }
     }
 
     pub fn start(&mut self, fixture_handler: &mut FixtureHandler) {
-        self.silent_start();
+        self.child_start();
 
         for fixture_id in &self.fixtures {
             if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
@@ -112,12 +145,15 @@ impl SequenceRuntimeExecutor {
         }
     }
 
-    fn silent_stop(&mut self) {
-        self.runtime.stop();
+    fn child_stop(&mut self) {
+        match &mut self.config {
+            ExecutorConfig::Sequence { runtime } => runtime.stop(),
+            ExecutorConfig::FeatureEffect { runtime } => runtime.stop(),
+        }
     }
 
     pub fn stop(&mut self, fixture_handler: &mut FixtureHandler) {
-        self.silent_stop();
+        self.child_stop();
 
         for fixture_id in &self.fixtures {
             if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
@@ -129,6 +165,23 @@ impl SequenceRuntimeExecutor {
     }
 
     pub fn next_cue(&mut self, preset_handler: &PresetHandler) {
-        self.runtime.next_cue(preset_handler);
+        if let ExecutorConfig::Sequence { runtime } = &mut self.config {
+            runtime.next_cue(preset_handler);
+        }
+    }
+
+    pub fn to_string(&self, preset_handler: &PresetHandler) -> String {
+        match &self.config {
+            ExecutorConfig::Sequence { runtime } => format!(
+                "{}\n{}/{}",
+                self.name(preset_handler),
+                runtime
+                    .current_cue()
+                    .map(|c| (c + 1).to_string())
+                    .unwrap_or("-".to_owned()),
+                runtime.num_cues(preset_handler),
+            ),
+            ExecutorConfig::FeatureEffect { .. } => self.name(preset_handler),
+        }
     }
 }
