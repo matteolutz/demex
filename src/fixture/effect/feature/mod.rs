@@ -3,8 +3,11 @@ use std::f32;
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::channel2::feature::{
-    feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue,
+use crate::{
+    fixture::channel2::feature::{
+        feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue,
+    },
+    utils::color::hsl_to_rgb,
 };
 
 use super::error::EffectError;
@@ -34,6 +37,12 @@ pub enum FeatureEffect {
         tilt_center: f32,
         speed: f32,
     },
+
+    ColorRGBHueRotate {
+        hue_size: f32,
+        hue_center: f32,
+        speed: f32,
+    },
 }
 
 impl Default for FeatureEffect {
@@ -55,6 +64,7 @@ impl FeatureEffect {
             Self::PositionPanTiltFigureEight { .. }
             | Self::PositionPanTiltEllipse { .. }
             | Self::PositionPanTiltRect { .. } => FixtureFeatureType::PositionPanTilt,
+            Self::ColorRGBHueRotate { .. } => FixtureFeatureType::ColorRGB,
         }
     }
 
@@ -94,6 +104,17 @@ impl FeatureEffect {
                     pan_tilt_speed: None,
                 })
             }
+
+            Self::ColorRGBHueRotate {
+                hue_size,
+                hue_center,
+                speed,
+            } => {
+                let hue = (f32::sin(t as f32 * speed)) * (hue_size / 2.0) + hue_center;
+                let [r, g, b] = hsl_to_rgb([hue, 1.0, 0.5]);
+
+                Ok(FixtureFeatureValue::ColorRGB { r, g, b })
+            }
         }
     }
 }
@@ -104,6 +125,8 @@ impl std::fmt::Display for FeatureEffect {
             Self::PositionPanTiltEllipse { .. } => write!(f, "Circle"),
             Self::PositionPanTiltFigureEight { .. } => write!(f, "Figure 8"),
             Self::PositionPanTiltRect { .. } => write!(f, "Rect"),
+
+            Self::ColorRGBHueRotate { .. } => write!(f, "HueRotate"),
         }
     }
 }
