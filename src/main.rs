@@ -9,11 +9,13 @@ pub mod show;
 pub mod ui;
 pub mod utils;
 
-use std::{path::PathBuf, sync::Arc, time};
+use std::{collections::HashMap, path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
 use fixture::handler::FixtureHandler;
-use input::DemexInputDeviceHandler;
+use input::{
+    profile::DemexInputDeviceProfileType, DemexInputDeviceConfig, DemexInputDeviceHandler,
+};
 use parking_lot::RwLock;
 use show::DemexShow;
 use ui::{utils::icon::load_icon, DemexUiApp};
@@ -73,7 +75,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         TEST_UI_FPS,
         icon.clone(),
-        DemexInputDeviceHandler::default(),
+        DemexInputDeviceHandler::new(vec![DemexInputDeviceConfig::new(
+            HashMap::new(),
+            DemexInputDeviceProfileType::ApcMiniMk2,
+        )
+        .try_into()?]),
     );
 
     let fixture_handler_thread_a = fixture_handler.clone();

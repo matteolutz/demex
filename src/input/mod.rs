@@ -28,6 +28,18 @@ pub struct DemexInputDeviceConfig {
     profile_type: DemexInputDeviceProfileType,
 }
 
+impl DemexInputDeviceConfig {
+    pub fn new(
+        buttons: HashMap<u32, DemexInputButton>,
+        profile_type: DemexInputDeviceProfileType,
+    ) -> Self {
+        Self {
+            buttons,
+            profile_type,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct DemexInputDevice {
     profile: Box<dyn DemexInputDeviceProfile>,
@@ -65,6 +77,10 @@ pub struct DemexInputDeviceHandler {
 }
 
 impl DemexInputDeviceHandler {
+    pub fn new(devices: Vec<DemexInputDevice>) -> Self {
+        Self { devices }
+    }
+
     pub fn update(
         &self,
         fixture_handler: &mut FixtureHandler,

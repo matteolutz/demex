@@ -1,6 +1,8 @@
-const NOTE_OFF_OP: u8 = 0x8;
-const NOTE_ON_OP: u8 = 0x9;
-const CC_OP: u8 = 0xb;
+pub mod usb;
+
+pub(crate) const NOTE_OFF_OP: u8 = 0x8;
+pub(crate) const NOTE_ON_OP: u8 = 0x9;
+pub(crate) const CC_OP: u8 = 0xb;
 
 pub enum MidiMessage {
     NoteOn {
