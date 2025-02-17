@@ -7,7 +7,7 @@ use crate::fixture::{
 
 use super::error::DemexInputDeviceError;
 
-#[derive(Debug, Serialize, Deserialize, EguiProbe, Default)]
+#[derive(Debug, Serialize, Deserialize, EguiProbe, Default, Clone)]
 pub enum DemexInputButton {
     ExecutorStartAndNext(u32),
     ExecutorStop(u32),

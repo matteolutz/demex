@@ -13,10 +13,7 @@ use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
 use fixture::handler::FixtureHandler;
-use input::{
-    button::DemexInputButton, fader::DemexInputFader, profile::DemexInputDeviceProfileType,
-    DemexInputDeviceConfig, DemexInputDeviceHandler,
-};
+use input::DemexInputDeviceHandler;
 use parking_lot::RwLock;
 use show::DemexShow;
 use ui::{utils::icon::load_icon, DemexUiApp};
@@ -76,12 +73,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         TEST_UI_FPS,
         icon.clone(),
-        DemexInputDeviceHandler::new(vec![DemexInputDeviceConfig::new(
-            [(0, DemexInputButton::ExecutorStartAndNext(1))].into(),
-            [(0, DemexInputFader::new(1))].into(),
-            DemexInputDeviceProfileType::ApcMiniMk2,
-        )
-        .try_into()?]),
+        DemexInputDeviceHandler::new(
+            show.input_device_configs
+                .into_iter()
+                .map(|v| v.try_into().unwrap())
+                .collect::<Vec<_>>(),
+        ),
     );
 
     let fixture_handler_thread_a = fixture_handler.clone();

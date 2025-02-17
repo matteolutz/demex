@@ -5,7 +5,7 @@ use crate::fixture::{handler::FixtureHandler, updatables::UpdatableHandler};
 
 use super::error::DemexInputDeviceError;
 
-#[derive(Debug, Serialize, Deserialize, EguiProbe, Default)]
+#[derive(Debug, Serialize, Deserialize, EguiProbe, Default, Clone)]
 pub struct DemexInputFader {
     fader_id: u32,
 }

@@ -48,8 +48,6 @@ pub struct DemexUiApp {
     desired_fps: f64,
 
     icon: Arc<IconData>,
-
-    input_device_handler: DemexInputDeviceHandler,
 }
 
 impl DemexUiApp {
@@ -86,13 +84,14 @@ impl DemexUiApp {
 
                 command_input: String::new(),
                 is_command_input_empty: true,
+
+                input_device_handler,
             },
             tabs: DemexTabs::default(),
             detached_tabs: HashSet::new(),
             last_update: time::Instant::now(),
             desired_fps,
             icon,
-            input_device_handler,
         }
     }
 }
@@ -121,7 +120,7 @@ impl DemexUiApp {
 
 impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        if let Err(input_error) = self.input_device_handler.update(
+        if let Err(input_error) = self.context.input_device_handler.update(
             &mut self.context.fixture_handler.write(),
             &self.context.preset_handler.read(),
             &mut self.context.updatable_handler.write(),

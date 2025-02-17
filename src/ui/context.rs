@@ -7,6 +7,7 @@ use crate::{
         channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler,
         presets::PresetHandler, updatables::UpdatableHandler,
     },
+    input::DemexInputDeviceHandler,
     lexer::token::Token,
     parser::{
         nodes::{
@@ -47,6 +48,8 @@ pub struct DemexUiContext {
 
     pub layout_view_context: LayoutViewContext,
     pub gm_slider_val: u8,
+
+    pub input_device_handler: DemexInputDeviceHandler,
 
     pub windows: Vec<DemexWindow>,
 }
@@ -113,6 +116,12 @@ impl DemexUiContext {
                 let show = DemexShow {
                     preset_handler: preset_handler_lock.clone(),
                     updatable_handler: updatable_handler_lock.clone(),
+                    input_device_configs: self
+                        .input_device_handler
+                        .devices()
+                        .iter()
+                        .map(|d| d.config().clone())
+                        .collect::<Vec<_>>(),
                     patch: fixture_handler_lock.patch().clone(),
                 };
 
