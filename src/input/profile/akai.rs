@@ -1,27 +1,18 @@
-use std::sync::{mpsc, Arc};
-
-use parking_lot::Mutex;
+use std::{sync::mpsc, thread, time::Duration};
 
 use crate::input::{
-    error::DemexInputDeviceError,
-    midi::{usb::UsbMidiDevice, MidiMessage},
+    error::DemexInputDeviceError, message::DemexInputDeviceMessage, midi::MidiMessage,
     DemexInputDeviceProfile,
 };
 
 use super::DemexInputDeviceProfileType;
 
 // **Ressources**
-// https://github.com/df5602/midi-synth/blob/master/src/midi_controller.rs
-// https://crates.io/crates/nusb
 // https://cdn.inmusicbrands.com/akai/attachments/APC%20mini%20mk2%20-%20Communication%20Protocol%20-%20v1.0.pdf
 
-const APC_MINI_MK_2_VENDOR_ID: u16 = 0x0;
-const APC_MINI_MK_2_PRODUCT_ID: u16 = 0x0;
-const APC_MINI_MK_2_INTERFACE: u8 = 0x0;
 const APC_MINI_MK_2_NAME: &str = "Akai APC Mini MK2";
 
 pub struct ApcMiniMk2InputDeviceProfile {
-    midi_device: Arc<Mutex<UsbMidiDevice>>,
     rx: mpsc::Receiver<MidiMessage>,
 }
 
@@ -33,31 +24,31 @@ impl std::fmt::Debug for ApcMiniMk2InputDeviceProfile {
 
 impl ApcMiniMk2InputDeviceProfile {
     pub fn new() -> Result<Self, DemexInputDeviceError> {
-        let (_, usb_device) = rusb::devices()
-            .map_err(DemexInputDeviceError::RusbError)?
-            .iter()
-            .map(|device| (device.device_descriptor(), device))
-            .find(|(device_descriptor, _)| {
-                device_descriptor.as_ref().is_ok_and(|device_descriptor| {
-                    device_descriptor.vendor_id() == APC_MINI_MK_2_VENDOR_ID
-                        && device_descriptor.product_id() == APC_MINI_MK_2_PRODUCT_ID
-                })
-            })
-            .ok_or(DemexInputDeviceError::InputDeviceNotFound(
-                APC_MINI_MK_2_NAME.to_owned(),
-            ))?;
+        let (tx, rx) = mpsc::channel();
 
-        let handle = usb_device
-            .open()
-            .map_err(DemexInputDeviceError::RusbError)?;
+        thread::spawn(|| {
+            let midi_in = midir::MidiInput::new("demex-midi-input").unwrap();
 
-        handle
-            .claim_interface(APC_MINI_MK_2_INTERFACE)
-            .map_err(DemexInputDeviceError::RusbError)?;
+            let ports = midi_in.ports();
+            let port = ports.first().unwrap();
 
-        let midi_device = Arc::new(Mutex::new(UsbMidiDevice::in_out_device(handle, 130, 1)));
+            let _conn_in = midi_in.connect(
+                port,
+                APC_MINI_MK_2_NAME,
+                move |_, msg, _| {
+                    if let Some(midi_msg) = MidiMessage::from_bytes(msg) {
+                        tx.send(midi_msg).unwrap();
+                    }
+                },
+                (),
+            );
 
-        Ok(Self { midi_device, rx })
+            loop {
+                thread::sleep(Duration::from_millis(16));
+            }
+        });
+
+        Ok(Self { rx })
     }
 }
 
@@ -65,10 +56,34 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
     fn poll(
         &self,
     ) -> Result<
-        Option<crate::input::message::DemexInputDeviceMessage>,
+        Vec<crate::input::message::DemexInputDeviceMessage>,
         crate::input::error::DemexInputDeviceError,
     > {
-        Ok(None)
+        let values = self
+            .rx
+            .try_iter()
+            .map(|midi_msg| match midi_msg {
+                MidiMessage::NoteOn { .. } => Some(DemexInputDeviceMessage::ButtonPressed(0)),
+                MidiMessage::NoteOff { .. } => Some(DemexInputDeviceMessage::ButtonReleased(0)),
+                MidiMessage::ControlChange {
+                    channel: _,
+                    control_code,
+                    control_value,
+                } => {
+                    if control_code == 19 {
+                        Some(DemexInputDeviceMessage::FaderValueChanged(
+                            0,
+                            control_value as f32 / 127.0,
+                        ))
+                    } else {
+                        None
+                    }
+                }
+            })
+            .flatten()
+            .collect::<Vec<_>>();
+
+        Ok(values)
     }
 
     fn profile_type(&self) -> super::DemexInputDeviceProfileType {

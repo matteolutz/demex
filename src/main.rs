@@ -9,12 +9,13 @@ pub mod show;
 pub mod ui;
 pub mod utils;
 
-use std::{collections::HashMap, path::PathBuf, sync::Arc, time};
+use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
 use fixture::handler::FixtureHandler;
 use input::{
-    profile::DemexInputDeviceProfileType, DemexInputDeviceConfig, DemexInputDeviceHandler,
+    button::DemexInputButton, fader::DemexInputFader, profile::DemexInputDeviceProfileType,
+    DemexInputDeviceConfig, DemexInputDeviceHandler,
 };
 use parking_lot::RwLock;
 use show::DemexShow;
@@ -76,7 +77,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         TEST_UI_FPS,
         icon.clone(),
         DemexInputDeviceHandler::new(vec![DemexInputDeviceConfig::new(
-            HashMap::new(),
+            [(0, DemexInputButton::ExecutorStartAndNext(1))].into(),
+            [(0, DemexInputFader::new(1))].into(),
             DemexInputDeviceProfileType::ApcMiniMk2,
         )
         .try_into()?]),

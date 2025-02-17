@@ -1,9 +1,8 @@
-pub mod usb;
-
 pub(crate) const NOTE_OFF_OP: u8 = 0x8;
 pub(crate) const NOTE_ON_OP: u8 = 0x9;
 pub(crate) const CC_OP: u8 = 0xb;
 
+#[derive(Debug)]
 pub enum MidiMessage {
     NoteOn {
         channel: u8,

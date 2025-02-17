@@ -1,5 +1,6 @@
 use egui_probe::EguiProbe;
 use error::DemexInputDeviceError;
+use fader::DemexInputFader;
 use message::DemexInputDeviceMessage;
 use profile::{akai::ApcMiniMk2InputDeviceProfile, DemexInputDeviceProfileType};
 use serde::{Deserialize, Serialize};
@@ -13,28 +14,32 @@ use button::DemexInputButton;
 
 pub mod button;
 pub mod error;
+pub mod fader;
 pub mod message;
 pub mod midi;
 pub mod profile;
 
 pub trait DemexInputDeviceProfile: std::fmt::Debug {
-    fn poll(&self) -> Result<Option<DemexInputDeviceMessage>, DemexInputDeviceError>;
+    fn poll(&self) -> Result<Vec<DemexInputDeviceMessage>, DemexInputDeviceError>;
     fn profile_type(&self) -> DemexInputDeviceProfileType;
 }
 
 #[derive(Debug, Serialize, Deserialize, EguiProbe)]
 pub struct DemexInputDeviceConfig {
     buttons: HashMap<u32, DemexInputButton>,
+    faders: HashMap<u32, DemexInputFader>,
     profile_type: DemexInputDeviceProfileType,
 }
 
 impl DemexInputDeviceConfig {
     pub fn new(
         buttons: HashMap<u32, DemexInputButton>,
+        faders: HashMap<u32, DemexInputFader>,
         profile_type: DemexInputDeviceProfileType,
     ) -> Self {
         Self {
             buttons,
+            faders,
             profile_type,
         }
     }
@@ -88,7 +93,7 @@ impl DemexInputDeviceHandler {
         updatable_handler: &mut UpdatableHandler,
     ) -> Result<(), DemexInputDeviceError> {
         for device in &self.devices {
-            if let Some(device_message) = device.profile.poll()? {
+            for device_message in device.profile.poll()? {
                 match device_message {
                     DemexInputDeviceMessage::ButtonPressed(button_id) => {
                         let button = device
@@ -109,6 +114,14 @@ impl DemexInputDeviceHandler {
                             preset_handler,
                             updatable_handler,
                         )?;
+                    }
+                    DemexInputDeviceMessage::FaderValueChanged(fader_id, value) => {
+                        let fader = device
+                            .config
+                            .faders
+                            .get(&fader_id)
+                            .ok_or(DemexInputDeviceError::ButtonNotFound(fader_id))?;
+                        fader.handle_change(value, fixture_handler, updatable_handler)?;
                     }
                 }
             }
