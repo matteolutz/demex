@@ -5,6 +5,7 @@ use super::DemexInputDeviceProfileType;
 // **Ressources**
 // https://github.com/df5602/midi-synth/blob/master/src/midi_controller.rs
 // https://crates.io/crates/nusb
+// https://cdn.inmusicbrands.com/akai/attachments/APC%20mini%20mk2%20-%20Communication%20Protocol%20-%20v1.0.pdf
 
 #[derive(Debug)]
 pub struct ApcMiniMk2InputDeviceProfile {}

@@ -14,6 +14,7 @@ use button::DemexInputButton;
 pub mod button;
 pub mod error;
 pub mod message;
+pub mod midi;
 pub mod profile;
 
 pub trait DemexInputDeviceProfile: std::fmt::Debug {
