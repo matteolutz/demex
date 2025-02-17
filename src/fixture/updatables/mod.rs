@@ -74,6 +74,34 @@ impl UpdatableHandler {
         self.executors.get_mut(&id)
     }
 
+    pub fn start_or_next_executor(
+        &mut self,
+        id: u32,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+    ) -> Result<(), UpdatableHandlerError> {
+        let executor = self
+            .executor_mut(id)
+            .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
+
+        if executor.is_started() {
+            executor.next_cue(preset_handler);
+            return Ok(());
+        }
+
+        let should_stop_others = executor.stop_others();
+
+        if should_stop_others {
+            self.executors_stop_all(fixture_handler);
+        }
+
+        let executor = self
+            .executor_mut(id)
+            .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
+        executor.start(fixture_handler);
+        Ok(())
+    }
+
     pub fn start_executor(
         &mut self,
         id: u32,

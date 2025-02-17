@@ -16,6 +16,7 @@ use crate::{
 };
 use crate::{
     fixture::{presets::PresetHandler, updatables::UpdatableHandler},
+    input::DemexInputDeviceHandler,
     parser::{nodes::action::Action, Parser2},
     show::DemexShow,
     utils::thread::DemexThreadStatsHandler,
@@ -47,6 +48,8 @@ pub struct DemexUiApp {
     desired_fps: f64,
 
     icon: Arc<IconData>,
+
+    input_device_handler: DemexInputDeviceHandler,
 }
 
 impl DemexUiApp {
@@ -58,6 +61,7 @@ impl DemexUiApp {
         save_show: fn(DemexShow) -> Result<(), Box<dyn std::error::Error>>,
         desired_fps: f64,
         icon: Arc<IconData>,
+        input_device_handler: DemexInputDeviceHandler,
     ) -> Self {
         stats
             .write()
@@ -88,6 +92,7 @@ impl DemexUiApp {
             last_update: time::Instant::now(),
             desired_fps,
             icon,
+            input_device_handler,
         }
     }
 }
@@ -116,6 +121,18 @@ impl DemexUiApp {
 
 impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+        if let Err(input_error) = self.input_device_handler.update(
+            &mut self.context.fixture_handler.write(),
+            &self.context.preset_handler.read(),
+            &mut self.context.updatable_handler.write(),
+        ) {
+            self.context
+                .logs
+                .push(DemexLogEntry::new(DemexLogEntryType::Error(
+                    input_error.to_string(),
+                )));
+        }
+
         for i in 0..self.context.windows.len() {
             if self.context.windows[i].ui(
                 ctx,

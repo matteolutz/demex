@@ -2,6 +2,7 @@
 
 pub mod dmx;
 pub mod fixture;
+pub mod input;
 pub mod lexer;
 pub mod parser;
 pub mod show;
@@ -12,6 +13,7 @@ use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
 use fixture::handler::FixtureHandler;
+use input::DemexInputDeviceHandler;
 use parking_lot::RwLock;
 use show::DemexShow;
 use ui::{utils::icon::load_icon, DemexUiApp};
@@ -71,6 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         TEST_UI_FPS,
         icon.clone(),
+        DemexInputDeviceHandler::default(),
     );
 
     let fixture_handler_thread_a = fixture_handler.clone();
