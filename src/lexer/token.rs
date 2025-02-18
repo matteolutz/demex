@@ -71,6 +71,10 @@ pub enum Token {
     KeywordConfig,
     KeywordOutput,
     KeywordFeature,
+    KeywordAssign,
+    KeywordGo,
+    KeywordStop,
+    KeywordFlash,
 
     KeywordNuzul,
     KeywordSueud,
@@ -120,6 +124,7 @@ impl Token {
             Token::KeywordSave => TokenType::ActionKeyword,
             Token::KeywordDelete => TokenType::ActionKeyword,
             Token::KeywordConfig => TokenType::ActionKeyword,
+            Token::KeywordAssign => TokenType::ActionKeyword,
 
             Token::KeywordGroup => TokenType::ObjectKeyword,
             Token::KeywordMacro => TokenType::ObjectKeyword,
@@ -142,6 +147,9 @@ impl Token {
             Token::KeywordReally => TokenType::OtherKeyword,
             Token::KeywordNext => TokenType::OtherKeyword,
             Token::KeywordOutput => TokenType::OtherKeyword,
+            Token::KeywordGo => TokenType::OtherKeyword,
+            Token::KeywordStop => TokenType::OtherKeyword,
+            Token::KeywordFlash => TokenType::OtherKeyword,
 
             Token::Eof => TokenType::Eof,
         }
@@ -212,6 +220,10 @@ impl std::fmt::Display for Token {
             Token::KeywordBeam => write!(f, "beam"),
             Token::KeywordFocus => write!(f, "focus"),
             Token::KeywordFeature => write!(f, "feature"),
+            Token::KeywordAssign => write!(f, "assign"),
+            Token::KeywordGo => write!(f, "go"),
+            Token::KeywordStop => write!(f, "stop"),
+            Token::KeywordFlash => write!(f, "flash"),
             Token::Eof => write!(f, "Eof"),
         }
     }

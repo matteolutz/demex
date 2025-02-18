@@ -15,6 +15,7 @@ pub enum DemexLogEntryType {
     CommandFailedEntry(String),
     ActionEntrySuccess(Action, ActionRunResult),
     ActionEntryFailed(Action, String),
+    Error(String),
 }
 
 impl fmt::Display for DemexLogEntryType {
@@ -36,6 +37,9 @@ impl fmt::Display for DemexLogEntryType {
             }
             DemexLogEntryType::ActionEntryFailed(action, err) => {
                 write!(f, "[ACT][FAIL]: {:?}\n\t> {}", action, err)
+            }
+            DemexLogEntryType::Error(err) => {
+                write!(f, "[DEMEX][ERR]: {err}")
             }
         }
     }
@@ -65,6 +69,7 @@ impl DemexLogEntry {
             DemexLogEntryType::CommandFailedEntry(_) => egui::Color32::LIGHT_RED,
             DemexLogEntryType::ActionEntrySuccess(_, _) => egui::Color32::LIGHT_GREEN,
             DemexLogEntryType::ActionEntryFailed(_, _) => egui::Color32::LIGHT_RED,
+            DemexLogEntryType::Error(_) => egui::Color32::RED,
         }
     }
 }

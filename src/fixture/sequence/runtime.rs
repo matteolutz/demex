@@ -85,7 +85,6 @@ impl SequenceRuntime {
     pub fn channel_value(
         &self,
         fixture_id: u32,
-        fixture_offset_idx: usize,
         channel_type: FixtureChannelType,
         speed_multiplier: f32,
         intensity_multiplier: f32,
@@ -108,7 +107,7 @@ impl SequenceRuntime {
 
             delta *= speed_multiplier;
 
-            delta = f32::max(delta - cue.offset_for_fixture_idx(fixture_offset_idx), 0.0);
+            delta = f32::max(delta - cue.offset_for_fixture(fixture_id), 0.0);
 
             let should_snap = cue.should_snap_channel_value_for_fixture(fixture_id, channel_type);
 
@@ -194,12 +193,7 @@ impl SequenceRuntime {
         }
     }
 
-    pub fn update(
-        &mut self,
-        num_offsets: usize,
-        speed_multiplier: f32,
-        preset_handler: &PresetHandler,
-    ) -> bool {
+    pub fn update(&mut self, speed_multiplier: f32, preset_handler: &PresetHandler) -> bool {
         if let Some((cue_update, cue_idx, _)) = self.state.when_started() {
             let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
@@ -217,10 +211,10 @@ impl SequenceRuntime {
             let next_cue_idx = self.next_cue_idx(preset_handler);
 
             let previous_cue_out_time = previous_cue_idx
-                .map(|i| sequence.cue(i).out_time(num_offsets))
+                .map(|i| sequence.cue(i).out_time())
                 .unwrap_or(0.0);
 
-            let cue_time = previous_cue_out_time + current_cue.in_time(num_offsets);
+            let cue_time = previous_cue_out_time + current_cue.in_time();
 
             if delta > cue_time {
                 // is the next cue, a follow cue?
@@ -231,7 +225,7 @@ impl SequenceRuntime {
                     // it's the last cue, so we should wait for the out time of the last cue
                     // and then stop the sequence, if the sequence is set to auto stop
                 } else if sequence.stop_behavior() == SequenceStopBehavior::AutoStop
-                    && delta > cue_time + current_cue.out_time(num_offsets)
+                    && delta > cue_time + current_cue.out_time()
                 {
                     self.stop();
                     return true;

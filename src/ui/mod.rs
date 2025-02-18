@@ -16,7 +16,11 @@ use crate::{
 };
 use crate::{
     fixture::{presets::PresetHandler, updatables::UpdatableHandler},
-    parser::{nodes::action::Action, Parser2},
+    input::DemexInputDeviceHandler,
+    parser::{
+        nodes::{action::Action, fixture_selector::FixtureSelectorContext},
+        Parser2,
+    },
     show::DemexShow,
     utils::thread::DemexThreadStatsHandler,
 };
@@ -58,6 +62,7 @@ impl DemexUiApp {
         save_show: fn(DemexShow) -> Result<(), Box<dyn std::error::Error>>,
         desired_fps: f64,
         icon: Arc<IconData>,
+        input_device_handler: DemexInputDeviceHandler,
     ) -> Self {
         stats
             .write()
@@ -82,6 +87,8 @@ impl DemexUiApp {
 
                 command_input: String::new(),
                 is_command_input_empty: true,
+
+                input_device_handler,
             },
             tabs: DemexTabs::default(),
             detached_tabs: HashSet::new(),
@@ -116,6 +123,21 @@ impl DemexUiApp {
 
 impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+        if let Err(input_error) = self.context.input_device_handler.update(
+            &mut self.context.fixture_handler.write(),
+            &self.context.preset_handler.read(),
+            &mut self.context.updatable_handler.write(),
+            FixtureSelectorContext::new(&self.context.global_fixture_select.clone()),
+            &mut self.context.macro_execution_queue,
+            &mut self.context.global_fixture_select,
+        ) {
+            self.context
+                .logs
+                .push(DemexLogEntry::new(DemexLogEntryType::Error(
+                    input_error.to_string(),
+                )));
+        }
+
         for i in 0..self.context.windows.len() {
             if self.context.windows[i].ui(
                 ctx,

@@ -2,6 +2,7 @@
 
 pub mod dmx;
 pub mod fixture;
+pub mod input;
 pub mod lexer;
 pub mod parser;
 pub mod show;
@@ -12,6 +13,7 @@ use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
 use fixture::handler::FixtureHandler;
+use input::DemexInputDeviceHandler;
 use parking_lot::RwLock;
 use show::DemexShow;
 use ui::{utils::icon::load_icon, DemexUiApp};
@@ -66,11 +68,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         updatable_handler.clone(),
         stats.clone(),
         |show: DemexShow| {
-            serde_json::to_writer(std::fs::File::create("test_data/show.json").unwrap(), &show)?;
+            serde_json::to_writer(
+                std::fs::File::create("test_data/cinema.json").unwrap(),
+                &show,
+            )?;
             Ok(())
         },
         TEST_UI_FPS,
         icon.clone(),
+        DemexInputDeviceHandler::new(
+            /*[DemexInputDeviceConfig::new(
+                [
+                    (63, DemexInputButton::ExecutorFlash(2)),
+                    (56, DemexInputButton::ExecutorStartAndNext(1)),
+                    (48, DemexInputButton::ExecutorStop(1)),
+                    (
+                        32,
+                        DemexInputButton::SelectivePreset {
+                            fixture_selector: FixtureSelector::Atomic(
+                                AtomicFixtureSelector::FixtureGroup(6),
+                            ),
+                            preset_id: 6,
+                        },
+                    ),
+                    (
+                        33,
+                        DemexInputButton::SelectivePreset {
+                            fixture_selector: FixtureSelector::Atomic(
+                                AtomicFixtureSelector::FixtureGroup(6),
+                            ),
+                            preset_id: 7,
+                        },
+                    ),
+                ]
+                .into(),
+                [(0, DemexInputFader::new(1))].into(),
+                DemexInputDeviceProfileType::ApcMiniMk2,
+            )]*/
+            show.input_device_configs
+                .into_iter()
+                .flat_map(|v| v.try_into())
+                .collect::<Vec<_>>(),
+        ),
     );
 
     let fixture_handler_thread_a = fixture_handler.clone();

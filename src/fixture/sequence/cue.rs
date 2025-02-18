@@ -3,8 +3,9 @@ use std::collections::HashMap;
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::channel2::{
-    channel_type::FixtureChannelType, channel_value::FixtureChannelValue2,
+use crate::fixture::{
+    channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
+    selection::FixtureSelection,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, EguiProbe)]
@@ -123,6 +124,8 @@ pub struct Cue {
     #[egui_probe(skip)]
     data: HashMap<u32, Vec<CueFixtureChannelValue>>,
 
+    selection: FixtureSelection,
+
     // Time, to fade into the cue
     in_fade: f32,
     // Time, to fade out of the cue
@@ -148,6 +151,7 @@ impl Cue {
     pub fn new(
         cue_idx: CueIdx,
         data: HashMap<u32, Vec<CueFixtureChannelValue>>,
+        selection: FixtureSelection,
         in_fade: f32,
         out_fade: Option<f32>,
         in_delay: f32,
@@ -160,6 +164,8 @@ impl Cue {
             cue_idx,
 
             data,
+            selection,
+
             in_fade,
             out_fade,
             in_delay,
@@ -210,13 +216,16 @@ impl Cue {
         self.data.len()
     }
 
-    pub fn total_offset(&self, num_offsets: usize) -> f32 {
-        self.timing.total_offset(num_offsets)
+    pub fn total_offset(&self) -> f32 {
+        self.timing.total_offset(self.selection.num_offsets())
     }
 
-    pub fn offset_for_fixture_idx(&self, fixture_offset_idx: usize) -> f32 {
-        self.timing
-            .offset_for_fixture(fixture_offset_idx, self.num_fixtures())
+    pub fn offset_for_fixture(&self, fixture_id: u32) -> f32 {
+        self.timing.offset_for_fixture(
+            // TOOD: is .unwrap_or(0) the right thing to do?
+            self.selection.offset_idx(fixture_id).unwrap_or(0),
+            self.num_fixtures(),
+        )
     }
 
     pub fn data_for_fixture(&self, fixture_id: u32) -> Option<&Vec<CueFixtureChannelValue>> {
@@ -252,11 +261,11 @@ impl Cue {
             .unwrap_or(false)
     }
 
-    pub fn in_time(&self, num_offsets: usize) -> f32 {
-        self.in_delay + self.in_fade + self.total_offset(num_offsets)
+    pub fn in_time(&self) -> f32 {
+        self.in_delay + self.in_fade + self.total_offset()
     }
 
-    pub fn out_time(&self, num_offsets: usize) -> f32 {
-        self.out_delay() + self.out_fade() + self.total_offset(num_offsets)
+    pub fn out_time(&self) -> f32 {
+        self.out_delay() + self.out_fade() + self.total_offset()
     }
 }

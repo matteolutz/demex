@@ -20,7 +20,7 @@ pub enum FixtureSelectorError {
     PresetHandlerError(PresetHandlerError),
     FailedToFlatten(Box<FixtureSelectorError>),
     NoFixturesMatched,
-    SomeFixturesFailedToMatch(Vec<u32>),
+    SomeFixturesFailedToMatch(usize),
 }
 
 impl std::fmt::Display for FixtureSelectorError {
@@ -29,8 +29,8 @@ impl std::fmt::Display for FixtureSelectorError {
             Self::PresetHandlerError(e) => write!(f, "PresetHandlerError: {}", e),
             Self::FailedToFlatten(e) => write!(f, "Failed to flatten fixture selector: {}", e),
             Self::NoFixturesMatched => write!(f, "No fixtures matched the given selector"),
-            Self::SomeFixturesFailedToMatch(fixtures) => {
-                write!(f, "Some fixtures failed to match: {:?}", fixtures)
+            Self::SomeFixturesFailedToMatch(num_fixtures) => {
+                write!(f, "{} fixtures failed to match", num_fixtures)
             }
         }
     }
@@ -42,7 +42,7 @@ impl std::error::Error for FixtureSelectorError {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AtomicFixtureSelector {
     SingleFixture(u32),
     FixtureRange(u32, u32),
@@ -50,6 +50,7 @@ pub enum AtomicFixtureSelector {
     SelectorGroup(Box<FixtureSelector>),
     FixtureIdList(Vec<u32>),
     CurrentFixturesSelected,
+    None,
 }
 
 impl AtomicFixtureSelector {
@@ -76,6 +77,7 @@ impl AtomicFixtureSelector {
                     Ok(vec![])
                 }
             }
+            Self::None => Ok(vec![]),
         }
     }
 
@@ -109,16 +111,23 @@ impl std::fmt::Display for AtomicFixtureSelector {
             Self::FixtureRange(from, to) => write!(f, "{} thru {}", from, to),
             Self::SelectorGroup(selector) => write!(f, "({})", selector),
             Self::SingleFixture(id) => write!(f, "{}", id),
+            Self::None => write!(f, "None"),
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum FixtureSelector {
     Atomic(AtomicFixtureSelector),
     Additive(AtomicFixtureSelector, Box<FixtureSelector>),
     Subtractive(AtomicFixtureSelector, Box<FixtureSelector>),
     Modulus(AtomicFixtureSelector, u32, bool),
+}
+
+impl Default for FixtureSelector {
+    fn default() -> Self {
+        Self::Atomic(AtomicFixtureSelector::None)
+    }
 }
 
 impl FixtureSelector {

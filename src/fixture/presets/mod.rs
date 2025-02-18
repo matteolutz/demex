@@ -18,6 +18,7 @@ use super::{
     channel2::{channel_type::FixtureChannelType, feature::feature_group::FeatureGroup},
     error::FixtureError,
     handler::FixtureHandler,
+    selection::FixtureSelection,
     sequence::{
         cue::{Cue, CueTiming, CueTrigger},
         Sequence,
@@ -416,13 +417,14 @@ impl PresetHandler {
 
         let mut cue_data = HashMap::new();
 
-        for fixture_id in fixture_selector
+        let fixtures = fixture_selector
             .get_fixtures(self, fixture_selector_context)
-            .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?
-        {
-            if let Some(fixture) = fixture_handler.fixture_immut(fixture_id) {
+            .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?;
+
+        for fixture_id in &fixtures {
+            if let Some(fixture) = fixture_handler.fixture_immut(*fixture_id) {
                 cue_data.insert(
-                    fixture_id,
+                    *fixture_id,
                     channel_type_selector
                         .get_channel_values(fixture)
                         .map_err(PresetHandlerError::FixtureError)?,
@@ -430,9 +432,12 @@ impl PresetHandler {
             }
         }
 
+        let selection: FixtureSelection = fixtures.into();
+
         let cue = Cue::new(
             discrete_cue_idx,
             cue_data,
+            selection,
             0.0,
             None,
             0.0,
