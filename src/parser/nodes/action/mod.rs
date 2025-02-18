@@ -97,7 +97,7 @@ pub enum FaderCreationConfigActionData {
     Sequence(u32, FixtureSelector),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum Action {
     SetFeatureValue(
         FixtureSelector,
@@ -155,6 +155,7 @@ pub enum Action {
     Nuzul,
     Sueud,
 
+    #[default]
     MatteoLutz,
 }
 

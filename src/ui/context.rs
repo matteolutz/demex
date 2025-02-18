@@ -116,12 +116,7 @@ impl DemexUiContext {
                 let show = DemexShow {
                     preset_handler: preset_handler_lock.clone(),
                     updatable_handler: updatable_handler_lock.clone(),
-                    input_device_configs: self
-                        .input_device_handler
-                        .devices()
-                        .iter()
-                        .map(|d| d.config().clone())
-                        .collect::<Vec<_>>(),
+                    input_device_configs: self.input_device_handler.initial_configs().clone(),
                     patch: fixture_handler_lock.patch().clone(),
                 };
 

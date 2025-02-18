@@ -127,7 +127,9 @@ impl eframe::App for DemexUiApp {
             &mut self.context.fixture_handler.write(),
             &self.context.preset_handler.read(),
             &mut self.context.updatable_handler.write(),
-            FixtureSelectorContext::new(&self.context.global_fixture_select),
+            FixtureSelectorContext::new(&self.context.global_fixture_select.clone()),
+            &mut self.context.macro_execution_queue,
+            &mut self.context.global_fixture_select,
         ) {
             self.context
                 .logs

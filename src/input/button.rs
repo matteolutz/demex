@@ -7,7 +7,10 @@ use crate::{
         presets::PresetHandler,
         updatables::UpdatableHandler,
     },
-    parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    parser::nodes::{
+        action::Action,
+        fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    },
 };
 
 use super::error::DemexInputDeviceError;
@@ -24,6 +27,16 @@ pub enum DemexInputButton {
         preset_id: u32,
     },
 
+    FixtureSelector {
+        #[egui_probe(skip)]
+        fixture_selector: FixtureSelector,
+    },
+
+    Macro {
+        #[egui_probe(skip)]
+        action: Action,
+    },
+
     #[default]
     Unused,
 }
@@ -35,6 +48,8 @@ impl DemexInputButton {
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         fixture_selector_context: FixtureSelectorContext,
+        macro_exec_cue: &mut Vec<Action>,
+        global_fixture_selector: &mut Option<FixtureSelector>,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
             Self::ExecutorFlash(executor_id) => updatable_handler
@@ -66,6 +81,12 @@ impl DemexInputButton {
                         })?)
                         .map_err(DemexInputDeviceError::PresetHandlerError)?;
                 }
+            }
+            Self::Macro { action } => {
+                macro_exec_cue.push(action.clone());
+            }
+            Self::FixtureSelector { fixture_selector } => {
+                *global_fixture_selector = Some(fixture_selector.clone());
             }
             Self::Unused => {}
         }

@@ -42,7 +42,7 @@ impl std::error::Error for FixtureSelectorError {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AtomicFixtureSelector {
     SingleFixture(u32),
     FixtureRange(u32, u32),
@@ -116,7 +116,7 @@ impl std::fmt::Display for AtomicFixtureSelector {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum FixtureSelector {
     Atomic(AtomicFixtureSelector),
     Additive(AtomicFixtureSelector, Box<FixtureSelector>),

@@ -74,6 +74,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         TEST_UI_FPS,
         icon.clone(),
         DemexInputDeviceHandler::new(
+            /*[DemexInputDeviceConfig::new(
+                [
+                    (63, DemexInputButton::ExecutorFlash(2)),
+                    (56, DemexInputButton::ExecutorStartAndNext(1)),
+                    (48, DemexInputButton::ExecutorStop(1)),
+                    (
+                        32,
+                        DemexInputButton::SelectivePreset {
+                            fixture_selector: FixtureSelector::Atomic(
+                                AtomicFixtureSelector::FixtureGroup(6),
+                            ),
+                            preset_id: 6,
+                        },
+                    ),
+                    (
+                        33,
+                        DemexInputButton::SelectivePreset {
+                            fixture_selector: FixtureSelector::Atomic(
+                                AtomicFixtureSelector::FixtureGroup(6),
+                            ),
+                            preset_id: 7,
+                        },
+                    ),
+                ]
+                .into(),
+                [(0, DemexInputFader::new(1))].into(),
+                DemexInputDeviceProfileType::ApcMiniMk2,
+            )]*/
+            show.input_device_configs.clone(),
             show.input_device_configs
                 .into_iter()
                 .flat_map(|v| v.try_into())

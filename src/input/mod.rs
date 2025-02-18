@@ -5,7 +5,10 @@ use profile::DemexInputDeviceProfileType;
 
 use crate::{
     fixture::{handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler},
-    parser::nodes::fixture_selector::FixtureSelectorContext,
+    parser::nodes::{
+        action::Action,
+        fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    },
 };
 
 pub mod button;
@@ -21,6 +24,7 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
         &mut self,
         device_config: &DemexInputDeviceConfig,
         updatable_handler: &UpdatableHandler,
+        global_fixture_selector: &Option<FixtureSelector>,
     ) -> Result<(), DemexInputDeviceError>;
     fn poll(&self) -> Result<Vec<DemexInputDeviceMessage>, DemexInputDeviceError>;
     fn profile_type(&self) -> DemexInputDeviceProfileType;
@@ -28,16 +32,27 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
 
 #[derive(Default, Debug)]
 pub struct DemexInputDeviceHandler {
+    initial_configs: Vec<DemexInputDeviceConfig>,
     devices: Vec<DemexInputDevice>,
 }
 
 impl DemexInputDeviceHandler {
-    pub fn new(devices: Vec<DemexInputDevice>) -> Self {
-        Self { devices }
+    pub fn new(
+        initial_configs: Vec<DemexInputDeviceConfig>,
+        devices: Vec<DemexInputDevice>,
+    ) -> Self {
+        Self {
+            initial_configs,
+            devices,
+        }
     }
 
     pub fn devices(&self) -> &Vec<DemexInputDevice> {
         &self.devices
+    }
+
+    pub fn initial_configs(&self) -> &Vec<DemexInputDeviceConfig> {
+        &self.initial_configs
     }
 
     pub fn update(
@@ -46,6 +61,8 @@ impl DemexInputDeviceHandler {
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         fixture_selector_context: FixtureSelectorContext,
+        macro_exec_cue: &mut Vec<Action>,
+        global_fixture_selector: &mut Option<FixtureSelector>,
     ) -> Result<(), DemexInputDeviceError> {
         for device in &self.devices {
             for device_message in device.profile().poll()? {
@@ -61,6 +78,8 @@ impl DemexInputDeviceHandler {
                             preset_handler,
                             updatable_handler,
                             fixture_selector_context.clone(),
+                            macro_exec_cue,
+                            global_fixture_selector,
                         )?;
                     }
                     DemexInputDeviceMessage::ButtonReleased(button_id) => {
@@ -88,9 +107,11 @@ impl DemexInputDeviceHandler {
         }
 
         for device in &mut self.devices {
-            device
-                .profile
-                .update_out(&device.config, updatable_handler)?;
+            device.profile.update_out(
+                &device.config,
+                updatable_handler,
+                global_fixture_selector,
+            )?;
         }
 
         Ok(())
