@@ -76,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         DemexInputDeviceHandler::new(
             show.input_device_configs
                 .into_iter()
-                .map(|v| v.try_into().unwrap())
+                .flat_map(|v| v.try_into())
                 .collect::<Vec<_>>(),
         ),
     );

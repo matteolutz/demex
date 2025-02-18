@@ -208,7 +208,7 @@ impl UpdatableHandler {
                     .map_err(UpdatableHandlerError::FixtureSelectorError)?;
 
                 DemexFaderConfig::SequenceRuntime {
-                    selection: fixtures.into(),
+                    fixtures,
                     runtime: SequenceRuntime::new(*sequence_id),
                     function: DemexFaderRuntimeFunction::default(),
                 }

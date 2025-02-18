@@ -6,7 +6,6 @@ pub struct FixtureSelection {
     fixtures: Vec<u32>,
 
     group_size: usize,
-    #[serde(default)]
     wings: usize,
 }
 

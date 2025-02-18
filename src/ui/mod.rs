@@ -17,7 +17,10 @@ use crate::{
 use crate::{
     fixture::{presets::PresetHandler, updatables::UpdatableHandler},
     input::DemexInputDeviceHandler,
-    parser::{nodes::action::Action, Parser2},
+    parser::{
+        nodes::{action::Action, fixture_selector::FixtureSelectorContext},
+        Parser2,
+    },
     show::DemexShow,
     utils::thread::DemexThreadStatsHandler,
 };
@@ -124,6 +127,7 @@ impl eframe::App for DemexUiApp {
             &mut self.context.fixture_handler.write(),
             &self.context.preset_handler.read(),
             &mut self.context.updatable_handler.write(),
+            FixtureSelectorContext::new(&self.context.global_fixture_select),
         ) {
             self.context
                 .logs

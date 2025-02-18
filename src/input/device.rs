@@ -46,8 +46,8 @@ impl DemexInputDeviceConfig {
 
 #[derive(Debug)]
 pub struct DemexInputDevice {
-    profile: Box<dyn DemexInputDeviceProfile>,
-    config: DemexInputDeviceConfig,
+    pub(crate) profile: Box<dyn DemexInputDeviceProfile>,
+    pub(crate) config: DemexInputDeviceConfig,
 }
 
 impl DemexInputDevice {

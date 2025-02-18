@@ -1,10 +1,11 @@
-use device::DemexInputDevice;
+use device::{DemexInputDevice, DemexInputDeviceConfig};
 use error::DemexInputDeviceError;
 use message::DemexInputDeviceMessage;
 use profile::DemexInputDeviceProfileType;
 
-use crate::fixture::{
-    handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler,
+use crate::{
+    fixture::{handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler},
+    parser::nodes::fixture_selector::FixtureSelectorContext,
 };
 
 pub mod button;
@@ -16,6 +17,11 @@ pub mod midi;
 pub mod profile;
 
 pub trait DemexInputDeviceProfile: std::fmt::Debug {
+    fn update_out(
+        &mut self,
+        device_config: &DemexInputDeviceConfig,
+        updatable_handler: &UpdatableHandler,
+    ) -> Result<(), DemexInputDeviceError>;
     fn poll(&self) -> Result<Vec<DemexInputDeviceMessage>, DemexInputDeviceError>;
     fn profile_type(&self) -> DemexInputDeviceProfileType;
 }
@@ -35,10 +41,11 @@ impl DemexInputDeviceHandler {
     }
 
     pub fn update(
-        &self,
+        &mut self,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
+        fixture_selector_context: FixtureSelectorContext,
     ) -> Result<(), DemexInputDeviceError> {
         for device in &self.devices {
             for device_message in device.profile().poll()? {
@@ -49,7 +56,12 @@ impl DemexInputDeviceHandler {
                             .buttons()
                             .get(&button_id)
                             .ok_or(DemexInputDeviceError::ButtonNotFound(button_id))?;
-                        button.handle_press(fixture_handler, preset_handler, updatable_handler)?;
+                        button.handle_press(
+                            fixture_handler,
+                            preset_handler,
+                            updatable_handler,
+                            fixture_selector_context.clone(),
+                        )?;
                     }
                     DemexInputDeviceMessage::ButtonReleased(button_id) => {
                         let button = device
@@ -73,6 +85,12 @@ impl DemexInputDeviceHandler {
                     }
                 }
             }
+        }
+
+        for device in &mut self.devices {
+            device
+                .profile
+                .update_out(&device.config, updatable_handler)?;
         }
 
         Ok(())

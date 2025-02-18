@@ -25,11 +25,7 @@ impl DemexInputFader {
             .fader_mut(self.fader_id)
             .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
-        if !fader.is_active() {
-            fader.activate(fixture_handler);
-        }
-
-        fader.set_value(value);
+        fader.set_value(value, fixture_handler);
         Ok(())
     }
 }

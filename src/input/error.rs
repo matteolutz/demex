@@ -1,15 +1,29 @@
-use crate::fixture::updatables::error::UpdatableHandlerError;
+use crate::{
+    fixture::{
+        handler::error::FixtureHandlerError, presets::error::PresetHandlerError,
+        updatables::error::UpdatableHandlerError,
+    },
+    parser::nodes::fixture_selector::FixtureSelectorError,
+};
 
 #[derive(Debug)]
 pub enum DemexInputDeviceError {
     ButtonNotFound(u32),
     FaderNotFound(u32),
 
+    ButtonNotInProfile,
+    FaderNotInProfile,
+
     InputDeviceNotFound(String),
-    UpdatableHandlerError(UpdatableHandlerError),
     OperationNotSupported,
+
+    FixtureHandlerError(FixtureHandlerError),
+    PresetHandlerError(PresetHandlerError),
+    UpdatableHandlerError(UpdatableHandlerError),
+    FixtureSelectorError(FixtureSelectorError),
+
     MpscSendError,
-    MidirInitError(midir::InitError),
+    MidirError(Box<dyn std::error::Error>),
 }
 
 impl std::error::Error for DemexInputDeviceError {
@@ -24,11 +38,19 @@ impl std::fmt::Display for DemexInputDeviceError {
             Self::ButtonNotFound(id) => write!(f, "Button with id {} not found", id),
             Self::FaderNotFound(id) => write!(f, "Fader with id {} not found", id),
 
+            Self::ButtonNotInProfile => write!(f, "Button not in profile"),
+            Self::FaderNotInProfile => write!(f, "Fader not in profile"),
+
             Self::InputDeviceNotFound(name) => write!(f, "Input device \"{}\" not found", name),
-            Self::UpdatableHandlerError(err) => write!(f, "Updatable handler error: {}", err),
             Self::OperationNotSupported => write!(f, "Operation not supported"),
+
+            Self::FixtureHandlerError(err) => write!(f, "Fixture handler error: {}", err),
+            Self::PresetHandlerError(err) => write!(f, "Preset handler error: {}", err),
+            Self::UpdatableHandlerError(err) => write!(f, "Updatable handler error: {}", err),
+            Self::FixtureSelectorError(err) => write!(f, "Fixture selector error: {}", err),
+
             Self::MpscSendError => write!(f, "Mpsc send error"),
-            Self::MidirInitError(err) => write!(f, "Midir init error: {}", err),
+            Self::MidirError(err) => write!(f, "Midir error: {}", err),
         }
     }
 }

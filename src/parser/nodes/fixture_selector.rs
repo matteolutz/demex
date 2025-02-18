@@ -50,6 +50,7 @@ pub enum AtomicFixtureSelector {
     SelectorGroup(Box<FixtureSelector>),
     FixtureIdList(Vec<u32>),
     CurrentFixturesSelected,
+    None,
 }
 
 impl AtomicFixtureSelector {
@@ -76,6 +77,7 @@ impl AtomicFixtureSelector {
                     Ok(vec![])
                 }
             }
+            Self::None => Ok(vec![]),
         }
     }
 
@@ -109,6 +111,7 @@ impl std::fmt::Display for AtomicFixtureSelector {
             Self::FixtureRange(from, to) => write!(f, "{} thru {}", from, to),
             Self::SelectorGroup(selector) => write!(f, "({})", selector),
             Self::SingleFixture(id) => write!(f, "{}", id),
+            Self::None => write!(f, "None"),
         }
     }
 }
@@ -119,6 +122,12 @@ pub enum FixtureSelector {
     Additive(AtomicFixtureSelector, Box<FixtureSelector>),
     Subtractive(AtomicFixtureSelector, Box<FixtureSelector>),
     Modulus(AtomicFixtureSelector, u32, bool),
+}
+
+impl Default for FixtureSelector {
+    fn default() -> Self {
+        Self::Atomic(AtomicFixtureSelector::None)
+    }
 }
 
 impl FixtureSelector {

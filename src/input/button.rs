@@ -1,8 +1,13 @@
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::{
-    handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler,
+use crate::{
+    fixture::{
+        handler::{error::FixtureHandlerError, FixtureHandler},
+        presets::PresetHandler,
+        updatables::UpdatableHandler,
+    },
+    parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 
 use super::error::DemexInputDeviceError;
@@ -12,6 +17,12 @@ pub enum DemexInputButton {
     ExecutorStartAndNext(u32),
     ExecutorStop(u32),
     ExecutorFlash(u32),
+
+    SelectivePreset {
+        #[egui_probe(skip)]
+        fixture_selector: FixtureSelector,
+        preset_id: u32,
+    },
 
     #[default]
     Unused,
@@ -23,6 +34,7 @@ impl DemexInputButton {
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
+        fixture_selector_context: FixtureSelectorContext,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
             Self::ExecutorFlash(executor_id) => updatable_handler
@@ -34,6 +46,27 @@ impl DemexInputButton {
             Self::ExecutorStop(executor_id) => updatable_handler
                 .stop_executor(*executor_id, fixture_handler)
                 .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
+            Self::SelectivePreset {
+                fixture_selector,
+                preset_id,
+            } => {
+                let preset = preset_handler
+                    .get_preset(*preset_id)
+                    .map_err(DemexInputDeviceError::PresetHandlerError)?;
+
+                for fixture_id in fixture_selector
+                    .get_fixtures(preset_handler, fixture_selector_context)
+                    .map_err(DemexInputDeviceError::FixtureSelectorError)?
+                {
+                    preset
+                        .apply(fixture_handler.fixture(fixture_id).ok_or_else(|| {
+                            DemexInputDeviceError::FixtureHandlerError(
+                                FixtureHandlerError::FixtureNotFound(fixture_id),
+                            )
+                        })?)
+                        .map_err(DemexInputDeviceError::PresetHandlerError)?;
+                }
+            }
             Self::Unused => {}
         }
         Ok(())
