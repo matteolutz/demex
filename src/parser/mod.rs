@@ -522,6 +522,19 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_float_individual(&mut self) -> Result<(u32, u32), ParseError> {
+        match self.current_token()? {
+            &Token::FloatingPoint(_, (n, frac)) => {
+                self.advance();
+                Ok((n, frac))
+            }
+            unexpected_token => Err(ParseError::UnexpectedToken(
+                unexpected_token.clone(),
+                "Expected float".to_string(),
+            )),
+        }
+    }
+
     fn parse_integer_or_range(&mut self) -> Result<(u32, u32), ParseError> {
         let start = self.parse_integer()?;
 
@@ -914,6 +927,82 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_assign_function(&mut self) -> Result<Action, ParseError> {
+        if let Ok(fixture_selector) = self.try_parse(Self::parse_fixture_selector) {
+            expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+
+            let (device_idx, button_id) = self.parse_float_individual()?;
+
+            return Ok(Action::AssignFixtureSelectorToInput {
+                fixture_selector,
+                device_idx: device_idx as usize,
+                button_id,
+            });
+        }
+
+        match self.current_token()? {
+            Token::KeywordExecutor => {
+                self.advance();
+
+                let executor_id = self.parse_integer()?;
+
+                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+
+                let (device_idx, button_id) = self.parse_float_individual()?;
+
+                Ok(Action::AssignExecutorToInput {
+                    executor_id,
+                    device_idx: device_idx as usize,
+                    button_id,
+                })
+            }
+            Token::KeywordFader => {
+                self.advance();
+
+                let fader_id = self.parse_integer()?;
+
+                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+
+                let (device_idx, input_fader_id) = self.parse_float_individual()?;
+
+                Ok(Action::AssignFaderToInput {
+                    fader_id,
+                    device_idx: device_idx as usize,
+                    input_fader_id,
+                })
+            }
+            Token::KeywordPreset => {
+                self.advance();
+
+                let preset_id = self.parse_integer()?;
+
+                expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
+
+                let fixture_selector = self.parse_fixture_selector()?;
+
+                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+
+                let (device_idx, button_id) = self.parse_float_individual()?;
+
+                Ok(Action::AssignSelectivePresetToInput {
+                    preset_id,
+                    fixture_selector,
+                    device_idx: device_idx as usize,
+                    button_id,
+                })
+            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec![
+                    "\"executor\"",
+                    "\"fader\"",
+                    "\"preset\"",
+                    "fixture selector",
+                ],
+            )),
+        }
+    }
+
     fn parse_function(&mut self) -> Result<Action, ParseError> {
         if matches!(self.current_token()?, Token::KeywordHome) {
             self.advance();
@@ -943,6 +1032,11 @@ impl<'a> Parser2<'a> {
         if matches!(self.current_token()?, Token::KeywordDelete) {
             self.advance();
             return self.parse_delete_function();
+        }
+
+        if matches!(self.current_token()?, Token::KeywordAssign) {
+            self.advance();
+            return self.parse_assign_function();
         }
 
         if matches!(self.current_token()?, Token::KeywordClear) {

@@ -32,27 +32,25 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
 
 #[derive(Default, Debug)]
 pub struct DemexInputDeviceHandler {
-    initial_configs: Vec<DemexInputDeviceConfig>,
     devices: Vec<DemexInputDevice>,
 }
 
 impl DemexInputDeviceHandler {
-    pub fn new(
-        initial_configs: Vec<DemexInputDeviceConfig>,
-        devices: Vec<DemexInputDevice>,
-    ) -> Self {
-        Self {
-            initial_configs,
-            devices,
-        }
+    pub fn new(devices: Vec<DemexInputDevice>) -> Self {
+        Self { devices }
+    }
+
+    pub fn device_mut(
+        &mut self,
+        idx: usize,
+    ) -> Result<&mut DemexInputDevice, DemexInputDeviceError> {
+        self.devices
+            .get_mut(idx)
+            .ok_or(DemexInputDeviceError::InputDeviceIdxNotFound(idx))
     }
 
     pub fn devices(&self) -> &Vec<DemexInputDevice> {
         &self.devices
-    }
-
-    pub fn initial_configs(&self) -> &Vec<DemexInputDeviceConfig> {
-        &self.initial_configs
     }
 
     pub fn update(

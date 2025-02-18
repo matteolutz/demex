@@ -7,8 +7,12 @@ use crate::{
         handler::FixtureHandler,
         presets::PresetHandler,
         sequence::cue::{CueFixtureChannelValue, CueIdx},
-        updatables::UpdatableHandler,
+        updatables::{error::UpdatableHandlerError, UpdatableHandler},
         Fixture,
+    },
+    input::{
+        button::DemexInputButton, error::DemexInputDeviceError, fader::DemexInputFader,
+        DemexInputDeviceHandler,
     },
     ui::{constants::INFO_TEXT, window::edit::DemexEditWindow},
 };
@@ -145,6 +149,28 @@ pub enum Action {
     EditFader(u32),
     EditPreset(u32),
 
+    AssignExecutorToInput {
+        executor_id: u32,
+        device_idx: usize,
+        button_id: u32,
+    },
+    AssignFaderToInput {
+        fader_id: u32,
+        device_idx: usize,
+        input_fader_id: u32,
+    },
+    AssignSelectivePresetToInput {
+        preset_id: u32,
+        fixture_selector: FixtureSelector,
+        device_idx: usize,
+        button_id: u32,
+    },
+    AssignFixtureSelectorToInput {
+        fixture_selector: FixtureSelector,
+        device_idx: usize,
+        button_id: u32,
+    },
+
     FixtureSelector(FixtureSelector),
     ClearAll,
     Save,
@@ -166,6 +192,7 @@ impl Action {
         preset_handler: &mut PresetHandler,
         fixture_selector_context: FixtureSelectorContext,
         updatable_handler: &mut UpdatableHandler,
+        input_device_handler: &mut DemexInputDeviceHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
             Self::SetFeatureValue(fixture_selector, channel_type, value) => self
@@ -324,6 +351,52 @@ impl Action {
                 INFO_TEXT.to_owned(),
                 "https://matteolutz.de".to_owned(),
             )),
+
+            Self::AssignFaderToInput {
+                fader_id,
+                device_idx,
+                input_fader_id,
+            } => self.run_assign_fader_to_input(
+                updatable_handler,
+                input_device_handler,
+                fader_id,
+                device_idx,
+                input_fader_id,
+            ),
+            Self::AssignExecutorToInput {
+                executor_id,
+                device_idx,
+                button_id,
+            } => self.run_assign_executor_to_input(
+                updatable_handler,
+                input_device_handler,
+                executor_id,
+                device_idx,
+                button_id,
+            ),
+            Self::AssignSelectivePresetToInput {
+                preset_id,
+                fixture_selector,
+                device_idx,
+                button_id,
+            } => self.run_assign_selective_preset_to_input(
+                preset_handler,
+                input_device_handler,
+                preset_id,
+                fixture_selector,
+                device_idx,
+                button_id,
+            ),
+            Self::AssignFixtureSelectorToInput {
+                fixture_selector,
+                device_idx,
+                button_id,
+            } => self.run_assign_fixture_selector_to_input(
+                input_device_handler,
+                fixture_selector,
+                device_idx,
+                button_id,
+            ),
 
             unimplemented_action => Err(ActionRunError::UnimplementedAction(
                 unimplemented_action.clone(),
@@ -898,5 +971,128 @@ impl Action {
                 id_to - id_from + 1
             )))
         }
+    }
+
+    pub fn run_assign_fader_to_input(
+        &self,
+        updatable_handler: &UpdatableHandler,
+        input_device_handler: &mut DemexInputDeviceHandler,
+        fader_id: &u32,
+        device_idx: &usize,
+        input_fader_id: &u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let _ = updatable_handler
+            .fader(*fader_id)
+            .map_err(ActionRunError::UpdatableHandlerError)?;
+
+        let device = input_device_handler
+            .device_mut(*device_idx)
+            .map_err(ActionRunError::InputDeviceError)?;
+
+        if device.config.faders().get(input_fader_id).is_some() {
+            return Err(ActionRunError::InputDeviceError(
+                DemexInputDeviceError::FaderAlreadyAssigned(*input_fader_id),
+            ));
+        }
+
+        device
+            .config
+            .faders_mut()
+            .insert(*input_fader_id, DemexInputFader::new(*fader_id));
+
+        Ok(ActionRunResult::new())
+    }
+
+    pub fn run_assign_executor_to_input(
+        &self,
+        updatable_handler: &UpdatableHandler,
+        input_device_handler: &mut DemexInputDeviceHandler,
+        executor_id: &u32,
+        device_idx: &usize,
+        button_id: &u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let _ = updatable_handler.executor(*executor_id).ok_or(
+            ActionRunError::UpdatableHandlerError(UpdatableHandlerError::UpdatableNotFound(
+                *executor_id,
+            )),
+        )?;
+
+        let device = input_device_handler
+            .device_mut(*device_idx)
+            .map_err(ActionRunError::InputDeviceError)?;
+
+        if device.config.buttons().get(button_id).is_some() {
+            return Err(ActionRunError::InputDeviceError(
+                DemexInputDeviceError::ButtonAlreadyAssigned(*button_id),
+            ));
+        }
+
+        device.config.buttons_mut().insert(
+            *button_id,
+            DemexInputButton::ExecutorStartAndNext(*executor_id),
+        );
+
+        Ok(ActionRunResult::new())
+    }
+
+    pub fn run_assign_selective_preset_to_input(
+        &self,
+        preset_handler: &PresetHandler,
+        input_device_handler: &mut DemexInputDeviceHandler,
+        preset_id: &u32,
+        fixture_selector: &FixtureSelector,
+        device_idx: &usize,
+        button_id: &u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let _ = preset_handler
+            .get_preset(*preset_id)
+            .map_err(ActionRunError::PresetHandlerError)?;
+
+        let device = input_device_handler
+            .device_mut(*device_idx)
+            .map_err(ActionRunError::InputDeviceError)?;
+
+        if device.config.buttons().get(button_id).is_some() {
+            return Err(ActionRunError::InputDeviceError(
+                DemexInputDeviceError::ButtonAlreadyAssigned(*button_id),
+            ));
+        }
+
+        device.config.buttons_mut().insert(
+            *button_id,
+            DemexInputButton::SelectivePreset {
+                preset_id: *preset_id,
+                fixture_selector: fixture_selector.clone(),
+            },
+        );
+
+        Ok(ActionRunResult::new())
+    }
+
+    pub fn run_assign_fixture_selector_to_input(
+        &self,
+        input_device_handler: &mut DemexInputDeviceHandler,
+        fixture_selector: &FixtureSelector,
+        device_idx: &usize,
+        button_id: &u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let device = input_device_handler
+            .device_mut(*device_idx)
+            .map_err(ActionRunError::InputDeviceError)?;
+
+        if device.config.buttons().get(button_id).is_some() {
+            return Err(ActionRunError::InputDeviceError(
+                DemexInputDeviceError::ButtonAlreadyAssigned(*button_id),
+            ));
+        }
+
+        device.config.buttons_mut().insert(
+            *button_id,
+            DemexInputButton::FixtureSelector {
+                fixture_selector: fixture_selector.clone(),
+            },
+        );
+
+        Ok(ActionRunResult::new())
     }
 }

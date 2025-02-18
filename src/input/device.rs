@@ -35,8 +35,16 @@ impl DemexInputDeviceConfig {
         &self.buttons
     }
 
+    pub fn buttons_mut(&mut self) -> &mut HashMap<u32, DemexInputButton> {
+        &mut self.buttons
+    }
+
     pub fn faders(&self) -> &HashMap<u32, DemexInputFader> {
         &self.faders
+    }
+
+    pub fn faders_mut(&mut self) -> &mut HashMap<u32, DemexInputFader> {
+        &mut self.faders
     }
 
     pub fn profile_type(&self) -> DemexInputDeviceProfileType {

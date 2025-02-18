@@ -3,6 +3,7 @@ use crate::{
         error::FixtureError, handler::error::FixtureHandlerError,
         presets::error::PresetHandlerError, updatables::error::UpdatableHandlerError,
     },
+    input::error::DemexInputDeviceError,
     parser::nodes::fixture_selector::FixtureSelectorError,
 };
 
@@ -14,6 +15,7 @@ pub enum ActionRunError {
     FixtureError(FixtureError),
     PresetHandlerError(PresetHandlerError),
     UpdatableHandlerError(UpdatableHandlerError),
+    InputDeviceError(DemexInputDeviceError),
     FixtureSelectorError(FixtureSelectorError),
     ExecutorIsRunning(u32),
     FaderIsActive(u32),
@@ -31,6 +33,7 @@ impl std::fmt::Display for ActionRunError {
             ActionRunError::UpdatableHandlerError(e) => {
                 write!(f, "Updatable handler error: {}", e)
             }
+            ActionRunError::InputDeviceError(e) => write!(f, "Input device error: {}", e),
             ActionRunError::FixtureSelectorError(e) => write!(f, "Fixture selector error: {}", e),
             ActionRunError::UnimplementedAction(action) => {
                 write!(f, "Unimplemented action: {:?}", action)

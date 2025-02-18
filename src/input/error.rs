@@ -15,12 +15,16 @@ pub enum DemexInputDeviceError {
     FaderNotInProfile,
 
     InputDeviceNotFound(String),
+    InputDeviceIdxNotFound(usize),
     OperationNotSupported,
 
     FixtureHandlerError(FixtureHandlerError),
     PresetHandlerError(PresetHandlerError),
     UpdatableHandlerError(UpdatableHandlerError),
     FixtureSelectorError(FixtureSelectorError),
+
+    ButtonAlreadyAssigned(u32),
+    FaderAlreadyAssigned(u32),
 
     MpscSendError,
     MidirError(Box<dyn std::error::Error>),
@@ -42,12 +46,18 @@ impl std::fmt::Display for DemexInputDeviceError {
             Self::FaderNotInProfile => write!(f, "Fader not in profile"),
 
             Self::InputDeviceNotFound(name) => write!(f, "Input device \"{}\" not found", name),
+            Self::InputDeviceIdxNotFound(idx) => {
+                write!(f, "Input device with index {} not found", idx)
+            }
             Self::OperationNotSupported => write!(f, "Operation not supported"),
 
             Self::FixtureHandlerError(err) => write!(f, "Fixture handler error: {}", err),
             Self::PresetHandlerError(err) => write!(f, "Preset handler error: {}", err),
             Self::UpdatableHandlerError(err) => write!(f, "Updatable handler error: {}", err),
             Self::FixtureSelectorError(err) => write!(f, "Fixture selector error: {}", err),
+
+            Self::ButtonAlreadyAssigned(id) => write!(f, "Button with id {} already assigned", id),
+            Self::FaderAlreadyAssigned(id) => write!(f, "Fader with id {} already assigned", id),
 
             Self::MpscSendError => write!(f, "Mpsc send error"),
             Self::MidirError(err) => write!(f, "Midir error: {}", err),

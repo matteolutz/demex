@@ -102,7 +102,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 [(0, DemexInputFader::new(1))].into(),
                 DemexInputDeviceProfileType::ApcMiniMk2,
             )]*/
-            show.input_device_configs.clone(),
             show.input_device_configs
                 .into_iter()
                 .flat_map(|v| v.try_into())
