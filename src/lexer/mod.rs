@@ -119,6 +119,9 @@ impl<'a> Lexer<'a> {
                     "focus" => Some(Token::KeywordFocus),
                     "feature" => Some(Token::KeywordFeature),
                     "assign" => Some(Token::KeywordAssign),
+                    "go" => Some(Token::KeywordGo),
+                    "stop" => Some(Token::KeywordStop),
+                    "flash" => Some(Token::KeywordFlash),
                     _ => None,
                 };
 

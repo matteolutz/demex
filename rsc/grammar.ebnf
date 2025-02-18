@@ -18,7 +18,7 @@ function                    = fixture_selector set_function
                             | "test" string
                             | "assign" assign_command
 
-assign_function             = "executor" integer "to" float
+assign_function             = "executor" integer ("go" | "stop" | "flash") "to" float 
                             | "fader" integer "to" float
                             | "preset" integer "with" fixture_selector "to" float
                             | fixture_selector "to" float

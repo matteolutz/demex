@@ -40,6 +40,13 @@ pub enum ChannelTypeSelectorActionData {
     Features(Vec<FixtureFeatureType>),
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum ExecutorAssignmentModeActionData {
+    StartAndNext,
+    Stop,
+    Flash,
+}
+
 impl ChannelTypeSelectorActionData {
     pub fn get_channel_values(
         &self,
@@ -151,6 +158,7 @@ pub enum Action {
 
     AssignExecutorToInput {
         executor_id: u32,
+        mode: ExecutorAssignmentModeActionData,
         device_idx: usize,
         button_id: u32,
     },
@@ -365,12 +373,14 @@ impl Action {
             ),
             Self::AssignExecutorToInput {
                 executor_id,
+                mode,
                 device_idx,
                 button_id,
             } => self.run_assign_executor_to_input(
                 updatable_handler,
                 input_device_handler,
                 executor_id,
+                mode,
                 device_idx,
                 button_id,
             ),
@@ -1008,6 +1018,7 @@ impl Action {
         updatable_handler: &UpdatableHandler,
         input_device_handler: &mut DemexInputDeviceHandler,
         executor_id: &u32,
+        mode: &ExecutorAssignmentModeActionData,
         device_idx: &usize,
         button_id: &u32,
     ) -> Result<ActionRunResult, ActionRunError> {
@@ -1029,7 +1040,17 @@ impl Action {
 
         device.config.buttons_mut().insert(
             *button_id,
-            DemexInputButton::ExecutorStartAndNext(*executor_id),
+            match mode {
+                ExecutorAssignmentModeActionData::StartAndNext => {
+                    DemexInputButton::ExecutorStartAndNext(*executor_id)
+                }
+                ExecutorAssignmentModeActionData::Stop => {
+                    DemexInputButton::ExecutorStop(*executor_id)
+                }
+                ExecutorAssignmentModeActionData::Flash => {
+                    DemexInputButton::ExecutorFlash(*executor_id)
+                }
+            },
         );
 
         Ok(ActionRunResult::new())

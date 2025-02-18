@@ -1,5 +1,6 @@
 use nodes::action::{
-    ConfigTypeActionData, CueIdxSelectorActionData, FaderCreationConfigActionData,
+    ConfigTypeActionData, CueIdxSelectorActionData, ExecutorAssignmentModeActionData,
+    FaderCreationConfigActionData,
 };
 
 use crate::{
@@ -617,6 +618,29 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_executor_assignment_mode(
+        &mut self,
+    ) -> Result<ExecutorAssignmentModeActionData, ParseError> {
+        match self.current_token()? {
+            Token::KeywordGo => {
+                self.advance();
+                Ok(ExecutorAssignmentModeActionData::StartAndNext)
+            }
+            Token::KeywordStop => {
+                self.advance();
+                Ok(ExecutorAssignmentModeActionData::Stop)
+            }
+            Token::KeywordFlash => {
+                self.advance();
+                Ok(ExecutorAssignmentModeActionData::Flash)
+            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec!["\"go\"", "\"stop\"", "\"flash\""],
+            )),
+        }
+    }
+
     fn parse_record_function(&mut self) -> Result<Action, ParseError> {
         match self.current_token()? {
             Token::KeywordPreset => {
@@ -946,12 +970,15 @@ impl<'a> Parser2<'a> {
 
                 let executor_id = self.parse_integer()?;
 
+                let executor_assignment_mode = self.parse_executor_assignment_mode()?;
+
                 expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
                 let (device_idx, button_id) = self.parse_float_individual()?;
 
                 Ok(Action::AssignExecutorToInput {
                     executor_id,
+                    mode: executor_assignment_mode,
                     device_idx: device_idx as usize,
                     button_id,
                 })
