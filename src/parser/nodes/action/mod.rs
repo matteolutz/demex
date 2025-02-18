@@ -824,7 +824,7 @@ impl Action {
             .collect::<Vec<_>>();
         if !unknown_fixtures.is_empty() {
             return Err(ActionRunError::FixtureSelectorError(
-                FixtureSelectorError::SomeFixturesFailedToMatch(unknown_fixtures),
+                FixtureSelectorError::SomeFixturesFailedToMatch(unknown_fixtures.len()),
             ));
         }
 

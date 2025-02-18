@@ -20,7 +20,7 @@ pub enum FixtureSelectorError {
     PresetHandlerError(PresetHandlerError),
     FailedToFlatten(Box<FixtureSelectorError>),
     NoFixturesMatched,
-    SomeFixturesFailedToMatch(Vec<u32>),
+    SomeFixturesFailedToMatch(usize),
 }
 
 impl std::fmt::Display for FixtureSelectorError {
@@ -29,8 +29,8 @@ impl std::fmt::Display for FixtureSelectorError {
             Self::PresetHandlerError(e) => write!(f, "PresetHandlerError: {}", e),
             Self::FailedToFlatten(e) => write!(f, "Failed to flatten fixture selector: {}", e),
             Self::NoFixturesMatched => write!(f, "No fixtures matched the given selector"),
-            Self::SomeFixturesFailedToMatch(fixtures) => {
-                write!(f, "Some fixtures failed to match: {:?}", fixtures)
+            Self::SomeFixturesFailedToMatch(num_fixtures) => {
+                write!(f, "{} fixtures failed to match", num_fixtures)
             }
         }
     }

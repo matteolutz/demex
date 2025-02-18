@@ -1,5 +1,11 @@
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ApcMiniMk2ButtonLedMode {
+    Intens10,
+    Intens25,
+    Intens50,
+    Intens65,
+    Intens75,
+    Intens90,
     IntensFull,
     Pulsing1o16,
     Pulsing1o8,
@@ -15,6 +21,12 @@ pub enum ApcMiniMk2ButtonLedMode {
 impl ApcMiniMk2ButtonLedMode {
     pub fn value(&self) -> u8 {
         match self {
+            Self::Intens10 => 0x0,
+            Self::Intens25 => 0x1,
+            Self::Intens50 => 0x2,
+            Self::Intens65 => 0x3,
+            Self::Intens75 => 0x4,
+            Self::Intens90 => 0x5,
             Self::IntensFull => 0x6,
             Self::Pulsing1o16 => 0x7,
             Self::Pulsing1o8 => 0x8,
@@ -29,10 +41,16 @@ impl ApcMiniMk2ButtonLedMode {
     }
 
     pub fn is_static(&self) -> bool {
-        match self {
-            Self::IntensFull => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            Self::Intens10
+                | Self::Intens25
+                | Self::Intens50
+                | Self::Intens65
+                | Self::Intens75
+                | Self::Intens90
+                | Self::IntensFull
+        )
     }
 }
 

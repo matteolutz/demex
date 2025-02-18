@@ -68,7 +68,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         updatable_handler.clone(),
         stats.clone(),
         |show: DemexShow| {
-            serde_json::to_writer(std::fs::File::create("test_data/show.json").unwrap(), &show)?;
+            serde_json::to_writer(
+                std::fs::File::create("test_data/cinema.json").unwrap(),
+                &show,
+            )?;
             Ok(())
         },
         TEST_UI_FPS,
