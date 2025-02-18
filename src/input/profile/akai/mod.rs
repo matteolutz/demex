@@ -1,5 +1,7 @@
 use std::sync::mpsc;
 
+use led::{ApcMiniMk2ButtonLedColor, ApcMiniMk2ButtonLedMode};
+
 use crate::{
     fixture::updatables::error::UpdatableHandlerError,
     input::{
@@ -10,6 +12,8 @@ use crate::{
 };
 
 use super::DemexInputDeviceProfileType;
+
+mod led;
 
 // **Ressources**
 // https://cdn.inmusicbrands.com/akai/attachments/APC%20mini%20mk2%20-%20Communication%20Protocol%20-%20v1.0.pdf
@@ -102,17 +106,12 @@ impl ApcMiniMk2InputDeviceProfile {
             ])
             .unwrap();
 
-        for i in 0..=63 {
-            self.midi_out
-                .send(
-                    &MidiMessage::NoteOn {
-                        channel: 6,
-                        note_number: i,
-                        key_velocity: 0,
-                    }
-                    .to_bytes(),
-                )
-                .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
+        for i in (0..=63).chain(100..=107).chain(200..=207).chain(300..=300) {
+            self.set_button_led(
+                i,
+                ApcMiniMk2ButtonLedMode::IntensFull,
+                ApcMiniMk2ButtonLedColor::Off,
+            )?;
         }
 
         Ok(())
@@ -148,6 +147,62 @@ impl ApcMiniMk2InputDeviceProfile {
             _ => None,
         }
     }
+
+    pub fn off_button_led(&mut self, button_id: u32) -> Result<(), DemexInputDeviceError> {
+        self.set_button_led(
+            button_id,
+            ApcMiniMk2ButtonLedMode::IntensFull,
+            ApcMiniMk2ButtonLedColor::Off,
+        )
+    }
+
+    pub fn set_button_led(
+        &mut self,
+        button_id: u32,
+        mode: ApcMiniMk2ButtonLedMode,
+        color: ApcMiniMk2ButtonLedColor,
+    ) -> Result<(), DemexInputDeviceError> {
+        let note_number = self
+            .get_button_note_number(button_id)
+            .ok_or(DemexInputDeviceError::ButtonNotFound(button_id))?;
+
+        match button_id {
+            // RGB buttons
+            0..=63 => {
+                self.midi_out
+                    .send(
+                        &MidiMessage::NoteOn {
+                            channel: mode.value(),
+                            note_number,
+                            key_velocity: color.value(),
+                        }
+                        .to_bytes(),
+                    )
+                    .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
+            }
+            // static buttons
+            _ => {
+                self.midi_out
+                    .send(
+                        &MidiMessage::NoteOn {
+                            channel: 0,
+                            note_number,
+                            key_velocity: if color == ApcMiniMk2ButtonLedColor::Off {
+                                0
+                            } else if mode.is_static() {
+                                1
+                            } else {
+                                2
+                            },
+                        }
+                        .to_bytes(),
+                    )
+                    .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
@@ -167,22 +222,15 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         ))?
                         .is_started();
 
-                    self.midi_out
-                        .send(
-                            &MidiMessage::NoteOn {
-                                channel: if !is_started {
-                                    6 // 100% brightness
-                                } else {
-                                    0xd // blinking 1/8
-                                },
-                                note_number: self
-                                    .get_button_note_number(*button_id)
-                                    .ok_or(DemexInputDeviceError::ButtonNotFound(*button_id))?,
-                                key_velocity: 21, // green,
-                            }
-                            .to_bytes(),
-                        )
-                        .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
+                    self.set_button_led(
+                        *button_id,
+                        if !is_started {
+                            ApcMiniMk2ButtonLedMode::IntensFull
+                        } else {
+                            ApcMiniMk2ButtonLedMode::Blinking1o8
+                        },
+                        ApcMiniMk2ButtonLedColor::Green,
+                    )?;
                 }
                 DemexInputButton::ExecutorStop(id) => {
                     let is_started = updatable_handler
@@ -192,22 +240,15 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         ))?
                         .is_started();
 
-                    self.midi_out
-                        .send(
-                            &MidiMessage::NoteOn {
-                                channel: if !is_started {
-                                    6 // 100% brightness
-                                } else {
-                                    10 // pulsing 1/2
-                                },
-                                note_number: self
-                                    .get_button_note_number(*button_id)
-                                    .ok_or(DemexInputDeviceError::ButtonNotFound(*button_id))?,
-                                key_velocity: 5, // red,
-                            }
-                            .to_bytes(),
-                        )
-                        .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
+                    self.set_button_led(
+                        *button_id,
+                        if !is_started {
+                            ApcMiniMk2ButtonLedMode::IntensFull
+                        } else {
+                            ApcMiniMk2ButtonLedMode::Pulsing1o2
+                        },
+                        ApcMiniMk2ButtonLedColor::Red,
+                    )?;
                 }
                 DemexInputButton::ExecutorFlash(id) => {
                     let is_started = updatable_handler
@@ -217,72 +258,47 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         ))?
                         .is_started();
 
-                    self.midi_out
-                        .send(
-                            &MidiMessage::NoteOn {
-                                channel: if !is_started {
-                                    6 // 100% brightness
-                                } else {
-                                    0xd // blinking 1/8
-                                },
-                                note_number: self
-                                    .get_button_note_number(*button_id)
-                                    .ok_or(DemexInputDeviceError::ButtonNotFound(*button_id))?,
-                                key_velocity: 3, // white,
-                            }
-                            .to_bytes(),
-                        )
-                        .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
+                    self.set_button_led(
+                        *button_id,
+                        if !is_started {
+                            ApcMiniMk2ButtonLedMode::IntensFull
+                        } else {
+                            ApcMiniMk2ButtonLedMode::Blinking1o8
+                        },
+                        ApcMiniMk2ButtonLedColor::White,
+                    )?;
                 }
                 DemexInputButton::SelectivePreset { .. } => {
-                    self.midi_out
-                        .send(
-                            &MidiMessage::NoteOn {
-                                channel: 6, // 100% white
-                                note_number: self
-                                    .get_button_note_number(*button_id)
-                                    .ok_or(DemexInputDeviceError::ButtonNotFound(*button_id))?,
-                                key_velocity: 9, // orange,
-                            }
-                            .to_bytes(),
-                        )
-                        .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
+                    self.set_button_led(
+                        *button_id,
+                        ApcMiniMk2ButtonLedMode::IntensFull,
+                        ApcMiniMk2ButtonLedColor::Orange,
+                    )?;
                 }
                 DemexInputButton::Macro { .. } => {
-                    self.midi_out
-                        .send(
-                            &MidiMessage::NoteOn {
-                                channel: 0, // turn on
-                                note_number: self
-                                    .get_button_note_number(*button_id)
-                                    .ok_or(DemexInputDeviceError::ButtonNotFound(*button_id))?,
-                                key_velocity: 1, // on
-                            }
-                            .to_bytes(),
-                        )
-                        .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
+                    self.set_button_led(
+                        *button_id,
+                        ApcMiniMk2ButtonLedMode::IntensFull,
+                        ApcMiniMk2ButtonLedColor::Blue,
+                    )?;
                 }
                 DemexInputButton::FixtureSelector { fixture_selector } => {
-                    self.midi_out
-                        .send(
-                            &MidiMessage::NoteOn {
-                                channel: if global_fixture_selector.as_ref().is_some_and(
-                                    |global_fixtuer_selector| {
-                                        global_fixtuer_selector == fixture_selector
-                                    },
-                                ) {
-                                    10 // pulsing 1/2
-                                } else {
-                                    6 // 100%
-                                },
-                                note_number: self
-                                    .get_button_note_number(*button_id)
-                                    .ok_or(DemexInputDeviceError::ButtonNotFound(*button_id))?,
-                                key_velocity: 106, // orange,
-                            }
-                            .to_bytes(),
-                        )
-                        .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
+                    let is_selected =
+                        global_fixture_selector
+                            .as_ref()
+                            .is_some_and(|global_fixtuer_selector| {
+                                global_fixtuer_selector == fixture_selector
+                            });
+
+                    self.set_button_led(
+                        *button_id,
+                        if !is_selected {
+                            ApcMiniMk2ButtonLedMode::IntensFull
+                        } else {
+                            ApcMiniMk2ButtonLedMode::Pulsing1o2
+                        },
+                        ApcMiniMk2ButtonLedColor::Pink,
+                    )?;
                 }
                 _ => {}
             }
