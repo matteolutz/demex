@@ -308,15 +308,16 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 }
 
                 if preset_button.secondary_clicked() {
-                    updatable_handler
-                        .stop_executor(*preset_id, &mut fixture_handler)
-                        .unwrap();
-                }
-
-                if preset_button.long_touched() {
-                    context
-                        .command
-                        .extend_from_slice(&[Token::KeywordExecutor, Token::Integer(*preset_id)])
+                    if updatable_handler.executor(*preset_id).unwrap().is_started() {
+                        updatable_handler
+                            .stop_executor(*preset_id, &mut fixture_handler)
+                            .unwrap();
+                    } else {
+                        context.command.extend_from_slice(&[
+                            Token::KeywordExecutor,
+                            Token::Integer(*preset_id),
+                        ])
+                    }
                 }
             }
 

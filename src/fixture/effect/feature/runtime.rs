@@ -11,6 +11,7 @@ use crate::fixture::{
     },
     effect::error::EffectError,
     sequence::FadeFixtureChannelValue,
+    updatables::runtime::RuntimePhase,
     value_source::FixtureChannelValuePriority,
 };
 
@@ -21,7 +22,7 @@ pub struct FeatureEffectRuntime {
     effect: FeatureEffect,
 
     #[serde(default)]
-    offset: f64,
+    phase: RuntimePhase,
 
     #[serde(default, skip_serializing, skip_deserializing)]
     #[egui_probe(skip)]
@@ -49,7 +50,7 @@ impl FeatureEffectRuntime {
         &self,
         find_channel_type: FixtureChannelType,
         fixture_feature_configs: &[FixtureFeatureConfig],
-        feature_offset_idx: usize,
+        fixture_offset: f32,
         priority: FixtureChannelValuePriority,
     ) -> Option<FadeFixtureChannelValue> {
         let channel_types = self
@@ -67,7 +68,7 @@ impl FeatureEffectRuntime {
             .map(|channel_type| (channel_type, FixtureChannelValue2::Home))
             .collect::<Vec<_>>();
 
-        let feature_value = self.get_feature_value(feature_offset_idx).ok()?;
+        let feature_value = self.get_feature_value(fixture_offset).ok()?;
         feature_value
             .write_back(fixture_feature_configs, &mut channel_values)
             .map_err(EffectError::FixtureChannelError)
@@ -81,15 +82,15 @@ impl FeatureEffectRuntime {
 
     pub fn get_feature_value(
         &self,
-        fixture_offset_idx: usize,
+        fixture_offset: f32,
     ) -> Result<FixtureFeatureValue, EffectError> {
         self.effect_started
             .ok_or(EffectError::EffectNotStarted)
             .and_then(|effect_started| {
-                self.effect.get_feature_value(
-                    effect_started.elapsed().as_secs_f64()
-                        + (fixture_offset_idx as f64 * self.offset),
-                )
+                let phase_offset = self.phase.phase(fixture_offset);
+
+                self.effect
+                    .get_feature_value(effect_started.elapsed().as_secs_f64(), phase_offset)
             })
     }
 }

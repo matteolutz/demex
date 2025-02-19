@@ -16,6 +16,10 @@ pub mod runtime;
 
 #[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
 pub enum FeatureEffect {
+    IntensitySine {
+        speed: f32,
+    },
+
     PositionPanTiltFigureEight {
         pan_size: f32,
         tilt_size: f32,
@@ -65,11 +69,24 @@ impl FeatureEffect {
             | Self::PositionPanTiltEllipse { .. }
             | Self::PositionPanTiltRect { .. } => FixtureFeatureType::PositionPanTilt,
             Self::ColorRGBHueRotate { .. } => FixtureFeatureType::ColorRGB,
+            Self::IntensitySine { .. } => FixtureFeatureType::Intensity,
         }
     }
 
-    pub fn get_feature_value(&self, t: f64) -> Result<FixtureFeatureValue, EffectError> {
+    pub fn get_feature_value(
+        &self,
+        t: f64,
+        phase_offset: f32,
+    ) -> Result<FixtureFeatureValue, EffectError> {
         match self {
+            Self::IntensitySine { speed } => {
+                let intensity = f32::sin(
+                    t as f32 * speed + (3.0 * f32::consts::FRAC_PI_2) - phase_offset.to_radians(),
+                ) * 0.5
+                    + 0.5;
+
+                Ok(FixtureFeatureValue::Intensity { intensity })
+            }
             Self::PositionPanTiltRect { .. } => Err(EffectError::EffectNotStarted),
             Self::PositionPanTiltFigureEight {
                 pan_size,
@@ -79,8 +96,12 @@ impl FeatureEffect {
                 speed,
             } => {
                 // TODO: should we multiply pan or tilt?
-                let pan = (f32::sin(t as f32 * speed * 2.0)) * (pan_size / 2.0) + pan_center;
-                let tilt = (f32::sin(t as f32 * speed)) * (tilt_size / 2.0) + tilt_center;
+                let pan = (f32::sin(t as f32 * speed * 2.0 - phase_offset.to_radians()))
+                    * (pan_size / 2.0)
+                    + pan_center;
+                let tilt = (f32::sin(t as f32 * speed - phase_offset.to_radians()))
+                    * (tilt_size / 2.0)
+                    + tilt_center;
 
                 Ok(FixtureFeatureValue::PositionPanTilt {
                     pan,
@@ -95,8 +116,12 @@ impl FeatureEffect {
                 tilt_center,
                 speed,
             } => {
-                let pan = (f32::sin(t as f32 * speed)) * (pan_size / 2.0) + pan_center;
-                let tilt = (f32::sin(t as f32 * speed)) * (tilt_size / 2.0) + tilt_center;
+                let pan = (f32::sin(t as f32 * speed - phase_offset.to_radians()))
+                    * (pan_size / 2.0)
+                    + pan_center;
+                let tilt = (f32::sin(t as f32 * speed - phase_offset.to_radians()))
+                    * (tilt_size / 2.0)
+                    + tilt_center;
 
                 Ok(FixtureFeatureValue::PositionPanTilt {
                     pan: pan.clamp(0.0, 1.0),
@@ -110,7 +135,9 @@ impl FeatureEffect {
                 hue_center,
                 speed,
             } => {
-                let hue = (f32::sin(t as f32 * speed)) * (hue_size / 2.0) + hue_center;
+                let hue = (f32::sin(t as f32 * speed - phase_offset.to_radians()))
+                    * (hue_size / 2.0)
+                    + hue_center;
                 let [r, g, b] = hsl_to_rgb([hue, 1.0, 0.5]);
 
                 Ok(FixtureFeatureValue::ColorRGB { r, g, b })
@@ -127,6 +154,7 @@ impl std::fmt::Display for FeatureEffect {
             Self::PositionPanTiltRect { .. } => write!(f, "Rect"),
 
             Self::ColorRGBHueRotate { .. } => write!(f, "HueRotate"),
+            Self::IntensitySine { .. } => write!(f, "IntensitySine"),
         }
     }
 }

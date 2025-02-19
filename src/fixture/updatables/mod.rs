@@ -21,6 +21,7 @@ use super::{
 pub mod error;
 pub mod executor;
 pub mod fader;
+pub mod runtime;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct UpdatableHandler {

@@ -127,7 +127,7 @@ impl Executor {
                     runtime.get_channel_value(
                         channel_type,
                         fixture_feature_configs,
-                        selection.offset_idx(fixture_id)?,
+                        selection.offset(fixture_id)?,
                         self.priority,
                     )
                 }
