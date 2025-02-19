@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
     channel2::{channel_type::FixtureChannelType, feature::feature_config::FixtureFeatureConfig},
+    effect::feature::runtime::FeatureEffectRuntime,
     handler::FixtureHandler,
     presets::PresetHandler,
     sequence::{runtime::SequenceRuntime, FadeFixtureChannelValue},
@@ -27,7 +28,7 @@ pub struct Executor {
 }
 
 impl Executor {
-    pub fn new(
+    pub fn new_sequence(
         id: u32,
         sequence_id: u32,
         fixtures: Vec<u32>,
@@ -38,6 +39,18 @@ impl Executor {
             config: ExecutorConfig::Sequence {
                 runtime: SequenceRuntime::new(sequence_id),
                 fixtures,
+            },
+            priority,
+            stop_others: false,
+        }
+    }
+
+    pub fn new_effect(id: u32, fixtures: Vec<u32>, priority: FixtureChannelValuePriority) -> Self {
+        Self {
+            id,
+            config: ExecutorConfig::FeatureEffect {
+                runtime: FeatureEffectRuntime::default(),
+                selection: fixtures.into(),
             },
             priority,
             stop_others: false,

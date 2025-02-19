@@ -15,8 +15,9 @@ use egui::{Style, Visuals};
 use fixture::handler::FixtureHandler;
 use input::DemexInputDeviceHandler;
 use parking_lot::RwLock;
+use rfd::FileDialog;
 use show::DemexShow;
-use ui::{utils::icon::load_icon, DemexUiApp};
+use ui::{error::DemexUiError, utils::icon::load_icon, DemexUiApp};
 use utils::{
     deadlock::start_deadlock_checking_thread,
     thread::{demex_update_thread, DemexThreadStatsHandler},
@@ -48,6 +49,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         start_deadlock_checking_thread();
     }
 
+    let show_file = args.show.clone();
+
     let show: DemexShow = args
         .show
         .map(|show_path| serde_json::from_reader(std::fs::File::open(show_path).unwrap()).unwrap())
@@ -67,44 +70,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         preset_handler.clone(),
         updatable_handler.clone(),
         stats.clone(),
-        |show: DemexShow| {
-            serde_json::to_writer(
-                std::fs::File::create("test_data/cinema.json").unwrap(),
-                &show,
-            )?;
-            Ok(())
+        show_file,
+        |show: DemexShow, show_file: Option<&PathBuf>| {
+            let save_file = if let Some(show_file) = show_file {
+                show_file.clone()
+            } else if let Some(save_file) = FileDialog::new()
+                .add_filter("demex Show-File", &["json"])
+                .save_file()
+            {
+                save_file
+            } else {
+                return Err(DemexUiError::RuntimeError("No save file selected".to_owned()).into());
+            };
+
+            serde_json::to_writer(std::fs::File::create(&save_file).unwrap(), &show)?;
+
+            Ok(save_file)
         },
         TEST_UI_FPS,
         icon.clone(),
         DemexInputDeviceHandler::new(
-            /*[DemexInputDeviceConfig::new(
-                [
-                    (63, DemexInputButton::ExecutorFlash(2)),
-                    (56, DemexInputButton::ExecutorStartAndNext(1)),
-                    (48, DemexInputButton::ExecutorStop(1)),
-                    (
-                        32,
-                        DemexInputButton::SelectivePreset {
-                            fixture_selector: FixtureSelector::Atomic(
-                                AtomicFixtureSelector::FixtureGroup(6),
-                            ),
-                            preset_id: 6,
-                        },
-                    ),
-                    (
-                        33,
-                        DemexInputButton::SelectivePreset {
-                            fixture_selector: FixtureSelector::Atomic(
-                                AtomicFixtureSelector::FixtureGroup(6),
-                            ),
-                            preset_id: 7,
-                        },
-                    ),
-                ]
-                .into(),
-                [(0, DemexInputFader::new(1))].into(),
-                DemexInputDeviceProfileType::ApcMiniMk2,
-            )]*/
             show.input_device_configs
                 .into_iter()
                 .flat_map(|v| v.try_into())

@@ -1,8 +1,8 @@
-use std::{collections::HashSet, sync::Arc, thread, time};
+use std::{collections::HashSet, path::PathBuf, sync::Arc, thread, time};
 
 use command::ui_command_input;
 use constants::VERSION_STR;
-use context::DemexUiContext;
+use context::{DemexUiContext, SaveShowFn};
 use egui::IconData;
 use log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use parking_lot::RwLock;
@@ -21,7 +21,6 @@ use crate::{
         nodes::{action::Action, fixture_selector::FixtureSelectorContext},
         Parser2,
     },
-    show::DemexShow,
     utils::thread::DemexThreadStatsHandler,
 };
 
@@ -59,7 +58,8 @@ impl DemexUiApp {
         preset_handler: Arc<RwLock<PresetHandler>>,
         updatable_handler: Arc<RwLock<UpdatableHandler>>,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
-        save_show: fn(DemexShow) -> Result<(), Box<dyn std::error::Error>>,
+        show_file: Option<PathBuf>,
+        save_show: SaveShowFn,
         desired_fps: f64,
         icon: Arc<IconData>,
         input_device_handler: DemexInputDeviceHandler,
@@ -81,7 +81,10 @@ impl DemexUiApp {
                 command: Vec::new(),
                 layout_view_context: LayoutViewContext::default(),
                 macro_execution_queue: Vec::new(),
+
+                show_file,
                 save_show,
+
                 logs: Vec::new(),
                 windows: Vec::new(),
 
@@ -223,6 +226,14 @@ impl eframe::App for DemexUiApp {
                 {
                     self.context.windows.push(DemexWindow::AboutDemex);
                 }
+
+                ui.separator();
+
+                ui.label(if let Some(show_file) = self.context.show_file.as_ref() {
+                    show_file.display().to_string()
+                } else {
+                    "Show not saved".to_string()
+                });
             });
         });
 

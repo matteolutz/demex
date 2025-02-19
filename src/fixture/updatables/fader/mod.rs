@@ -16,7 +16,7 @@ use crate::{
     utils::math::f32_to_coarse_fine,
 };
 
-use super::PresetHandler;
+use super::{error::UpdatableHandlerError, PresetHandler};
 
 #[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
 pub struct DemexFader {
@@ -75,6 +75,23 @@ impl DemexFader {
 
     pub fn value(&self) -> f32 {
         self.value
+    }
+
+    pub fn sequence_go(
+        &mut self,
+        preset_handler: &PresetHandler,
+    ) -> Result<(), UpdatableHandlerError> {
+        let is_active = self.is_active();
+        match &mut self.config {
+            DemexFaderConfig::SequenceRuntime { runtime, .. } => {
+                if is_active {
+                    runtime.next_cue(preset_handler);
+                }
+
+                Ok(())
+            }
+            _ => Err(UpdatableHandlerError::FaderIsNotASequence(self.id)),
+        }
     }
 
     pub fn set_value(&mut self, value: f32, fixture_handler: &mut FixtureHandler) {

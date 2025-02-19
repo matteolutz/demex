@@ -75,6 +75,7 @@ pub enum Token {
     KeywordGo,
     KeywordStop,
     KeywordFlash,
+    KeywordEffect,
 
     KeywordNuzul,
     KeywordSueud,
@@ -135,6 +136,7 @@ impl Token {
             Token::KeywordExecutor => TokenType::ObjectKeyword,
             Token::KeywordCue => TokenType::ObjectKeyword,
             Token::KeywordFeature => TokenType::ObjectKeyword,
+            Token::KeywordEffect => TokenType::ObjectKeyword,
 
             Token::KeywordThru => TokenType::OtherKeyword,
             Token::KeywordFor => TokenType::OtherKeyword,
@@ -224,6 +226,7 @@ impl std::fmt::Display for Token {
             Token::KeywordGo => write!(f, "go"),
             Token::KeywordStop => write!(f, "stop"),
             Token::KeywordFlash => write!(f, "flash"),
+            Token::KeywordEffect => write!(f, "effect"),
             Token::Eof => write!(f, "Eof"),
         }
     }

@@ -1,6 +1,6 @@
 use nodes::action::{
     ConfigTypeActionData, CueIdxSelectorActionData, ExecutorAssignmentModeActionData,
-    FaderCreationConfigActionData,
+    ExecutorCreationModeActionData, FaderCreationConfigActionData,
 };
 
 use crate::{
@@ -800,19 +800,31 @@ impl<'a> Parser2<'a> {
                 let executor_id = self.parse_integer_or_next()?;
 
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
-                expect_and_consume_token!(self, Token::KeywordSequence, "\"sequence\"");
 
-                let sequence_id = self.parse_integer()?;
+                let mode = match self.current_token()? {
+                    Token::KeywordSequence => {
+                        self.advance();
+
+                        let sequence_id = self.parse_integer()?;
+
+                        Ok(ExecutorCreationModeActionData::Sequence(sequence_id))
+                    }
+                    Token::KeywordEffect => {
+                        self.advance();
+
+                        Ok(ExecutorCreationModeActionData::Effect)
+                    }
+                    unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                        unexpected_token.clone(),
+                        vec!["\"sequence\"", "\"effect\""],
+                    )),
+                }?;
 
                 expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
 
                 let fixture_selector = self.parse_fixture_selector()?;
 
-                Ok(Action::CreateExecutor(
-                    executor_id,
-                    sequence_id,
-                    fixture_selector,
-                ))
+                Ok(Action::CreateExecutor(executor_id, mode, fixture_selector))
             }
             Token::KeywordMacro => {
                 self.advance();
@@ -988,15 +1000,31 @@ impl<'a> Parser2<'a> {
 
                 let fader_id = self.parse_integer()?;
 
+                let mut is_go_assign = false;
+                if matches!(self.current_token()?, Token::KeywordGo) {
+                    self.advance();
+                    is_go_assign = true;
+                }
+
                 expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
                 let (device_idx, input_fader_id) = self.parse_float_individual()?;
 
-                Ok(Action::AssignFaderToInput {
-                    fader_id,
-                    device_idx: device_idx as usize,
-                    input_fader_id,
-                })
+                if is_go_assign {
+                    let button_id = input_fader_id;
+
+                    Ok(Action::AssignFaderGoToInput {
+                        fader_id,
+                        device_idx: device_idx as usize,
+                        button_id,
+                    })
+                } else {
+                    Ok(Action::AssignFaderToInput {
+                        fader_id,
+                        device_idx: device_idx as usize,
+                        input_fader_id,
+                    })
+                }
             }
             Token::KeywordPreset => {
                 self.advance();

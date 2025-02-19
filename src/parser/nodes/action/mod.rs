@@ -7,7 +7,9 @@ use crate::{
         handler::FixtureHandler,
         presets::PresetHandler,
         sequence::cue::{CueFixtureChannelValue, CueIdx},
-        updatables::{error::UpdatableHandlerError, UpdatableHandler},
+        updatables::{
+            error::UpdatableHandlerError, fader::config::DemexFaderConfig, UpdatableHandler,
+        },
         Fixture,
     },
     input::{
@@ -108,6 +110,12 @@ pub enum FaderCreationConfigActionData {
     Sequence(u32, FixtureSelector),
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum ExecutorCreationModeActionData {
+    Sequence(u32),
+    Effect,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum Action {
     SetFeatureValue(
@@ -137,7 +145,7 @@ pub enum Action {
     RecordMacro(Box<Action>, u32),
 
     CreateSequence(Option<u32>, Option<String>),
-    CreateExecutor(Option<u32>, u32, FixtureSelector),
+    CreateExecutor(Option<u32>, ExecutorCreationModeActionData, FixtureSelector),
     CreateMacro(Option<u32>, Box<Action>, Option<String>),
     CreateFader(Option<u32>, FaderCreationConfigActionData, Option<String>),
 
@@ -166,6 +174,11 @@ pub enum Action {
         fader_id: u32,
         device_idx: usize,
         input_fader_id: u32,
+    },
+    AssignFaderGoToInput {
+        fader_id: u32,
+        device_idx: usize,
+        button_id: u32,
     },
     AssignSelectivePresetToInput {
         preset_id: u32,
@@ -280,11 +293,11 @@ impl Action {
             }
 
             Self::CreateSequence(id, name) => self.run_create_sequence(preset_handler, *id, name),
-            Self::CreateExecutor(id, sequence_id, fixture_selector) => self.run_create_executor(
+            Self::CreateExecutor(id, mode, fixture_selector) => self.run_create_executor(
                 updatable_handler,
                 preset_handler,
                 *id,
-                *sequence_id,
+                mode,
                 fixture_selector,
                 fixture_selector_context,
             ),
@@ -370,6 +383,17 @@ impl Action {
                 fader_id,
                 device_idx,
                 input_fader_id,
+            ),
+            Self::AssignFaderGoToInput {
+                fader_id,
+                device_idx,
+                button_id,
+            } => self.run_assign_fader_go_to_input(
+                updatable_handler,
+                input_device_handler,
+                fader_id,
+                device_idx,
+                button_id,
             ),
             Self::AssignExecutorToInput {
                 executor_id,
@@ -708,7 +732,7 @@ impl Action {
         updatable_handler: &mut UpdatableHandler,
         preset_handler: &PresetHandler,
         id: Option<u32>,
-        sequence_id: u32,
+        mode: &ExecutorCreationModeActionData,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
     ) -> Result<ActionRunResult, ActionRunError> {
@@ -719,7 +743,7 @@ impl Action {
         updatable_handler
             .create_executor(
                 id.unwrap_or_else(|| updatable_handler.next_executor_id()),
-                sequence_id,
+                mode,
                 fixtures_selected,
             )
             .map_err(ActionRunError::UpdatableHandlerError)?;
@@ -1009,6 +1033,45 @@ impl Action {
             .config
             .faders_mut()
             .insert(*input_fader_id, DemexInputFader::new(*fader_id));
+
+        Ok(ActionRunResult::new())
+    }
+
+    pub fn run_assign_fader_go_to_input(
+        &self,
+        updatable_handler: &UpdatableHandler,
+        input_device_handler: &mut DemexInputDeviceHandler,
+        fader_id: &u32,
+        device_idx: &usize,
+        button_id: &u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let fader = updatable_handler
+            .fader(*fader_id)
+            .map_err(ActionRunError::UpdatableHandlerError)?;
+
+        match fader.config() {
+            DemexFaderConfig::SequenceRuntime { .. } => {}
+            _ => {
+                return Err(ActionRunError::UpdatableHandlerError(
+                    UpdatableHandlerError::FaderIsNotASequence(*fader_id),
+                ))
+            }
+        }
+
+        let device = input_device_handler
+            .device_mut(*device_idx)
+            .map_err(ActionRunError::InputDeviceError)?;
+
+        if device.config.buttons().get(button_id).is_some() {
+            return Err(ActionRunError::InputDeviceError(
+                DemexInputDeviceError::FaderAlreadyAssigned(*button_id),
+            ));
+        }
+
+        device
+            .config
+            .buttons_mut()
+            .insert(*button_id, DemexInputButton::FaderGo(*fader_id));
 
         Ok(ActionRunResult::new())
     }

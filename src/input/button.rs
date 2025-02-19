@@ -21,6 +21,8 @@ pub enum DemexInputButton {
     ExecutorStop(u32),
     ExecutorFlash(u32),
 
+    FaderGo(u32),
+
     SelectivePreset {
         #[egui_probe(skip)]
         fixture_selector: FixtureSelector,
@@ -60,6 +62,10 @@ impl DemexInputButton {
                 .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
             Self::ExecutorStop(executor_id) => updatable_handler
                 .stop_executor(*executor_id, fixture_handler)
+                .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
+            Self::FaderGo(fader_id) => updatable_handler
+                .fader_mut(*fader_id)
+                .and_then(|f| f.sequence_go(preset_handler))
                 .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
             Self::SelectivePreset {
                 fixture_selector,
