@@ -9,7 +9,7 @@ use crate::{
             channel_type::FixtureChannelType, channel_value::FixtureChannelValue2,
             error::FixtureChannelError2,
         },
-        presets::PresetHandler,
+        presets::{preset::FixturePresetId, PresetHandler},
     },
     utils::math::{coarse_fine_to_f32, coarse_to_f32},
 };
@@ -257,11 +257,11 @@ impl FixtureFeatureType {
         &self,
         feature_configs: &[FixtureFeatureConfig],
         channels: &impl Fn(FixtureChannelType) -> Option<FixtureChannelValue2>,
-    ) -> Result<Option<u32>, FixtureChannelError2> {
+    ) -> Result<Option<FixturePresetId>, FixtureChannelError2> {
         let config = self.find_feature_config(feature_configs)?;
         let channel_types = self._get_channel_types(config)?;
 
-        let mut preset_id: Option<u32> = None;
+        let mut preset_id: Option<FixturePresetId> = None;
         for channel_type in channel_types {
             if let FixtureChannelValue2::Preset(new_preset_id) =
                 channels(channel_type).ok_or(FixtureChannelError2::ChannelNotFound(channel_type))?

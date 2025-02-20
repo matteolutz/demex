@@ -9,6 +9,7 @@ pub enum UpdatableHandlerError {
     UpdatableNotFound(u32),
     PresetHandlerError(PresetHandlerError),
     FixtureSelectorError(FixtureSelectorError),
+    FaderIsNotASequence(u32),
 }
 
 impl std::fmt::Display for UpdatableHandlerError {
@@ -25,6 +26,9 @@ impl std::fmt::Display for UpdatableHandlerError {
             }
             UpdatableHandlerError::PresetHandlerError(err) => {
                 write!(f, "Preset handler error: {}", err)
+            }
+            UpdatableHandlerError::FaderIsNotASequence(id) => {
+                write!(f, "Fader with id {} is not a sequence", id)
             }
         }
     }

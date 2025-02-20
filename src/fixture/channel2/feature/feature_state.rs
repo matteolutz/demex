@@ -1,11 +1,11 @@
-use crate::fixture::presets::PresetHandler;
+use crate::fixture::presets::{preset::FixturePresetId, PresetHandler};
 
 use super::feature_value::FixtureFeatureValue;
 
 #[derive(Debug)]
 pub enum FixtureFeatureDisplayState {
     Home,
-    Preset(u32),
+    Preset(FixturePresetId),
     DiscreteSingleValue(f32),
     FixtureFeatureValue(FixtureFeatureValue),
 }

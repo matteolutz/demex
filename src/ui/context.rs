@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use parking_lot::RwLock;
 
@@ -27,6 +27,9 @@ use super::{
     window::DemexWindow,
 };
 
+pub type SaveShowFn =
+    fn(DemexShow, Option<&PathBuf>) -> Result<PathBuf, Box<dyn std::error::Error>>;
+
 pub struct DemexUiContext {
     pub command_input: String,
     pub is_command_input_empty: bool,
@@ -44,7 +47,8 @@ pub struct DemexUiContext {
 
     pub macro_execution_queue: Vec<Action>,
 
-    pub save_show: fn(DemexShow) -> Result<(), Box<dyn std::error::Error>>,
+    pub show_file: Option<PathBuf>,
+    pub save_show: SaveShowFn,
 
     pub layout_view_context: LayoutViewContext,
     pub gm_slider_val: u8,
@@ -125,7 +129,7 @@ impl DemexUiContext {
                     patch: fixture_handler_lock.patch().clone(),
                 };
 
-                let save_result = (self.save_show)(show);
+                let save_result = (self.save_show)(show, self.show_file.as_ref());
 
                 drop(fixture_handler_lock);
                 drop(updatable_handler_lock);
@@ -133,8 +137,11 @@ impl DemexUiContext {
 
                 if let Err(e) = save_result {
                     self.add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));
-                } else {
-                    self.add_dialog_entry(DemexGlobalDialogEntry::info("Show saved"));
+                } else if let Ok(save_file) = save_result {
+                    self.add_dialog_entry(DemexGlobalDialogEntry::info(
+                        format!("Show saved to {}", save_file.display()).as_str(),
+                    ));
+                    self.show_file = Some(save_file);
                 }
             }
             Action::Test(cmd) => match cmd.as_str() {

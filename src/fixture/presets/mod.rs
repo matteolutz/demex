@@ -4,7 +4,7 @@ use command_slice::CommandSlice;
 use error::PresetHandlerError;
 use group::FixtureGroup;
 use mmacro::MMacro;
-use preset::FixturePreset;
+use preset::{FixturePreset, FixturePresetId};
 use serde::{Deserialize, Serialize};
 
 use crate::parser::nodes::{
@@ -40,7 +40,7 @@ pub struct PresetHandler {
 
     sequences: HashMap<u32, Sequence>,
 
-    presets: HashMap<u32, FixturePreset>,
+    presets: HashMap<FixturePresetId, FixturePreset>,
 
     feature_groups: HashMap<u32, FeatureGroup>,
 }
@@ -111,13 +111,12 @@ impl PresetHandler {
         &mut self,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        id: u32,
+        id: FixturePresetId,
         name: Option<String>,
         fixture_handler: &FixtureHandler,
-        feature_group_id: u32,
     ) -> Result<(), PresetHandlerError> {
         if self.presets.contains_key(&id) {
-            return Err(PresetHandlerError::PresetAlreadyExists(id));
+            return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));
         }
 
         let preset = FixturePreset::new(
@@ -125,7 +124,6 @@ impl PresetHandler {
             name,
             fixture_selector,
             fixture_selector_context,
-            feature_group_id,
             self,
             fixture_handler,
         )?;
@@ -138,12 +136,12 @@ impl PresetHandler {
         &mut self,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        id: u32,
+        id: FixturePresetId,
         fixture_handler: &FixtureHandler,
         update_mode: &UpdateModeActionData,
     ) -> Result<usize, PresetHandlerError> {
         let preset = self.get_preset(id)?;
-        let feature_group = self.get_feature_group(preset.feature_group_id())?;
+        let feature_group = self.get_feature_group(preset.id().feature_group_id)?;
 
         let mut new_data: HashMap<u32, HashMap<FixtureChannelType, u8>> = HashMap::new();
 
@@ -195,28 +193,34 @@ impl PresetHandler {
         Ok(values_updated)
     }
 
-    pub fn presets_mut(&mut self) -> &mut HashMap<u32, FixturePreset> {
+    pub fn presets_mut(&mut self) -> &mut HashMap<FixturePresetId, FixturePreset> {
         &mut self.presets
     }
 
-    pub fn presets(&self) -> &HashMap<u32, FixturePreset> {
+    pub fn presets(&self) -> &HashMap<FixturePresetId, FixturePreset> {
         &self.presets
     }
 
     pub fn presets_for_feature_group(&self, feature_group_id: u32) -> Vec<&FixturePreset> {
         self.presets
             .values()
-            .filter(|p| p.feature_group_id() == feature_group_id)
+            .filter(|p| p.id().feature_group_id == feature_group_id)
             .collect()
     }
 
-    pub fn next_preset_id(&self) -> u32 {
-        self.presets.keys().max().unwrap_or(&0) + 1
+    pub fn next_preset_id(&self, feature_group_id: u32) -> u32 {
+        self.presets
+            .keys()
+            .filter(|k| k.feature_group_id == feature_group_id)
+            .map(|k| k.preset_id)
+            .max()
+            .unwrap_or(0)
+            + 1
     }
 
     pub fn rename_preset(
         &mut self,
-        preset_id: u32,
+        preset_id: FixturePresetId,
         new_name: String,
     ) -> Result<(), PresetHandlerError> {
         let preset = self.get_preset_mut(preset_id)?;
@@ -226,37 +230,50 @@ impl PresetHandler {
 
     pub fn get_preset_range(
         &self,
-        preset_id_from: u32,
-        preset_id_to: u32,
+        preset_id_from: FixturePresetId,
+        preset_id_to: FixturePresetId,
     ) -> Result<Vec<&FixturePreset>, PresetHandlerError> {
         let mut presets = Vec::new();
 
-        for i in preset_id_from..=preset_id_to {
-            let preset = self.get_preset(i)?;
+        if preset_id_from.feature_group_id != preset_id_to.feature_group_id {
+            return Err(PresetHandlerError::FeatureGroupMismatch(
+                preset_id_from.feature_group_id,
+                preset_id_to.feature_group_id,
+            ));
+        }
+
+        for i in preset_id_from.preset_id..=preset_id_to.preset_id {
+            let preset = self.get_preset(FixturePresetId {
+                feature_group_id: preset_id_from.feature_group_id,
+                preset_id: i,
+            })?;
             presets.push(preset);
         }
 
         Ok(presets)
     }
 
-    pub fn get_preset(&self, preset_id: u32) -> Result<&FixturePreset, PresetHandlerError> {
+    pub fn get_preset(
+        &self,
+        preset_id: FixturePresetId,
+    ) -> Result<&FixturePreset, PresetHandlerError> {
         self.presets
             .get(&preset_id)
-            .ok_or(PresetHandlerError::PresetNotFound(preset_id))
+            .ok_or(PresetHandlerError::FeaturePresetNotFound(preset_id))
     }
 
     pub fn get_preset_mut(
         &mut self,
-        preset_id: u32,
+        preset_id: FixturePresetId,
     ) -> Result<&mut FixturePreset, PresetHandlerError> {
         self.presets
             .get_mut(&preset_id)
-            .ok_or(PresetHandlerError::PresetNotFound(preset_id))
+            .ok_or(PresetHandlerError::FeaturePresetNotFound(preset_id))
     }
 
     pub fn get_preset_value_for_fixture(
         &self,
-        preset_id: u32,
+        preset_id: FixturePresetId,
         fixture_id: u32,
         channel_type: FixtureChannelType,
     ) -> Option<u8> {
@@ -269,11 +286,35 @@ impl PresetHandler {
         }
     }
 
-    pub fn delete_preset(&mut self, preset_id: u32) -> Result<(), PresetHandlerError> {
+    pub fn delete_preset(&mut self, preset_id: FixturePresetId) -> Result<(), PresetHandlerError> {
         self.presets
             .remove(&preset_id)
-            .ok_or(PresetHandlerError::PresetNotFound(preset_id))?;
+            .ok_or(PresetHandlerError::FeaturePresetNotFound(preset_id))?;
         Ok(())
+    }
+
+    pub fn delete_preset_range(
+        &mut self,
+        preset_id_from: FixturePresetId,
+        preset_id_to: FixturePresetId,
+    ) -> Result<usize, PresetHandlerError> {
+        if preset_id_from.feature_group_id != preset_id_to.feature_group_id {
+            return Err(PresetHandlerError::FeatureGroupMismatch(
+                preset_id_from.feature_group_id,
+                preset_id_to.feature_group_id,
+            ));
+        }
+
+        let mut count = 0;
+        for id in preset_id_from.preset_id..=preset_id_to.preset_id {
+            self.delete_preset(FixturePresetId {
+                feature_group_id: preset_id_from.feature_group_id,
+                preset_id: id,
+            })?;
+            count += 1;
+        }
+
+        Ok(count)
     }
 }
 
@@ -291,6 +332,12 @@ impl PresetHandler {
 
         self.macros.insert(id, MMacro::new(id, name, action));
         Ok(())
+    }
+
+    pub fn get_macro(&self, id: u32) -> Result<&MMacro, PresetHandlerError> {
+        self.macros
+            .get(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))
     }
 
     pub fn next_macro_id(&self) -> u32 {
@@ -350,6 +397,10 @@ impl PresetHandler {
 
     pub fn command_slices(&self) -> &HashMap<u32, CommandSlice> {
         &self.command_slices
+    }
+
+    pub fn next_command_slice_id(&self) -> u32 {
+        self.command_slices.keys().max().unwrap_or(&0) + 1
     }
 }
 

@@ -1,11 +1,11 @@
 use nodes::action::{
     ConfigTypeActionData, CueIdxSelectorActionData, ExecutorAssignmentModeActionData,
-    FaderCreationConfigActionData,
+    ExecutorCreationModeActionData, FaderCreationConfigActionData,
 };
 
 use crate::{
     fixture::{
-        channel2::feature::{feature_group::DefaultFeatureGroup, feature_type::FixtureFeatureType},
+        channel2::feature::feature_type::FixtureFeatureType, presets::preset::FixturePresetId,
         sequence::cue::CueIdx,
     },
     lexer::token::Token,
@@ -247,7 +247,7 @@ impl<'a> Parser2<'a> {
         if matches!(self.current_token()?, Token::KeywordPreset) {
             self.advance();
 
-            let preset_id = self.parse_integer()?;
+            let preset_id = self.parse_preset_id()?;
 
             return Ok(Object::Preset(preset_id));
         }
@@ -276,38 +276,12 @@ impl<'a> Parser2<'a> {
             }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
-                vec!["\"intens\"", "\"color\"", "\"position\""],
+                vec!["\"intens\""],
             )),
         }
     }
 
     fn parse_feature_type(&mut self) -> Result<FixtureFeatureType, ParseError> {
-        /*let channel_type = self.try_parse(Self::parse_discrete_feature_type);
-        if let Ok(channel_type) = channel_type {
-            return Ok(channel_type);
-        }
-
-        match self.current_token()? {
-            &Token::KeywordMaintenance => {
-                self.advance();
-
-                match self.current_token()?.clone() {
-                    Token::String(_) => {
-                        self.advance();
-
-                        Ok(0)
-                    }
-                    unexpected_token => Err(ParseError::UnexpectedToken(
-                        unexpected_token,
-                        "Expected string".to_string(),
-                    )),
-                }
-            }
-            unexpected_token => Err(ParseError::UnexpectedToken(
-                unexpected_token.clone(),
-                "Expected channel type".to_string(),
-            )),
-        }*/
         self.parse_discrete_feature_type()
     }
 
@@ -336,69 +310,25 @@ impl<'a> Parser2<'a> {
         Ok(channel_types)
     }
 
-    fn parse_specific_preset(&mut self) -> Result<u32, ParseError> {
+    fn parse_specific_preset(&mut self) -> Result<FixturePresetId, ParseError> {
         expect_and_consume_token!(self, Token::KeywordPreset, "\"preset\"");
 
-        let preset_id = self.parse_integer()?;
+        let preset_id = self.parse_preset_id()?;
 
         Ok(preset_id)
     }
 
-    fn parse_specific_preset_or_range(&mut self) -> Result<(u32, u32), ParseError> {
+    fn parse_specific_preset_or_range(
+        &mut self,
+    ) -> Result<(FixturePresetId, FixturePresetId), ParseError> {
         let preset_id = self.parse_specific_preset()?;
 
         if matches!(self.current_token()?, Token::KeywordThru) {
             self.advance();
-            let end_preset_id = self.parse_integer()?;
+            let end_preset_id = self.parse_preset_id()?;
             Ok((preset_id, end_preset_id))
         } else {
             Ok((preset_id, preset_id))
-        }
-    }
-
-    fn parse_feature_group_id(&mut self) -> Result<u32, ParseError> {
-        match self.current_token()? {
-            Token::KeywordIntens => {
-                self.advance();
-                Ok(DefaultFeatureGroup::Intensity.id())
-            }
-            Token::KeywordPosition => {
-                self.advance();
-                Ok(DefaultFeatureGroup::Position.id())
-            }
-            Token::KeywordColor => {
-                self.advance();
-                Ok(DefaultFeatureGroup::Color.id())
-            }
-            Token::KeywordBeam => {
-                self.advance();
-                Ok(DefaultFeatureGroup::Beam.id())
-            }
-            Token::KeywordFocus => {
-                self.advance();
-                Ok(DefaultFeatureGroup::Focus.id())
-            }
-            Token::KeywordControl => {
-                self.advance();
-                Ok(DefaultFeatureGroup::Control.id())
-            }
-            Token::KeywordFeature => {
-                self.advance();
-                let feature_group_id = self.parse_integer()?;
-                Ok(feature_group_id)
-            }
-            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
-                unexpected_token.clone(),
-                vec![
-                    "\"intens\"",
-                    "\"color\"",
-                    "\"position\"",
-                    "\"beam\"",
-                    "\"focus\"",
-                    "\"control\"",
-                    "\"feature\" <id>",
-                ],
-            )),
         }
     }
 
@@ -583,6 +513,22 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_preset_id(&mut self) -> Result<FixturePresetId, ParseError> {
+        match self.current_token()? {
+            &Token::FloatingPoint(_, (feature_group_id, preset_id)) => {
+                self.advance();
+                Ok(FixturePresetId {
+                    feature_group_id,
+                    preset_id,
+                })
+            }
+            unexpected_token => Err(ParseError::UnexpectedToken(
+                unexpected_token.clone(),
+                "Expected preset id (feature_group_id.preset_id)".to_string(),
+            )),
+        }
+    }
+
     fn parse_cue_idx(&mut self) -> Result<CueIdxSelectorActionData, ParseError> {
         let discrete_cue_idx = self.try_parse(Self::parse_discrete_cue_idx);
         if let Ok(discrete_cue_idx) = discrete_cue_idx {
@@ -646,8 +592,7 @@ impl<'a> Parser2<'a> {
             Token::KeywordPreset => {
                 self.advance();
 
-                let feature_group_id = self.parse_feature_group_id()?;
-                let id = self.parse_integer_or_next()?;
+                let id = self.parse_preset_id()?;
 
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
 
@@ -655,12 +600,7 @@ impl<'a> Parser2<'a> {
 
                 let preset_name = self.try_parse(Self::parse_as).ok();
 
-                Ok(Action::RecordPreset(
-                    feature_group_id,
-                    id,
-                    fixture_selector,
-                    preset_name,
-                ))
+                Ok(Action::RecordPreset(id, fixture_selector, preset_name))
             }
             Token::KeywordGroup => {
                 self.advance();
@@ -720,7 +660,7 @@ impl<'a> Parser2<'a> {
             Token::KeywordPreset => {
                 self.advance();
 
-                let id = self.parse_integer()?;
+                let id = self.parse_preset_id()?;
 
                 expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
@@ -800,18 +740,37 @@ impl<'a> Parser2<'a> {
                 let executor_id = self.parse_integer_or_next()?;
 
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
-                expect_and_consume_token!(self, Token::KeywordSequence, "\"sequence\"");
 
-                let sequence_id = self.parse_integer()?;
+                let mode = match self.current_token()? {
+                    Token::KeywordSequence => {
+                        self.advance();
+
+                        let sequence_id = self.parse_integer()?;
+
+                        Ok(ExecutorCreationModeActionData::Sequence(sequence_id))
+                    }
+                    Token::KeywordEffect => {
+                        self.advance();
+
+                        Ok(ExecutorCreationModeActionData::Effect)
+                    }
+                    unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                        unexpected_token.clone(),
+                        vec!["\"sequence\"", "\"effect\""],
+                    )),
+                }?;
 
                 expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
 
                 let fixture_selector = self.parse_fixture_selector()?;
 
+                let executor_name = self.try_parse(Self::parse_as).ok();
+
                 Ok(Action::CreateExecutor(
                     executor_id,
-                    sequence_id,
+                    mode,
                     fixture_selector,
+                    executor_name,
                 ))
             }
             Token::KeywordMacro => {
@@ -850,7 +809,7 @@ impl<'a> Parser2<'a> {
             Token::KeywordPreset => {
                 self.advance();
 
-                let preset_id = self.parse_integer()?;
+                let preset_id = self.parse_preset_id()?;
 
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
 
@@ -883,9 +842,11 @@ impl<'a> Parser2<'a> {
                 Ok(Action::DeleteMacro(macro_id_range))
             }
             Token::KeywordPreset => {
-                self.advance();
+                // Intentionally not advancing past the keyword,
+                // because parse_specific_preset_or_range will consume it
+                // self.advance();
 
-                let preset_id_range = self.parse_integer_or_range()?;
+                let preset_id_range = self.parse_specific_preset_or_range()?;
 
                 Ok(Action::DeletePreset(preset_id_range))
             }
@@ -988,20 +949,36 @@ impl<'a> Parser2<'a> {
 
                 let fader_id = self.parse_integer()?;
 
+                let mut is_go_assign = false;
+                if matches!(self.current_token()?, Token::KeywordGo) {
+                    self.advance();
+                    is_go_assign = true;
+                }
+
                 expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
                 let (device_idx, input_fader_id) = self.parse_float_individual()?;
 
-                Ok(Action::AssignFaderToInput {
-                    fader_id,
-                    device_idx: device_idx as usize,
-                    input_fader_id,
-                })
+                if is_go_assign {
+                    let button_id = input_fader_id;
+
+                    Ok(Action::AssignFaderGoToInput {
+                        fader_id,
+                        device_idx: device_idx as usize,
+                        button_id,
+                    })
+                } else {
+                    Ok(Action::AssignFaderToInput {
+                        fader_id,
+                        device_idx: device_idx as usize,
+                        input_fader_id,
+                    })
+                }
             }
             Token::KeywordPreset => {
                 self.advance();
 
-                let preset_id = self.parse_integer()?;
+                let preset_id = self.parse_preset_id()?;
 
                 expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
 

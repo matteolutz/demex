@@ -122,6 +122,7 @@ impl<'a> Lexer<'a> {
                     "go" => Some(Token::KeywordGo),
                     "stop" => Some(Token::KeywordStop),
                     "flash" => Some(Token::KeywordFlash),
+                    "effect" => Some(Token::KeywordEffect),
                     _ => None,
                 };
 

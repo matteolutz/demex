@@ -3,7 +3,7 @@ use std::hash::Hash;
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::presets::PresetHandler;
+use crate::fixture::presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler};
 
 use super::{channel_type::FixtureChannelType, error::FixtureChannelError2};
 
@@ -12,7 +12,7 @@ pub enum FixtureChannelValue2 {
     #[default]
     Home,
 
-    Preset(u32),
+    Preset(FixturePresetId),
     Discrete(u8),
     Mix {
         a: Box<FixtureChannelValue2>,
@@ -73,7 +73,9 @@ impl FixtureChannelValue2 {
             Self::Discrete(value) => Ok(*value),
             Self::Preset(preset_id) => preset_handler
                 .get_preset_value_for_fixture(*preset_id, fixture_id, channel_type)
-                .ok_or(FixtureChannelError2::PresetNotFound(*preset_id)),
+                .ok_or(FixtureChannelError2::PresetHandlerError(
+                    PresetHandlerError::FeaturePresetNotFound(*preset_id).into(),
+                )),
             Self::Mix { a, b, mix } => {
                 if *mix == 0.0 {
                     a.to_discrete_value(fixture_id, channel_type, preset_handler)

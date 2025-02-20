@@ -9,7 +9,8 @@ use fader::{
 use serde::{Deserialize, Serialize};
 
 use crate::parser::nodes::{
-    action::FaderCreationConfigActionData, fixture_selector::FixtureSelectorContext,
+    action::{ExecutorCreationModeActionData, FaderCreationConfigActionData},
+    fixture_selector::FixtureSelectorContext,
 };
 
 use super::{
@@ -20,6 +21,7 @@ use super::{
 pub mod error;
 pub mod executor;
 pub mod fader;
+pub mod runtime;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct UpdatableHandler {
@@ -47,7 +49,8 @@ impl UpdatableHandler {
     pub fn create_executor(
         &mut self,
         id: u32,
-        sequence_id: u32,
+        name: Option<String>,
+        mode: &ExecutorCreationModeActionData,
         fixtures: Vec<u32>,
     ) -> Result<(), UpdatableHandlerError> {
         if self.executors.contains_key(&id) {
@@ -56,12 +59,18 @@ impl UpdatableHandler {
 
         self.executors.insert(
             id,
-            Executor::new(
-                id,
-                sequence_id,
-                fixtures,
-                FixtureChannelValuePriority::default(),
-            ),
+            match mode {
+                ExecutorCreationModeActionData::Effect => {
+                    Executor::new_effect(id, name, fixtures, FixtureChannelValuePriority::default())
+                }
+                ExecutorCreationModeActionData::Sequence(sequence_id) => Executor::new_sequence(
+                    id,
+                    name,
+                    *sequence_id,
+                    fixtures,
+                    FixtureChannelValuePriority::default(),
+                ),
+            },
         );
         Ok(())
     }

@@ -1,3 +1,5 @@
+use crate::fixture::presets::error::PresetHandlerError;
+
 use super::{channel_type::FixtureChannelType, feature::feature_type::FixtureFeatureType};
 
 #[derive(Debug)]
@@ -7,7 +9,7 @@ pub enum FixtureChannelError2 {
     FeatureNotFound(FixtureFeatureType),
     FeatureConfigNotFound(FixtureFeatureType),
     InvalidFeatureValue(FixtureFeatureType),
-    PresetNotFound(u32),
+    PresetHandlerError(Box<PresetHandlerError>),
 
     NoFeatureFoundFor(u32),
 }
@@ -38,9 +40,7 @@ impl std::fmt::Display for FixtureChannelError2 {
                     feature_type
                 )
             }
-            Self::PresetNotFound(preset_id) => {
-                write!(f, "Preset with id {} was not found", preset_id)
-            }
+            Self::PresetHandlerError(err) => write!(f, "Preset handler error: {}", err),
             Self::NoFeatureFoundFor(feature_group) => {
                 write!(f, "No feature found for feature group {}", feature_group)
             }

@@ -2,7 +2,9 @@ use egui_probe::Probe;
 
 use crate::{
     fixture::{
-        handler::FixtureHandler, presets::PresetHandler, sequence::cue::CueIdx,
+        handler::FixtureHandler,
+        presets::{preset::FixturePresetId, PresetHandler},
+        sequence::cue::CueIdx,
         updatables::UpdatableHandler,
     },
     parser::nodes::action::ConfigTypeActionData,
@@ -15,7 +17,7 @@ pub enum DemexEditWindow {
     EditSequenceCue(u32, CueIdx),
     EditExecutor(u32),
     EditFader(u32),
-    EditPreset(u32),
+    EditPreset(FixturePresetId),
 
     Config(ConfigTypeActionData),
 }
