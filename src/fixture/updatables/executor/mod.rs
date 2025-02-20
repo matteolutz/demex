@@ -68,6 +68,10 @@ impl Executor {
         }
     }
 
+    pub fn config(&self) -> &ExecutorConfig {
+        &self.config
+    }
+
     pub fn id(&self) -> u32 {
         self.id
     }

@@ -22,10 +22,7 @@ impl RuntimePhase {
         // if we have a rnage we interpolate between start and end
         match self {
             Self::Single(phase) => *phase,
-            Self::Range { start, end } => {
-                let phase = start + (end - start) * offset;
-                phase
-            }
+            Self::Range { start, end } => start + (end - start) * offset,
         }
     }
 }

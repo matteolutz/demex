@@ -1,27 +1,15 @@
-use button::{preset_grid_button_ui, PresetGridButtonConfig};
+use button::{preset_grid_button_ui, PresetGridButtonConfig, PresetGridButtonDecoration};
 use itertools::Itertools;
 use row::preset_grid_row_ui;
 
 use crate::{
+    fixture::{presets::preset::FixturePresetId, updatables::executor::config::ExecutorConfig},
     lexer::token::Token,
     parser::nodes::fixture_selector::{
         AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
     },
     ui::DemexUiContext,
 };
-
-const NUM_KEYS: [egui::Key; 10] = [
-    egui::Key::Num1,
-    egui::Key::Num2,
-    egui::Key::Num3,
-    egui::Key::Num4,
-    egui::Key::Num5,
-    egui::Key::Num6,
-    egui::Key::Num7,
-    egui::Key::Num8,
-    egui::Key::Num9,
-    egui::Key::Num0,
-];
 
 pub const PRESET_GRID_ELEMENT_SIZE: [f32; 2] = [80.0, 80.0];
 
@@ -42,14 +30,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     });
 
     ui.vertical(|ui| {
-        preset_grid_row_ui(ui, "Groups", egui::Color32::DARK_RED, |ui| {
+        // Groups
+        preset_grid_row_ui(ui, "Groups", None, egui::Color32::DARK_RED, |ui| {
             for id in 0..=preset_handler.next_group_id() {
                 let g = preset_handler.get_group(id);
 
                 let config = if let Ok(g) = g {
                     PresetGridButtonConfig::Preset {
                         id: g.id(),
-                        name: g.name(),
+                        name: g.name().to_owned(),
                         top_bar_color: context.global_fixture_select.as_ref().and_then(|fs| {
                             if fs
                                 == &FixtureSelector::Atomic(AtomicFixtureSelector::FixtureGroup(id))
@@ -64,7 +53,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     PresetGridButtonConfig::Empty { id }
                 };
 
-                let response = preset_grid_button_ui(ui, config);
+                let response =
+                    preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());
 
                 if response.clicked() {
                     if g.is_ok() {
@@ -92,11 +82,195 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             }
         });
 
+        // Feature Presets
         for (feature_group_id, feature_group) in preset_handler
             .feature_groups()
             .iter()
             .sorted_by_key(|(id, _)| *id)
-        {}
+        {
+            preset_grid_row_ui(
+                ui,
+                feature_group.name(),
+                Some(*feature_group_id),
+                egui::Color32::BLUE,
+                |ui| {
+                    for id in 0..=preset_handler.next_preset_id(*feature_group_id) {
+                        let p = preset_handler.get_preset(FixturePresetId {
+                            feature_group_id: *feature_group_id,
+                            preset_id: id,
+                        });
+
+                        let config = if let Ok(p) = p {
+                            PresetGridButtonConfig::Preset {
+                                id: p.id().preset_id,
+                                name: p.name().to_owned(),
+                                top_bar_color: selected_fixtures
+                                    .as_ref()
+                                    .map(|selected| p.get_target(selected))
+                                    .map(|target| target.get_color()),
+                            }
+                        } else {
+                            PresetGridButtonConfig::Empty { id }
+                        };
+
+                        let response = preset_grid_button_ui(
+                            ui,
+                            config,
+                            PresetGridButtonDecoration::default(),
+                        );
+
+                        if response.clicked() {
+                            if p.is_ok() {
+                                context.command.extend_from_slice(&[
+                                    Token::KeywordPreset,
+                                    Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                ]);
+                            } else {
+                                context.command.extend_from_slice(&[
+                                    Token::KeywordRecord,
+                                    Token::KeywordPreset,
+                                    Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                ]);
+                            }
+                        }
+                    }
+                },
+            );
+        }
+
+        // Macros
+        preset_grid_row_ui(ui, "Maros", None, egui::Color32::BROWN, |ui| {
+            for id in 0..=preset_handler.next_macro_id() {
+                let m = preset_handler.get_macro(id);
+
+                let config = if let Ok(m) = m {
+                    PresetGridButtonConfig::Preset {
+                        id: m.id(),
+                        name: m.name().to_owned(),
+                        top_bar_color: None,
+                    }
+                } else {
+                    PresetGridButtonConfig::Empty { id }
+                };
+
+                let response =
+                    preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());
+
+                if response.clicked() {
+                    if let Ok(m) = m {
+                        context.macro_execution_queue.push(m.action().clone());
+                    } else {
+                        context.command.extend_from_slice(&[
+                            Token::KeywordCreate,
+                            Token::KeywordMacro,
+                            Token::Integer(id),
+                        ]);
+                    }
+                }
+            }
+        });
+
+        // Command slices
+        preset_grid_row_ui(ui, "Command Slices", None, egui::Color32::GOLD, |ui| {
+            for id in 0..=preset_handler.next_command_slice_id() {
+                let cs = preset_handler.get_command_slice(id);
+
+                let config = if let Ok(cs) = cs {
+                    PresetGridButtonConfig::Preset {
+                        id: cs.id(),
+                        name: cs.name().to_owned(),
+                        top_bar_color: None,
+                    }
+                } else {
+                    PresetGridButtonConfig::Empty { id }
+                };
+
+                let response =
+                    preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());
+
+                if response.clicked() {
+                    if cs.is_ok() {
+                        context.command.extend_from_slice(cs.unwrap().command());
+                    }
+                }
+            }
+        });
+
+        // Executors
+        preset_grid_row_ui(ui, "Executors", None, egui::Color32::DARK_GREEN, |ui| {
+            for id in 0..=updatable_handler.next_executor_id() {
+                let executor_exists = updatable_handler.executor(id).is_some();
+
+                let (config, decoration) = if executor_exists {
+                    let executor = updatable_handler.executor(id).unwrap();
+
+                    let config = PresetGridButtonConfig::Preset {
+                        id,
+                        name: executor.name().to_owned(),
+                        top_bar_color: if updatable_handler.executor(id).unwrap().is_started() {
+                            Some(egui::Color32::RED)
+                        } else {
+                            None
+                        },
+                    };
+
+                    let decoration = match executor.config() {
+                        ExecutorConfig::Sequence { runtime, .. } => PresetGridButtonDecoration {
+                            right_top_text: Some(format!(
+                                "{}/{}",
+                                runtime
+                                    .current_cue()
+                                    .map(|c| (c + 1).to_string())
+                                    .unwrap_or("-".to_owned()),
+                                runtime.num_cues(&preset_handler)
+                            )),
+                            left_bottom_text: Some("Seq".to_owned()),
+                        },
+                        ExecutorConfig::FeatureEffect { .. } => PresetGridButtonDecoration {
+                            right_top_text: None,
+                            left_bottom_text: Some("FeFX".to_owned()),
+                        },
+                    };
+
+                    (config, decoration)
+                } else {
+                    (
+                        PresetGridButtonConfig::Empty { id },
+                        PresetGridButtonDecoration::default(),
+                    )
+                };
+
+                let response = preset_grid_button_ui(ui, config, decoration);
+
+                if response.clicked() {
+                    if executor_exists {
+                        updatable_handler
+                            .start_or_next_executor(id, &mut fixture_handler, &preset_handler)
+                            .unwrap();
+                    } else {
+                        context.command.extend_from_slice(&[
+                            Token::KeywordCreate,
+                            Token::KeywordExecutor,
+                            Token::Integer(id),
+                        ]);
+                    }
+                }
+
+                if response.secondary_clicked() {
+                    if executor_exists {
+                        if updatable_handler.executor(id).unwrap().is_started() {
+                            updatable_handler
+                                .stop_executor(id, &mut fixture_handler)
+                                .unwrap();
+                        } else {
+                            context
+                                .command
+                                .extend_from_slice(&[Token::KeywordExecutor, Token::Integer(id)]);
+                        }
+                    }
+                }
+            }
+        });
 
         /*
         eframe::egui::Grid::new("preset_grid")

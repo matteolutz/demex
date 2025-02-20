@@ -3,10 +3,15 @@ use crate::{
     parser::nodes::{action::error::ActionRunError, fixture_selector::FixtureSelectorError},
 };
 
+use super::preset::FixturePresetId;
+
 #[derive(Debug)]
 pub enum PresetHandlerError {
     PresetAlreadyExists(u32),
+    FeaturePresetAlreadyExists(FixturePresetId),
     PresetNotFound(u32),
+    FeaturePresetNotFound(FixturePresetId),
+    FeatureGroupMismatch(u32, u32),
     FixtureError(FixtureError),
     FixtureSelectorError(Box<FixtureSelectorError>),
     MacroExecutionError(Box<ActionRunError>),
@@ -23,8 +28,25 @@ impl std::fmt::Display for PresetHandlerError {
                     id
                 )
             }
+            PresetHandlerError::FeaturePresetAlreadyExists(id) => {
+                write!(
+                    f,
+                    "Object with id {} already exists. Use \"update\" to modify or extend it",
+                    id
+                )
+            }
             PresetHandlerError::PresetNotFound(id) => {
                 write!(f, "Object with id {} not found", id)
+            }
+            PresetHandlerError::FeaturePresetNotFound(id) => {
+                write!(f, "Object with id {} not found", id)
+            }
+            PresetHandlerError::FeatureGroupMismatch(id1, id2) => {
+                write!(
+                    f,
+                    "Feature group mismatch: {} and {} are not in the same group",
+                    id1, id2
+                )
             }
             PresetHandlerError::FixtureError(err) => write!(f, "{}", err),
             PresetHandlerError::FixtureSelectorError(err) => write!(f, "{}", err),

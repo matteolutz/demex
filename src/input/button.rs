@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     fixture::{
         handler::{error::FixtureHandlerError, FixtureHandler},
-        presets::PresetHandler,
+        presets::{preset::FixturePresetId, PresetHandler},
         updatables::UpdatableHandler,
     },
     parser::nodes::{
@@ -26,7 +26,7 @@ pub enum DemexInputButton {
     SelectivePreset {
         #[egui_probe(skip)]
         fixture_selector: FixtureSelector,
-        preset_id: u32,
+        preset_id: FixturePresetId,
     },
 
     FixtureSelector {

@@ -18,6 +18,46 @@ use crate::{
 
 use super::{error::PresetHandlerError, PresetHandler};
 
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Default, EguiProbe)]
+pub struct FixturePresetId {
+    pub feature_group_id: u32,
+    pub preset_id: u32,
+}
+
+impl std::fmt::Display for FixturePresetId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}", self.feature_group_id, self.preset_id)
+    }
+}
+
+impl Serialize for FixturePresetId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_str(&self)
+    }
+}
+
+impl<'de> Deserialize<'de> for FixturePresetId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let parts: Vec<&str> = s.split('.').collect();
+        if parts.len() != 2 {
+            return Err(serde::de::Error::custom("Invalid FixturePresetId"));
+        }
+        let feature_group_id = parts[0].parse().map_err(serde::de::Error::custom)?;
+        let preset_id = parts[1].parse().map_err(serde::de::Error::custom)?;
+        Ok(Self {
+            feature_group_id,
+            preset_id,
+        })
+    }
+}
+
 #[derive(Debug)]
 pub enum FixturePresetTarget {
     AllSelected,
@@ -28,12 +68,9 @@ pub enum FixturePresetTarget {
 #[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
 pub struct FixturePreset {
     #[egui_probe(skip)]
-    id: u32,
+    id: FixturePresetId,
 
     name: String,
-
-    #[egui_probe(skip)]
-    feature_group_id: u32,
 
     #[egui_probe(skip)]
     data: HashMap<u32, HashMap<FixtureChannelType, u8>>,
@@ -41,15 +78,14 @@ pub struct FixturePreset {
 
 impl FixturePreset {
     pub fn new(
-        id: u32,
+        id: FixturePresetId,
         name: Option<String>,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        feature_group_id: u32,
         preset_handler: &PresetHandler,
         fixture_handler: &FixtureHandler,
     ) -> Result<Self, PresetHandlerError> {
-        let feature_group = preset_handler.get_feature_group(feature_group_id)?;
+        let feature_group = preset_handler.get_feature_group(id.feature_group_id)?;
 
         let name = name.unwrap_or(format!("{} Preset {}", feature_group.name(), id));
 
@@ -97,12 +133,7 @@ impl FixturePreset {
             }
         }
 
-        Ok(Self {
-            id,
-            name,
-            feature_group_id,
-            data,
-        })
+        Ok(Self { id, name, data })
     }
 
     pub fn apply(&self, fixture: &mut Fixture) -> Result<(), PresetHandlerError> {
@@ -133,7 +164,7 @@ impl FixturePreset {
         }
     }
 
-    pub fn id(&self) -> u32 {
+    pub fn id(&self) -> FixturePresetId {
         self.id
     }
 
@@ -143,10 +174,6 @@ impl FixturePreset {
 
     pub fn name_mut(&mut self) -> &mut String {
         &mut self.name
-    }
-
-    pub fn feature_group_id(&self) -> u32 {
-        self.feature_group_id
     }
 
     pub fn value(&self, fixture_id: u32, channel_type: FixtureChannelType) -> Option<u8> {

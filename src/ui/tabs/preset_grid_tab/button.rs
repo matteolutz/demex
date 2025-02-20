@@ -1,11 +1,13 @@
 use egui::Response;
 
+use crate::ui::utils::painter::painter_layout_centered;
+
 use super::PRESET_GRID_ELEMENT_SIZE;
 
-pub enum PresetGridButtonConfig<'a> {
+pub enum PresetGridButtonConfig {
     Preset {
         id: u32,
-        name: &'a str,
+        name: String,
         top_bar_color: Option<egui::Color32>,
     },
     Empty {
@@ -13,7 +15,7 @@ pub enum PresetGridButtonConfig<'a> {
     },
 }
 
-impl<'a> PresetGridButtonConfig<'a> {
+impl PresetGridButtonConfig {
     pub fn id(&self) -> u32 {
         match self {
             Self::Preset { id, .. } => *id,
@@ -22,7 +24,17 @@ impl<'a> PresetGridButtonConfig<'a> {
     }
 }
 
-pub fn preset_grid_button_ui(ui: &mut egui::Ui, config: PresetGridButtonConfig) -> Response {
+#[derive(Default)]
+pub struct PresetGridButtonDecoration {
+    pub right_top_text: Option<String>,
+    pub left_bottom_text: Option<String>,
+}
+
+pub fn preset_grid_button_ui(
+    ui: &mut egui::Ui,
+    config: PresetGridButtonConfig,
+    decoration: PresetGridButtonDecoration,
+) -> Response {
     let (response, painter) =
         ui.allocate_painter(PRESET_GRID_ELEMENT_SIZE.into(), egui::Sense::click());
 
@@ -34,7 +46,7 @@ pub fn preset_grid_button_ui(ui: &mut egui::Ui, config: PresetGridButtonConfig) 
     painter.rect_filled(response.rect, 0.0, egui::Color32::DARK_GRAY);
 
     painter.text(
-        response.rect.min + (2.0, 4.0).into(),
+        response.rect.left_top() + (2.0, 5.0).into(),
         egui::Align2::LEFT_TOP,
         config.id(),
         egui::FontId::proportional(12.0),
@@ -58,17 +70,36 @@ pub fn preset_grid_button_ui(ui: &mut egui::Ui, config: PresetGridButtonConfig) 
                 );
             }
 
-            painter.text(
-                response.rect.center(),
-                egui::Align2::CENTER_CENTER,
+            painter_layout_centered(
+                &painter,
                 name,
                 egui::FontId::proportional(12.0),
                 egui::Color32::WHITE,
+                response.rect,
             );
         }
         PresetGridButtonConfig::Empty { .. } => {
             painter.rect_filled(response.rect, 0.0, egui::Color32::from_black_alpha(128));
         }
+    }
+
+    if let Some(right_top_text) = decoration.right_top_text {
+        painter.text(
+            response.rect.right_top() + (-2.0, 5.0).into(),
+            egui::Align2::RIGHT_TOP,
+            right_top_text,
+            egui::FontId::monospace(9.0),
+            egui::Color32::LIGHT_GRAY,
+        );
+    }
+    if let Some(left_bottom_text) = decoration.left_bottom_text {
+        painter.text(
+            response.rect.left_bottom() + (2.0, -2.0).into(),
+            egui::Align2::LEFT_BOTTOM,
+            left_bottom_text,
+            egui::FontId::monospace(9.0),
+            egui::Color32::LIGHT_GRAY,
+        );
     }
 
     if response.hovered() {

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::sequence::cue::CueIdx;
+use crate::fixture::{presets::preset::FixturePresetId, sequence::cue::CueIdx};
 
 use super::{action::Action, fixture_selector::FixtureSelector};
 
@@ -32,7 +32,7 @@ pub enum Object {
     HomeableObject(HomeableObject),
     Sequence(u32),
     SequenceCue(u32, CueIdx),
-    Preset(u32),
+    Preset(FixturePresetId),
 }
 
 impl ObjectTrait for Object {

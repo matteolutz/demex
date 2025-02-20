@@ -1,8 +1,11 @@
+use crate::ui::utils::{color::color_to_luma, painter::painter_layout_centered};
+
 use super::PRESET_GRID_ELEMENT_SIZE;
 
 pub fn preset_grid_row_ui<R>(
     ui: &mut egui::Ui,
     name: &str,
+    id: Option<u32>,
     header_color: egui::Color32,
     add_contents: impl FnOnce(&mut egui::Ui) -> R,
 ) -> egui::InnerResponse<egui::scroll_area::ScrollAreaOutput<R>> {
@@ -29,13 +32,27 @@ pub fn preset_grid_row_ui<R>(
                 header_color,
             );
 
+            if let Some(id) = id {
+                painter.text(
+                    response.rect.left_top() + (2.0, 5.0).into(),
+                    egui::Align2::LEFT_TOP,
+                    id,
+                    egui::FontId::proportional(12.0),
+                    egui::Color32::WHITE,
+                );
+            }
+
             // draw the name of the row header to the center of the allocated painter
-            painter.text(
-                response.rect.center(),
-                egui::Align2::CENTER_CENTER,
-                name,
+            painter_layout_centered(
+                &painter,
+                name.to_owned(),
                 egui::FontId::default(),
-                egui::Color32::WHITE,
+                if color_to_luma(&header_color) > 0.5 {
+                    egui::Color32::BLACK
+                } else {
+                    egui::Color32::WHITE
+                },
+                response.rect,
             );
 
             egui::ScrollArea::horizontal().show(ui, add_contents)
