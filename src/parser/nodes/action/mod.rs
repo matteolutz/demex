@@ -186,8 +186,8 @@ pub enum Action {
         button_id: u32,
     },
     AssignSelectivePresetToInput {
-        preset_id: FixturePresetId,
-        fixture_selector: FixtureSelector,
+        preset_id: (FixturePresetId, FixturePresetId),
+        fixture_selector: Option<FixtureSelector>,
         device_idx: usize,
         button_id: u32,
     },
@@ -195,6 +195,20 @@ pub enum Action {
         fixture_selector: FixtureSelector,
         device_idx: usize,
         button_id: u32,
+    },
+    AssignMacroToInput {
+        action: Box<Action>,
+        device_idx: usize,
+        button_id: u32,
+    },
+
+    UnassignInputButton {
+        device_idx: usize,
+        button_id: u32,
+    },
+    UnassignInputFader {
+        device_idx: usize,
+        fader_id: u32,
     },
 
     FixtureSelector(FixtureSelector),
@@ -435,6 +449,22 @@ impl Action {
                 device_idx,
                 button_id,
             ),
+            Self::AssignMacroToInput {
+                action,
+                device_idx,
+                button_id,
+            } => {
+                self.run_assign_macro_to_input(input_device_handler, action, device_idx, button_id)
+            }
+
+            Self::UnassignInputButton {
+                device_idx,
+                button_id,
+            } => self.run_unassign_input_button(input_device_handler, *device_idx, *button_id),
+            Self::UnassignInputFader {
+                device_idx,
+                fader_id,
+            } => self.run_unassign_input_fader(input_device_handler, *device_idx, *fader_id),
 
             unimplemented_action => Err(ActionRunError::UnimplementedAction(
                 unimplemented_action.clone(),
@@ -1122,32 +1152,43 @@ impl Action {
         &self,
         preset_handler: &PresetHandler,
         input_device_handler: &mut DemexInputDeviceHandler,
-        preset_id: FixturePresetId,
-        fixture_selector: &FixtureSelector,
+        (preset_id_from, preset_id_to): (FixturePresetId, FixturePresetId),
+        fixture_selector: &Option<FixtureSelector>,
         device_idx: usize,
         button_id: u32,
     ) -> Result<ActionRunResult, ActionRunError> {
         let _ = preset_handler
-            .get_preset(preset_id)
+            .get_preset_range(preset_id_from, preset_id_to)
             .map_err(ActionRunError::PresetHandlerError)?;
+
+        let range = preset_id_to.preset_id - preset_id_from.preset_id + 1;
 
         let device = input_device_handler
             .device_mut(device_idx)
             .map_err(ActionRunError::InputDeviceError)?;
 
-        if device.config.buttons().get(&button_id).is_some() {
-            return Err(ActionRunError::InputDeviceError(
-                DemexInputDeviceError::ButtonAlreadyAssigned(button_id),
-            ));
+        for button_id in button_id..button_id + range {
+            if device.config.buttons().get(&button_id).is_some() {
+                return Err(ActionRunError::InputDeviceError(
+                    DemexInputDeviceError::ButtonAlreadyAssigned(button_id),
+                ));
+            }
         }
 
-        device.config.buttons_mut().insert(
-            button_id,
-            DemexInputButton::SelectivePreset {
-                preset_id,
-                fixture_selector: fixture_selector.clone(),
-            },
-        );
+        for i in 0..range {
+            let preset_id = FixturePresetId {
+                feature_group_id: preset_id_from.feature_group_id,
+                preset_id: preset_id_from.preset_id + i,
+            };
+
+            device.config.buttons_mut().insert(
+                button_id + i,
+                DemexInputButton::SelectivePreset {
+                    preset_id,
+                    fixture_selector: fixture_selector.clone(),
+                },
+            );
+        }
 
         Ok(ActionRunResult::new())
     }
@@ -1175,6 +1216,71 @@ impl Action {
                 fixture_selector: fixture_selector.clone(),
             },
         );
+
+        Ok(ActionRunResult::new())
+    }
+
+    fn run_assign_macro_to_input(
+        &self,
+        input_device_handler: &mut DemexInputDeviceHandler,
+        action: &Action,
+        device_idx: &usize,
+        button_id: &u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let device = input_device_handler
+            .device_mut(*device_idx)
+            .map_err(ActionRunError::InputDeviceError)?;
+
+        if device.config.buttons().get(button_id).is_some() {
+            return Err(ActionRunError::InputDeviceError(
+                DemexInputDeviceError::ButtonAlreadyAssigned(*button_id),
+            ));
+        }
+
+        device.config.buttons_mut().insert(
+            *button_id,
+            DemexInputButton::Macro {
+                action: action.clone(),
+            },
+        );
+
+        Ok(ActionRunResult::new())
+    }
+
+    fn run_unassign_input_button(
+        &self,
+        input_device_handler: &mut DemexInputDeviceHandler,
+        device_idx: usize,
+        button_id: u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let device = input_device_handler
+            .device_mut(device_idx)
+            .map_err(ActionRunError::InputDeviceError)?;
+
+        if device.config.buttons_mut().remove(&button_id).is_none() {
+            return Err(ActionRunError::InputDeviceError(
+                DemexInputDeviceError::ButtonNotAssigned(button_id),
+            ));
+        }
+
+        Ok(ActionRunResult::new())
+    }
+
+    fn run_unassign_input_fader(
+        &self,
+        input_device_handler: &mut DemexInputDeviceHandler,
+        device_idx: usize,
+        fader_id: u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let device = input_device_handler
+            .device_mut(device_idx)
+            .map_err(ActionRunError::InputDeviceError)?;
+
+        if device.config.faders_mut().remove(&fader_id).is_none() {
+            return Err(ActionRunError::InputDeviceError(
+                DemexInputDeviceError::FaderNotAssigned(fader_id),
+            ));
+        }
 
         Ok(ActionRunResult::new())
     }

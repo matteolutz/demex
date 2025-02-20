@@ -133,6 +133,7 @@ impl eframe::App for DemexUiApp {
             FixtureSelectorContext::new(&self.context.global_fixture_select.clone()),
             &mut self.context.macro_execution_queue,
             &mut self.context.global_fixture_select,
+            &mut self.context.command,
         ) {
             self.context
                 .logs

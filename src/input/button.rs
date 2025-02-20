@@ -9,7 +9,7 @@ use crate::{
     },
     parser::nodes::{
         action::Action,
-        fixture_selector::{FixtureSelector, FixtureSelectorContext},
+        fixture_selector::{AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext},
     },
 };
 
@@ -25,7 +25,7 @@ pub enum DemexInputButton {
 
     SelectivePreset {
         #[egui_probe(skip)]
-        fixture_selector: FixtureSelector,
+        fixture_selector: Option<FixtureSelector>,
         preset_id: FixturePresetId,
     },
 
@@ -76,6 +76,10 @@ impl DemexInputButton {
                     .map_err(DemexInputDeviceError::PresetHandlerError)?;
 
                 for fixture_id in fixture_selector
+                    .as_ref()
+                    .unwrap_or(&FixtureSelector::Atomic(
+                        AtomicFixtureSelector::CurrentFixturesSelected,
+                    ))
                     .get_fixtures(preset_handler, fixture_selector_context)
                     .map_err(DemexInputDeviceError::FixtureSelectorError)?
                 {

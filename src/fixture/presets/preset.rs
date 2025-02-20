@@ -58,7 +58,7 @@ impl<'de> Deserialize<'de> for FixturePresetId {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FixturePresetTarget {
     AllSelected,
     SomeSelected,

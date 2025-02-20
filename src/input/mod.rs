@@ -5,6 +5,7 @@ use profile::DemexInputDeviceProfileType;
 
 use crate::{
     fixture::{handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler},
+    lexer::token::Token,
     parser::nodes::{
         action::Action,
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
@@ -23,6 +24,7 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
     fn update_out(
         &mut self,
         device_config: &DemexInputDeviceConfig,
+        preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         global_fixture_selector: &Option<FixtureSelector>,
     ) -> Result<(), DemexInputDeviceError>;
@@ -61,24 +63,32 @@ impl DemexInputDeviceHandler {
         fixture_selector_context: FixtureSelectorContext,
         macro_exec_cue: &mut Vec<Action>,
         global_fixture_selector: &mut Option<FixtureSelector>,
+        command_input: &mut Vec<Token>,
     ) -> Result<(), DemexInputDeviceError> {
-        for device in &self.devices {
+        for (device_idx, device) in self.devices.iter().enumerate() {
             for device_message in device.profile().poll()? {
                 match device_message {
                     DemexInputDeviceMessage::ButtonPressed(button_id) => {
-                        let button = device
+                        if let Ok(button) = device
                             .config()
                             .buttons()
                             .get(&button_id)
-                            .ok_or(DemexInputDeviceError::ButtonNotFound(button_id))?;
-                        button.handle_press(
-                            fixture_handler,
-                            preset_handler,
-                            updatable_handler,
-                            fixture_selector_context.clone(),
-                            macro_exec_cue,
-                            global_fixture_selector,
-                        )?;
+                            .ok_or(DemexInputDeviceError::ButtonNotFound(button_id))
+                        {
+                            button.handle_press(
+                                fixture_handler,
+                                preset_handler,
+                                updatable_handler,
+                                fixture_selector_context.clone(),
+                                macro_exec_cue,
+                                global_fixture_selector,
+                            )?;
+                        } else {
+                            command_input.extend_from_slice(&[Token::FloatingPoint(
+                                0.0,
+                                (device_idx as u32, button_id),
+                            )]);
+                        }
                     }
                     DemexInputDeviceMessage::ButtonReleased(button_id) => {
                         let button = device
@@ -107,6 +117,7 @@ impl DemexInputDeviceHandler {
         for device in &mut self.devices {
             device.profile.update_out(
                 &device.config,
+                preset_handler,
                 updatable_handler,
                 global_fixture_selector,
             )?;

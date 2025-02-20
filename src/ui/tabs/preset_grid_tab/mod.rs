@@ -133,6 +133,19 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                 ]);
                             }
                         }
+
+                        if p.is_ok() && response.double_clicked() && selected_fixtures.is_some() {
+                            context.command.clear();
+                            context.command_input.clear();
+                            context.is_command_input_empty = true;
+
+                            for fixture_id in selected_fixtures.as_ref().unwrap() {
+                                p.as_ref()
+                                    .unwrap()
+                                    .apply(fixture_handler.fixture(*fixture_id).unwrap())
+                                    .unwrap();
+                            }
+                        }
                     }
                 },
             );
@@ -189,8 +202,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());
 
                 if response.clicked() {
-                    if cs.is_ok() {
-                        context.command.extend_from_slice(cs.unwrap().command());
+                    if let Ok(cs) = cs {
+                        context.command.extend_from_slice(cs.command());
                     }
                 }
             }
@@ -256,17 +269,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     }
                 }
 
-                if response.secondary_clicked() {
-                    if executor_exists {
-                        if updatable_handler.executor(id).unwrap().is_started() {
-                            updatable_handler
-                                .stop_executor(id, &mut fixture_handler)
-                                .unwrap();
-                        } else {
-                            context
-                                .command
-                                .extend_from_slice(&[Token::KeywordExecutor, Token::Integer(id)]);
-                        }
+                if response.secondary_clicked() && executor_exists {
+                    if updatable_handler.executor(id).unwrap().is_started() {
+                        updatable_handler
+                            .stop_executor(id, &mut fixture_handler)
+                            .unwrap();
+                    } else {
+                        context
+                            .command
+                            .extend_from_slice(&[Token::KeywordExecutor, Token::Integer(id)]);
                     }
                 }
             }

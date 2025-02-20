@@ -26,6 +26,9 @@ pub enum DemexInputDeviceError {
     ButtonAlreadyAssigned(u32),
     FaderAlreadyAssigned(u32),
 
+    ButtonNotAssigned(u32),
+    FaderNotAssigned(u32),
+
     MpscSendError,
     MidirError(Box<dyn std::error::Error>),
 }
@@ -58,6 +61,9 @@ impl std::fmt::Display for DemexInputDeviceError {
 
             Self::ButtonAlreadyAssigned(id) => write!(f, "Button with id {} already assigned", id),
             Self::FaderAlreadyAssigned(id) => write!(f, "Fader with id {} already assigned", id),
+
+            Self::ButtonNotAssigned(id) => write!(f, "Button with id {} not assigned", id),
+            Self::FaderNotAssigned(id) => write!(f, "Fader with id {} not assigned", id),
 
             Self::MpscSendError => write!(f, "Mpsc send error"),
             Self::MidirError(err) => write!(f, "Midir error: {}", err),

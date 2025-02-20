@@ -62,6 +62,7 @@ pub enum ApcMiniMk2ButtonLedColor {
     Red,
     Green,
     Orange,
+    Yellow,
     Pink,
     Blue,
 }
@@ -74,6 +75,7 @@ impl ApcMiniMk2ButtonLedColor {
             Self::Red => 5,
             Self::Green => 21,
             Self::Orange => 9,
+            Self::Yellow => 13,
             Self::Pink => 106,
             Self::Blue => 45,
         }
