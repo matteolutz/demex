@@ -145,7 +145,12 @@ pub enum Action {
     RecordMacro(Box<Action>, u32),
 
     CreateSequence(Option<u32>, Option<String>),
-    CreateExecutor(Option<u32>, ExecutorCreationModeActionData, FixtureSelector),
+    CreateExecutor(
+        Option<u32>,
+        ExecutorCreationModeActionData,
+        FixtureSelector,
+        Option<String>,
+    ),
     CreateMacro(Option<u32>, Box<Action>, Option<String>),
     CreateFader(Option<u32>, FaderCreationConfigActionData, Option<String>),
 
@@ -293,10 +298,11 @@ impl Action {
             }
 
             Self::CreateSequence(id, name) => self.run_create_sequence(preset_handler, *id, name),
-            Self::CreateExecutor(id, mode, fixture_selector) => self.run_create_executor(
+            Self::CreateExecutor(id, mode, fixture_selector, name) => self.run_create_executor(
                 updatable_handler,
                 preset_handler,
                 *id,
+                name,
                 mode,
                 fixture_selector,
                 fixture_selector_context,
@@ -732,6 +738,7 @@ impl Action {
         updatable_handler: &mut UpdatableHandler,
         preset_handler: &PresetHandler,
         id: Option<u32>,
+        name: &Option<String>,
         mode: &ExecutorCreationModeActionData,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
@@ -743,6 +750,7 @@ impl Action {
         updatable_handler
             .create_executor(
                 id.unwrap_or_else(|| updatable_handler.next_executor_id()),
+                name.clone(),
                 mode,
                 fixtures_selected,
             )

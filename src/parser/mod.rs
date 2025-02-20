@@ -824,7 +824,14 @@ impl<'a> Parser2<'a> {
 
                 let fixture_selector = self.parse_fixture_selector()?;
 
-                Ok(Action::CreateExecutor(executor_id, mode, fixture_selector))
+                let executor_name = self.try_parse(Self::parse_as).ok();
+
+                Ok(Action::CreateExecutor(
+                    executor_id,
+                    mode,
+                    fixture_selector,
+                    executor_name,
+                ))
             }
             Token::KeywordMacro => {
                 self.advance();

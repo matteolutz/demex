@@ -19,6 +19,9 @@ pub struct Executor {
     id: u32,
 
     #[serde(default)]
+    name: String,
+
+    #[serde(default)]
     priority: FixtureChannelValuePriority,
 
     #[serde(default)]
@@ -30,12 +33,14 @@ pub struct Executor {
 impl Executor {
     pub fn new_sequence(
         id: u32,
+        name: Option<String>,
         sequence_id: u32,
         fixtures: Vec<u32>,
         priority: FixtureChannelValuePriority,
     ) -> Self {
         Self {
             id,
+            name: name.unwrap_or_else(|| format!("Sequence Executor {}", id)),
             config: ExecutorConfig::Sequence {
                 runtime: SequenceRuntime::new(sequence_id),
                 fixtures,
@@ -45,9 +50,15 @@ impl Executor {
         }
     }
 
-    pub fn new_effect(id: u32, fixtures: Vec<u32>, priority: FixtureChannelValuePriority) -> Self {
+    pub fn new_effect(
+        id: u32,
+        name: Option<String>,
+        fixtures: Vec<u32>,
+        priority: FixtureChannelValuePriority,
+    ) -> Self {
         Self {
             id,
+            name: name.unwrap_or_else(|| format!("Effect Executor {}", id)),
             config: ExecutorConfig::FeatureEffect {
                 runtime: FeatureEffectRuntime::default(),
                 selection: fixtures.into(),
@@ -61,15 +72,16 @@ impl Executor {
         self.id
     }
 
-    pub fn name(&self, preset_handler: &PresetHandler) -> String {
-        match &self.config {
+    pub fn name(&self) -> &str {
+        /*match &self.config {
             ExecutorConfig::Sequence { runtime, .. } => preset_handler
                 .get_sequence(runtime.sequence_id())
                 .unwrap()
                 .name()
                 .to_owned(),
             ExecutorConfig::FeatureEffect { runtime, .. } => format!("{}", runtime.effect()),
-        }
+        }*/
+        &self.name
     }
 
     pub fn fixtures(&self) -> &[u32] {
@@ -198,16 +210,20 @@ impl Executor {
     pub fn to_string(&self, preset_handler: &PresetHandler) -> String {
         match &self.config {
             ExecutorConfig::Sequence { runtime, .. } => format!(
-                "{}\nSeq - ({}/{})",
-                self.name(preset_handler),
+                "{}\nSeq - ({}/{})\n{}",
+                self.name(),
                 runtime
                     .current_cue()
                     .map(|c| (c + 1).to_string())
                     .unwrap_or("-".to_owned()),
                 runtime.num_cues(preset_handler),
+                preset_handler
+                    .get_sequence(runtime.sequence_id())
+                    .unwrap()
+                    .name()
             ),
-            ExecutorConfig::FeatureEffect { .. } => {
-                format!("{}\nEffect", self.name(preset_handler))
+            ExecutorConfig::FeatureEffect { runtime, .. } => {
+                format!("{}\nEffect\n{}", self.name(), runtime.effect())
             }
         }
     }

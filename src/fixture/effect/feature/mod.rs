@@ -18,6 +18,7 @@ pub mod runtime;
 pub enum FeatureEffect {
     IntensitySine {
         speed: f32,
+        k: Option<f32>,
     },
 
     PositionPanTiltFigureEight {
@@ -79,10 +80,16 @@ impl FeatureEffect {
         phase_offset: f32,
     ) -> Result<FixtureFeatureValue, EffectError> {
         match self {
-            Self::IntensitySine { speed } => {
-                let intensity = f32::sin(
+            Self::IntensitySine { speed, k } => {
+                let intensity_sine = f32::sin(
                     t as f32 * speed + (3.0 * f32::consts::FRAC_PI_2) - phase_offset.to_radians(),
-                ) * 0.5
+                );
+
+                let intensity = (if let Some(k) = k {
+                    intensity_sine * k
+                } else {
+                    intensity_sine
+                }) * 0.5
                     + 0.5;
 
                 Ok(FixtureFeatureValue::Intensity { intensity })

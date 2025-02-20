@@ -49,6 +49,7 @@ impl UpdatableHandler {
     pub fn create_executor(
         &mut self,
         id: u32,
+        name: Option<String>,
         mode: &ExecutorCreationModeActionData,
         fixtures: Vec<u32>,
     ) -> Result<(), UpdatableHandlerError> {
@@ -60,10 +61,11 @@ impl UpdatableHandler {
             id,
             match mode {
                 ExecutorCreationModeActionData::Effect => {
-                    Executor::new_effect(id, fixtures, FixtureChannelValuePriority::default())
+                    Executor::new_effect(id, name, fixtures, FixtureChannelValuePriority::default())
                 }
                 ExecutorCreationModeActionData::Sequence(sequence_id) => Executor::new_sequence(
                     id,
+                    name,
                     *sequence_id,
                     fixtures,
                     FixtureChannelValuePriority::default(),
