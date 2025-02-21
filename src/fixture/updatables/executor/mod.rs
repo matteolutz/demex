@@ -7,6 +7,7 @@ use crate::fixture::{
     effect::feature::runtime::FeatureEffectRuntime,
     handler::FixtureHandler,
     presets::PresetHandler,
+    selection::FixtureSelection,
     sequence::{runtime::SequenceRuntime, FadeFixtureChannelValue},
     value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
 };
@@ -35,7 +36,7 @@ impl Executor {
         id: u32,
         name: Option<String>,
         sequence_id: u32,
-        fixtures: Vec<u32>,
+        selection: FixtureSelection,
         priority: FixtureChannelValuePriority,
     ) -> Self {
         Self {
@@ -43,7 +44,7 @@ impl Executor {
             name: name.unwrap_or_else(|| format!("Sequence Executor {}", id)),
             config: ExecutorConfig::Sequence {
                 runtime: SequenceRuntime::new(sequence_id),
-                fixtures,
+                fixtures: selection.fixtures().to_vec(),
             },
             priority,
             stop_others: false,
@@ -53,7 +54,7 @@ impl Executor {
     pub fn new_effect(
         id: u32,
         name: Option<String>,
-        fixtures: Vec<u32>,
+        selection: FixtureSelection,
         priority: FixtureChannelValuePriority,
     ) -> Self {
         Self {
@@ -61,7 +62,7 @@ impl Executor {
             name: name.unwrap_or_else(|| format!("Effect Executor {}", id)),
             config: ExecutorConfig::FeatureEffect {
                 runtime: FeatureEffectRuntime::default(),
-                selection: fixtures.into(),
+                selection,
             },
             priority,
             stop_others: false,

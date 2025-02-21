@@ -58,46 +58,32 @@ pub enum AtomicFixtureSelector {
 
 impl AtomicFixtureSelector {
     // TOOD: change this to get_selection
-    pub fn get_fixtures(
+    pub fn get_selection(
         &self,
         preset_handler: &PresetHandler,
         context: FixtureSelectorContext,
-    ) -> Result<Vec<u32>, FixtureSelectorError> {
+    ) -> Result<FixtureSelection, FixtureSelectorError> {
         match self {
-            Self::SingleFixture(f) => Ok(vec![*f]),
-            Self::FixtureRange(begin, end) => Ok((*begin..*end + 1).collect()),
-            Self::SelectorGroup(s) => s.get_fixtures(preset_handler, context),
+            Self::SingleFixture(f) => Ok(vec![*f].into()),
+            Self::FixtureRange(begin, end) => Ok((*begin..*end + 1).collect::<Vec<_>>().into()),
+            Self::SelectorGroup(s) => s
+                .get_selection(preset_handler, context)
+                .map(FixtureSelection::from),
             Self::FixtureGroup(id) => {
                 let group = preset_handler
                     .get_group(*id)
                     .map_err(FixtureSelectorError::PresetHandlerError)?;
-                Ok(group.fixture_selection().fixtures().to_vec())
+                Ok(group.fixture_selection().clone())
             }
-            Self::FixtureIdList(ids) => Ok(ids.clone()),
+            Self::FixtureIdList(ids) => Ok(ids.clone().into()),
             Self::CurrentFixturesSelected => {
                 if let Some(selection) = context.current_fixture_selection {
-                    Ok(selection.fixtures().to_vec())
+                    Ok(selection.clone())
                 } else {
-                    Ok(vec![])
+                    Ok(vec![].into())
                 }
             }
-            Self::None => Ok(vec![]),
-        }
-    }
-
-    pub fn flatten(
-        &self,
-        preset_handler: &PresetHandler,
-        context: FixtureSelectorContext,
-    ) -> Result<Self, FixtureSelectorError> {
-        match self {
-            Self::CurrentFixturesSelected => {
-                let fixtures = self
-                    .get_fixtures(preset_handler, context)
-                    .map_err(|e| FixtureSelectorError::FailedToFlatten(Box::new(e)))?;
-                Ok(Self::FixtureIdList(fixtures))
-            }
-            _ => Ok(self.clone()),
+            Self::None => Ok(vec![].into()),
         }
     }
 
@@ -135,57 +121,35 @@ impl Default for FixtureSelector {
 }
 
 impl FixtureSelector {
-    pub fn get_fixtures(
+    pub fn get_selection(
         &self,
         preset_handler: &PresetHandler,
         context: FixtureSelectorContext,
-    ) -> Result<Vec<u32>, FixtureSelectorError> {
+    ) -> Result<FixtureSelection, FixtureSelectorError> {
         match self {
-            Self::Atomic(f) => f.get_fixtures(preset_handler, context),
+            Self::Atomic(f) => f.get_selection(preset_handler, context),
             Self::Additive(a, b) => {
-                let mut fixtures = a.get_fixtures(preset_handler, context.clone())?;
-                fixtures.extend(b.get_fixtures(preset_handler, context)?);
+                let mut fixtures = a.get_selection(preset_handler, context.clone())?;
+                fixtures.extend_from(&b.get_selection(preset_handler, context)?);
                 Ok(fixtures)
             }
             Self::Subtractive(a, b) => {
-                let mut fixtures = a.get_fixtures(preset_handler, context.clone())?;
-                let fixtures_b = b.get_fixtures(preset_handler, context)?;
-                fixtures.retain(|f| !fixtures_b.contains(f));
+                let mut fixtures = a.get_selection(preset_handler, context.clone())?;
+                let fixtures_b = b.get_selection(preset_handler, context)?;
+                fixtures.subtract(&fixtures_b);
                 Ok(fixtures)
             }
             Self::Modulus(fixture_selector, d, invert) => {
-                let mut fixtures = fixture_selector.get_fixtures(preset_handler, context)?;
-                fixtures = fixtures
-                    .iter()
-                    .enumerate()
-                    .filter(|&(idx, _)| (idx as u32 % d == 0) != *invert)
-                    .map(|(_, val)| *val)
-                    .collect::<Vec<u32>>();
-                Ok(fixtures)
-            }
-        }
-    }
-
-    pub fn flatten(
-        &self,
-        preset_handler: &PresetHandler,
-        context: FixtureSelectorContext,
-    ) -> Result<Self, FixtureSelectorError> {
-        match self {
-            Self::Atomic(f) => f.flatten(preset_handler, context).map(Self::Atomic),
-            Self::Additive(a, b) => {
-                let a = a.flatten(preset_handler, context.clone())?;
-                let b = b.flatten(preset_handler, context)?;
-                Ok(Self::Additive(a, Box::new(b)))
-            }
-            Self::Subtractive(a, b) => {
-                let a = a.flatten(preset_handler, context.clone())?;
-                let b = b.flatten(preset_handler, context)?;
-                Ok(Self::Subtractive(a, Box::new(b)))
-            }
-            Self::Modulus(fixture_selector, d, invert) => {
-                let fixture_selector = fixture_selector.flatten(preset_handler, context)?;
-                Ok(Self::Modulus(fixture_selector, *d, *invert))
+                let selection = fixture_selector.get_selection(preset_handler, context)?;
+                let mut new_selection = vec![];
+                for fixture_id in selection.fixtures() {
+                    let fixture_idx = selection.offset_idx(*fixture_id).unwrap();
+                    if (fixture_idx as u32 % d == 0) == *invert {
+                        continue;
+                    }
+                    new_selection.push(*fixture_id);
+                }
+                Ok(new_selection.into())
             }
         }
     }

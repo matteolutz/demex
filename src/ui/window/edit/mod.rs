@@ -18,6 +18,7 @@ pub enum DemexEditWindow {
     EditExecutor(u32),
     EditFader(u32),
     EditPreset(FixturePresetId),
+    EditGroup(u32),
 
     Config(ConfigTypeActionData),
 }
@@ -37,6 +38,7 @@ impl DemexEditWindow {
             Self::EditPreset(preset_id) => {
                 format!("Preset {}", preset_id)
             }
+            Self::EditGroup(group_id) => format!("Group {}", group_id),
             Self::Config(config_type) => format!("Config {:?}", config_type),
         }
     }
@@ -75,6 +77,9 @@ impl DemexEditWindow {
             }
             Self::EditPreset(preset_id) => {
                 Probe::new(preset_handler.get_preset_mut(*preset_id)?).show(ui);
+            }
+            Self::EditGroup(group_id) => {
+                Probe::new(preset_handler.get_group_mut(*group_id)?).show(ui);
             }
             Self::Config(config_type) => match config_type {
                 ConfigTypeActionData::Output => {

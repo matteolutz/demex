@@ -38,18 +38,27 @@ impl FixtureSelection {
         self.fixtures.iter().any(|id| other.has_fixture(*id))
     }
 
+    pub fn extend_from(&mut self, other: &FixtureSelection) {
+        for fixture in other.fixtures() {
+            if self.fixtures.contains(fixture) {
+                continue;
+            }
+            self.fixtures.push(*fixture);
+        }
+    }
+
+    pub fn subtract(&mut self, other: &FixtureSelection) {
+        self.fixtures.retain(|f| !other.has_fixture(*f));
+    }
+
     pub fn equals_selector(
         &self,
         selector: &FixtureSelector,
         preset_handler: &PresetHandler,
         context: FixtureSelectorContext,
     ) -> bool {
-        let fixtures = selector.get_fixtures(preset_handler, context);
-        if let Ok(fixtures) = fixtures {
-            &FixtureSelection::from(fixtures) == self
-        } else {
-            false
-        }
+        let selection = selector.get_selection(preset_handler, context);
+        selection.is_ok_and(|selection| &selection == self)
     }
 
     pub fn add_fixtures(&mut self, fixtures: &[u32]) {

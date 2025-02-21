@@ -14,8 +14,8 @@ use crate::parser::nodes::{
 };
 
 use super::{
-    handler::FixtureHandler, presets::PresetHandler, sequence::runtime::SequenceRuntime,
-    value_source::FixtureChannelValuePriority,
+    handler::FixtureHandler, presets::PresetHandler, selection::FixtureSelection,
+    sequence::runtime::SequenceRuntime, value_source::FixtureChannelValuePriority,
 };
 
 pub mod error;
@@ -51,7 +51,7 @@ impl UpdatableHandler {
         id: u32,
         name: Option<String>,
         mode: &ExecutorCreationModeActionData,
-        fixtures: Vec<u32>,
+        selection: FixtureSelection,
     ) -> Result<(), UpdatableHandlerError> {
         if self.executors.contains_key(&id) {
             return Err(UpdatableHandlerError::UpdatableAlreadyExists(id));
@@ -60,14 +60,17 @@ impl UpdatableHandler {
         self.executors.insert(
             id,
             match mode {
-                ExecutorCreationModeActionData::Effect => {
-                    Executor::new_effect(id, name, fixtures, FixtureChannelValuePriority::default())
-                }
+                ExecutorCreationModeActionData::Effect => Executor::new_effect(
+                    id,
+                    name,
+                    selection,
+                    FixtureChannelValuePriority::default(),
+                ),
                 ExecutorCreationModeActionData::Sequence(sequence_id) => Executor::new_sequence(
                     id,
                     name,
                     *sequence_id,
-                    fixtures,
+                    selection,
                     FixtureChannelValuePriority::default(),
                 ),
             },
@@ -202,8 +205,8 @@ impl UpdatableHandler {
         let fader_config = match config {
             FaderCreationConfigActionData::Submaster(fixture_selector) => {
                 DemexFaderConfig::Submaster {
-                    fixtures: fixture_selector
-                        .get_fixtures(preset_handler, fixture_selector_context)
+                    selection: fixture_selector
+                        .get_selection(preset_handler, fixture_selector_context)
                         .map_err(UpdatableHandlerError::FixtureSelectorError)?,
                 }
             }
@@ -213,11 +216,11 @@ impl UpdatableHandler {
                     .map_err(UpdatableHandlerError::PresetHandlerError)?;
 
                 let fixtures = fixture_selector
-                    .get_fixtures(preset_handler, fixture_selector_context)
+                    .get_selection(preset_handler, fixture_selector_context)
                     .map_err(UpdatableHandlerError::FixtureSelectorError)?;
 
                 DemexFaderConfig::SequenceRuntime {
-                    fixtures,
+                    selection: fixtures,
                     runtime: SequenceRuntime::new(*sequence_id),
                     function: DemexFaderRuntimeFunction::default(),
                 }

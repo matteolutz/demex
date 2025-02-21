@@ -12,6 +12,7 @@ pub mod layout_view_tab;
 pub mod logs_tab;
 pub mod performance_tab;
 pub mod preset_grid_tab;
+pub mod sequence_editor_tab;
 pub mod sequences_list_tab;
 
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
@@ -22,6 +23,7 @@ pub enum DemexTab {
     FixtureControls,
     Faders,
     SequencesList,
+    SequenceEditor,
     Logs,
     Performance,
 }
@@ -35,6 +37,7 @@ impl std::fmt::Display for DemexTab {
             DemexTab::FixtureControls => write!(f, "Fixture Controls"),
             DemexTab::Faders => write!(f, "Faders"),
             DemexTab::SequencesList => write!(f, "Sequences List"),
+            DemexTab::SequenceEditor => write!(f, "Sequence Editor"),
             DemexTab::Logs => write!(f, "Logs"),
             DemexTab::Performance => write!(f, "Performance"),
         }
@@ -50,6 +53,9 @@ impl DemexTab {
             DemexTab::FixtureControls => fixture_controls_tab::ui(ui, context),
             DemexTab::Faders => faders_tab::ui(ui, context),
             DemexTab::SequencesList => sequences_list_tab::ui(ui, context),
+            DemexTab::SequenceEditor => {
+                sequence_editor_tab::SequenceEditorTab::new(context, "MainSequenceEditor").show(ui)
+            }
             DemexTab::Logs => logs_tab::ui(ui, context),
             DemexTab::Performance => performance_tab::ui(ui, context),
         }
@@ -108,7 +114,7 @@ impl Default for DemexTabs {
         let [old_node, new_node] = surface.split_left(
             egui_dock::NodeIndex::root(),
             0.65,
-            vec![DemexTab::FixtureControls],
+            vec![DemexTab::FixtureControls, DemexTab::SequenceEditor],
         );
 
         surface.split_below(new_node, 0.5, vec![DemexTab::LayoutView]);

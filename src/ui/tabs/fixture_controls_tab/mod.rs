@@ -76,7 +76,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     feature_f32_slider(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         FixtureFeatureType::Intensity,
                                         &mut fixture_handler,
                                         &preset_handler,
@@ -96,7 +96,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     feature_f32_slider(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         FixtureFeatureType::Zoom,
                                         &mut fixture_handler,
                                         &preset_handler,
@@ -114,7 +114,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     feature_f32_slider(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         FixtureFeatureType::Focus,
                                         &mut fixture_handler,
                                         &preset_handler,
@@ -132,7 +132,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     feature_f32_slider(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         FixtureFeatureType::Shutter,
                                         &mut fixture_handler,
                                         &preset_handler,
@@ -153,7 +153,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     color_rgb_controls_ui(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         &preset_handler,
                                         &mut fixture_handler,
                                     );
@@ -164,7 +164,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     color_macro_ui(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         &mut fixture_handler,
                                     );
                                 }
@@ -172,7 +172,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     position_pan_tilt_controls_ui(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         &preset_handler,
                                         &mut fixture_handler,
                                     );
@@ -181,7 +181,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     toggle_flags_controls_ui(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         &preset_handler,
                                         &mut fixture_handler,
                                     );

@@ -203,17 +203,8 @@ impl DemexUiContext {
                     self.windows.push(demex_edit_window);
                 }
             }
-            ActionRunResult::UpdateSelectedFixtures(fixture_selector) => {
-                let selected_fixtures = fixture_selector.get_fixtures(
-                    &self.preset_handler.read(),
-                    FixtureSelectorContext::new(&self.global_fixture_select),
-                );
-
-                if let Ok(selected_fixtures) = selected_fixtures {
-                    self.global_fixture_select = Some(selected_fixtures.into())
-                } else if let Err(err) = selected_fixtures {
-                    self.add_dialog_entry(DemexGlobalDialogEntry::error(&err));
-                }
+            ActionRunResult::UpdateSelectedFixtures(selection) => {
+                self.global_fixture_select = Some(selection);
             }
             ActionRunResult::Default => {}
         }

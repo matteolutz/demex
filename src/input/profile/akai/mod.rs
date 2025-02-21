@@ -282,7 +282,7 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                     )?;
                 }
                 DemexInputButton::SelectivePreset {
-                    fixture_selector,
+                    selection,
                     preset_id,
                 } => {
                     let target_mode = preset_handler
@@ -300,12 +300,12 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
 
                     self.set_button_led(
                         *button_id,
-                        if target_mode == FixturePresetTarget::AllSelected {
+                        if selection.is_some() || target_mode == FixturePresetTarget::AllSelected {
                             ApcMiniMk2ButtonLedMode::IntensFull
                         } else {
                             ApcMiniMk2ButtonLedMode::Intens10
                         },
-                        if fixture_selector.is_some() {
+                        if selection.is_some() {
                             ApcMiniMk2ButtonLedColor::Orange
                         } else {
                             ApcMiniMk2ButtonLedColor::Yellow

@@ -92,10 +92,11 @@ impl FixturePreset {
         let mut data = HashMap::new();
 
         for fixture_id in fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
+            .get_selection(preset_handler, fixture_selector_context)
             .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?
+            .fixtures()
         {
-            let fixture = fixture_handler.fixture_immut(fixture_id);
+            let fixture = fixture_handler.fixture_immut(*fixture_id);
 
             if let Some(fixture) = fixture {
                 let mut values = HashMap::new();
@@ -120,7 +121,7 @@ impl FixturePreset {
                             .channel_value_programmer(channel_type)
                             .and_then(|value| {
                                 value
-                                    .to_discrete_value(fixture_id, channel_type, preset_handler)
+                                    .to_discrete_value(*fixture_id, channel_type, preset_handler)
                                     .map_err(FixtureError::FixtureChannelError2)
                             })
                             .map_err(PresetHandlerError::FixtureError)?;
@@ -129,7 +130,7 @@ impl FixturePreset {
                     }
                 }
 
-                data.insert(fixture_id, values);
+                data.insert(*fixture_id, values);
             }
         }
 

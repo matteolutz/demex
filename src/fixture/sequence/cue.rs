@@ -121,6 +121,9 @@ pub struct Cue {
     #[egui_probe(skip)]
     cue_idx: CueIdx,
 
+    #[serde(default)]
+    name: String,
+
     #[egui_probe(skip)]
     data: HashMap<u32, Vec<CueFixtureChannelValue>>,
 
@@ -162,6 +165,7 @@ impl Cue {
     ) -> Self {
         Self {
             cue_idx,
+            name: format!("Cue {}.{}", cue_idx.0, cue_idx.1),
 
             data,
             selection,
@@ -180,6 +184,14 @@ impl Cue {
         self.cue_idx
     }
 
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn name_mut(&mut self) -> &mut String {
+        &mut self.name
+    }
+
     pub fn data(&self) -> &HashMap<u32, Vec<CueFixtureChannelValue>> {
         &self.data
     }
@@ -188,28 +200,56 @@ impl Cue {
         self.in_fade
     }
 
+    pub fn in_fade_mut(&mut self) -> &mut f32 {
+        &mut self.in_fade
+    }
+
     pub fn out_fade(&self) -> f32 {
         self.out_fade.unwrap_or(self.in_fade)
+    }
+
+    pub fn out_fade_mut(&mut self) -> &mut Option<f32> {
+        &mut self.out_fade
     }
 
     pub fn in_delay(&self) -> f32 {
         self.in_delay
     }
 
+    pub fn in_delay_mut(&mut self) -> &mut f32 {
+        &mut self.in_delay
+    }
+
     pub fn out_delay(&self) -> f32 {
         self.out_delay.unwrap_or(self.in_delay)
+    }
+
+    pub fn out_delay_mut(&mut self) -> &mut Option<f32> {
+        &mut self.out_delay
     }
 
     pub fn snap_percent(&self) -> f32 {
         self.snap_percent
     }
 
+    pub fn snap_percent_mut(&mut self) -> &mut f32 {
+        &mut self.snap_percent
+    }
+
     pub fn timing(&self) -> &CueTiming {
         &self.timing
     }
 
+    pub fn timing_mut(&mut self) -> &mut CueTiming {
+        &mut self.timing
+    }
+
     pub fn trigger(&self) -> &CueTrigger {
         &self.trigger
+    }
+
+    pub fn trigger_mut(&mut self) -> &mut CueTrigger {
+        &mut self.trigger
     }
 
     pub fn num_fixtures(&self) -> usize {

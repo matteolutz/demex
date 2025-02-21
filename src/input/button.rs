@@ -10,7 +10,7 @@ use crate::{
     },
     parser::nodes::{
         action::Action,
-        fixture_selector::{AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext},
+        fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
     },
 };
 
@@ -26,7 +26,7 @@ pub enum DemexInputButton {
 
     SelectivePreset {
         #[egui_probe(skip)]
-        fixture_selector: Option<FixtureSelector>,
+        selection: Option<FixtureSelection>,
         preset_id: FixturePresetId,
     },
 
@@ -69,25 +69,27 @@ impl DemexInputButton {
                 .and_then(|f| f.sequence_go(preset_handler))
                 .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
             Self::SelectivePreset {
-                fixture_selector,
+                selection,
                 preset_id,
             } => {
                 let preset = preset_handler
                     .get_preset(*preset_id)
                     .map_err(DemexInputDeviceError::PresetHandlerError)?;
 
-                for fixture_id in fixture_selector
-                    .as_ref()
-                    .unwrap_or(&FixtureSelector::Atomic(
-                        AtomicFixtureSelector::CurrentFixturesSelected,
-                    ))
-                    .get_fixtures(preset_handler, fixture_selector_context)
-                    .map_err(DemexInputDeviceError::FixtureSelectorError)?
-                {
+                let selection = if let Some(selection) = selection {
+                    Some(selection)
+                } else {
+                    global_fixture_selection.as_ref()
+                }
+                .ok_or(DemexInputDeviceError::FixtureSelectorError(
+                    FixtureSelectorError::NoFixturesMatched,
+                ))?;
+
+                for fixture_id in selection.fixtures() {
                     preset
-                        .apply(fixture_handler.fixture(fixture_id).ok_or_else(|| {
+                        .apply(fixture_handler.fixture(*fixture_id).ok_or_else(|| {
                             DemexInputDeviceError::FixtureHandlerError(
-                                FixtureHandlerError::FixtureNotFound(fixture_id),
+                                FixtureHandlerError::FixtureNotFound(*fixture_id),
                             )
                         })?)
                         .map_err(DemexInputDeviceError::PresetHandlerError)?;
@@ -99,9 +101,8 @@ impl DemexInputButton {
             Self::FixtureSelector { fixture_selector } => {
                 *global_fixture_selection = Some(
                     fixture_selector
-                        .get_fixtures(preset_handler, fixture_selector_context)
-                        .map_err(DemexInputDeviceError::FixtureSelectorError)?
-                        .into(),
+                        .get_selection(preset_handler, fixture_selector_context)
+                        .map_err(DemexInputDeviceError::FixtureSelectorError)?,
                 );
             }
             Self::Unused => {}

@@ -5,7 +5,10 @@ use row::preset_grid_row_ui;
 use crate::{
     fixture::{presets::preset::FixturePresetId, updatables::executor::config::ExecutorConfig},
     lexer::token::Token,
-    ui::DemexUiContext,
+    ui::{
+        window::{edit::DemexEditWindow, DemexWindow},
+        DemexUiContext,
+    },
 };
 
 pub const PRESET_GRID_ELEMENT_SIZE: [f32; 2] = [80.0, 80.0];
@@ -62,6 +65,14 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                             Token::KeywordGroup,
                             Token::Integer(id),
                         ]);
+                    }
+                }
+
+                if response.secondary_clicked() {
+                    if let Ok(g) = g {
+                        context
+                            .windows
+                            .push(DemexWindow::Edit(DemexEditWindow::EditGroup(g.id())));
                     }
                 }
 
