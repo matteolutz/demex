@@ -1,29 +1,20 @@
 use serde::{Deserialize, Serialize};
 
-use crate::parser::nodes::fixture_selector::{
-    FixtureSelector, FixtureSelectorContext, FixtureSelectorError,
-};
-
-use super::PresetHandler;
+use crate::{ fixture::selection::FixtureSelection};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FixtureGroup {
     id: u32,
     name: String,
-    fixture_selector: FixtureSelector,
+    fixture_selection: FixtureSelection,
 }
 
 impl FixtureGroup {
-    pub fn new(id: u32, name: Option<String>, fixture_selector: FixtureSelector) -> Self {
-        assert!(
-            fixture_selector.is_flat(),
-            "FixtureGroup fixture selector must be flattened"
-        );
-
+    pub fn new(id: u32, name: Option<String>, fixture_selection: FixtureSelection) -> Self {
         FixtureGroup {
             id,
             name: name.unwrap_or(format!("Group {}", id)),
-            fixture_selector,
+            fixture_selection,
         }
     }
 
@@ -39,11 +30,7 @@ impl FixtureGroup {
         &mut self.name
     }
 
-    pub fn get_fixtures(
-        &self,
-        preset_handler: &PresetHandler,
-        context: FixtureSelectorContext,
-    ) -> Result<Vec<u32>, FixtureSelectorError> {
-        self.fixture_selector.get_fixtures(preset_handler, context)
+    pub fn fixture_selection(&self) -> &FixtureSelection {
+        &self.fixture_selection
     }
 }

@@ -1,16 +1,19 @@
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::presets::{error::PresetHandlerError, PresetHandler};
+use crate::fixture::{
+    presets::{error::PresetHandlerError, PresetHandler},
+    selection::FixtureSelection,
+};
 
 #[derive(Debug, Clone)]
 pub struct FixtureSelectorContext<'a> {
-    current_fixture_selector: &'a Option<FixtureSelector>,
+    current_fixture_selection: &'a Option<FixtureSelection>,
 }
 
 impl<'a> FixtureSelectorContext<'a> {
-    pub fn new(current_fixture_selector: &'a Option<FixtureSelector>) -> Self {
+    pub fn new(current_fixture_selection: &'a Option<FixtureSelection>) -> Self {
         Self {
-            current_fixture_selector,
+            current_fixture_selection,
         }
     }
 }
@@ -54,6 +57,7 @@ pub enum AtomicFixtureSelector {
 }
 
 impl AtomicFixtureSelector {
+    // TOOD: change this to get_selection
     pub fn get_fixtures(
         &self,
         preset_handler: &PresetHandler,
@@ -67,12 +71,12 @@ impl AtomicFixtureSelector {
                 let group = preset_handler
                     .get_group(*id)
                     .map_err(FixtureSelectorError::PresetHandlerError)?;
-                group.get_fixtures(preset_handler, context)
+                Ok(group.fixture_selection().fixtures().to_vec())
             }
             Self::FixtureIdList(ids) => Ok(ids.clone()),
             Self::CurrentFixturesSelected => {
-                if let Some(selector) = context.current_fixture_selector {
-                    selector.get_fixtures(preset_handler, context)
+                if let Some(selection) = context.current_fixture_selection {
+                    Ok(selection.fixtures().to_vec())
                 } else {
                     Ok(vec![])
                 }

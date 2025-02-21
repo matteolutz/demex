@@ -5,14 +5,14 @@ use parking_lot::RwLock;
 use crate::{
     fixture::{
         channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler,
-        presets::PresetHandler, updatables::UpdatableHandler,
+        presets::PresetHandler, selection::FixtureSelection, updatables::UpdatableHandler,
     },
     input::DemexInputDeviceHandler,
     lexer::token::Token,
     parser::{
         nodes::{
             action::{result::ActionRunResult, Action},
-            fixture_selector::{FixtureSelector, FixtureSelectorContext},
+            fixture_selector::FixtureSelectorContext,
         },
         Parser2,
     },
@@ -38,7 +38,7 @@ pub struct DemexUiContext {
     pub preset_handler: Arc<RwLock<PresetHandler>>,
     pub updatable_handler: Arc<RwLock<UpdatableHandler>>,
 
-    pub global_fixture_select: Option<FixtureSelector>,
+    pub global_fixture_select: Option<FixtureSelection>,
     pub command: Vec<Token>,
 
     pub stats: Arc<RwLock<DemexThreadStatsHandler>>,
@@ -204,7 +204,16 @@ impl DemexUiContext {
                 }
             }
             ActionRunResult::UpdateSelectedFixtures(fixture_selector) => {
-                self.global_fixture_select = Some(fixture_selector)
+                let selected_fixtures = fixture_selector.get_fixtures(
+                    &self.preset_handler.read(),
+                    FixtureSelectorContext::new(&self.global_fixture_select),
+                );
+
+                if let Ok(selected_fixtures) = selected_fixtures {
+                    self.global_fixture_select = Some(selected_fixtures.into())
+                } else if let Err(err) = selected_fixtures {
+                    self.add_dialog_entry(DemexGlobalDialogEntry::error(&err));
+                }
             }
             ActionRunResult::Default => {}
         }

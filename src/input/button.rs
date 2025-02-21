@@ -5,6 +5,7 @@ use crate::{
     fixture::{
         handler::{error::FixtureHandlerError, FixtureHandler},
         presets::{preset::FixturePresetId, PresetHandler},
+        selection::FixtureSelection,
         updatables::UpdatableHandler,
     },
     parser::nodes::{
@@ -51,7 +52,7 @@ impl DemexInputButton {
         updatable_handler: &mut UpdatableHandler,
         fixture_selector_context: FixtureSelectorContext,
         macro_exec_cue: &mut Vec<Action>,
-        global_fixture_selector: &mut Option<FixtureSelector>,
+        global_fixture_selection: &mut Option<FixtureSelection>,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
             Self::ExecutorFlash(executor_id) => updatable_handler
@@ -96,7 +97,12 @@ impl DemexInputButton {
                 macro_exec_cue.push(action.clone());
             }
             Self::FixtureSelector { fixture_selector } => {
-                *global_fixture_selector = Some(fixture_selector.clone());
+                *global_fixture_selection = Some(
+                    fixture_selector
+                        .get_fixtures(preset_handler, fixture_selector_context)
+                        .map_err(DemexInputDeviceError::FixtureSelectorError)?
+                        .into(),
+                );
             }
             Self::Unused => {}
         }

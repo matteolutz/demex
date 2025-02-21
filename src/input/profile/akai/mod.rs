@@ -5,15 +5,14 @@ use led::{ApcMiniMk2ButtonLedColor, ApcMiniMk2ButtonLedMode};
 use crate::{
     fixture::{
         presets::{preset::FixturePresetTarget, PresetHandler},
+        selection::FixtureSelection,
         updatables::error::UpdatableHandlerError,
     },
     input::{
         button::DemexInputButton, error::DemexInputDeviceError, message::DemexInputDeviceMessage,
         midi::MidiMessage, DemexInputDeviceProfile,
     },
-    parser::nodes::fixture_selector::{
-        AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
-    },
+    parser::nodes::fixture_selector::FixtureSelectorContext,
 };
 
 use super::DemexInputDeviceProfileType;
@@ -224,7 +223,7 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
         device_config: &crate::input::device::DemexInputDeviceConfig,
         preset_handler: &PresetHandler,
         updatable_handler: &crate::fixture::updatables::UpdatableHandler,
-        global_fixture_selector: &Option<FixtureSelector>,
+        global_fixture_selection: &Option<FixtureSelection>,
     ) -> Result<(), DemexInputDeviceError> {
         for (button_id, button) in device_config.buttons() {
             match button {
@@ -291,16 +290,10 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         .ok()
                         .map(|preset| {
                             preset.get_target(
-                                &fixture_selector
+                                global_fixture_selection
                                     .as_ref()
-                                    .unwrap_or(&FixtureSelector::Atomic(
-                                        AtomicFixtureSelector::CurrentFixturesSelected,
-                                    ))
-                                    .get_fixtures(
-                                        preset_handler,
-                                        FixtureSelectorContext::new(global_fixture_selector),
-                                    )
-                                    .unwrap_or(vec![]),
+                                    .map(|selection| selection.fixtures())
+                                    .unwrap_or(&[]),
                             )
                         })
                         .unwrap_or(FixturePresetTarget::None);
@@ -327,12 +320,13 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                     )?;
                 }
                 DemexInputButton::FixtureSelector { fixture_selector } => {
-                    let is_selected =
-                        global_fixture_selector
-                            .as_ref()
-                            .is_some_and(|global_fixtuer_selector| {
-                                global_fixtuer_selector == fixture_selector
-                            });
+                    let is_selected = global_fixture_selection.as_ref().is_some_and(|selection| {
+                        selection.equals_selector(
+                            fixture_selector,
+                            preset_handler,
+                            FixtureSelectorContext::new(global_fixture_selection),
+                        )
+                    });
 
                     self.set_button_led(
                         *button_id,

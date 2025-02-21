@@ -3,9 +3,6 @@ use crate::{
         channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
         layout::{FixtureLayoutDecoration, FixtureLayoutEntry, FixtureLayoutEntryType},
     },
-    parser::nodes::fixture_selector::{
-        AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
-    },
     ui::{
         graphics::layout_projection::LayoutProjection, utils::rect::rect_vertices, DemexUiContext,
     },
@@ -240,13 +237,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let global_fixture_select_fixtures = context
         .global_fixture_select
         .as_ref()
-        .and_then(|fs| {
-            fs.get_fixtures(
-                &preset_handler,
-                FixtureSelectorContext::new(&context.global_fixture_select),
-            )
-            .ok()
-        })
+        .map(|selection| selection.fixtures())
         .unwrap_or_default();
 
     for decoration in fixture_layout.decorations() {
@@ -406,14 +397,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
         if !selected_fixture_ids.is_empty() {
             if let Some(global_fixture_select) = context.global_fixture_select.as_mut() {
-                *global_fixture_select = FixtureSelector::Additive(
-                    AtomicFixtureSelector::FixtureIdList(selected_fixture_ids),
-                    Box::new(global_fixture_select.clone()),
-                );
+                global_fixture_select.add_fixtures(&selected_fixture_ids);
             } else {
-                context.global_fixture_select = Some(FixtureSelector::Atomic(
-                    AtomicFixtureSelector::FixtureIdList(selected_fixture_ids),
-                ));
+                context.global_fixture_select = Some(selected_fixture_ids.into());
             }
         }
 

@@ -667,11 +667,13 @@ impl Action {
         id: Option<u32>,
         name: &Option<String>,
     ) -> Result<ActionRunResult, ActionRunError> {
+        let fixtures = fixture_selector
+            .get_fixtures(preset_handler, fixture_selector_context)
+            .map_err(ActionRunError::FixtureSelectorError)?;
+
         preset_handler
             .record_group(
-                fixture_selector
-                    .flatten(preset_handler, fixture_selector_context)
-                    .map_err(ActionRunError::FixtureSelectorError)?,
+                fixtures.into(),
                 id.unwrap_or_else(|| preset_handler.next_group_id()),
                 name.clone(),
             )

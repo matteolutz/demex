@@ -1,10 +1,7 @@
 use egui::RichText;
 use itertools::Itertools;
 
-use crate::{
-    fixture::channel2::feature::feature_group::DefaultFeatureGroup,
-    parser::nodes::fixture_selector::FixtureSelectorContext,
-};
+use crate::fixture::channel2::feature::feature_group::DefaultFeatureGroup;
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let fixture_handler = context.fixture_handler.read();
@@ -12,16 +9,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let updatable_handler = context.updatable_handler.read();
 
     egui::ScrollArea::horizontal().show(ui, |ui| {
-        let selectd_fixtures = if let Some(fixture_select) = &context.global_fixture_select {
-            fixture_select
-                .get_fixtures(
-                    &preset_handler,
-                    FixtureSelectorContext::new(&context.global_fixture_select),
-                )
-                .unwrap_or(vec![])
-        } else {
-            vec![]
-        };
+        let selected_fixtures = context
+            .global_fixture_select
+            .as_ref()
+            .map(|selection| selection.fixtures())
+            .unwrap_or_default();
 
         egui_extras::TableBuilder::new(ui)
             .columns(egui_extras::Column::auto(), 7)
@@ -82,7 +74,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         row.col(|ui| {
                             ui.label(RichText::from(fixture.name()).strong().background_color(
-                                if selectd_fixtures.contains(&fixture.id()) {
+                                if selected_fixtures.contains(&fixture.id()) {
                                     egui::Color32::DARK_GREEN
                                 } else {
                                     egui::Color32::TRANSPARENT

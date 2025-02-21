@@ -5,9 +5,6 @@ use row::preset_grid_row_ui;
 use crate::{
     fixture::{presets::preset::FixturePresetId, updatables::executor::config::ExecutorConfig},
     lexer::token::Token,
-    parser::nodes::fixture_selector::{
-        AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
-    },
     ui::DemexUiContext,
 };
 
@@ -21,13 +18,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let preset_handler = context.preset_handler.read();
     let mut updatable_handler = context.updatable_handler.write();
 
-    let selected_fixtures = context.global_fixture_select.as_ref().and_then(|fs| {
-        fs.get_fixtures(
-            &preset_handler,
-            FixtureSelectorContext::new(&context.global_fixture_select),
-        )
-        .ok()
-    });
+    let _selected_fixtures = context
+        .global_fixture_select
+        .as_ref()
+        .map(|selection| selection.fixtures().to_vec());
+    let selected_fixtures = _selected_fixtures.as_ref();
 
     ui.vertical(|ui| {
         // Groups
@@ -39,15 +34,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     PresetGridButtonConfig::Preset {
                         id: g.id(),
                         name: g.name().to_owned(),
-                        top_bar_color: context.global_fixture_select.as_ref().and_then(|fs| {
-                            if fs
-                                == &FixtureSelector::Atomic(AtomicFixtureSelector::FixtureGroup(id))
-                            {
-                                Some(egui::Color32::GREEN)
-                            } else {
-                                None
-                            }
-                        }),
+                        top_bar_color: context.global_fixture_select.as_ref().and_then(
+                            |selection| {
+                                if selection == g.fixture_selection() {
+                                    Some(egui::Color32::GREEN)
+                                } else {
+                                    None
+                                }
+                            },
+                        ),
                     }
                 } else {
                     PresetGridButtonConfig::Empty { id }
@@ -75,9 +70,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     context.command_input.clear();
                     context.is_command_input_empty = true;
 
-                    context.global_fixture_select = Some(FixtureSelector::Atomic(
-                        AtomicFixtureSelector::FixtureGroup(id),
-                    ))
+                    if let Ok(g) = g {
+                        context.global_fixture_select = Some(g.fixture_selection().clone());
+                    }
                 }
             }
         });
@@ -139,7 +134,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                             context.command_input.clear();
                             context.is_command_input_empty = true;
 
-                            for fixture_id in selected_fixtures.as_ref().unwrap() {
+                            for fixture_id in selected_fixtures.unwrap() {
                                 p.as_ref()
                                     .unwrap()
                                     .apply(fixture_handler.fixture(*fixture_id).unwrap())

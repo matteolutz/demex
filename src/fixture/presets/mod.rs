@@ -62,7 +62,7 @@ impl Default for PresetHandler {
 impl PresetHandler {
     pub fn record_group(
         &mut self,
-        fixture_selector: FixtureSelector,
+        fixture_selection: FixtureSelection,
         id: u32,
         name: Option<String>,
     ) -> Result<(), PresetHandlerError> {
@@ -70,7 +70,7 @@ impl PresetHandler {
             return Err(PresetHandlerError::PresetAlreadyExists(id));
         }
 
-        let group = FixtureGroup::new(id, name, fixture_selector);
+        let group = FixtureGroup::new(id, name, fixture_selection);
         self.groups.insert(id, group);
         Ok(())
     }

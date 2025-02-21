@@ -4,12 +4,12 @@ use message::DemexInputDeviceMessage;
 use profile::DemexInputDeviceProfileType;
 
 use crate::{
-    fixture::{handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler},
-    lexer::token::Token,
-    parser::nodes::{
-        action::Action,
-        fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    fixture::{
+        handler::FixtureHandler, presets::PresetHandler, selection::FixtureSelection,
+        updatables::UpdatableHandler,
     },
+    lexer::token::Token,
+    parser::nodes::{action::Action, fixture_selector::FixtureSelectorContext},
 };
 
 pub mod button;
@@ -26,7 +26,7 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
         device_config: &DemexInputDeviceConfig,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
-        global_fixture_selector: &Option<FixtureSelector>,
+        global_fixture_selection: &Option<FixtureSelection>,
     ) -> Result<(), DemexInputDeviceError>;
     fn poll(&self) -> Result<Vec<DemexInputDeviceMessage>, DemexInputDeviceError>;
     fn profile_type(&self) -> DemexInputDeviceProfileType;
@@ -62,7 +62,7 @@ impl DemexInputDeviceHandler {
         updatable_handler: &mut UpdatableHandler,
         fixture_selector_context: FixtureSelectorContext,
         macro_exec_cue: &mut Vec<Action>,
-        global_fixture_selector: &mut Option<FixtureSelector>,
+        global_fixture_selection: &mut Option<FixtureSelection>,
         command_input: &mut Vec<Token>,
     ) -> Result<(), DemexInputDeviceError> {
         for (device_idx, device) in self.devices.iter().enumerate() {
@@ -81,7 +81,7 @@ impl DemexInputDeviceHandler {
                                 updatable_handler,
                                 fixture_selector_context.clone(),
                                 macro_exec_cue,
-                                global_fixture_selector,
+                                global_fixture_selection,
                             )?;
                         } else {
                             command_input.extend_from_slice(&[Token::FloatingPoint(
@@ -119,7 +119,7 @@ impl DemexInputDeviceHandler {
                 &device.config,
                 preset_handler,
                 updatable_handler,
-                global_fixture_selector,
+                global_fixture_selection,
             )?;
         }
 
