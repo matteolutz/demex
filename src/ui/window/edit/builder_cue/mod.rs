@@ -26,8 +26,10 @@ pub fn edit_builder_cue_ui(
 
     if let CueDataMode::Builder(data) = cue.data_mut() {
         egui_extras::TableBuilder::new(ui)
+            .striped(true)
             .column(egui_extras::Column::auto())
             .columns(egui_extras::Column::auto().at_least(200.0), 2)
+            .column(egui_extras::Column::auto())
             .header(20.0, |mut ui| {
                 ui.col(|ui| {
                     ui.heading("Idx");
@@ -40,9 +42,14 @@ pub fn edit_builder_cue_ui(
                 ui.col(|ui| {
                     ui.heading("Preset");
                 });
+
+                ui.col(|_| {});
             })
             .body(|mut ui| {
-                for (idx, entry) in data.iter_mut().enumerate() {
+                let mut idx = 0usize;
+                data.retain_mut(|entry| {
+                    let mut retain = true;
+
                     ui.row(20.0, |mut ui| {
                         ui.col(|ui| {
                             ui.label((idx + 1).to_string());
@@ -105,13 +112,24 @@ pub fn edit_builder_cue_ui(
                                 }
                             });
                         });
+
+                        ui.col(|ui| {
+                            if ui.button("-").clicked() {
+                                retain = false;
+                            }
+                        });
                     });
-                }
+
+                    idx += 1;
+                    retain
+                });
             });
 
-        if ui.button("Add Builder Entry").clicked() {
+        if ui.button("+").clicked() {
             data.push(CueBuilderEntry::default());
         }
+
+        ui.add_space(20.0);
     } else {
         ui.colored_label(egui::Color32::LIGHT_RED, "Error: Cue is not a builder cue.");
     }
