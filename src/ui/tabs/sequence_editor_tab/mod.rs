@@ -1,6 +1,12 @@
 use state::SequenceEditorState;
 
-use crate::ui::context::DemexUiContext;
+use crate::{
+    fixture::sequence::cue::{Cue, CueDataMode},
+    ui::{
+        context::DemexUiContext,
+        window::{edit::DemexEditWindow, DemexWindow},
+    },
+};
 
 mod state;
 
@@ -18,7 +24,7 @@ impl<'a> SequenceEditorTab<'a> {
     }
 
     fn show_selected_sequence(
-        &self,
+        &mut self,
         ui: &mut egui::Ui,
         sequence_id: u32,
         state: &mut SequenceEditorState,
@@ -34,7 +40,7 @@ impl<'a> SequenceEditorTab<'a> {
             ui.heading(sequence.name());
 
             egui_extras::TableBuilder::new(ui)
-                .columns(egui_extras::Column::auto(), 1)
+                .columns(egui_extras::Column::auto(), 2)
                 .column(egui_extras::Column::remainder())
                 .columns(egui_extras::Column::auto(), 7)
                 .striped(true)
@@ -42,6 +48,11 @@ impl<'a> SequenceEditorTab<'a> {
                     header.col(|ui| {
                         ui.heading("Cue Idx");
                     });
+
+                    header.col(|ui| {
+                        ui.heading("Builder");
+                    });
+
                     header.col(|ui| {
                         ui.heading("Name");
                     });
@@ -81,6 +92,23 @@ impl<'a> SequenceEditorTab<'a> {
 
                             row.col(|ui| {
                                 ui.label(format!("{}.{}", cue_idx_major, cue_idx_minor));
+                            });
+
+                            row.col(|ui| match cue.data() {
+                                CueDataMode::Builder(data) => {
+                                    ui.label(format!("{} entries", data.len()));
+                                    if ui.button("Edit").clicked() {
+                                        self.context.windows.push(DemexWindow::Edit(
+                                            DemexEditWindow::EditBuilderCue(
+                                                sequence_id,
+                                                cue.cue_idx(),
+                                            ),
+                                        ));
+                                    }
+                                }
+                                CueDataMode::Default(_) => {
+                                    ui.label("-");
+                                }
                             });
 
                             row.col(|ui| {
@@ -133,6 +161,10 @@ impl<'a> SequenceEditorTab<'a> {
                         });
                     }
                 });
+
+            if ui.button("Add Builder Cue").clicked() {
+                sequence.add_cue(Cue::new_default_builder(sequence.next_cue_idx()));
+            }
         }
     }
 

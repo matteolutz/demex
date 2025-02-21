@@ -459,17 +459,11 @@ impl PresetHandler {
         let discrete_cue_idx = match cue_idx {
             CueIdxSelectorActionData::Discrete(cue_idx) => cue_idx,
             CueIdxSelectorActionData::Next => {
-                let cues = self
+                let sequence = self
                     .sequences
                     .get(&sequence_id)
-                    .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?
-                    .cues();
-
-                if cues.is_empty() {
-                    (1, 0)
-                } else {
-                    (cues.last().unwrap().cue_idx().0 + 1, 0)
-                }
+                    .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?;
+                sequence.next_cue_idx()
             }
         };
 

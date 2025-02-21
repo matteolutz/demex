@@ -24,7 +24,7 @@ use crate::{
 use super::{
     log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
     tabs::layout_view_tab::LayoutViewContext,
-    window::DemexWindow,
+    window::{edit::DemexEditWindow, DemexWindow},
 };
 
 pub type SaveShowFn =
@@ -73,6 +73,16 @@ impl DemexUiContext {
             .push(DemexLogEntry::new(DemexLogEntryType::DialogEntry(
                 dialog_entry,
             )));
+    }
+
+    pub fn add_edit_window(&mut self, edit_window: DemexEditWindow) {
+        let window = DemexWindow::Edit(edit_window);
+
+        if self.windows.contains(&window) {
+            return;
+        }
+
+        self.windows.push(window);
     }
 
     pub fn run_cmd(&mut self) -> Result<(), Box<dyn std::error::Error>> {

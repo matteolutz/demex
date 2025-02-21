@@ -24,6 +24,23 @@ pub struct FixturePresetId {
     pub preset_id: u32,
 }
 
+impl PartialOrd for FixturePresetId {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for FixturePresetId {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let ord = self.feature_group_id.cmp(&other.feature_group_id);
+        if ord == std::cmp::Ordering::Equal {
+            self.preset_id.cmp(&other.preset_id)
+        } else {
+            ord
+        }
+    }
+}
+
 impl std::fmt::Display for FixturePresetId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}.{}", self.feature_group_id, self.preset_id)

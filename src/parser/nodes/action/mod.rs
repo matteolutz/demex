@@ -99,7 +99,7 @@ pub enum UpdateModeActionData {
     Override,
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum ConfigTypeActionData {
     Output,
 }

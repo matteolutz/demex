@@ -11,7 +11,7 @@ use super::log::dialog::DemexGlobalDialogEntry;
 
 pub mod edit;
 
-#[derive(Debug)]
+#[derive(Debug, Eq)]
 pub enum DemexWindow {
     Dialog(Vec<DemexGlobalDialogEntry>),
     Edit(DemexEditWindow),

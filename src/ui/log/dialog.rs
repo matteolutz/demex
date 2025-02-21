@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum DemexGlobalDialogEntryType {
     Error,
     Warn,
@@ -25,7 +25,7 @@ impl DemexGlobalDialogEntryType {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DemexGlobalDialogEntry {
     entry_type: DemexGlobalDialogEntryType,
     message: String,
