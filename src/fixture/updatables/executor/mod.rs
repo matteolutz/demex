@@ -9,6 +9,7 @@ use crate::fixture::{
     presets::PresetHandler,
     selection::FixtureSelection,
     sequence::{runtime::SequenceRuntime, FadeFixtureChannelValue},
+    timing::TimingHandler,
     value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
 };
 
@@ -121,6 +122,7 @@ impl Executor {
         fixture_feature_configs: &[FixtureFeatureConfig],
         channel_type: FixtureChannelType,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Option<FadeFixtureChannelValue> {
         match &self.config {
             ExecutorConfig::Sequence { runtime, fixtures } => {
@@ -146,6 +148,7 @@ impl Executor {
                         fixture_feature_configs,
                         selection.offset(fixture_id)?,
                         self.priority,
+                        timing_handler,
                     )
                 }
             }

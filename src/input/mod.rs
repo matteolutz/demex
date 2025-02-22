@@ -6,7 +6,7 @@ use profile::DemexInputDeviceProfileType;
 use crate::{
     fixture::{
         handler::FixtureHandler, presets::PresetHandler, selection::FixtureSelection,
-        updatables::UpdatableHandler,
+        timing::TimingHandler, updatables::UpdatableHandler,
     },
     lexer::token::Token,
     parser::nodes::{action::Action, fixture_selector::FixtureSelectorContext},
@@ -26,6 +26,7 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
         device_config: &DemexInputDeviceConfig,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
         global_fixture_selection: &Option<FixtureSelection>,
     ) -> Result<(), DemexInputDeviceError>;
     fn poll(&self) -> Result<Vec<DemexInputDeviceMessage>, DemexInputDeviceError>;
@@ -60,6 +61,7 @@ impl DemexInputDeviceHandler {
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
+        timing_handler: &mut TimingHandler,
         fixture_selector_context: FixtureSelectorContext,
         macro_exec_cue: &mut Vec<Action>,
         global_fixture_selection: &mut Option<FixtureSelection>,
@@ -79,6 +81,7 @@ impl DemexInputDeviceHandler {
                                 fixture_handler,
                                 preset_handler,
                                 updatable_handler,
+                                timing_handler,
                                 fixture_selector_context.clone(),
                                 macro_exec_cue,
                                 global_fixture_selection,
@@ -108,7 +111,12 @@ impl DemexInputDeviceHandler {
                             .faders()
                             .get(&fader_id)
                             .ok_or(DemexInputDeviceError::ButtonNotFound(fader_id))?;
-                        fader.handle_change(value, fixture_handler, updatable_handler)?;
+                        fader.handle_change(
+                            value,
+                            fixture_handler,
+                            updatable_handler,
+                            timing_handler,
+                        )?;
                     }
                 }
             }
@@ -119,6 +127,7 @@ impl DemexInputDeviceHandler {
                 &device.config,
                 preset_handler,
                 updatable_handler,
+                timing_handler,
                 global_fixture_selection,
             )?;
         }

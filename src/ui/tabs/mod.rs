@@ -14,6 +14,7 @@ pub mod performance_tab;
 pub mod preset_grid_tab;
 pub mod sequence_editor_tab;
 pub mod sequences_list_tab;
+pub mod timing_tab;
 
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
 pub enum DemexTab {
@@ -24,6 +25,7 @@ pub enum DemexTab {
     Faders,
     SequencesList,
     SequenceEditor,
+    Timing,
     Logs,
     Performance,
 }
@@ -38,6 +40,7 @@ impl std::fmt::Display for DemexTab {
             DemexTab::Faders => write!(f, "Faders"),
             DemexTab::SequencesList => write!(f, "Sequences List"),
             DemexTab::SequenceEditor => write!(f, "Sequence Editor"),
+            DemexTab::Timing => write!(f, "Timing"),
             DemexTab::Logs => write!(f, "Logs"),
             DemexTab::Performance => write!(f, "Performance"),
         }
@@ -56,6 +59,7 @@ impl DemexTab {
             DemexTab::SequenceEditor => {
                 sequence_editor_tab::SequenceEditorTab::new(context, "MainSequenceEditor").show(ui)
             }
+            DemexTab::Timing => timing_tab::ui(ui, context),
             DemexTab::Logs => logs_tab::ui(ui, context),
             DemexTab::Performance => performance_tab::ui(ui, context),
         }
@@ -118,7 +122,11 @@ impl Default for DemexTabs {
         );
 
         surface.split_below(new_node, 0.5, vec![DemexTab::LayoutView]);
-        surface.split_above(old_node, 0.5, vec![DemexTab::PresetGrid, DemexTab::Faders]);
+        surface.split_above(
+            old_node,
+            0.5,
+            vec![DemexTab::PresetGrid, DemexTab::Faders, DemexTab::Timing],
+        );
 
         Self { dock_state }
     }

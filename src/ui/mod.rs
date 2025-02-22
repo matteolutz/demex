@@ -15,7 +15,7 @@ use crate::{
     lexer::Lexer,
 };
 use crate::{
-    fixture::{presets::PresetHandler, updatables::UpdatableHandler},
+    fixture::{presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler},
     input::DemexInputDeviceHandler,
     parser::{
         nodes::{action::Action, fixture_selector::FixtureSelectorContext},
@@ -57,6 +57,7 @@ impl DemexUiApp {
         fixture_handler: Arc<RwLock<FixtureHandler>>,
         preset_handler: Arc<RwLock<PresetHandler>>,
         updatable_handler: Arc<RwLock<UpdatableHandler>>,
+        timing_handler: Arc<RwLock<TimingHandler>>,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
         show_file: Option<PathBuf>,
         save_show: SaveShowFn,
@@ -75,6 +76,7 @@ impl DemexUiApp {
                 fixture_handler,
                 preset_handler,
                 updatable_handler,
+                timing_handler,
 
                 global_fixture_select: None,
 
@@ -130,6 +132,7 @@ impl eframe::App for DemexUiApp {
             &mut self.context.fixture_handler.write(),
             &self.context.preset_handler.read(),
             &mut self.context.updatable_handler.write(),
+            &mut self.context.timing_handler.write(),
             FixtureSelectorContext::new(&self.context.global_fixture_select.clone()),
             &mut self.context.macro_execution_queue,
             &mut self.context.global_fixture_select,

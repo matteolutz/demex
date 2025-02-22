@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fixture::{patch::Patch, presets::PresetHandler, updatables::UpdatableHandler},
+    fixture::{
+        patch::Patch, presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler,
+    },
     input::device::DemexInputDeviceConfig,
 };
 
@@ -9,6 +11,7 @@ use crate::{
 pub struct DemexShow {
     pub preset_handler: PresetHandler,
     pub updatable_handler: UpdatableHandler,
+    pub timing_handler: TimingHandler,
     pub input_device_configs: Vec<DemexInputDeviceConfig>,
     pub patch: Patch,
 }

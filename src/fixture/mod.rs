@@ -13,6 +13,7 @@ use itertools::Itertools;
 use patch::{FixturePatchType, FixturePatchTypeMode, FixtureTypeAndMode};
 use presets::PresetHandler;
 use serde::{Deserialize, Serialize};
+use timing::TimingHandler;
 use updatables::UpdatableHandler;
 use value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait};
 
@@ -27,6 +28,7 @@ pub mod patch;
 pub mod presets;
 pub mod selection;
 pub mod sequence;
+pub mod timing;
 pub mod updatables;
 pub mod value_source;
 
@@ -210,6 +212,7 @@ impl Fixture {
         &self,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
         _grand_master: f32,
     ) -> Result<Vec<u8>, FixtureError> {
         let mut data = Vec::with_capacity(self.channels.len());
@@ -219,7 +222,13 @@ impl Fixture {
         for (channel_type, _) in &self.channels {
             let discrete_value = self
                 .sources
-                .get_channel_value(self, *channel_type, updatable_handler, preset_handler)?
+                .get_channel_value(
+                    self,
+                    *channel_type,
+                    updatable_handler,
+                    preset_handler,
+                    timing_handler,
+                )?
                 .to_discrete_value(self.id, *channel_type, preset_handler)
                 .map_err(FixtureError::FixtureChannelError2)?;
             data.push(discrete_value);
@@ -252,11 +261,13 @@ impl Fixture {
         &self,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<[f32; 3], FixtureError> {
         if let Ok(FixtureFeatureValue::ColorMacro { macro_idx }) = self.feature_value(
             FixtureFeatureType::ColorMacro,
             preset_handler,
             updatable_handler,
+            timing_handler,
         ) {
             if let Some(FixtureFeatureConfig::ColorMacro { macros }) =
                 self.feature_config_by_type(FixtureFeatureType::ColorMacro)
@@ -269,6 +280,7 @@ impl Fixture {
             FixtureFeatureType::ColorRGB,
             preset_handler,
             updatable_handler,
+            timing_handler,
         ) {
             return Ok([r, g, b]);
         }
@@ -281,6 +293,7 @@ impl Fixture {
         feature_type: FixtureFeatureType,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<FixtureFeatureDisplayState, FixtureError> {
         feature_type
             .get_display_state(
@@ -288,7 +301,13 @@ impl Fixture {
                 &self.feature_configs,
                 &(|channel_type| {
                     self.sources
-                        .get_channel_value(self, channel_type, updatable_handler, preset_handler)
+                        .get_channel_value(
+                            self,
+                            channel_type,
+                            updatable_handler,
+                            preset_handler,
+                            timing_handler,
+                        )
                         .ok()
                 }),
                 preset_handler,
@@ -301,6 +320,7 @@ impl Fixture {
         feature_group_id: u32,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<Vec<FixtureFeatureDisplayState>, FixtureError> {
         preset_handler
             .get_feature_group(feature_group_id)
@@ -310,7 +330,13 @@ impl Fixture {
                 &self.feature_configs,
                 &(|channel_type| {
                     self.sources
-                        .get_channel_value(self, channel_type, updatable_handler, preset_handler)
+                        .get_channel_value(
+                            self,
+                            channel_type,
+                            updatable_handler,
+                            preset_handler,
+                            timing_handler,
+                        )
                         .ok()
                 }),
                 preset_handler,
@@ -334,9 +360,15 @@ impl Fixture {
         channel_type: FixtureChannelType,
         updatable_handler: &UpdatableHandler,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<FixtureChannelValue2, FixtureError> {
-        self.sources
-            .get_channel_value(self, channel_type, updatable_handler, preset_handler)
+        self.sources.get_channel_value(
+            self,
+            channel_type,
+            updatable_handler,
+            preset_handler,
+            timing_handler,
+        )
     }
 
     pub fn set_channel_value(
@@ -384,13 +416,20 @@ impl Fixture {
         feature_type: FixtureFeatureType,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<FixtureFeatureValue, FixtureError> {
         feature_type
             .get_value(
                 &self.feature_configs,
                 &(|channel_type| {
                     self.sources
-                        .get_channel_value(self, channel_type, updatable_handler, preset_handler)
+                        .get_channel_value(
+                            self,
+                            channel_type,
+                            updatable_handler,
+                            preset_handler,
+                            timing_handler,
+                        )
                         .ok()
                 }),
                 self.id,

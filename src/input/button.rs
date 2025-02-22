@@ -1,3 +1,5 @@
+use std::time;
+
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
@@ -6,7 +8,10 @@ use crate::{
         handler::{error::FixtureHandlerError, FixtureHandler},
         presets::{preset::FixturePresetId, PresetHandler},
         selection::FixtureSelection,
-        updatables::UpdatableHandler,
+        timing::TimingHandler,
+        updatables::{
+            error::UpdatableHandlerError, executor::config::ExecutorConfig, UpdatableHandler,
+        },
     },
     parser::nodes::{
         action::Action,
@@ -40,6 +45,10 @@ pub enum DemexInputButton {
         action: Action,
     },
 
+    SpeedMasterTap {
+        speed_master_id: u32,
+    },
+
     #[default]
     Unused,
 }
@@ -50,6 +59,7 @@ impl DemexInputButton {
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
+        timing_handler: &mut TimingHandler,
         fixture_selector_context: FixtureSelectorContext,
         macro_exec_cue: &mut Vec<Action>,
         global_fixture_selection: &mut Option<FixtureSelection>,
@@ -58,9 +68,25 @@ impl DemexInputButton {
             Self::ExecutorFlash(executor_id) => updatable_handler
                 .start_executor(*executor_id, fixture_handler)
                 .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
-            Self::ExecutorStartAndNext(executor_id) => updatable_handler
-                .start_or_next_executor(*executor_id, fixture_handler, preset_handler)
-                .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
+            Self::ExecutorStartAndNext(executor_id) => {
+                let executor = updatable_handler.executor(*executor_id).ok_or(
+                    DemexInputDeviceError::UpdatableHandlerError(
+                        UpdatableHandlerError::UpdatableNotFound(*executor_id),
+                    ),
+                )?;
+
+                if matches!(executor.config(), ExecutorConfig::FeatureEffect { .. })
+                    && executor.is_started()
+                {
+                    updatable_handler
+                        .stop_executor(*executor_id, fixture_handler)
+                        .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+                } else {
+                    updatable_handler
+                        .start_or_next_executor(*executor_id, fixture_handler, preset_handler)
+                        .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+                }
+            }
             Self::ExecutorStop(executor_id) => updatable_handler
                 .stop_executor(*executor_id, fixture_handler)
                 .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
@@ -105,6 +131,11 @@ impl DemexInputButton {
                         .map_err(DemexInputDeviceError::FixtureSelectorError)?,
                 );
             }
+            Self::SpeedMasterTap { speed_master_id } => {
+                timing_handler
+                    .tap_speed_master_value(*speed_master_id, time::Instant::now())
+                    .map_err(DemexInputDeviceError::TimingHandlerError)?;
+            }
             Self::Unused => {}
         }
         Ok(())
@@ -117,6 +148,17 @@ impl DemexInputButton {
         updatable_handler: &mut UpdatableHandler,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
+            Self::ExecutorStartAndNext(executor_id) => {
+                let executor = updatable_handler.executor(*executor_id).ok_or(
+                    DemexInputDeviceError::UpdatableHandlerError(
+                        UpdatableHandlerError::UpdatableNotFound(*executor_id),
+                    ),
+                )?;
+
+                if matches!(executor.config(), ExecutorConfig::FeatureEffect { .. })
+                    && executor.is_started()
+                {}
+            }
             Self::ExecutorFlash(executor_id) => updatable_handler
                 .stop_executor(*executor_id, fixture_handler)
                 .map_err(DemexInputDeviceError::UpdatableHandlerError)?,

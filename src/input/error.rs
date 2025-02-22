@@ -1,7 +1,7 @@
 use crate::{
     fixture::{
         handler::error::FixtureHandlerError, presets::error::PresetHandlerError,
-        updatables::error::UpdatableHandlerError,
+        timing::error::TimingHandlerError, updatables::error::UpdatableHandlerError,
     },
     parser::nodes::fixture_selector::FixtureSelectorError,
 };
@@ -22,12 +22,15 @@ pub enum DemexInputDeviceError {
     PresetHandlerError(PresetHandlerError),
     UpdatableHandlerError(UpdatableHandlerError),
     FixtureSelectorError(FixtureSelectorError),
+    TimingHandlerError(TimingHandlerError),
 
     ButtonAlreadyAssigned(u32),
     FaderAlreadyAssigned(u32),
 
     ButtonNotAssigned(u32),
     FaderNotAssigned(u32),
+
+    NotImplemented,
 
     MpscSendError,
     MidirError(Box<dyn std::error::Error>),
@@ -58,12 +61,15 @@ impl std::fmt::Display for DemexInputDeviceError {
             Self::PresetHandlerError(err) => write!(f, "Preset handler error: {}", err),
             Self::UpdatableHandlerError(err) => write!(f, "Updatable handler error: {}", err),
             Self::FixtureSelectorError(err) => write!(f, "Fixture selector error: {}", err),
+            Self::TimingHandlerError(err) => write!(f, "Timing handler error: {}", err),
 
             Self::ButtonAlreadyAssigned(id) => write!(f, "Button with id {} already assigned", id),
             Self::FaderAlreadyAssigned(id) => write!(f, "Fader with id {} already assigned", id),
 
             Self::ButtonNotAssigned(id) => write!(f, "Button with id {} not assigned", id),
             Self::FaderNotAssigned(id) => write!(f, "Fader with id {} not assigned", id),
+
+            Self::NotImplemented => write!(f, "Not implemented"),
 
             Self::MpscSendError => write!(f, "Mpsc send error"),
             Self::MidirError(err) => write!(f, "Midir error: {}", err),

@@ -5,7 +5,8 @@ use parking_lot::RwLock;
 use crate::{
     fixture::{
         channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler,
-        presets::PresetHandler, selection::FixtureSelection, updatables::UpdatableHandler,
+        presets::PresetHandler, selection::FixtureSelection, timing::TimingHandler,
+        updatables::UpdatableHandler,
     },
     input::DemexInputDeviceHandler,
     lexer::token::Token,
@@ -37,6 +38,7 @@ pub struct DemexUiContext {
     pub fixture_handler: Arc<RwLock<FixtureHandler>>,
     pub preset_handler: Arc<RwLock<PresetHandler>>,
     pub updatable_handler: Arc<RwLock<UpdatableHandler>>,
+    pub timing_handler: Arc<RwLock<TimingHandler>>,
 
     pub global_fixture_select: Option<FixtureSelection>,
     pub command: Vec<Token>,
@@ -124,12 +126,14 @@ impl DemexUiContext {
                 let fixture_handler_lock = self.fixture_handler.read();
                 let mut preset_handler_lock = self.preset_handler.write();
                 let updatable_handler_lock = self.updatable_handler.read();
+                let timing_handler_lock = self.timing_handler.read();
 
                 *preset_handler_lock.feature_groups_mut() = FeatureGroup::default_feature_groups();
 
                 let show = DemexShow {
                     preset_handler: preset_handler_lock.clone(),
                     updatable_handler: updatable_handler_lock.clone(),
+                    timing_handler: timing_handler_lock.clone(),
                     input_device_configs: self
                         .input_device_handler
                         .devices()
@@ -144,6 +148,7 @@ impl DemexUiContext {
                 drop(fixture_handler_lock);
                 drop(updatable_handler_lock);
                 drop(preset_handler_lock);
+                drop(timing_handler_lock);
 
                 if let Err(e) = save_result {
                     self.add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));

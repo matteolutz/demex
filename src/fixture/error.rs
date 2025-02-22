@@ -11,6 +11,7 @@ pub enum FixtureError {
     ChannelNotFound(FixtureChannelType),
     FeatureNotFound(FixtureFeatureType),
     ChannelValueNotFound(FixtureChannelType),
+    FaderProvidesNoValues(u32),
     NoChannelValueSourceFound,
     EmptyPatch,
     DuplicateChannelType,
@@ -31,6 +32,9 @@ impl std::fmt::Display for FixtureError {
             Self::FeatureNotFound(feature) => write!(f, "Feature ({:?}) not found", feature),
             Self::ChannelValueNotFound(channel_type) => {
                 write!(f, "Channel value for type {:?} not found", channel_type)
+            }
+            Self::FaderProvidesNoValues(fader_id) => {
+                write!(f, "Fader {} provides no values", fader_id)
             }
             Self::NoChannelValueSourceFound => write!(f, "No channel value source found"),
             Self::EmptyPatch => write!(f, "Patch is empty"),

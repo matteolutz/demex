@@ -6,7 +6,8 @@ use crate::{
     fixture::{
         presets::{preset::FixturePresetTarget, PresetHandler},
         selection::FixtureSelection,
-        updatables::error::UpdatableHandlerError,
+        timing::TimingHandler,
+        updatables::{error::UpdatableHandlerError, UpdatableHandler},
     },
     input::{
         button::DemexInputButton, error::DemexInputDeviceError, message::DemexInputDeviceMessage,
@@ -222,7 +223,8 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
         &mut self,
         device_config: &crate::input::device::DemexInputDeviceConfig,
         preset_handler: &PresetHandler,
-        updatable_handler: &crate::fixture::updatables::UpdatableHandler,
+        updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
         global_fixture_selection: &Option<FixtureSelection>,
     ) -> Result<(), DemexInputDeviceError> {
         for (button_id, button) in device_config.buttons() {
@@ -338,7 +340,25 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         ApcMiniMk2ButtonLedColor::Pink,
                     )?;
                 }
-                _ => {}
+                DemexInputButton::SpeedMasterTap { speed_master_id } => {
+                    let speed_master_value = timing_handler
+                        .get_speed_master_value(*speed_master_id)
+                        .map_err(DemexInputDeviceError::TimingHandlerError)?;
+
+                    self.set_button_led(
+                        *button_id,
+                        ApcMiniMk2ButtonLedMode::IntensFull,
+                        if speed_master_value.interval().is_none()
+                            || speed_master_value.display_should_blink()
+                        {
+                            ApcMiniMk2ButtonLedColor::DarkViolet
+                        } else {
+                            ApcMiniMk2ButtonLedColor::Off
+                        },
+                    )?;
+                }
+                DemexInputButton::FaderGo(_) => todo!(),
+                DemexInputButton::Unused => {}
             }
         }
 

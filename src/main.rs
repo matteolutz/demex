@@ -60,6 +60,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let preset_handler = Arc::new(RwLock::new(show.preset_handler));
     let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));
+    let timing_handler = Arc::new(RwLock::new(show.timing_handler));
 
     let stats = Arc::new(RwLock::new(DemexThreadStatsHandler::default()));
 
@@ -69,6 +70,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         fixture_handler.clone(),
         preset_handler.clone(),
         updatable_handler.clone(),
+        timing_handler.clone(),
         stats.clone(),
         show_file,
         |show: DemexShow, show_file: Option<&PathBuf>| {
@@ -100,6 +102,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let fixture_handler_thread_a = fixture_handler.clone();
     let preset_handler_thread_a = preset_handler.clone();
     let updatable_handler_thread_a = updatable_handler.clone();
+    let timing_handler_thread_a = timing_handler.clone();
 
     demex_update_thread(
         "demex-dmx-output".to_owned(),
@@ -109,11 +112,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut fixture_handler = fixture_handler_thread_a.write();
             let preset_handler = preset_handler_thread_a.read();
             let updatable_handler = updatable_handler_thread_a.read();
+            let timing_handler = timing_handler_thread_a.read();
 
             if fixture_handler
                 .update(
                     &preset_handler,
                     &updatable_handler,
+                    &timing_handler,
                     delta_time,
                     last_user_update.elapsed().as_secs_f64() > 1.0,
                 )

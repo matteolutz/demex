@@ -171,6 +171,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let fixture_handler = context.fixture_handler.read();
     let preset_handler = context.preset_handler.read();
     let updatable_handler = context.updatable_handler.read();
+    let timing_handler = context.timing_handler.read();
 
     let fixture_layout = fixture_handler.patch().layout();
     ui.heading("Layout View");
@@ -262,6 +263,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 FixtureFeatureType::Intensity,
                 &preset_handler,
                 &updatable_handler,
+                &timing_handler,
             )
             .ok()
             .and_then(|val| match val {
@@ -270,23 +272,25 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             })
             .unwrap();
 
-        let rect_color =
-            if let Ok(color) = fixture.display_color(&preset_handler, &updatable_handler) {
-                egui::Color32::from_rgba_unmultiplied(
-                    (color[0] * 255.0) as u8,
-                    (color[1] * 255.0) as u8,
-                    (color[2] * 255.0) as u8,
-                    (intensity * 255.0) as u8,
-                )
-            } else {
-                egui::Color32::from_rgba_unmultiplied(255, 255, 255, (intensity * 255.0) as u8)
-            };
+        let rect_color = if let Ok(color) =
+            fixture.display_color(&preset_handler, &updatable_handler, &timing_handler)
+        {
+            egui::Color32::from_rgba_unmultiplied(
+                (color[0] * 255.0) as u8,
+                (color[1] * 255.0) as u8,
+                (color[2] * 255.0) as u8,
+                (intensity * 255.0) as u8,
+            )
+        } else {
+            egui::Color32::from_rgba_unmultiplied(255, 255, 255, (intensity * 255.0) as u8)
+        };
 
         let position: Option<egui::Vec2> = fixture
             .feature_value(
                 FixtureFeatureType::PositionPanTilt,
                 &preset_handler,
                 &updatable_handler,
+                &timing_handler,
             )
             .ok()
             .and_then(|val| match val {

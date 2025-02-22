@@ -7,6 +7,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let fixture_handler = context.fixture_handler.read();
     let preset_handler = context.preset_handler.read();
     let updatable_handler = context.updatable_handler.read();
+    let timing_handler = context.timing_handler.read();
 
     egui::ScrollArea::horizontal().show(ui, |ui| {
         let selected_fixtures = context
@@ -98,6 +99,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 DefaultFeatureGroup::Intensity.id(),
                                 &preset_handler,
                                 &updatable_handler,
+                                &timing_handler,
                             ) {
                                 for intensity_state in intensity_states {
                                     ui.label(
@@ -120,6 +122,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 DefaultFeatureGroup::Color.id(),
                                 &preset_handler,
                                 &updatable_handler,
+                                &timing_handler,
                             ) {
                                 for color_state in color_states {
                                     ui.label(
@@ -135,9 +138,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 ui.label("-");
                             }
 
-                            if let Ok(color) =
-                                fixture.display_color(&preset_handler, &updatable_handler)
-                            {
+                            if let Ok(color) = fixture.display_color(
+                                &preset_handler,
+                                &updatable_handler,
+                                &timing_handler,
+                            ) {
                                 let color_value = egui::Color32::from_rgb(
                                     (color[0] * 255.0) as u8,
                                     (color[1] * 255.0) as u8,
@@ -154,6 +159,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 DefaultFeatureGroup::Position.id(),
                                 &preset_handler,
                                 &updatable_handler,
+                                &timing_handler,
                             ) {
                                 for pos_state in pos_states {
                                     ui.label(
@@ -178,6 +184,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     **channel_type,
                                     &updatable_handler,
                                     &preset_handler,
+                                    &timing_handler,
                                 );
                                 if channel_value.is_err() {
                                     continue;
