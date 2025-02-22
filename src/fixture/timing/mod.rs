@@ -7,9 +7,19 @@ use speed_master::SpeedMasterValue;
 pub mod error;
 pub mod speed_master;
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct TimingHandler {
     speed_master_values: HashMap<u32, SpeedMasterValue>,
+}
+
+impl Default for TimingHandler {
+    fn default() -> Self {
+        Self {
+            speed_master_values: HashMap::from_iter(
+                (0u32..10u32).map(|id| (id, SpeedMasterValue::default())),
+            ),
+        }
+    }
 }
 
 impl TimingHandler {

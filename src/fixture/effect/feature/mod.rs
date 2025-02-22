@@ -28,12 +28,15 @@ pub enum FeatureEffect {
         pan_center: f32,
         tilt_center: f32,
     },
+
     PositionPanTiltEllipse {
         pan_size: f32,
         tilt_size: f32,
         pan_center: f32,
         tilt_center: f32,
+        sine_variant: SineVariant,
     },
+
     PositionPanTiltRect {
         pan_size: f32,
         tilt_size: f32,
@@ -74,17 +77,6 @@ impl FeatureEffect {
     ) -> Result<FixtureFeatureValue, EffectError> {
         match self {
             Self::IntensitySine { sine_variant } => {
-                /*let intensity_sine = f32::sin(
-                    t as f32 * speed + (3.0 * f32::consts::FRAC_PI_2) - phase_offset.to_radians(),
-                );
-
-                let intensity = (if let Some(k) = k {
-                    intensity_sine * k
-                } else {
-                    intensity_sine
-                }) * 0.5
-                    + 0.5;*/
-
                 let intensity =
                     sine_variant.apply(t as f32 * speed - phase_offset_deg.to_radians());
 
@@ -116,11 +108,13 @@ impl FeatureEffect {
                 tilt_size,
                 pan_center,
                 tilt_center,
+                sine_variant,
             } => {
-                let pan = (f32::sin(t as f32 * speed - phase_offset_deg.to_radians()))
+                let pan = sine_variant.apply(t as f32 * speed - phase_offset_deg.to_radians())
                     * (pan_size / 2.0)
                     + pan_center;
-                let tilt = (f32::sin(t as f32 * speed - phase_offset_deg.to_radians()))
+
+                let tilt = sine_variant.apply(t as f32 * speed - phase_offset_deg.to_radians())
                     * (tilt_size / 2.0)
                     + tilt_center;
 

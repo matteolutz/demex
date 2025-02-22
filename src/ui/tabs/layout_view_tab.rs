@@ -101,14 +101,17 @@ impl FixtureLayoutEntry {
                         // draw line from pos to pos_in_rect
                         painter.line_segment(
                             [pos, pos_in_rect],
-                            Stroke::new(0.25 * projection.zoom(), egui::Color32::YELLOW),
+                            Stroke::new(
+                                0.25 * projection.zoom(),
+                                egui::Color32::YELLOW.gamma_multiply(0.5),
+                            ),
                         );
                     }
 
                     painter.circle_filled(
                         pos_in_rect,
                         0.5 * projection.zoom(),
-                        egui::Color32::YELLOW,
+                        egui::Color32::YELLOW.gamma_multiply(0.5),
                     );
                 }
             }
