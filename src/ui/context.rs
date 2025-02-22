@@ -5,14 +5,15 @@ use parking_lot::RwLock;
 use crate::{
     fixture::{
         channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler,
-        presets::PresetHandler, updatables::UpdatableHandler,
+        presets::PresetHandler, selection::FixtureSelection, timing::TimingHandler,
+        updatables::UpdatableHandler,
     },
     input::DemexInputDeviceHandler,
     lexer::token::Token,
     parser::{
         nodes::{
             action::{result::ActionRunResult, Action},
-            fixture_selector::{FixtureSelector, FixtureSelectorContext},
+            fixture_selector::FixtureSelectorContext,
         },
         Parser2,
     },
@@ -24,7 +25,7 @@ use crate::{
 use super::{
     log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
     tabs::layout_view_tab::LayoutViewContext,
-    window::DemexWindow,
+    window::{edit::DemexEditWindow, DemexWindow},
 };
 
 pub type SaveShowFn =
@@ -37,8 +38,9 @@ pub struct DemexUiContext {
     pub fixture_handler: Arc<RwLock<FixtureHandler>>,
     pub preset_handler: Arc<RwLock<PresetHandler>>,
     pub updatable_handler: Arc<RwLock<UpdatableHandler>>,
+    pub timing_handler: Arc<RwLock<TimingHandler>>,
 
-    pub global_fixture_select: Option<FixtureSelector>,
+    pub global_fixture_select: Option<FixtureSelection>,
     pub command: Vec<Token>,
 
     pub stats: Arc<RwLock<DemexThreadStatsHandler>>,
@@ -73,6 +75,16 @@ impl DemexUiContext {
             .push(DemexLogEntry::new(DemexLogEntryType::DialogEntry(
                 dialog_entry,
             )));
+    }
+
+    pub fn add_edit_window(&mut self, edit_window: DemexEditWindow) {
+        let window = DemexWindow::Edit(edit_window);
+
+        if self.windows.contains(&window) {
+            return;
+        }
+
+        self.windows.push(window);
     }
 
     pub fn run_cmd(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -114,12 +126,14 @@ impl DemexUiContext {
                 let fixture_handler_lock = self.fixture_handler.read();
                 let mut preset_handler_lock = self.preset_handler.write();
                 let updatable_handler_lock = self.updatable_handler.read();
+                let timing_handler_lock = self.timing_handler.read();
 
                 *preset_handler_lock.feature_groups_mut() = FeatureGroup::default_feature_groups();
 
                 let show = DemexShow {
                     preset_handler: preset_handler_lock.clone(),
                     updatable_handler: updatable_handler_lock.clone(),
+                    timing_handler: timing_handler_lock.clone(),
                     input_device_configs: self
                         .input_device_handler
                         .devices()
@@ -134,6 +148,7 @@ impl DemexUiContext {
                 drop(fixture_handler_lock);
                 drop(updatable_handler_lock);
                 drop(preset_handler_lock);
+                drop(timing_handler_lock);
 
                 if let Err(e) = save_result {
                     self.add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));
@@ -203,8 +218,8 @@ impl DemexUiContext {
                     self.windows.push(demex_edit_window);
                 }
             }
-            ActionRunResult::UpdateSelectedFixtures(fixture_selector) => {
-                self.global_fixture_select = Some(fixture_selector)
+            ActionRunResult::UpdateSelectedFixtures(selection) => {
+                self.global_fixture_select = Some(selection);
             }
             ActionRunResult::Default => {}
         }

@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod error;
 pub mod feature;
+pub mod speed;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, EguiProbe)]
 pub enum FixtureChannelEffect {

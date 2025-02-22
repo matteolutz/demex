@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 use command_slice::CommandSlice;
 use error::PresetHandlerError;
@@ -62,7 +62,7 @@ impl Default for PresetHandler {
 impl PresetHandler {
     pub fn record_group(
         &mut self,
-        fixture_selector: FixtureSelector,
+        fixture_selection: FixtureSelection,
         id: u32,
         name: Option<String>,
     ) -> Result<(), PresetHandlerError> {
@@ -70,7 +70,7 @@ impl PresetHandler {
             return Err(PresetHandlerError::PresetAlreadyExists(id));
         }
 
-        let group = FixtureGroup::new(id, name, fixture_selector);
+        let group = FixtureGroup::new(id, name, fixture_selection);
         self.groups.insert(id, group);
         Ok(())
     }
@@ -78,6 +78,12 @@ impl PresetHandler {
     pub fn get_group(&self, id: u32) -> Result<&FixtureGroup, PresetHandlerError> {
         self.groups
             .get(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))
+    }
+
+    pub fn get_group_mut(&mut self, id: u32) -> Result<&mut FixtureGroup, PresetHandlerError> {
+        self.groups
+            .get_mut(&id)
             .ok_or(PresetHandlerError::PresetNotFound(id))
     }
 
@@ -146,10 +152,11 @@ impl PresetHandler {
         let mut new_data: HashMap<u32, HashMap<FixtureChannelType, u8>> = HashMap::new();
 
         for fixture_id in fixture_selector
-            .get_fixtures(self, fixture_selector_context)
+            .get_selection(self, fixture_selector_context)
             .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?
+            .fixtures()
         {
-            let fixture = fixture_handler.fixture_immut(fixture_id);
+            let fixture = fixture_handler.fixture_immut(*fixture_id);
             if let Some(fixture) = fixture {
                 let mut new_values = HashMap::new();
 
@@ -173,7 +180,7 @@ impl PresetHandler {
                             .channel_value_programmer(channel_type)
                             .and_then(|value| {
                                 value
-                                    .to_discrete_value(fixture_id, channel_type, self)
+                                    .to_discrete_value(*fixture_id, channel_type, self)
                                     .map_err(FixtureError::FixtureChannelError2)
                             })
                             .map_err(PresetHandlerError::FixtureError)?;
@@ -182,7 +189,7 @@ impl PresetHandler {
                     }
                 }
 
-                new_data.insert(fixture_id, new_values);
+                new_data.insert(*fixture_id, new_values);
             }
         }
 
@@ -452,27 +459,21 @@ impl PresetHandler {
         let discrete_cue_idx = match cue_idx {
             CueIdxSelectorActionData::Discrete(cue_idx) => cue_idx,
             CueIdxSelectorActionData::Next => {
-                let cues = self
+                let sequence = self
                     .sequences
                     .get(&sequence_id)
-                    .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?
-                    .cues();
-
-                if cues.is_empty() {
-                    (1, 0)
-                } else {
-                    (cues.last().unwrap().cue_idx().0 + 1, 0)
-                }
+                    .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?;
+                sequence.next_cue_idx()
             }
         };
 
         let mut cue_data = HashMap::new();
 
-        let fixtures = fixture_selector
-            .get_fixtures(self, fixture_selector_context)
+        let selection = fixture_selector
+            .get_selection(self, fixture_selector_context)
             .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?;
 
-        for fixture_id in &fixtures {
+        for fixture_id in selection.fixtures() {
             if let Some(fixture) = fixture_handler.fixture_immut(*fixture_id) {
                 cue_data.insert(
                     *fixture_id,
@@ -482,8 +483,6 @@ impl PresetHandler {
                 );
             }
         }
-
-        let selection: FixtureSelection = fixtures.into();
 
         let cue = Cue::new(
             discrete_cue_idx,

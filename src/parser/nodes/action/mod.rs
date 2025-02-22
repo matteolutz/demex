@@ -99,7 +99,7 @@ pub enum UpdateModeActionData {
     Override,
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum ConfigTypeActionData {
     Output,
 }
@@ -186,8 +186,8 @@ pub enum Action {
         button_id: u32,
     },
     AssignSelectivePresetToInput {
-        preset_id: FixturePresetId,
-        fixture_selector: FixtureSelector,
+        preset_id: (FixturePresetId, FixturePresetId),
+        fixture_selector: Option<FixtureSelector>,
         device_idx: usize,
         button_id: u32,
     },
@@ -195,6 +195,20 @@ pub enum Action {
         fixture_selector: FixtureSelector,
         device_idx: usize,
         button_id: u32,
+    },
+    AssignMacroToInput {
+        action: Box<Action>,
+        device_idx: usize,
+        button_id: u32,
+    },
+
+    UnassignInputButton {
+        device_idx: usize,
+        button_id: u32,
+    },
+    UnassignInputFader {
+        device_idx: usize,
+        fader_id: u32,
     },
 
     FixtureSelector(FixtureSelector),
@@ -422,6 +436,7 @@ impl Action {
                 input_device_handler,
                 *preset_id,
                 fixture_selector,
+                fixture_selector_context,
                 *device_idx,
                 *button_id,
             ),
@@ -435,6 +450,22 @@ impl Action {
                 device_idx,
                 button_id,
             ),
+            Self::AssignMacroToInput {
+                action,
+                device_idx,
+                button_id,
+            } => {
+                self.run_assign_macro_to_input(input_device_handler, action, device_idx, button_id)
+            }
+
+            Self::UnassignInputButton {
+                device_idx,
+                button_id,
+            } => self.run_unassign_input_button(input_device_handler, *device_idx, *button_id),
+            Self::UnassignInputFader {
+                device_idx,
+                fader_id,
+            } => self.run_unassign_input_fader(input_device_handler, *device_idx, *fader_id),
 
             unimplemented_action => Err(ActionRunError::UnimplementedAction(
                 unimplemented_action.clone(),
@@ -451,17 +482,19 @@ impl Action {
         feature_type: FixtureFeatureType,
         value: &ChannelValueSingleActionData,
     ) -> Result<ActionRunResult, ActionRunError> {
-        let fixtures = fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
+        let selection = fixture_selector
+            .get_selection(preset_handler, fixture_selector_context)
             .map_err(ActionRunError::FixtureSelectorError)?;
 
-        for (idx, fixture_id) in fixtures.iter().enumerate() {
+        for fixture_id in selection.fixtures() {
+            let fixture_idx = selection.offset_idx(*fixture_id).unwrap();
+
             let discrete_value = match value {
                 ChannelValueSingleActionData::Single(value) => *value,
                 ChannelValueSingleActionData::Thru(start, end) => {
                     let range = end - start;
-                    let step = range / (fixtures.len() - 1) as f32;
-                    start + step * idx as f32
+                    let step = range / (selection.num_offsets() - 1) as f32;
+                    start + step * fixture_idx as f32
                 }
             };
 
@@ -493,18 +526,18 @@ impl Action {
         fixture_selector_context: FixtureSelectorContext,
         preset_id: FixturePresetId,
     ) -> Result<ActionRunResult, ActionRunError> {
-        let fixtures = fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
+        let selection = fixture_selector
+            .get_selection(preset_handler, fixture_selector_context)
             .map_err(ActionRunError::FixtureSelectorError)?;
 
         let preset = preset_handler
             .get_preset(preset_id)
             .map_err(ActionRunError::PresetHandlerError)?;
 
-        for fixture in fixtures {
-            if let Some(f) = fixture_handler.fixture(fixture) {
+        for fixture_id in selection.fixtures() {
+            if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
                 preset
-                    .apply(f)
+                    .apply(fixture)
                     .map_err(ActionRunError::PresetHandlerError)?;
             }
         }
@@ -578,12 +611,12 @@ impl Action {
     ) -> Result<ActionRunResult, ActionRunError> {
         match homeable_object {
             HomeableObject::FixtureSelector(fixture_selector) => {
-                let fixtures = fixture_selector
-                    .get_fixtures(preset_handler, fixture_selector_context)
+                let selection = fixture_selector
+                    .get_selection(preset_handler, fixture_selector_context)
                     .map_err(ActionRunError::FixtureSelectorError)?;
 
-                for fixture_id in fixtures {
-                    if let Some(fixture) = fixture_handler.fixture(fixture_id) {
+                for fixture_id in selection.fixtures() {
+                    if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
                         fixture.home().map_err(ActionRunError::FixtureError)?;
                     }
                 }
@@ -637,11 +670,13 @@ impl Action {
         id: Option<u32>,
         name: &Option<String>,
     ) -> Result<ActionRunResult, ActionRunError> {
+        let selection = fixture_selector
+            .get_selection(preset_handler, fixture_selector_context)
+            .map_err(ActionRunError::FixtureSelectorError)?;
+
         preset_handler
             .record_group(
-                fixture_selector
-                    .flatten(preset_handler, fixture_selector_context)
-                    .map_err(ActionRunError::FixtureSelectorError)?,
+                selection,
                 id.unwrap_or_else(|| preset_handler.next_group_id()),
                 name.clone(),
             )
@@ -739,8 +774,8 @@ impl Action {
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
     ) -> Result<ActionRunResult, ActionRunError> {
-        let fixtures_selected = fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
+        let selection = fixture_selector
+            .get_selection(preset_handler, fixture_selector_context)
             .map_err(ActionRunError::FixtureSelectorError)?;
 
         updatable_handler
@@ -748,7 +783,7 @@ impl Action {
                 id.unwrap_or_else(|| updatable_handler.next_executor_id()),
                 name.clone(),
                 mode,
-                fixtures_selected,
+                selection,
             )
             .map_err(ActionRunError::UpdatableHandlerError)?;
 
@@ -832,23 +867,20 @@ impl Action {
     ) -> Result<ActionRunResult, ActionRunError> {
         // flatten the fixture selector, so we don't have
         // outdated references to the previously selected fixtures
-        let fixture_selector = fixture_selector
-            .flatten(preset_handler, fixture_selector_context.clone())
+        let selection = fixture_selector
+            .get_selection(preset_handler, fixture_selector_context.clone())
             .map_err(ActionRunError::FixtureSelectorError)?;
 
-        let selected_fixtures = fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        if selected_fixtures.is_empty() {
+        if selection.fixtures().is_empty() {
             return Err(ActionRunError::FixtureSelectorError(
                 FixtureSelectorError::NoFixturesMatched,
             ));
         }
 
-        let unknown_fixtures = selected_fixtures
-            .into_iter()
-            .filter(|f_id| !fixture_handler.has_fixture(*f_id))
+        let unknown_fixtures = selection
+            .fixtures()
+            .iter()
+            .filter(|f_id| !fixture_handler.has_fixture(**f_id))
             .collect::<Vec<_>>();
         if !unknown_fixtures.is_empty() {
             return Err(ActionRunError::FixtureSelectorError(
@@ -856,7 +888,7 @@ impl Action {
             ));
         }
 
-        Ok(ActionRunResult::UpdateSelectedFixtures(fixture_selector))
+        Ok(ActionRunResult::UpdateSelectedFixtures(selection))
     }
 
     pub fn run_delete_macro(
@@ -1122,32 +1154,50 @@ impl Action {
         &self,
         preset_handler: &PresetHandler,
         input_device_handler: &mut DemexInputDeviceHandler,
-        preset_id: FixturePresetId,
-        fixture_selector: &FixtureSelector,
+        (preset_id_from, preset_id_to): (FixturePresetId, FixturePresetId),
+        fixture_selector: &Option<FixtureSelector>,
+        fixture_selector_context: FixtureSelectorContext,
         device_idx: usize,
         button_id: u32,
     ) -> Result<ActionRunResult, ActionRunError> {
         let _ = preset_handler
-            .get_preset(preset_id)
+            .get_preset_range(preset_id_from, preset_id_to)
             .map_err(ActionRunError::PresetHandlerError)?;
+
+        let range = preset_id_to.preset_id - preset_id_from.preset_id + 1;
 
         let device = input_device_handler
             .device_mut(device_idx)
             .map_err(ActionRunError::InputDeviceError)?;
 
-        if device.config.buttons().get(&button_id).is_some() {
-            return Err(ActionRunError::InputDeviceError(
-                DemexInputDeviceError::ButtonAlreadyAssigned(button_id),
-            ));
+        for button_id in button_id..button_id + range {
+            if device.config.buttons().get(&button_id).is_some() {
+                return Err(ActionRunError::InputDeviceError(
+                    DemexInputDeviceError::ButtonAlreadyAssigned(button_id),
+                ));
+            }
         }
 
-        device.config.buttons_mut().insert(
-            button_id,
-            DemexInputButton::SelectivePreset {
-                preset_id,
-                fixture_selector: fixture_selector.clone(),
-            },
-        );
+        let selection = fixture_selector
+            .as_ref()
+            .map(|fs| fs.get_selection(preset_handler, fixture_selector_context))
+            .transpose()
+            .map_err(ActionRunError::FixtureSelectorError)?;
+
+        for i in 0..range {
+            let preset_id = FixturePresetId {
+                feature_group_id: preset_id_from.feature_group_id,
+                preset_id: preset_id_from.preset_id + i,
+            };
+
+            device.config.buttons_mut().insert(
+                button_id + i,
+                DemexInputButton::SelectivePreset {
+                    preset_id,
+                    selection: selection.clone(),
+                },
+            );
+        }
 
         Ok(ActionRunResult::new())
     }
@@ -1175,6 +1225,71 @@ impl Action {
                 fixture_selector: fixture_selector.clone(),
             },
         );
+
+        Ok(ActionRunResult::new())
+    }
+
+    fn run_assign_macro_to_input(
+        &self,
+        input_device_handler: &mut DemexInputDeviceHandler,
+        action: &Action,
+        device_idx: &usize,
+        button_id: &u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let device = input_device_handler
+            .device_mut(*device_idx)
+            .map_err(ActionRunError::InputDeviceError)?;
+
+        if device.config.buttons().get(button_id).is_some() {
+            return Err(ActionRunError::InputDeviceError(
+                DemexInputDeviceError::ButtonAlreadyAssigned(*button_id),
+            ));
+        }
+
+        device.config.buttons_mut().insert(
+            *button_id,
+            DemexInputButton::Macro {
+                action: action.clone(),
+            },
+        );
+
+        Ok(ActionRunResult::new())
+    }
+
+    fn run_unassign_input_button(
+        &self,
+        input_device_handler: &mut DemexInputDeviceHandler,
+        device_idx: usize,
+        button_id: u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let device = input_device_handler
+            .device_mut(device_idx)
+            .map_err(ActionRunError::InputDeviceError)?;
+
+        if device.config.buttons_mut().remove(&button_id).is_none() {
+            return Err(ActionRunError::InputDeviceError(
+                DemexInputDeviceError::ButtonNotAssigned(button_id),
+            ));
+        }
+
+        Ok(ActionRunResult::new())
+    }
+
+    fn run_unassign_input_fader(
+        &self,
+        input_device_handler: &mut DemexInputDeviceHandler,
+        device_idx: usize,
+        fader_id: u32,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let device = input_device_handler
+            .device_mut(device_idx)
+            .map_err(ActionRunError::InputDeviceError)?;
+
+        if device.config.faders_mut().remove(&fader_id).is_none() {
+            return Err(ActionRunError::InputDeviceError(
+                DemexInputDeviceError::FaderNotAssigned(fader_id),
+            ));
+        }
 
         Ok(ActionRunResult::new())
     }

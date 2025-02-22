@@ -17,11 +17,16 @@ function                    = fixture_selector set_function
                             | "config" ("output")
                             | "test" string
                             | "assign" assign_command
+                            | "unassign" unassign_command
+
+unassign_command            = "button" float
+                            | "fader" float
 
 assign_function             = "executor" integer ("go" | "stop" | "flash") "to" float 
                             | "fader" integer ["go"] "to" float
-                            | "preset" integer "with" fixture_selector "to" float
+                            | "preset" integer ["with" fixture_selector] "to" float
                             | fixture_selector "to" float
+                            | "macro" function "to" float
 
 delete_function             = "macro" integer_or_range
                             | sepcific_preset_or_range

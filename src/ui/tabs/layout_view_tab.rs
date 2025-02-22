@@ -3,9 +3,6 @@ use crate::{
         channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
         layout::{FixtureLayoutDecoration, FixtureLayoutEntry, FixtureLayoutEntryType},
     },
-    parser::nodes::fixture_selector::{
-        AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
-    },
     ui::{
         graphics::layout_projection::LayoutProjection, utils::rect::rect_vertices, DemexUiContext,
     },
@@ -104,14 +101,17 @@ impl FixtureLayoutEntry {
                         // draw line from pos to pos_in_rect
                         painter.line_segment(
                             [pos, pos_in_rect],
-                            Stroke::new(0.25 * projection.zoom(), egui::Color32::YELLOW),
+                            Stroke::new(
+                                0.25 * projection.zoom(),
+                                egui::Color32::YELLOW.gamma_multiply(0.5),
+                            ),
                         );
                     }
 
                     painter.circle_filled(
                         pos_in_rect,
                         0.5 * projection.zoom(),
-                        egui::Color32::YELLOW,
+                        egui::Color32::YELLOW.gamma_multiply(0.5),
                     );
                 }
             }
@@ -174,6 +174,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let fixture_handler = context.fixture_handler.read();
     let preset_handler = context.preset_handler.read();
     let updatable_handler = context.updatable_handler.read();
+    let timing_handler = context.timing_handler.read();
 
     let fixture_layout = fixture_handler.patch().layout();
     ui.heading("Layout View");
@@ -240,13 +241,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let global_fixture_select_fixtures = context
         .global_fixture_select
         .as_ref()
-        .and_then(|fs| {
-            fs.get_fixtures(
-                &preset_handler,
-                FixtureSelectorContext::new(&context.global_fixture_select),
-            )
-            .ok()
-        })
+        .map(|selection| selection.fixtures())
         .unwrap_or_default();
 
     for decoration in fixture_layout.decorations() {
@@ -271,6 +266,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 FixtureFeatureType::Intensity,
                 &preset_handler,
                 &updatable_handler,
+                &timing_handler,
             )
             .ok()
             .and_then(|val| match val {
@@ -279,23 +275,25 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
             })
             .unwrap();
 
-        let rect_color =
-            if let Ok(color) = fixture.display_color(&preset_handler, &updatable_handler) {
-                egui::Color32::from_rgba_unmultiplied(
-                    (color[0] * 255.0) as u8,
-                    (color[1] * 255.0) as u8,
-                    (color[2] * 255.0) as u8,
-                    (intensity * 255.0) as u8,
-                )
-            } else {
-                egui::Color32::from_rgba_unmultiplied(255, 255, 255, (intensity * 255.0) as u8)
-            };
+        let rect_color = if let Ok(color) =
+            fixture.display_color(&preset_handler, &updatable_handler, &timing_handler)
+        {
+            egui::Color32::from_rgba_unmultiplied(
+                (color[0] * 255.0) as u8,
+                (color[1] * 255.0) as u8,
+                (color[2] * 255.0) as u8,
+                (intensity * 255.0) as u8,
+            )
+        } else {
+            egui::Color32::from_rgba_unmultiplied(255, 255, 255, (intensity * 255.0) as u8)
+        };
 
         let position: Option<egui::Vec2> = fixture
             .feature_value(
                 FixtureFeatureType::PositionPanTilt,
                 &preset_handler,
                 &updatable_handler,
+                &timing_handler,
             )
             .ok()
             .and_then(|val| match val {
@@ -406,14 +404,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
         if !selected_fixture_ids.is_empty() {
             if let Some(global_fixture_select) = context.global_fixture_select.as_mut() {
-                *global_fixture_select = FixtureSelector::Additive(
-                    AtomicFixtureSelector::FixtureIdList(selected_fixture_ids),
-                    Box::new(global_fixture_select.clone()),
-                );
+                global_fixture_select.add_fixtures(&selected_fixture_ids);
             } else {
-                context.global_fixture_select = Some(FixtureSelector::Atomic(
-                    AtomicFixtureSelector::FixtureIdList(selected_fixture_ids),
-                ));
+                context.global_fixture_select = Some(selected_fixture_ids.into());
             }
         }
 

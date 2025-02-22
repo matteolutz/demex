@@ -24,6 +24,23 @@ pub struct FixturePresetId {
     pub preset_id: u32,
 }
 
+impl PartialOrd for FixturePresetId {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for FixturePresetId {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let ord = self.feature_group_id.cmp(&other.feature_group_id);
+        if ord == std::cmp::Ordering::Equal {
+            self.preset_id.cmp(&other.preset_id)
+        } else {
+            ord
+        }
+    }
+}
+
 impl std::fmt::Display for FixturePresetId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}.{}", self.feature_group_id, self.preset_id)
@@ -58,7 +75,7 @@ impl<'de> Deserialize<'de> for FixturePresetId {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FixturePresetTarget {
     AllSelected,
     SomeSelected,
@@ -92,10 +109,11 @@ impl FixturePreset {
         let mut data = HashMap::new();
 
         for fixture_id in fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
+            .get_selection(preset_handler, fixture_selector_context)
             .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?
+            .fixtures()
         {
-            let fixture = fixture_handler.fixture_immut(fixture_id);
+            let fixture = fixture_handler.fixture_immut(*fixture_id);
 
             if let Some(fixture) = fixture {
                 let mut values = HashMap::new();
@@ -120,7 +138,7 @@ impl FixturePreset {
                             .channel_value_programmer(channel_type)
                             .and_then(|value| {
                                 value
-                                    .to_discrete_value(fixture_id, channel_type, preset_handler)
+                                    .to_discrete_value(*fixture_id, channel_type, preset_handler)
                                     .map_err(FixtureError::FixtureChannelError2)
                             })
                             .map_err(PresetHandlerError::FixtureError)?;
@@ -129,7 +147,7 @@ impl FixturePreset {
                     }
                 }
 
-                data.insert(fixture_id, values);
+                data.insert(*fixture_id, values);
             }
         }
 

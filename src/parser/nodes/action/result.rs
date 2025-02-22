@@ -1,4 +1,4 @@
-use crate::{parser::nodes::fixture_selector::FixtureSelector, ui::window::edit::DemexEditWindow};
+use crate::{fixture::selection::FixtureSelection, ui::window::edit::DemexEditWindow};
 
 #[derive(Debug, Clone, Default)]
 pub enum ActionRunResult {
@@ -10,7 +10,7 @@ pub enum ActionRunResult {
     Warn(String),
     EditWindow(DemexEditWindow),
 
-    UpdateSelectedFixtures(FixtureSelector),
+    UpdateSelectedFixtures(FixtureSelection),
 }
 
 impl ActionRunResult {

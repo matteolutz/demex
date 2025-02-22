@@ -976,13 +976,18 @@ impl<'a> Parser2<'a> {
                 }
             }
             Token::KeywordPreset => {
-                self.advance();
+                // Intentionally not advancing past the keyword,
+                // because parse_specific_preset_or_range will consume it
+                // self.advance();
 
-                let preset_id = self.parse_preset_id()?;
+                let preset_id = self.parse_specific_preset_or_range()?;
 
-                expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
-
-                let fixture_selector = self.parse_fixture_selector()?;
+                let fixture_selector = if matches!(self.current_token()?, Token::KeywordWith) {
+                    self.advance();
+                    Some(self.parse_fixture_selector()?)
+                } else {
+                    None
+                };
 
                 expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
@@ -995,6 +1000,21 @@ impl<'a> Parser2<'a> {
                     button_id,
                 })
             }
+            Token::KeywordMacro => {
+                self.advance();
+
+                let command = self.parse_command()?;
+
+                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+
+                let (device_idx, button_id) = self.parse_float_individual()?;
+
+                Ok(Action::AssignMacroToInput {
+                    action: Box::new(command),
+                    device_idx: device_idx as usize,
+                    button_id,
+                })
+            }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
                 vec![
@@ -1003,6 +1023,35 @@ impl<'a> Parser2<'a> {
                     "\"preset\"",
                     "fixture selector",
                 ],
+            )),
+        }
+    }
+
+    fn parse_unassign_function(&mut self) -> Result<Action, ParseError> {
+        match self.current_token()? {
+            Token::KeywordButton => {
+                self.advance();
+
+                let (device_idx, button_id) = self.parse_float_individual()?;
+
+                Ok(Action::UnassignInputButton {
+                    device_idx: device_idx as usize,
+                    button_id,
+                })
+            }
+            Token::KeywordFader => {
+                self.advance();
+
+                let (device_idx, fader_id) = self.parse_float_individual()?;
+
+                Ok(Action::UnassignInputFader {
+                    device_idx: device_idx as usize,
+                    fader_id,
+                })
+            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec!["\"button\"", "\"fader\""],
             )),
         }
     }
@@ -1041,6 +1090,11 @@ impl<'a> Parser2<'a> {
         if matches!(self.current_token()?, Token::KeywordAssign) {
             self.advance();
             return self.parse_assign_function();
+        }
+
+        if matches!(self.current_token()?, Token::KeywordUnassign) {
+            self.advance();
+            return self.parse_unassign_function();
         }
 
         if matches!(self.current_token()?, Token::KeywordClear) {

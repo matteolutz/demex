@@ -112,11 +112,13 @@ impl DemexFader {
 
         match &mut self.config {
             DemexFaderConfig::SequenceRuntime {
-                fixtures, runtime, ..
+                selection: fixtures,
+                runtime,
+                ..
             } => {
                 runtime.stop();
 
-                for fixture_id in fixtures {
+                for fixture_id in fixtures.fixtures() {
                     fixture_handler
                         .fixture(*fixture_id)
                         .unwrap()
@@ -125,8 +127,10 @@ impl DemexFader {
                         });
                 }
             }
-            DemexFaderConfig::Submaster { fixtures } => {
-                for fixture_id in fixtures {
+            DemexFaderConfig::Submaster {
+                selection: fixtures,
+            } => {
+                for fixture_id in fixtures.fixtures() {
                     fixture_handler
                         .fixture(*fixture_id)
                         .unwrap()
@@ -140,15 +144,17 @@ impl DemexFader {
 
     pub fn is_active(&self) -> bool {
         match &self.config {
-            DemexFaderConfig::Submaster { fixtures: _ } => self.value != 0.0,
+            DemexFaderConfig::Submaster { selection: _ } => self.value != 0.0,
             DemexFaderConfig::SequenceRuntime { runtime, .. } => runtime.is_started(),
         }
     }
 
     fn activate(&mut self, fixture_handler: &mut FixtureHandler) {
         match &mut self.config {
-            DemexFaderConfig::Submaster { fixtures } => {
-                for fixture_id in fixtures {
+            DemexFaderConfig::Submaster {
+                selection: fixtures,
+            } => {
+                for fixture_id in fixtures.fixtures() {
                     fixture_handler
                         .fixture(*fixture_id)
                         .unwrap()
@@ -156,13 +162,15 @@ impl DemexFader {
                 }
             }
             DemexFaderConfig::SequenceRuntime {
-                fixtures, runtime, ..
+                selection: fixtures,
+                runtime,
+                ..
             } => {
                 if !runtime.is_started() {
                     runtime.start();
                 }
 
-                for fixture_id in fixtures {
+                for fixture_id in fixtures.fixtures() {
                     fixture_handler
                         .fixture(*fixture_id)
                         .unwrap()
@@ -183,8 +191,10 @@ impl DemexFader {
         }
 
         match &self.config {
-            DemexFaderConfig::Submaster { fixtures } => {
-                if !fixtures.contains(&fixture.id())
+            DemexFaderConfig::Submaster {
+                selection: fixtures,
+            } => {
+                if !fixtures.has_fixture(fixture.id())
                     || (channel_type != FixtureChannelType::Intensity
                         && channel_type != FixtureChannelType::IntensityFine)
                 {
@@ -206,11 +216,11 @@ impl DemexFader {
                 ))
             }
             DemexFaderConfig::SequenceRuntime {
-                fixtures,
+                selection: fixtures,
                 runtime,
                 function,
             } => {
-                if !fixtures.contains(&fixture.id()) {
+                if !fixtures.has_fixture(fixture.id()) {
                     return Err(FixtureError::ChannelValueNotFound(channel_type));
                 }
 

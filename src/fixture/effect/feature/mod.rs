@@ -2,6 +2,7 @@ use std::f32;
 
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
+use sine::SineVariant;
 
 use crate::{
     fixture::channel2::feature::{
@@ -13,12 +14,12 @@ use crate::{
 use super::error::EffectError;
 
 pub mod runtime;
+pub mod sine;
 
 #[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
 pub enum FeatureEffect {
     IntensitySine {
-        speed: f32,
-        k: Option<f32>,
+        sine_variant: SineVariant,
     },
 
     PositionPanTiltFigureEight {
@@ -26,39 +27,33 @@ pub enum FeatureEffect {
         tilt_size: f32,
         pan_center: f32,
         tilt_center: f32,
-        speed: f32,
     },
+
     PositionPanTiltEllipse {
         pan_size: f32,
         tilt_size: f32,
         pan_center: f32,
         tilt_center: f32,
-        speed: f32,
+        sine_variant: SineVariant,
     },
+
     PositionPanTiltRect {
         pan_size: f32,
         tilt_size: f32,
         pan_center: f32,
         tilt_center: f32,
-        speed: f32,
     },
 
     ColorRGBHueRotate {
         hue_size: f32,
         hue_center: f32,
-        speed: f32,
     },
 }
 
 impl Default for FeatureEffect {
     fn default() -> Self {
-        // TODO: change this
-        Self::PositionPanTiltFigureEight {
-            pan_size: 0.0,
-            tilt_size: 0.0,
-            pan_center: 0.5,
-            tilt_center: 0.5,
-            speed: 0.0,
+        Self::IntensitySine {
+            sine_variant: SineVariant::default(),
         }
     }
 }
@@ -77,20 +72,13 @@ impl FeatureEffect {
     pub fn get_feature_value(
         &self,
         t: f64,
-        phase_offset: f32,
+        phase_offset_deg: f32,
+        speed: f32,
     ) -> Result<FixtureFeatureValue, EffectError> {
         match self {
-            Self::IntensitySine { speed, k } => {
-                let intensity_sine = f32::sin(
-                    t as f32 * speed + (3.0 * f32::consts::FRAC_PI_2) - phase_offset.to_radians(),
-                );
-
-                let intensity = (if let Some(k) = k {
-                    intensity_sine * k
-                } else {
-                    intensity_sine
-                }) * 0.5
-                    + 0.5;
+            Self::IntensitySine { sine_variant } => {
+                let intensity =
+                    sine_variant.apply(t as f32 * speed - phase_offset_deg.to_radians());
 
                 Ok(FixtureFeatureValue::Intensity { intensity })
             }
@@ -100,13 +88,12 @@ impl FeatureEffect {
                 tilt_size,
                 pan_center,
                 tilt_center,
-                speed,
             } => {
                 // TODO: should we multiply pan or tilt?
-                let pan = (f32::sin(t as f32 * speed * 2.0 - phase_offset.to_radians()))
+                let pan = (f32::sin(t as f32 * speed * 2.0 - phase_offset_deg.to_radians()))
                     * (pan_size / 2.0)
                     + pan_center;
-                let tilt = (f32::sin(t as f32 * speed - phase_offset.to_radians()))
+                let tilt = (f32::sin(t as f32 * speed - phase_offset_deg.to_radians()))
                     * (tilt_size / 2.0)
                     + tilt_center;
 
@@ -121,12 +108,13 @@ impl FeatureEffect {
                 tilt_size,
                 pan_center,
                 tilt_center,
-                speed,
+                sine_variant,
             } => {
-                let pan = (f32::sin(t as f32 * speed - phase_offset.to_radians()))
+                let pan = sine_variant.apply(t as f32 * speed - phase_offset_deg.to_radians())
                     * (pan_size / 2.0)
                     + pan_center;
-                let tilt = (f32::sin(t as f32 * speed - phase_offset.to_radians()))
+
+                let tilt = sine_variant.apply(t as f32 * speed - phase_offset_deg.to_radians())
                     * (tilt_size / 2.0)
                     + tilt_center;
 
@@ -140,9 +128,8 @@ impl FeatureEffect {
             Self::ColorRGBHueRotate {
                 hue_size,
                 hue_center,
-                speed,
             } => {
-                let hue = (f32::sin(t as f32 * speed - phase_offset.to_radians()))
+                let hue = (f32::sin(t as f32 * speed - phase_offset_deg.to_radians()))
                     * (hue_size / 2.0)
                     + hue_center;
                 let [r, g, b] = hsl_to_rgb([hue, 1.0, 0.5]);

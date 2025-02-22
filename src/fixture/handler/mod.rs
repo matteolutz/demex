@@ -4,7 +4,10 @@ use crate::dmx::{DemexDmxOutput, DemexDmxOutputTrait};
 
 use self::error::FixtureHandlerError;
 
-use super::{patch::Patch, presets::PresetHandler, updatables::UpdatableHandler, Fixture};
+use super::{
+    patch::Patch, presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler,
+    Fixture,
+};
 
 pub mod error;
 
@@ -134,6 +137,7 @@ impl FixtureHandler {
         &mut self,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
         _delta_time: f64,
         force: bool,
     ) -> Result<usize, FixtureHandlerError> {
@@ -146,6 +150,7 @@ impl FixtureHandler {
                 .generate_data_packet(
                     preset_handler,
                     updatable_handler,
+                    timing_handler,
                     self.grand_master as f32 / 255.0,
                 )
                 .map_err(FixtureHandlerError::FixtureError)?;

@@ -1,12 +1,11 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     net::{self, SocketAddr},
     sync::mpsc::{self, TryRecvError},
     thread, time,
 };
 
 use artnet_protocol::{ArtCommand, Output, Poll, PortAddress};
-use egui::ahash::HashSet;
 use itertools::Itertools;
 
 use super::DmxData;

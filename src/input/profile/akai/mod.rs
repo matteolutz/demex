@@ -3,12 +3,17 @@ use std::sync::mpsc;
 use led::{ApcMiniMk2ButtonLedColor, ApcMiniMk2ButtonLedMode};
 
 use crate::{
-    fixture::updatables::error::UpdatableHandlerError,
+    fixture::{
+        presets::{preset::FixturePresetTarget, PresetHandler},
+        selection::FixtureSelection,
+        timing::TimingHandler,
+        updatables::{error::UpdatableHandlerError, UpdatableHandler},
+    },
     input::{
         button::DemexInputButton, error::DemexInputDeviceError, message::DemexInputDeviceMessage,
         midi::MidiMessage, DemexInputDeviceProfile,
     },
-    parser::nodes::fixture_selector::FixtureSelector,
+    parser::nodes::fixture_selector::FixtureSelectorContext,
 };
 
 use super::DemexInputDeviceProfileType;
@@ -119,7 +124,11 @@ impl ApcMiniMk2InputDeviceProfile {
 
     pub fn get_button_note_number(&self, idx: u32) -> Option<u8> {
         match idx {
-            0..=63 => Some(idx as u8),
+            0..=63 => {
+                let row = 7 - (idx / 8);
+                let col = idx % 8;
+                Some((row * 8 + col) as u8)
+            }
             100..=107 => Some((idx - 100) as u8 + 0x64),
             200..=207 => Some((idx - 200) as u8 + 0x70),
             300 => Some(0x7A),
@@ -129,7 +138,11 @@ impl ApcMiniMk2InputDeviceProfile {
 
     pub fn get_button_idx(&self, _channel: u8, note_number: u8) -> Option<u32> {
         match note_number {
-            0x00..=0x3F => Some(note_number as u32),
+            0x00..=0x3F => {
+                let row = 7 - (note_number as u32 / 8);
+                let col = note_number as u32 % 8;
+                Some(row * 8 + col)
+            }
             0x64..=0x6B => Some(note_number as u32 - 0x64 + 100),
             0x70..=0x77 => Some(note_number as u32 - 0x70 + 200),
             0x7A => Some(300),
@@ -209,8 +222,10 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
     fn update_out(
         &mut self,
         device_config: &crate::input::device::DemexInputDeviceConfig,
-        updatable_handler: &crate::fixture::updatables::UpdatableHandler,
-        global_fixture_selector: &Option<FixtureSelector>,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
+        global_fixture_selection: &Option<FixtureSelection>,
     ) -> Result<(), DemexInputDeviceError> {
         for (button_id, button) in device_config.buttons() {
             match button {
@@ -268,11 +283,35 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         ApcMiniMk2ButtonLedColor::White,
                     )?;
                 }
-                DemexInputButton::SelectivePreset { .. } => {
+                DemexInputButton::SelectivePreset {
+                    selection,
+                    preset_id,
+                } => {
+                    let target_mode = preset_handler
+                        .get_preset(*preset_id)
+                        .ok()
+                        .map(|preset| {
+                            preset.get_target(
+                                global_fixture_selection
+                                    .as_ref()
+                                    .map(|selection| selection.fixtures())
+                                    .unwrap_or(&[]),
+                            )
+                        })
+                        .unwrap_or(FixturePresetTarget::None);
+
                     self.set_button_led(
                         *button_id,
-                        ApcMiniMk2ButtonLedMode::IntensFull,
-                        ApcMiniMk2ButtonLedColor::Orange,
+                        if selection.is_some() || target_mode == FixturePresetTarget::AllSelected {
+                            ApcMiniMk2ButtonLedMode::IntensFull
+                        } else {
+                            ApcMiniMk2ButtonLedMode::Intens10
+                        },
+                        if selection.is_some() {
+                            ApcMiniMk2ButtonLedColor::Orange
+                        } else {
+                            ApcMiniMk2ButtonLedColor::Yellow
+                        },
                     )?;
                 }
                 DemexInputButton::Macro { .. } => {
@@ -283,24 +322,43 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                     )?;
                 }
                 DemexInputButton::FixtureSelector { fixture_selector } => {
-                    let is_selected =
-                        global_fixture_selector
-                            .as_ref()
-                            .is_some_and(|global_fixtuer_selector| {
-                                global_fixtuer_selector == fixture_selector
-                            });
+                    let is_selected = global_fixture_selection.as_ref().is_some_and(|selection| {
+                        selection.equals_selector(
+                            fixture_selector,
+                            preset_handler,
+                            FixtureSelectorContext::new(global_fixture_selection),
+                        )
+                    });
 
                     self.set_button_led(
                         *button_id,
                         if !is_selected {
                             ApcMiniMk2ButtonLedMode::IntensFull
                         } else {
-                            ApcMiniMk2ButtonLedMode::Pulsing1o2
+                            ApcMiniMk2ButtonLedMode::Blinking1o8
                         },
                         ApcMiniMk2ButtonLedColor::Pink,
                     )?;
                 }
-                _ => {}
+                DemexInputButton::SpeedMasterTap { speed_master_id } => {
+                    let speed_master_value = timing_handler
+                        .get_speed_master_value(*speed_master_id)
+                        .map_err(DemexInputDeviceError::TimingHandlerError)?;
+
+                    self.set_button_led(
+                        *button_id,
+                        ApcMiniMk2ButtonLedMode::IntensFull,
+                        if speed_master_value.interval().is_none()
+                            || speed_master_value.display_should_blink()
+                        {
+                            ApcMiniMk2ButtonLedColor::DarkViolet
+                        } else {
+                            ApcMiniMk2ButtonLedColor::Off
+                        },
+                    )?;
+                }
+                DemexInputButton::FaderGo(_) => todo!(),
+                DemexInputButton::Unused => {}
             }
         }
 

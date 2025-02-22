@@ -67,7 +67,11 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext) {
 
                 context.is_command_input_empty = context.command_input.is_empty();
 
-                if !command_input_field.has_focus() {
+                /*if !command_input_field.has_focus() {
+                    command_input_field.request_focus();
+                }*/
+                if ui.input_mut(|reader| reader.consume_key(egui::Modifiers::NONE, egui::Key::Tab))
+                {
                     command_input_field.request_focus();
                 }
 

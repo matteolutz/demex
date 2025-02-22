@@ -5,10 +5,10 @@ use row::preset_grid_row_ui;
 use crate::{
     fixture::{presets::preset::FixturePresetId, updatables::executor::config::ExecutorConfig},
     lexer::token::Token,
-    parser::nodes::fixture_selector::{
-        AtomicFixtureSelector, FixtureSelector, FixtureSelectorContext,
+    ui::{
+        window::{edit::DemexEditWindow, DemexWindow},
+        DemexUiContext,
     },
-    ui::DemexUiContext,
 };
 
 pub const PRESET_GRID_ELEMENT_SIZE: [f32; 2] = [80.0, 80.0];
@@ -21,13 +21,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let preset_handler = context.preset_handler.read();
     let mut updatable_handler = context.updatable_handler.write();
 
-    let selected_fixtures = context.global_fixture_select.as_ref().and_then(|fs| {
-        fs.get_fixtures(
-            &preset_handler,
-            FixtureSelectorContext::new(&context.global_fixture_select),
-        )
-        .ok()
-    });
+    let _selected_fixtures = context
+        .global_fixture_select
+        .as_ref()
+        .map(|selection| selection.fixtures().to_vec());
+    let selected_fixtures = _selected_fixtures.as_ref();
 
     ui.vertical(|ui| {
         // Groups
@@ -39,15 +37,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     PresetGridButtonConfig::Preset {
                         id: g.id(),
                         name: g.name().to_owned(),
-                        top_bar_color: context.global_fixture_select.as_ref().and_then(|fs| {
-                            if fs
-                                == &FixtureSelector::Atomic(AtomicFixtureSelector::FixtureGroup(id))
-                            {
-                                Some(egui::Color32::GREEN)
-                            } else {
-                                None
-                            }
-                        }),
+                        top_bar_color: context.global_fixture_select.as_ref().and_then(
+                            |selection| {
+                                if selection == g.fixture_selection() {
+                                    Some(egui::Color32::GREEN)
+                                } else {
+                                    None
+                                }
+                            },
+                        ),
                     }
                 } else {
                     PresetGridButtonConfig::Empty { id }
@@ -70,14 +68,22 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     }
                 }
 
+                if response.secondary_clicked() {
+                    if let Ok(g) = g {
+                        context
+                            .windows
+                            .push(DemexWindow::Edit(DemexEditWindow::EditGroup(g.id())));
+                    }
+                }
+
                 if response.double_clicked() {
                     context.command.clear();
                     context.command_input.clear();
                     context.is_command_input_empty = true;
 
-                    context.global_fixture_select = Some(FixtureSelector::Atomic(
-                        AtomicFixtureSelector::FixtureGroup(id),
-                    ))
+                    if let Ok(g) = g {
+                        context.global_fixture_select = Some(g.fixture_selection().clone());
+                    }
                 }
             }
         });
@@ -131,6 +137,19 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                     Token::KeywordPreset,
                                     Token::FloatingPoint(0.0, (*feature_group_id, id)),
                                 ]);
+                            }
+                        }
+
+                        if p.is_ok() && response.double_clicked() && selected_fixtures.is_some() {
+                            context.command.clear();
+                            context.command_input.clear();
+                            context.is_command_input_empty = true;
+
+                            for fixture_id in selected_fixtures.unwrap() {
+                                p.as_ref()
+                                    .unwrap()
+                                    .apply(fixture_handler.fixture(*fixture_id).unwrap())
+                                    .unwrap();
                             }
                         }
                     }
@@ -189,8 +208,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());
 
                 if response.clicked() {
-                    if cs.is_ok() {
-                        context.command.extend_from_slice(cs.unwrap().command());
+                    if let Ok(cs) = cs {
+                        context.command.extend_from_slice(cs.command());
                     }
                 }
             }
@@ -256,17 +275,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     }
                 }
 
-                if response.secondary_clicked() {
-                    if executor_exists {
-                        if updatable_handler.executor(id).unwrap().is_started() {
-                            updatable_handler
-                                .stop_executor(id, &mut fixture_handler)
-                                .unwrap();
-                        } else {
-                            context
-                                .command
-                                .extend_from_slice(&[Token::KeywordExecutor, Token::Integer(id)]);
-                        }
+                if response.secondary_clicked() && executor_exists {
+                    if updatable_handler.executor(id).unwrap().is_started() {
+                        updatable_handler
+                            .stop_executor(id, &mut fixture_handler)
+                            .unwrap();
+                    } else {
+                        context
+                            .command
+                            .extend_from_slice(&[Token::KeywordExecutor, Token::Integer(id)]);
                     }
                 }
             }

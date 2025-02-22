@@ -1,4 +1,6 @@
+use builder_cue::{edit_builder_cue_ui, DisplayEntry, PresetDisplayEntry};
 use egui_probe::Probe;
+use itertools::Itertools;
 
 use crate::{
     fixture::{
@@ -11,6 +13,8 @@ use crate::{
     ui::error::DemexUiError,
 };
 
+pub mod builder_cue;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DemexEditWindow {
     EditSequence(u32),
@@ -18,6 +22,9 @@ pub enum DemexEditWindow {
     EditExecutor(u32),
     EditFader(u32),
     EditPreset(FixturePresetId),
+    EditGroup(u32),
+
+    EditBuilderCue(u32, CueIdx),
 
     Config(ConfigTypeActionData),
 }
@@ -26,17 +33,20 @@ impl DemexEditWindow {
     pub fn title(&self) -> String {
         match self {
             Self::EditSequence(sequence_id) => format!("Sequence {}", sequence_id),
-            Self::EditSequenceCue(sequence_id, (cue_idx_major, cue_idx_minor)) => {
+            Self::EditSequenceCue(sequence_id, (cue_idx_major, cue_idx_minor))
+            | Self::EditBuilderCue(sequence_id, (cue_idx_major, cue_idx_minor)) => {
                 format!(
                     "Sequence {} - Cue {}.{}",
                     sequence_id, cue_idx_major, cue_idx_minor
                 )
             }
+
             Self::EditExecutor(executor_id) => format!("Executor {}", executor_id),
             Self::EditFader(fader_id) => format!("Fader {}", fader_id),
             Self::EditPreset(preset_id) => {
                 format!("Preset {}", preset_id)
             }
+            Self::EditGroup(group_id) => format!("Group {}", group_id),
             Self::Config(config_type) => format!("Config {:?}", config_type),
         }
     }
@@ -62,6 +72,50 @@ impl DemexEditWindow {
                 )
                 .show(ui);
             }
+            Self::EditBuilderCue(sequence_id, cue_idx) => {
+                let groups = preset_handler
+                    .groups()
+                    .iter()
+                    .map(|(id, group)| DisplayEntry {
+                        id: *id,
+                        name: group.name().to_owned(),
+                    })
+                    .collect::<Vec<_>>();
+
+                let feature_groups = preset_handler
+                    .feature_groups()
+                    .iter()
+                    .map(|(id, group)| DisplayEntry {
+                        id: *id,
+                        name: group.name().to_owned(),
+                    })
+                    .collect::<Vec<_>>();
+
+                let presets = preset_handler
+                    .presets()
+                    .iter()
+                    .map(|(id, preset)| PresetDisplayEntry {
+                        id: *id,
+                        name: format!(
+                            "{} - {}",
+                            feature_groups
+                                .iter()
+                                .find(|fg| fg.id == id.feature_group_id)
+                                .map(|fg| fg.name.as_str())
+                                .unwrap(),
+                            preset.name()
+                        ),
+                    })
+                    .sorted_by_key(|e| e.id)
+                    .collect::<Vec<_>>();
+
+                let sequence = preset_handler.get_sequence_mut(*sequence_id)?;
+                let cue = sequence
+                    .find_cue_mut(*cue_idx)
+                    .ok_or(DemexUiError::RuntimeError("cue not found".to_owned()))?;
+
+                edit_builder_cue_ui(ui, *sequence_id, cue, groups, presets);
+            }
             Self::EditExecutor(executor_id) => {
                 Probe::new(
                     updatable_handler
@@ -75,6 +129,9 @@ impl DemexEditWindow {
             }
             Self::EditPreset(preset_id) => {
                 Probe::new(preset_handler.get_preset_mut(*preset_id)?).show(ui);
+            }
+            Self::EditGroup(group_id) => {
+                Probe::new(preset_handler.get_group_mut(*group_id)?).show(ui);
             }
             Self::Config(config_type) => match config_type {
                 ConfigTypeActionData::Output => {

@@ -130,8 +130,8 @@ impl SequenceRuntime {
                     fade = if fade >= cue.snap_percent() { 1.0 } else { 0.0 };
                 }
 
-                cue.channel_value_for_fixture(fixture_id, channel_type)
-                    .map(|v| FadeFixtureChannelValue::new(v.clone(), fade, priority))
+                cue.channel_value_for_fixture(fixture_id, channel_type, preset_handler)
+                    .map(|v| FadeFixtureChannelValue::new(v, fade, priority))
             } else if prev_cue_idx.is_some() {
                 // this isn't the first cue, meaning we should fade between the value of the previous cue
                 // and the value of the current cue
@@ -158,17 +158,20 @@ impl SequenceRuntime {
                 };
 
                 let current_cue_value = cue
-                    .channel_value_for_fixture(fixture_id, channel_type)
+                    .channel_value_for_fixture(fixture_id, channel_type, preset_handler)
                     .map(|v| {
                         FadeFixtureChannelValue::new(
                             FixtureChannelValue2::Mix {
                                 a: Box::new(
                                     prev_cue
-                                        .channel_value_for_fixture(fixture_id, channel_type)
-                                        .cloned()
+                                        .channel_value_for_fixture(
+                                            fixture_id,
+                                            channel_type,
+                                            preset_handler,
+                                        )
                                         .unwrap_or(FixtureChannelValue2::Home),
                                 ),
-                                b: Box::new(v.clone()),
+                                b: Box::new(v),
                                 mix,
                             },
                             fade,
@@ -178,10 +181,8 @@ impl SequenceRuntime {
 
                 if current_cue_value.is_none() {
                     prev_cue
-                        .channel_value_for_fixture(fixture_id, channel_type)
-                        .map(|v| {
-                            FadeFixtureChannelValue::new(v.clone(), (1.0 - mix) * fade, priority)
-                        })
+                        .channel_value_for_fixture(fixture_id, channel_type, preset_handler)
+                        .map(|v| FadeFixtureChannelValue::new(v, (1.0 - mix) * fade, priority))
                 } else {
                     current_cue_value
                 }

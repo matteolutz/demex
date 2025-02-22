@@ -4,11 +4,8 @@ use position::position_pan_tilt_controls_ui;
 use slider::feature_f32_slider;
 use toggle_flags::toggle_flags_controls_ui;
 
-use crate::{
-    fixture::channel2::feature::{
-        feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue,
-    },
-    parser::nodes::fixture_selector::FixtureSelectorContext,
+use crate::fixture::channel2::feature::{
+    feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue,
 };
 
 pub mod color;
@@ -28,12 +25,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let selected_fixtures = context
         .global_fixture_select
         .as_ref()
-        .unwrap()
-        .get_fixtures(
-            &preset_handler,
-            FixtureSelectorContext::new(&context.global_fixture_select),
-        )
-        .expect("fixture selection failed");
+        .map(|selection| selection.fixtures())
+        .unwrap_or_default();
 
     let mut mutual_feature_types = fixture_handler
         .fixture_immut(selected_fixtures[0])
@@ -51,10 +44,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
     ui.style_mut().spacing.item_spacing = [0.0, 20.0].into();
 
-    ui.heading(format!(
-        "Fixture Controls - {}",
-        context.global_fixture_select.as_ref().unwrap()
-    ));
+    ui.heading(format!("Fixture Controls - {:?}", selected_fixtures));
 
     ui.vertical(|ui| {
         ui.style_mut().spacing.item_spacing = [20.0, 10.0].into();
@@ -86,7 +76,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     feature_f32_slider(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         FixtureFeatureType::Intensity,
                                         &mut fixture_handler,
                                         &preset_handler,
@@ -106,7 +96,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     feature_f32_slider(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         FixtureFeatureType::Zoom,
                                         &mut fixture_handler,
                                         &preset_handler,
@@ -124,7 +114,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     feature_f32_slider(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         FixtureFeatureType::Focus,
                                         &mut fixture_handler,
                                         &preset_handler,
@@ -142,7 +132,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     feature_f32_slider(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         FixtureFeatureType::Shutter,
                                         &mut fixture_handler,
                                         &preset_handler,
@@ -163,7 +153,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     color_rgb_controls_ui(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         &preset_handler,
                                         &mut fixture_handler,
                                     );
@@ -174,7 +164,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     color_macro_ui(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         &mut fixture_handler,
                                     );
                                 }
@@ -182,7 +172,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     position_pan_tilt_controls_ui(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         &preset_handler,
                                         &mut fixture_handler,
                                     );
@@ -191,7 +181,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     toggle_flags_controls_ui(
                                         ui,
                                         is_channel_home,
-                                        &selected_fixtures,
+                                        selected_fixtures,
                                         &preset_handler,
                                         &mut fixture_handler,
                                     );

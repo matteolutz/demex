@@ -1,7 +1,11 @@
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe)]
+use crate::parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext};
+
+use super::presets::PresetHandler;
+
+#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, PartialEq, Eq)]
 pub struct FixtureSelection {
     fixtures: Vec<u32>,
 
@@ -32,6 +36,38 @@ impl FixtureSelection {
 
     pub fn intersects_with(&self, other: &FixtureSelection) -> bool {
         self.fixtures.iter().any(|id| other.has_fixture(*id))
+    }
+
+    pub fn extend_from(&mut self, other: &FixtureSelection) {
+        for fixture in other.fixtures() {
+            if self.fixtures.contains(fixture) {
+                continue;
+            }
+            self.fixtures.push(*fixture);
+        }
+    }
+
+    pub fn subtract(&mut self, other: &FixtureSelection) {
+        self.fixtures.retain(|f| !other.has_fixture(*f));
+    }
+
+    pub fn equals_selector(
+        &self,
+        selector: &FixtureSelector,
+        preset_handler: &PresetHandler,
+        context: FixtureSelectorContext,
+    ) -> bool {
+        let selection = selector.get_selection(preset_handler, context);
+        selection.is_ok_and(|selection| &selection == self)
+    }
+
+    pub fn add_fixtures(&mut self, fixtures: &[u32]) {
+        for fixture in fixtures {
+            if self.fixtures.contains(fixture) {
+                continue;
+            }
+            self.fixtures.push(*fixture);
+        }
     }
 
     pub fn fixtures(&self) -> &[u32] {

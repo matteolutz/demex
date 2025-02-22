@@ -100,6 +100,14 @@ impl Sequence {
         &self.cues
     }
 
+    pub fn next_cue_idx(&self) -> CueIdx {
+        if self.cues.is_empty() {
+            (1, 0)
+        } else {
+            (self.cues.last().unwrap().cue_idx().0 + 1, 0)
+        }
+    }
+
     pub fn cues_mut(&mut self) -> &mut Vec<Cue> {
         &mut self.cues
     }

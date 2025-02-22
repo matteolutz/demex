@@ -14,6 +14,7 @@ use crate::{
         presets::PresetHandler,
     },
     ui::constants::PLEASE_SELECT_FIXTURES_OF_SAME_TYPE_AND_MODE,
+    utils::math::approx_equals_color,
 };
 
 pub fn color_macro_ui(
@@ -118,7 +119,7 @@ pub fn color_rgb_controls_ui(
             ui.style_mut().spacing.item_spacing = [10.0, 0.0].into();
             color_edit_button_rgb(ui, &mut color);
 
-            if color != [r, g, b] {
+            if !approx_equals_color(color, [r, g, b], 2) {
                 for fixture_id in selected_fixtures.iter() {
                     fixture_handler
                         .fixture(*fixture_id)

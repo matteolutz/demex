@@ -8,7 +8,10 @@ use crate::fixture::{
     updatables::UpdatableHandler, Fixture,
 };
 
-use super::channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2};
+use super::{
+    channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
+    timing::TimingHandler,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, EguiProbe, Default)]
 pub enum FixtureChannelValuePriority {
@@ -55,6 +58,7 @@ pub trait FixtureChannelValueSourceTrait {
         channel_type: FixtureChannelType,
         updatable_handler: &UpdatableHandler,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<FixtureChannelValue2, FixtureError>;
 }
 
@@ -72,6 +76,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
         channel_type: FixtureChannelType,
         updatable_handler: &UpdatableHandler,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<FixtureChannelValue2, FixtureError> {
         let mut values = self
             .iter()
@@ -97,6 +102,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                                 fixture.feature_configs(),
                                 channel_type,
                                 preset_handler,
+                                timing_handler,
                             )
                             .ok_or(FixtureError::ChannelValueNotFound(channel_type))
                     } else {
