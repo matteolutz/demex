@@ -348,9 +348,7 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                     self.set_button_led(
                         *button_id,
                         ApcMiniMk2ButtonLedMode::IntensFull,
-                        if speed_master_value.interval().is_none()
-                            || speed_master_value.display_should_blink()
-                        {
+                        if speed_master_value.interval().is_none() || speed_master_value.on_beat() {
                             ApcMiniMk2ButtonLedColor::DarkViolet
                         } else {
                             ApcMiniMk2ButtonLedColor::Off

@@ -24,7 +24,6 @@ use crate::{
 
 use super::{
     log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
-    tabs::layout_view_tab::LayoutViewContext,
     window::{edit::DemexEditWindow, DemexWindow},
 };
 
@@ -52,7 +51,6 @@ pub struct DemexUiContext {
     pub show_file: Option<PathBuf>,
     pub save_show: SaveShowFn,
 
-    pub layout_view_context: LayoutViewContext,
     pub gm_slider_val: u8,
 
     pub input_device_handler: DemexInputDeviceHandler,

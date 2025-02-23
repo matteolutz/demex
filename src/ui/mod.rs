@@ -6,7 +6,7 @@ use context::{DemexUiContext, SaveShowFn};
 use egui::IconData;
 use log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use parking_lot::RwLock;
-use tabs::{layout_view_tab::LayoutViewContext, DemexTab, DemexTabs};
+use tabs::{DemexTab, DemexTabs};
 use window::DemexWindow;
 
 #[allow(unused_imports)]
@@ -81,7 +81,6 @@ impl DemexUiApp {
                 global_fixture_select: None,
 
                 command: Vec::new(),
-                layout_view_context: LayoutViewContext::default(),
                 macro_execution_queue: Vec::new(),
 
                 show_file,
@@ -233,11 +232,11 @@ impl eframe::App for DemexUiApp {
 
                 ui.separator();
 
-                ui.label(if let Some(show_file) = self.context.show_file.as_ref() {
-                    show_file.display().to_string()
+                if let Some(show_file) = self.context.show_file.as_ref() {
+                    ui.label(show_file.display().to_string());
                 } else {
-                    "Show not saved".to_string()
-                });
+                    ui.colored_label(egui::Color32::YELLOW, "Show not saved");
+                }
             });
         });
 

@@ -9,6 +9,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
     egui_extras::TableBuilder::new(ui)
         .columns(egui_extras::Column::auto(), 3)
+        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
         .header(20.0, |mut ui| {
             ui.col(|ui| {
                 ui.strong("Id");
@@ -34,13 +35,16 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     });
 
                     ui.col(|ui| {
-                        ui.label(format!("{:.2} bpm", speed_master_value.bpm()));
+                        egui_probe::Probe::new(speed_master_value.bpm_mut())
+                            .with_header("")
+                            .show(ui);
+                        ui.label("bpm");
                     });
 
                     ui.col(|ui| {
                         if ui
                             .button(egui::RichText::from("   Tap   ").color(
-                                if speed_master_value.display_should_blink() {
+                                if speed_master_value.on_beat() {
                                     egui::Color32::GREEN
                                 } else {
                                     egui::Color32::PLACEHOLDER

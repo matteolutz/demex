@@ -6,6 +6,7 @@ use speed_master::SpeedMasterValue;
 
 pub mod error;
 pub mod speed_master;
+pub mod tap;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct TimingHandler {
