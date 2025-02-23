@@ -1,7 +1,6 @@
 use std::{collections::HashSet, path::PathBuf, sync::Arc, thread, time};
 
 use command::ui_command_input;
-use constants::VERSION_STR;
 use context::{DemexUiContext, SaveShowFn};
 use egui::IconData;
 use log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
@@ -21,7 +20,7 @@ use crate::{
         nodes::{action::Action, fixture_selector::FixtureSelectorContext},
         Parser2,
     },
-    utils::thread::DemexThreadStatsHandler,
+    utils::{thread::DemexThreadStatsHandler, version::VERSION_STR},
 };
 
 pub mod command;
@@ -44,6 +43,8 @@ pub struct DemexUiApp {
 
     tabs: DemexTabs,
     detached_tabs: HashSet<DemexTab>,
+
+    command_auto_focus: bool,
 
     last_update: std::time::Instant,
 
@@ -96,8 +97,12 @@ impl DemexUiApp {
             },
             tabs: DemexTabs::default(),
             detached_tabs: HashSet::new(),
+
+            command_auto_focus: true,
+
             last_update: time::Instant::now(),
             desired_fps,
+
             icon,
         }
     }
@@ -181,7 +186,7 @@ impl eframe::App for DemexUiApp {
                         self.tabs.re_attach(detached_tab);
                     }
 
-                    ui_command_input(ctx, &mut self.context);
+                    ui_command_input(ctx, &mut self.context, self.command_auto_focus);
 
                     egui::CentralPanel::default().show(ctx, |ui| {
                         egui::ScrollArea::both().auto_shrink(false).show(ui, |ui| {
@@ -237,10 +242,14 @@ impl eframe::App for DemexUiApp {
                 } else {
                     ui.colored_label(egui::Color32::YELLOW, "Show not saved");
                 }
+
+                ui.separator();
+
+                ui.checkbox(&mut self.command_auto_focus, "CMD AF");
             });
         });
 
-        ui_command_input(ctx, &mut self.context);
+        ui_command_input(ctx, &mut self.context, self.command_auto_focus);
 
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
             self.tabs

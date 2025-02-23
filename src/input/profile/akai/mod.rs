@@ -14,6 +14,7 @@ use crate::{
         midi::MidiMessage, DemexInputDeviceProfile,
     },
     parser::nodes::fixture_selector::FixtureSelectorContext,
+    utils::version::demex_version,
 };
 
 use super::DemexInputDeviceProfileType;
@@ -56,7 +57,7 @@ impl ApcMiniMk2InputDeviceProfile {
                 APC_MINI_MK_2_NAME.to_owned(),
             ))?;
 
-        let connection = midi_out
+        let conn_out = midi_out
             .connect(out_port, APC_MINI_MK_2_NAME)
             .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
 
@@ -93,7 +94,7 @@ impl ApcMiniMk2InputDeviceProfile {
 
         let mut s = Self {
             rx,
-            midi_out: connection,
+            midi_out: conn_out,
             _midi_in: conn_in,
         };
 
@@ -103,11 +104,22 @@ impl ApcMiniMk2InputDeviceProfile {
     }
 
     pub fn init(&mut self) -> Result<(), DemexInputDeviceError> {
+        let (version_major, version_minor, version_patch) = demex_version();
+
         self.midi_out
             .send(&[
-                0xF0, 0x47, 0x7F, 0x4F, 0x60, 0x0, 0x04, // akai
-                0x0, 0x0, 0x0, 0x1,  // demex version
-                0xF7, // end of sysex
+                0xF0,          // sysex start
+                0x47,          // manufacturer id
+                0x7F,          // device id
+                0x4F,          // mode id
+                0x60,          // message type
+                0x0,           // hi-bytes to follow
+                0x04,          // lo-bytes to follow
+                0x0,           // application id
+                version_major, // demex major version
+                version_minor, // demex minor version
+                version_patch, // demex patch version
+                0xF7,          // end of sysex
             ])
             .unwrap();
 
@@ -394,6 +406,22 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                 } => self.get_fader_idx(channel, control_code).map(|idx| {
                     DemexInputDeviceMessage::FaderValueChanged(idx, control_value as f32 / 127.0)
                 }),
+                MidiMessage::AkaiSystemExclusive {
+                    message_type, data, ..
+                } => {
+                    // answer to init message, contains current fader values
+                    if message_type == 0x61 && data.len() == 9 {
+                        let fader_values = data
+                            .iter()
+                            .enumerate()
+                            .map(|(idx, &v)| (idx as u32, v as f32 / 127.0))
+                            .collect::<Vec<_>>();
+
+                        Some(DemexInputDeviceMessage::FaderValuesChanged(fader_values))
+                    } else {
+                        None
+                    }
+                }
             })
             .collect::<Vec<_>>();
 

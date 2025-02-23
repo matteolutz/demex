@@ -2,7 +2,7 @@ use crate::{lexer::Lexer, ui::log::dialog::DemexGlobalDialogEntry};
 
 use super::context::DemexUiContext;
 
-pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext) {
+pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_af: bool) {
     eframe::egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
         ui.add_space(10.0);
 
@@ -67,10 +67,11 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext) {
 
                 context.is_command_input_empty = context.command_input.is_empty();
 
-                /*if !command_input_field.has_focus() {
-                    command_input_field.request_focus();
-                }*/
-                if ui.input_mut(|reader| reader.consume_key(egui::Modifiers::NONE, egui::Key::Tab))
+                if !command_input_field.has_focus()
+                    && (cmd_af
+                        || ui.input_mut(|reader| {
+                            reader.consume_key(egui::Modifiers::NONE, egui::Key::Tab)
+                        }))
                 {
                     command_input_field.request_focus();
                 }

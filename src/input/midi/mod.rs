@@ -19,6 +19,14 @@ pub enum MidiMessage {
         control_code: u8,
         control_value: u8,
     },
+    AkaiSystemExclusive {
+        manufacturer_id: u8,
+        device_id: u8,
+        model_id: u8,
+        message_type: u8,
+        data_length: u16,
+        data: Vec<u8>,
+    },
 }
 
 impl MidiMessage {
@@ -51,12 +59,45 @@ impl MidiMessage {
                 control_code & 0x7F,
                 control_value,
             ],
+            Self::AkaiSystemExclusive { .. } => todo!(),
         }
+    }
+
+    fn sysex_from_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() < 5 {
+            return None;
+        }
+
+        let manufacturer_id = bytes[1];
+        let device_id = bytes[2];
+        let model_id = bytes[3];
+        let message_type = bytes[4];
+
+        let data_length: u16 = (bytes[5] as u16) << 8 | bytes[6] as u16;
+        let data = bytes[7..bytes.len() - 1].to_vec();
+
+        // check if the last byte is the sysex end byte
+        if bytes[bytes.len() - 1] != 0xF7 {
+            return None;
+        }
+
+        Some(Self::AkaiSystemExclusive {
+            manufacturer_id,
+            device_id,
+            model_id,
+            message_type,
+            data_length,
+            data,
+        })
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
         if bytes.len() < 3 {
             return None;
+        }
+
+        if bytes[0] == 0xF0 {
+            return Self::sysex_from_bytes(bytes);
         }
 
         let message_type = (bytes[0] & 0xF0) >> 4;

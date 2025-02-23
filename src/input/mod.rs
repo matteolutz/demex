@@ -118,6 +118,21 @@ impl DemexInputDeviceHandler {
                             timing_handler,
                         )?;
                     }
+                    DemexInputDeviceMessage::FaderValuesChanged(fader_values) => {
+                        for (fader_id, value) in fader_values {
+                            let fader = device
+                                .config()
+                                .faders()
+                                .get(&fader_id)
+                                .ok_or(DemexInputDeviceError::ButtonNotFound(fader_id))?;
+                            fader.handle_change(
+                                value,
+                                fixture_handler,
+                                updatable_handler,
+                                timing_handler,
+                            )?;
+                        }
+                    }
                 }
             }
         }
