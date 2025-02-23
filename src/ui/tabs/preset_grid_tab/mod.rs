@@ -46,6 +46,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                 }
                             },
                         ),
+                        display_color: None,
                     }
                 } else {
                     PresetGridButtonConfig::Empty { id }
@@ -114,6 +115,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                     .as_ref()
                                     .map(|selected| p.get_target(selected))
                                     .map(|target| target.get_color()),
+                                display_color: p.display_color(),
                             }
                         } else {
                             PresetGridButtonConfig::Empty { id }
@@ -167,6 +169,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         id: m.id(),
                         name: m.name().to_owned(),
                         top_bar_color: None,
+                        display_color: None,
                     }
                 } else {
                     PresetGridButtonConfig::Empty { id }
@@ -199,6 +202,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         id: cs.id(),
                         name: cs.name().to_owned(),
                         top_bar_color: None,
+                        display_color: None,
                     }
                 } else {
                     PresetGridButtonConfig::Empty { id }
@@ -231,6 +235,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         } else {
                             None
                         },
+                        display_color: None,
                     };
 
                     let decoration = match executor.config() {

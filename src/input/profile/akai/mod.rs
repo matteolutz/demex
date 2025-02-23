@@ -299,9 +299,9 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                     selection,
                     preset_id,
                 } => {
-                    let target_mode = preset_handler
-                        .get_preset(*preset_id)
-                        .ok()
+                    let preset = preset_handler.get_preset(*preset_id).ok();
+
+                    let target_mode = preset
                         .map(|preset| {
                             preset.get_target(
                                 global_fixture_selection
@@ -312,6 +312,8 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         })
                         .unwrap_or(FixturePresetTarget::None);
 
+                    let display_color = preset.and_then(|p| p.display_color());
+
                     self.set_button_led(
                         *button_id,
                         if selection.is_some() || target_mode == FixturePresetTarget::AllSelected {
@@ -319,11 +321,15 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         } else {
                             ApcMiniMk2ButtonLedMode::Intens10
                         },
-                        if selection.is_some() {
-                            ApcMiniMk2ButtonLedColor::Orange
-                        } else {
-                            ApcMiniMk2ButtonLedColor::Yellow
-                        },
+                        display_color
+                            .and_then(ApcMiniMk2ButtonLedColor::try_from_color)
+                            .unwrap_or_else(|| {
+                                if selection.is_some() {
+                                    ApcMiniMk2ButtonLedColor::Orange
+                                } else {
+                                    ApcMiniMk2ButtonLedColor::Yellow
+                                }
+                            }),
                     )?;
                 }
                 DemexInputButton::Macro { .. } => {

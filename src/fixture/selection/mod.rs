@@ -103,7 +103,7 @@ impl FixtureSelection {
         };
 
         let wing_size = self.num_grouped_offsets() / self.wings();
-        let mut wing_offset = grouped_offset % wing_size;
+        let mut wing_offset = grouped_offset % wing_size.max(1);
 
         // it's an odd wing
         if (grouped_offset / wing_size) % 2 != 0 {

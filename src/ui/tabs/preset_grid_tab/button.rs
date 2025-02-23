@@ -9,6 +9,7 @@ pub enum PresetGridButtonConfig {
         id: u32,
         name: String,
         top_bar_color: Option<egui::Color32>,
+        display_color: Option<egui::Color32>,
     },
     Empty {
         id: u32,
@@ -57,6 +58,7 @@ pub fn preset_grid_button_ui(
         PresetGridButtonConfig::Preset {
             name,
             top_bar_color,
+            display_color,
             ..
         } => {
             if let Some(top_bar_color) = top_bar_color {
@@ -77,6 +79,17 @@ pub fn preset_grid_button_ui(
                 egui::Color32::WHITE,
                 response.rect,
             );
+
+            if let Some(display_color) = display_color {
+                painter.rect_filled(
+                    egui::Rect::from_center_size(
+                        response.rect.center_bottom() - egui::vec2(0.0, 10.0),
+                        egui::vec2(response.rect.width() / 2.0, 10.0),
+                    ),
+                    2.0,
+                    display_color,
+                );
+            }
         }
         PresetGridButtonConfig::Empty { .. } => {
             painter.rect_filled(response.rect, 0.0, egui::Color32::from_black_alpha(128));
