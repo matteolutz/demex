@@ -14,7 +14,7 @@ egui_dock = "0.13.0"
 egui_extras = { features = ["default", "all_loaders"], version = "0.28.1" }
 image = { version = "0.24.9", features = ["png"] }
 itertools = "0.13.0"
-midir = "0.10.1"
+midir = { version = "0.10.1", features = ["winrt"] }
 open = "5.3.2"
 open_dmx = "1.1.1"
 parking_lot = { features = ["deadlock_detection"], version = "0.12.3" }
