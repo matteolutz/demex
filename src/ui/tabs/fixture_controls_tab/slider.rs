@@ -21,7 +21,7 @@ pub fn feature_f32_slider(
 
     ui.vertical(|ui| {
         ui.label(
-            egui::RichText::from(format!("{:?}", feature_type)).color(if is_channel_home {
+            egui::RichText::from(format!("{}", feature_type)).color(if is_channel_home {
                 egui::Color32::PLACEHOLDER
             } else {
                 egui::Color32::YELLOW

@@ -15,8 +15,8 @@ use crate::{
 };
 
 use super::{
-    feature_config::FixtureFeatureConfig, feature_group::DefaultFeatureGroup,
-    feature_state::FixtureFeatureDisplayState, feature_value::FixtureFeatureValue, IntoFeatureType,
+    feature_config::FixtureFeatureConfig, feature_state::FixtureFeatureDisplayState,
+    feature_value::FixtureFeatureValue, IntoFeatureType,
 };
 
 #[derive(
@@ -25,6 +25,10 @@ use super::{
 pub enum FixtureFeatureType {
     #[default]
     Intensity,
+
+    SingleValue {
+        channel_type: FixtureChannelType,
+    },
 
     Zoom,
     Focus,
@@ -36,6 +40,15 @@ pub enum FixtureFeatureType {
     PositionPanTilt,
 
     ToggleFlags,
+}
+
+impl std::fmt::Display for FixtureFeatureType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SingleValue { channel_type } => write!(f, "{:?}", channel_type),
+            _ => write!(f, "{:?}", self),
+        }
+    }
 }
 
 // region private helpers
@@ -130,6 +143,19 @@ impl FixtureFeatureType {
         config: &FixtureFeatureConfig,
     ) -> Result<Vec<FixtureChannelType>, FixtureChannelError2> {
         match (self, config) {
+            (
+                Self::SingleValue { channel_type },
+                FixtureFeatureConfig::SingleValue { is_fine, .. },
+            ) => {
+                if *is_fine {
+                    channel_type
+                        .get_fine()
+                        .ok_or(FixtureChannelError2::FineChannelNotFound(*channel_type))
+                        .map(|fine_channel_type| vec![*channel_type, fine_channel_type])
+                } else {
+                    Ok(vec![*channel_type])
+                }
+            }
             (Self::Intensity, FixtureFeatureConfig::Intensity { is_fine }) => {
                 Ok(Self::channel_and_fine(
                     FixtureChannelType::Intensity,
@@ -221,6 +247,15 @@ impl FixtureFeatureType {
     ) -> Result<(), FixtureChannelError2> {
         let config = self.find_feature_config(feature_configs)?;
 
+        if matches!(self, Self::SingleValue { .. }) {
+            println!("getting SingelValue: {:?}", self);
+            println!(
+                "config: {:?}, channels: {:?}",
+                config,
+                self._get_channel_types(config)
+            );
+        }
+
         for channel_type in self._get_channel_types(config)? {
             let channel_value = channels
                 .iter_mut()
@@ -287,6 +322,31 @@ impl FixtureFeatureType {
         let feature_config = self.find_feature_config(feature_configs)?;
 
         match (self, feature_config) {
+            (
+                Self::SingleValue { channel_type },
+                FixtureFeatureConfig::SingleValue { is_fine, .. },
+            ) => {
+                let value = if *is_fine {
+                    let fine_channel_type = channel_type
+                        .get_fine()
+                        .ok_or(FixtureChannelError2::FineChannelNotFound(*channel_type))?;
+                    Self::find_coarse_and_optional_fine(
+                        channels,
+                        *channel_type,
+                        fine_channel_type,
+                        true,
+                        fixture_id,
+                        preset_handler,
+                    )?
+                } else {
+                    Self::find_coarse(channels, *channel_type, fixture_id, preset_handler)?
+                };
+
+                Ok(FixtureFeatureValue::SingleValue {
+                    channel_type: *channel_type,
+                    value,
+                })
+            }
             (Self::Intensity, FixtureFeatureConfig::Intensity { is_fine }) => {
                 Self::find_coarse_and_optional_fine(
                     channels,
@@ -431,24 +491,6 @@ impl FixtureFeatureType {
                 Ok(FixtureFeatureValue::ToggleFlags { set_flags })
             }
             (_, _) => Err(FixtureChannelError2::FeatureNotFound(*self)),
-        }
-    }
-}
-
-impl FixtureFeatureType {
-    pub fn default_feature_group(&self) -> DefaultFeatureGroup {
-        match self {
-            Self::Intensity => DefaultFeatureGroup::Intensity,
-
-            Self::ColorMacro | Self::ColorRGB => DefaultFeatureGroup::Color,
-
-            Self::PositionPanTilt => DefaultFeatureGroup::Position,
-
-            Self::Zoom | Self::Focus => DefaultFeatureGroup::Focus,
-
-            Self::Shutter => DefaultFeatureGroup::Beam,
-
-            Self::ToggleFlags => DefaultFeatureGroup::Control,
         }
     }
 }

@@ -12,7 +12,7 @@ pub mod utils;
 use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
-use fixture::handler::FixtureHandler;
+use fixture::{channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler};
 use input::DemexInputDeviceHandler;
 use parking_lot::RwLock;
 use rfd::FileDialog;
@@ -51,10 +51,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let show_file = args.show.clone();
 
-    let show: DemexShow = args
+    let mut show: DemexShow = args
         .show
         .map(|show_path| serde_json::from_reader(std::fs::File::open(show_path).unwrap()).unwrap())
         .unwrap_or(DemexShow::default());
+
+    *show.preset_handler.feature_groups_mut() = FeatureGroup::default_feature_groups();
 
     let fixture_handler = Arc::new(RwLock::new(FixtureHandler::new(show.patch).unwrap()));
 

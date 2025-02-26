@@ -18,6 +18,11 @@ pub enum FixtureFeatureValue {
         intensity: f32,
     },
 
+    SingleValue {
+        channel_type: FixtureChannelType,
+        value: f32,
+    },
+
     Zoom {
         zoom: f32,
     },
@@ -62,6 +67,8 @@ impl std::fmt::Display for FixtureFeatureValue {
             Self::ColorMacro { macro_idx } => write!(f, "Macro {}", macro_idx),
             Self::PositionPanTilt { pan, tilt, .. } => write!(f, "({:.2}, {:.2})", pan, tilt),
 
+            Self::SingleValue { value, .. } => write!(f, "{:.0}%", *value * 100.0),
+
             Self::Shutter { shutter: value }
             | Self::Intensity { intensity: value }
             | Self::Zoom { zoom: value }
@@ -82,6 +89,10 @@ impl IntoFeatureType for FixtureFeatureValue {
     fn feature_type(&self) -> super::feature_type::FixtureFeatureType {
         match self {
             Self::Intensity { .. } => FixtureFeatureType::Intensity,
+
+            &Self::SingleValue { channel_type, .. } => {
+                FixtureFeatureType::SingleValue { channel_type }
+            }
 
             Self::Zoom { .. } => FixtureFeatureType::Zoom,
             Self::Focus { .. } => FixtureFeatureType::Focus,
@@ -138,6 +149,30 @@ impl FixtureFeatureValue {
         let config = self.feature_type().find_feature_config(feature_configs)?;
 
         match (self, config) {
+            (
+                Self::SingleValue { value, .. },
+                FixtureFeatureConfig::SingleValue {
+                    channel_type,
+                    is_fine,
+                },
+            ) => {
+                if *is_fine {
+                    channel_type
+                        .get_fine()
+                        .ok_or(FixtureChannelError2::FineChannelNotFound(*channel_type))
+                        .and_then(|fine_channel_type| {
+                            Self::write_to_channel_coarse_and_optional_fine(
+                                channels,
+                                *channel_type,
+                                fine_channel_type,
+                                true,
+                                *value,
+                            )
+                        })
+                } else {
+                    Self::write_to_channel(channels, *channel_type, f32_to_coarse(*value))
+                }
+            }
             (Self::Intensity { intensity: value }, FixtureFeatureConfig::Intensity { is_fine }) => {
                 Self::write_to_channel_coarse_and_optional_fine(
                     channels,

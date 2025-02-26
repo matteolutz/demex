@@ -72,6 +72,32 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         ui.vertical(|ui| {
                             match feature_type {
+                                FixtureFeatureType::SingleValue { channel_type } => {
+                                    feature_f32_slider(
+                                        ui,
+                                        is_channel_home,
+                                        selected_fixtures,
+                                        FixtureFeatureType::SingleValue {
+                                            channel_type: *channel_type,
+                                        },
+                                        &mut fixture_handler,
+                                        &preset_handler,
+                                        |value| {
+                                            if let FixtureFeatureValue::SingleValue {
+                                                value, ..
+                                            } = value
+                                            {
+                                                Some(value)
+                                            } else {
+                                                None
+                                            }
+                                        },
+                                        |value| FixtureFeatureValue::SingleValue {
+                                            value,
+                                            channel_type: *channel_type,
+                                        },
+                                    );
+                                }
                                 FixtureFeatureType::Intensity => {
                                     feature_f32_slider(
                                         ui,

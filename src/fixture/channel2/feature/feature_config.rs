@@ -2,13 +2,18 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::channel2::color::color_gel::ColorGel;
+use crate::fixture::channel2::{channel_type::FixtureChannelType, color::color_gel::ColorGel};
 
 use super::{feature_type::FixtureFeatureType, IntoFeatureType};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum FixtureFeatureConfig {
     Intensity {
+        is_fine: bool,
+    },
+
+    SingleValue {
+        channel_type: FixtureChannelType,
         is_fine: bool,
     },
 
@@ -41,6 +46,9 @@ impl IntoFeatureType for FixtureFeatureConfig {
     fn feature_type(&self) -> FixtureFeatureType {
         match self {
             Self::Intensity { .. } => FixtureFeatureType::Intensity,
+            &Self::SingleValue { channel_type, .. } => {
+                FixtureFeatureType::SingleValue { channel_type }
+            }
             Self::Zoom { .. } => FixtureFeatureType::Zoom,
             Self::Focus { .. } => FixtureFeatureType::Focus,
             Self::Shutter => FixtureFeatureType::Shutter,

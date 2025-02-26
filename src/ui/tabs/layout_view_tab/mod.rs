@@ -1,8 +1,9 @@
 use state::{LayoutViewDragState, LayoutViewState};
 
 use crate::{
-    fixture::channel2::feature::{
-        feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue,
+    fixture::channel2::{
+        channel_type::FixtureChannelType,
+        feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
     },
     ui::{graphics::layout_projection::draw_center_of_mass, DemexUiContext},
 };
@@ -131,14 +132,16 @@ impl<'a> LayoutViewComponent<'a> {
 
             let intensity = fixture
                 .feature_value(
-                    FixtureFeatureType::Intensity,
+                    FixtureFeatureType::SingleValue {
+                        channel_type: FixtureChannelType::Intensity,
+                    },
                     &preset_handler,
                     &updatable_handler,
                     &timing_handler,
                 )
                 .ok()
                 .and_then(|val| match val {
-                    FixtureFeatureValue::Intensity { intensity } => Some(intensity),
+                    FixtureFeatureValue::SingleValue { value, .. } => Some(value),
                     _ => None,
                 })
                 .unwrap();
