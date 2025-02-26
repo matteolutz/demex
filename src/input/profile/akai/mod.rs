@@ -50,9 +50,10 @@ impl ApcMiniMk2InputDeviceProfile {
         let out_port = out_ports
             .iter()
             .find(|p| {
-                midi_out
-                    .port_name(p)
-                    .is_ok_and(|port_name| port_name == APC_MINI_MK_2_NAME)
+                let port_name = midi_out.port_name(p);
+                println!("port name: {:?}", port_name);
+
+                port_name.is_ok_and(|port_name| port_name == APC_MINI_MK_2_NAME)
             })
             .ok_or(DemexInputDeviceError::InputDeviceNotFound(
                 APC_MINI_MK_2_NAME.to_owned(),
