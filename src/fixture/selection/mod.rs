@@ -155,7 +155,7 @@ mod tests {
         assert_eq!(
             selection
                 .fixtures()
-                .into_iter()
+                .iter()
                 .map(|f| selection.offset_idx(*f).unwrap())
                 .collect::<Vec<_>>(),
             offsets

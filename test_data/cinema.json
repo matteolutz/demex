@@ -2252,248 +2252,252 @@
                                 }
                             },
                             {
-                                "Focus": {
+                                "SingleValue": {
+                                    "channel_type": "Focus",
                                     "is_fine": false
                                 }
                             },
                             {
-                                "ColorMacro": {
-                                    "macros": [
-                                        [
-                                            0,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "Offen / Weiß"
+                                "ColorWheel": {
+                                    "wheel_config": {
+                                        "macros": [
+                                            [
+                                                0,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "Offen / Weiß"
+                                                    }
                                                 }
-                                            }
+                                            ],
+                                            [
+                                                10,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            0.25,
+                                                            0.87,
+                                                            0.81
+                                                        ],
+                                                        "name": "Türkis"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                32,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            0.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "Rot"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                21,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            0.0,
+                                                            0.0
+                                                        ],
+                                                        "name": "Cyan"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                42,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            0.0,
+                                                            1.0,
+                                                            0.0
+                                                        ],
+                                                        "name": "Grün"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                53,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "Magenta"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                64,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            0.0,
+                                                            0.5,
+                                                            1.0
+                                                        ],
+                                                        "name": "Hellblau"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                74,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            0.0
+                                                        ],
+                                                        "name": "Gelb"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                85,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            0.0,
+                                                            1.0,
+                                                            0.0
+                                                        ],
+                                                        "name": "Grün"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                96,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            0.05,
+                                                            0.75
+                                                        ],
+                                                        "name": "Pink"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                106,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            0.0,
+                                                            0.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "Blau"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                117,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            0.5,
+                                                            0.0
+                                                        ],
+                                                        "name": "Orange"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                128,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "FW vorwärts schnell"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                159,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "FW vorwärts mittel"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                190,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "FW vorwärts langsam"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                193,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "FW rückwarts langsam"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                224,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "FW rückwärts mittel"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                255,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "FW rückwarts schnell"
+                                                    }
+                                                }
+                                            ]
                                         ],
-                                        [
-                                            10,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        0.25,
-                                                        0.87,
-                                                        0.81
-                                                    ],
-                                                    "name": "Türkis"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            32,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        0.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "Rot"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            21,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        0.0,
-                                                        0.0
-                                                    ],
-                                                    "name": "Cyan"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            42,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        0.0,
-                                                        1.0,
-                                                        0.0
-                                                    ],
-                                                    "name": "Grün"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            53,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "Magenta"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            64,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        0.0,
-                                                        0.5,
-                                                        1.0
-                                                    ],
-                                                    "name": "Hellblau"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            74,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        0.0
-                                                    ],
-                                                    "name": "Gelb"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            85,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        0.0,
-                                                        1.0,
-                                                        0.0
-                                                    ],
-                                                    "name": "Grün"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            96,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        0.05,
-                                                        0.75
-                                                    ],
-                                                    "name": "Pink"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            106,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        0.0,
-                                                        0.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "Blau"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            117,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        0.5,
-                                                        0.0
-                                                    ],
-                                                    "name": "Orange"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            128,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "FW vorwärts schnell"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            159,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "FW vorwärts mittel"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            190,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "FW vorwärts langsam"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            193,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "FW rückwarts langsam"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            224,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "FW rückwärts mittel"
-                                                }
-                                            }
-                                        ],
-                                        [
-                                            255,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "FW rückwarts schnell"
-                                                }
-                                            }
-                                        ]
-                                    ]
+                                        "manual_ranges": []
+                                    }
                                 }
                             },
                             {
@@ -2508,7 +2512,12 @@
                                     "has_speed": true
                                 }
                             },
-                            "Shutter"
+                            {
+                                "SingleValue": {
+                                    "channel_type": "Shutter",
+                                    "is_fine": false
+                                }
+                            }
                         ]
                     }
                 }
@@ -2577,123 +2586,126 @@
                                 }
                             },
                             {
-                                "ColorMacro": {
-                                    "macros": [
-                                        [
-                                            6,
-                                            {
-                                                "Lee": "Lee46"
-                                            }
-                                        ],
-                                        [
-                                            10,
-                                            {
-                                                "Lee": "Lee29"
-                                            }
-                                        ],
-                                        [
-                                            14,
-                                            {
-                                                "Lee": "Lee26"
-                                            }
-                                        ],
-                                        [
-                                            18,
-                                            {
-                                                "Lee": "Lee127"
-                                            }
-                                        ],
-                                        [
-                                            22,
-                                            {
-                                                "Lee": "Lee36"
-                                            }
-                                        ],
-                                        [
-                                            26,
-                                            {
-                                                "Lee": "Lee19"
-                                            }
-                                        ],
-                                        [
-                                            205,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "FW Snap langsam"
+                                "ColorWheel": {
+                                    "wheel_config": {
+                                        "macros": [
+                                            [
+                                                6,
+                                                {
+                                                    "Lee": "Lee46"
                                                 }
-                                            }
-                                        ],
-                                        [
-                                            217,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "FW Snap mittel"
+                                            ],
+                                            [
+                                                10,
+                                                {
+                                                    "Lee": "Lee29"
                                                 }
-                                            }
-                                        ],
-                                        [
-                                            230,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "FW Snap schnell"
+                                            ],
+                                            [
+                                                14,
+                                                {
+                                                    "Lee": "Lee26"
                                                 }
-                                            }
-                                        ],
-                                        [
-                                            231,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "FW Fade langsam"
+                                            ],
+                                            [
+                                                18,
+                                                {
+                                                    "Lee": "Lee127"
                                                 }
-                                            }
-                                        ],
-                                        [
-                                            243,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "FW Fade mittel"
+                                            ],
+                                            [
+                                                22,
+                                                {
+                                                    "Lee": "Lee36"
                                                 }
-                                            }
-                                        ],
-                                        [
-                                            255,
-                                            {
-                                                "Custom": {
-                                                    "rgb": [
-                                                        1.0,
-                                                        1.0,
-                                                        1.0
-                                                    ],
-                                                    "name": "FW Fade schnell"
+                                            ],
+                                            [
+                                                26,
+                                                {
+                                                    "Lee": "Lee19"
                                                 }
-                                            }
-                                        ]
-                                    ]
+                                            ],
+                                            [
+                                                205,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "FW Snap langsam"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                217,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "FW Snap mittel"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                230,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "FW Snap schnell"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                231,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "FW Fade langsam"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                243,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "FW Fade mittel"
+                                                    }
+                                                }
+                                            ],
+                                            [
+                                                255,
+                                                {
+                                                    "Custom": {
+                                                        "rgb": [
+                                                            1.0,
+                                                            1.0,
+                                                            1.0
+                                                        ],
+                                                        "name": "FW Fade schnell"
+                                                    }
+                                                }
+                                            ]
+                                        ],
+                                        "manual_ranges": []
+                                    }
                                 }
                             },
                             {

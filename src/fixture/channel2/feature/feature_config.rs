@@ -4,33 +4,21 @@ use serde::{Deserialize, Serialize};
 
 use crate::fixture::channel2::{channel_type::FixtureChannelType, color::color_gel::ColorGel};
 
-use super::{feature_type::FixtureFeatureType, IntoFeatureType};
+use super::{feature_type::FixtureFeatureType, wheel::WheelFeatureConfig, IntoFeatureType};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum FixtureFeatureConfig {
-    Intensity {
-        is_fine: bool,
-    },
-
     SingleValue {
         channel_type: FixtureChannelType,
         is_fine: bool,
     },
 
-    Zoom {
-        is_fine: bool,
-    },
-    Focus {
-        is_fine: bool,
-    },
-
-    Shutter,
-
     ColorRGB {
         is_fine: bool,
     },
-    ColorMacro {
-        macros: Vec<(u8, ColorGel)>,
+    ColorWheel {
+        // macros: Vec<(u8, ColorGel)>,
+        wheel_config: WheelFeatureConfig<ColorGel>,
     },
     PositionPanTilt {
         is_fine: bool,
@@ -45,15 +33,12 @@ pub enum FixtureFeatureConfig {
 impl IntoFeatureType for FixtureFeatureConfig {
     fn feature_type(&self) -> FixtureFeatureType {
         match self {
-            Self::Intensity { .. } => FixtureFeatureType::Intensity,
             &Self::SingleValue { channel_type, .. } => {
                 FixtureFeatureType::SingleValue { channel_type }
             }
-            Self::Zoom { .. } => FixtureFeatureType::Zoom,
-            Self::Focus { .. } => FixtureFeatureType::Focus,
-            Self::Shutter => FixtureFeatureType::Shutter,
+
             Self::ColorRGB { .. } => FixtureFeatureType::ColorRGB,
-            Self::ColorMacro { .. } => FixtureFeatureType::ColorMacro,
+            Self::ColorWheel { .. } => FixtureFeatureType::ColorWheel,
             Self::PositionPanTilt { .. } => FixtureFeatureType::PositionPanTilt,
             Self::ToggleFlags { .. } => FixtureFeatureType::ToggleFlags,
         }

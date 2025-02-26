@@ -98,81 +98,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                         },
                                     );
                                 }
-                                FixtureFeatureType::Intensity => {
-                                    feature_f32_slider(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        FixtureFeatureType::Intensity,
-                                        &mut fixture_handler,
-                                        &preset_handler,
-                                        |value| {
-                                            if let FixtureFeatureValue::Intensity { intensity } =
-                                                value
-                                            {
-                                                Some(intensity)
-                                            } else {
-                                                None
-                                            }
-                                        },
-                                        |intensity| FixtureFeatureValue::Intensity { intensity },
-                                    );
-                                }
-                                FixtureFeatureType::Zoom => {
-                                    feature_f32_slider(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        FixtureFeatureType::Zoom,
-                                        &mut fixture_handler,
-                                        &preset_handler,
-                                        |value| {
-                                            if let FixtureFeatureValue::Zoom { zoom } = value {
-                                                Some(zoom)
-                                            } else {
-                                                None
-                                            }
-                                        },
-                                        |zoom| FixtureFeatureValue::Zoom { zoom },
-                                    );
-                                }
-                                FixtureFeatureType::Focus => {
-                                    feature_f32_slider(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        FixtureFeatureType::Focus,
-                                        &mut fixture_handler,
-                                        &preset_handler,
-                                        |value| {
-                                            if let FixtureFeatureValue::Focus { focus } = value {
-                                                Some(focus)
-                                            } else {
-                                                None
-                                            }
-                                        },
-                                        |focus| FixtureFeatureValue::Focus { focus },
-                                    );
-                                }
-                                FixtureFeatureType::Shutter => {
-                                    feature_f32_slider(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        FixtureFeatureType::Shutter,
-                                        &mut fixture_handler,
-                                        &preset_handler,
-                                        |value| {
-                                            if let FixtureFeatureValue::Shutter { shutter } = value
-                                            {
-                                                Some(shutter)
-                                            } else {
-                                                None
-                                            }
-                                        },
-                                        |shutter| FixtureFeatureValue::Shutter { shutter },
-                                    );
-                                }
+
                                 FixtureFeatureType::ColorRGB => {
                                     ui.set_width(100.0);
 
@@ -184,7 +110,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                         &mut fixture_handler,
                                     );
                                 }
-                                FixtureFeatureType::ColorMacro => {
+                                FixtureFeatureType::ColorWheel => {
                                     ui.set_width(100.0);
 
                                     color_macro_ui(

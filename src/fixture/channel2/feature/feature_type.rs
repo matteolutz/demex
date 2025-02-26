@@ -1,5 +1,4 @@
 use egui_probe::EguiProbe;
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 
@@ -19,27 +18,23 @@ use super::{
     feature_value::FixtureFeatureValue, IntoFeatureType,
 };
 
-#[derive(
-    Debug, Hash, PartialEq, Eq, Copy, Clone, Serialize, Deserialize, EnumIter, EguiProbe, Default,
-)]
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone, Serialize, Deserialize, EnumIter, EguiProbe)]
 pub enum FixtureFeatureType {
-    #[default]
-    Intensity,
-
-    SingleValue {
-        channel_type: FixtureChannelType,
-    },
-
-    Zoom,
-    Focus,
-
-    Shutter,
+    SingleValue { channel_type: FixtureChannelType },
 
     ColorRGB,
-    ColorMacro,
+    ColorWheel,
     PositionPanTilt,
 
     ToggleFlags,
+}
+
+impl Default for FixtureFeatureType {
+    fn default() -> Self {
+        Self::SingleValue {
+            channel_type: FixtureChannelType::Intensity,
+        }
+    }
 }
 
 impl std::fmt::Display for FixtureFeatureType {
@@ -126,18 +121,6 @@ impl FixtureFeatureType {
         self._get_channel_types(config)
     }
 
-    fn channel_and_fine(
-        channel_type: FixtureChannelType,
-        optional_fine: FixtureChannelType,
-        is_fine: bool,
-    ) -> Vec<FixtureChannelType> {
-        if is_fine {
-            vec![channel_type, optional_fine]
-        } else {
-            vec![channel_type]
-        }
-    }
-
     fn _get_channel_types(
         &self,
         config: &FixtureFeatureConfig,
@@ -155,13 +138,6 @@ impl FixtureFeatureType {
                 } else {
                     Ok(vec![*channel_type])
                 }
-            }
-            (Self::Intensity, FixtureFeatureConfig::Intensity { is_fine }) => {
-                Ok(Self::channel_and_fine(
-                    FixtureChannelType::Intensity,
-                    FixtureChannelType::IntensityFine,
-                    *is_fine,
-                ))
             }
             (
                 Self::PositionPanTilt,
@@ -196,20 +172,9 @@ impl FixtureFeatureType {
 
                 Ok(channels)
             }
-            (Self::ColorMacro, FixtureFeatureConfig::ColorMacro { .. }) => {
+            (Self::ColorWheel, FixtureFeatureConfig::ColorWheel { .. }) => {
                 Ok(vec![FixtureChannelType::ColorMacro])
             }
-            (Self::Zoom, FixtureFeatureConfig::Zoom { is_fine }) => Ok(Self::channel_and_fine(
-                FixtureChannelType::Zoom,
-                FixtureChannelType::ZoomFine,
-                *is_fine,
-            )),
-            (Self::Focus, FixtureFeatureConfig::Focus { is_fine }) => Ok(Self::channel_and_fine(
-                FixtureChannelType::Focus,
-                FixtureChannelType::FocusFine,
-                *is_fine,
-            )),
-            (Self::Shutter, FixtureFeatureConfig::Shutter) => Ok(vec![FixtureChannelType::Shutter]),
             (Self::ToggleFlags, FixtureFeatureConfig::ToggleFlags { toggle_flags }) => {
                 Ok(toggle_flags
                     .iter()
@@ -347,39 +312,6 @@ impl FixtureFeatureType {
                     value,
                 })
             }
-            (Self::Intensity, FixtureFeatureConfig::Intensity { is_fine }) => {
-                Self::find_coarse_and_optional_fine(
-                    channels,
-                    FixtureChannelType::Intensity,
-                    FixtureChannelType::IntensityFine,
-                    *is_fine,
-                    fixture_id,
-                    preset_handler,
-                )
-                .map(|intensity| FixtureFeatureValue::Intensity { intensity })
-            }
-            (Self::Zoom, FixtureFeatureConfig::Zoom { is_fine }) => {
-                Self::find_coarse_and_optional_fine(
-                    channels,
-                    FixtureChannelType::Zoom,
-                    FixtureChannelType::ZoomFine,
-                    *is_fine,
-                    fixture_id,
-                    preset_handler,
-                )
-                .map(|zoom| FixtureFeatureValue::Zoom { zoom })
-            }
-            (Self::Focus, FixtureFeatureConfig::Focus { is_fine }) => {
-                Self::find_coarse_and_optional_fine(
-                    channels,
-                    FixtureChannelType::Focus,
-                    FixtureChannelType::FocusFine,
-                    *is_fine,
-                    fixture_id,
-                    preset_handler,
-                )
-                .map(|focus| FixtureFeatureValue::Focus { focus })
-            }
             (
                 Self::PositionPanTilt,
                 FixtureFeatureConfig::PositionPanTilt { is_fine, has_speed },
@@ -448,7 +380,7 @@ impl FixtureFeatureType {
 
                 Ok(FixtureFeatureValue::ColorRGB { r, g, b })
             }
-            (Self::ColorMacro, FixtureFeatureConfig::ColorMacro { macros }) => {
+            (Self::ColorWheel, FixtureFeatureConfig::ColorWheel { wheel_config }) => {
                 let color_macro_value = Self::find_channel_value(
                     channels,
                     FixtureChannelType::ColorMacro,
@@ -456,20 +388,13 @@ impl FixtureFeatureType {
                     preset_handler,
                 )?;
 
-                let (macro_idx, _) = macros
-                    .iter()
-                    .find_position(|(macro_value, _)| *macro_value == color_macro_value)
+                let wheel_value = wheel_config
+                    .from_value(color_macro_value)
                     .ok_or(FixtureChannelError2::InvalidFeatureValue(*self))?;
 
-                Ok(FixtureFeatureValue::ColorMacro { macro_idx })
+                Ok(FixtureFeatureValue::ColorWheel { wheel_value })
             }
-            (Self::Shutter, FixtureFeatureConfig::Shutter) => Self::find_coarse(
-                channels,
-                FixtureChannelType::Shutter,
-                fixture_id,
-                preset_handler,
-            )
-            .map(|shutter| FixtureFeatureValue::Shutter { shutter }),
+
             (Self::ToggleFlags, FixtureFeatureConfig::ToggleFlags { toggle_flags }) => {
                 let mut set_flags: Vec<Option<String>> = Vec::new();
                 for (idx, toggle_flags) in toggle_flags.iter().enumerate() {

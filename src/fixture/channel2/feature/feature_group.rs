@@ -52,13 +52,11 @@ impl DefaultFeatureGroup {
 
         let feature_types = match self {
             Self::Position => vec![FixtureFeatureType::PositionPanTilt],
-            Self::Color => vec![FixtureFeatureType::ColorRGB, FixtureFeatureType::ColorMacro],
+            Self::Color => vec![FixtureFeatureType::ColorRGB, FixtureFeatureType::ColorWheel],
             _ => vec![],
         };
 
-        single_value_types
-            .chain(feature_types.into_iter())
-            .collect()
+        single_value_types.chain(feature_types).collect()
     }
 
     pub fn get_all() -> [DefaultFeatureGroup; 6] {

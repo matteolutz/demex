@@ -5,7 +5,8 @@ use nodes::action::{
 
 use crate::{
     fixture::{
-        channel2::feature::feature_type::FixtureFeatureType, presets::preset::FixturePresetId,
+        channel2::{channel_type::FixtureChannelType, feature::feature_type::FixtureFeatureType},
+        presets::preset::FixturePresetId,
         sequence::cue::CueIdx,
     },
     lexer::token::Token,
@@ -272,7 +273,9 @@ impl<'a> Parser2<'a> {
         match self.current_token()? {
             &Token::KeywordIntens => {
                 self.advance();
-                Ok(FixtureFeatureType::Intensity)
+                Ok(FixtureFeatureType::SingleValue {
+                    channel_type: FixtureChannelType::Intensity,
+                })
             }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),

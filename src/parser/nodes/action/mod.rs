@@ -500,9 +500,10 @@ impl Action {
 
             if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
                 match feature_type {
-                    FixtureFeatureType::Intensity => fixture
-                        .set_feature_value(FixtureFeatureValue::Intensity {
-                            intensity: discrete_value,
+                    FixtureFeatureType::SingleValue { channel_type } => fixture
+                        .set_feature_value(FixtureFeatureValue::SingleValue {
+                            channel_type,
+                            value: discrete_value,
                         })
                         .map_err(ActionRunError::FixtureError)?,
                     unhandled_feature_type => {
