@@ -43,6 +43,7 @@ impl ApcMiniMk2InputDeviceProfile {
     pub fn new() -> Result<Self, DemexInputDeviceError> {
         let (tx, rx) = mpsc::channel();
 
+        println!("creating midi output port");
         let midi_out = midir::MidiOutput::new("demex-midi-output")
             .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
 
