@@ -1,4 +1,5 @@
 use color::{color_macro_ui, color_rgb_controls_ui};
+use gobo::gobo_wheel_ui;
 use itertools::Itertools;
 use position::position_pan_tilt_controls_ui;
 use slider::feature_f32_slider;
@@ -9,6 +10,7 @@ use crate::fixture::channel2::feature::{
 };
 
 pub mod color;
+pub mod gobo;
 pub mod position;
 pub mod slider;
 pub mod toggle_flags;
@@ -60,10 +62,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 ui.horizontal(|ui| {
                     ui.add_space(30.0);
 
-                    for feature_type in mutual_feature_types
-                        .iter()
-                        .filter(|feature_type| feature_group.feature_types().contains(feature_type))
-                    {
+                    let feature_types = mutual_feature_types.iter().filter(|feature_type| {
+                        feature_group.feature_types().contains(feature_type)
+                    });
+
+                    let num_feature_types = feature_types.clone().count();
+
+                    for (idx, feature_type) in feature_types.enumerate() {
                         let is_channel_home = fixture_handler
                             .fixture(selected_fixtures[0])
                             .unwrap()
@@ -120,6 +125,16 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                         &mut fixture_handler,
                                     );
                                 }
+                                FixtureFeatureType::GoboWheel => {
+                                    ui.set_width(100.0);
+
+                                    gobo_wheel_ui(
+                                        ui,
+                                        is_channel_home,
+                                        selected_fixtures,
+                                        &mut fixture_handler,
+                                    );
+                                }
                                 FixtureFeatureType::PositionPanTilt => {
                                     position_pan_tilt_controls_ui(
                                         ui,
@@ -151,6 +166,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 }
                             }
                         });
+
+                        if idx < num_feature_types - 1 {
+                            ui.separator();
+                        }
                     }
                 });
             });

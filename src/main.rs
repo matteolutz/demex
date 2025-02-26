@@ -157,6 +157,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "demex",
         options,
         Box::new(|creation_context| {
+            egui_extras::install_image_loaders(&creation_context.egui_ctx);
+
             let style = Style {
                 visuals: Visuals::dark(),
                 ..Style::default()

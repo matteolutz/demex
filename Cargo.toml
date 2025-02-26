@@ -11,8 +11,8 @@ eframe = { features = ["default"], version = "0.28.1" }
 egui = { features = ["default"], version = "0.28.1" }
 egui-probe = { version = "0.5.1", features = ["derive"] }
 egui_dock = "0.13.0"
-egui_extras = { features = ["default"], version = "0.28.1" }
-image = "0.24.9"
+egui_extras = { features = ["default", "all_loaders"], version = "0.28.1" }
+image = { version = "0.24.9", features = ["png"] }
 itertools = "0.13.0"
 midir = "0.10.1"
 open = "5.3.2"

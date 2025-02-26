@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::channel2::{channel_type::FixtureChannelType, color::color_gel::ColorGel};
+use crate::fixture::channel2::{
+    channel_type::FixtureChannelType, color::color_gel::ColorGel, gobo::GoboMacro,
+};
 
 use super::{feature_type::FixtureFeatureType, wheel::WheelFeatureConfig, IntoFeatureType};
 
@@ -17,9 +19,13 @@ pub enum FixtureFeatureConfig {
         is_fine: bool,
     },
     ColorWheel {
-        // macros: Vec<(u8, ColorGel)>,
         wheel_config: WheelFeatureConfig<ColorGel>,
     },
+
+    GoboWheel {
+        wheel_config: WheelFeatureConfig<GoboMacro>,
+    },
+
     PositionPanTilt {
         is_fine: bool,
         has_speed: bool,
@@ -39,7 +45,11 @@ impl IntoFeatureType for FixtureFeatureConfig {
 
             Self::ColorRGB { .. } => FixtureFeatureType::ColorRGB,
             Self::ColorWheel { .. } => FixtureFeatureType::ColorWheel,
+
+            Self::GoboWheel { .. } => FixtureFeatureType::GoboWheel,
+
             Self::PositionPanTilt { .. } => FixtureFeatureType::PositionPanTilt,
+
             Self::ToggleFlags { .. } => FixtureFeatureType::ToggleFlags,
         }
     }

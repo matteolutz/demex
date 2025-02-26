@@ -49,8 +49,10 @@ pub enum FixtureChannelType {
 
     Prism,
     PrismRotation,
-    RotatingGobos,
+
+    Gobo,
     GoboRotation,
+
     Zoom,
     ZoomFine,
 
@@ -93,7 +95,7 @@ impl FixtureChannelType {
 
             Self::Prism => "Pr".to_string(),
             Self::PrismRotation => "PrR".to_string(),
-            Self::RotatingGobos => "RoGo".to_string(),
+            Self::Gobo => "RoGo".to_string(),
             Self::GoboRotation => "GoRo".to_string(),
             Self::Zoom => "Zo".to_string(),
             Self::ZoomFine => "ZoF".to_string(),
@@ -137,7 +139,9 @@ impl FixtureChannelType {
 
             Self::Focus | Self::Zoom => Some(DefaultFeatureGroup::Focus),
 
-            Self::Shutter => Some(DefaultFeatureGroup::Beam),
+            Self::Shutter | Self::Prism | Self::PrismRotation | Self::Gobo | Self::GoboRotation => {
+                Some(DefaultFeatureGroup::Beam)
+            }
 
             Self::Pan | Self::Tilt | Self::PanTiltSpeed => Some(DefaultFeatureGroup::Position),
 

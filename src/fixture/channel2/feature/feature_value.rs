@@ -26,7 +26,10 @@ pub enum FixtureFeatureValue {
         b: f32,
     },
     ColorWheel {
-        // macro_idx: usize,
+        wheel_value: WheelFeatureValue,
+    },
+
+    GoboWheel {
         wheel_value: WheelFeatureValue,
     },
 
@@ -54,6 +57,8 @@ impl std::fmt::Display for FixtureFeatureValue {
             Self::ColorWheel { wheel_value } => write!(f, "{}", wheel_value),
             Self::PositionPanTilt { pan, tilt, .. } => write!(f, "({:.2}, {:.2})", pan, tilt),
 
+            Self::GoboWheel { wheel_value } => write!(f, "{}", wheel_value),
+
             Self::SingleValue { value, .. } => write!(f, "{:.0}%", *value * 100.0),
 
             Self::ToggleFlags { set_flags } => {
@@ -76,6 +81,8 @@ impl IntoFeatureType for FixtureFeatureValue {
 
             Self::ColorRGB { .. } => FixtureFeatureType::ColorRGB,
             Self::ColorWheel { .. } => FixtureFeatureType::ColorWheel,
+
+            Self::GoboWheel { .. } => FixtureFeatureType::GoboWheel,
 
             Self::PositionPanTilt { .. } => FixtureFeatureType::PositionPanTilt,
 
@@ -218,6 +225,13 @@ impl FixtureFeatureValue {
                 )?;
 
                 Self::write_to_channel(channels, FixtureChannelType::ColorMacro, macro_value)
+            }
+            (Self::GoboWheel { wheel_value }, FixtureFeatureConfig::GoboWheel { wheel_config }) => {
+                let macro_value = wheel_config.to_value(wheel_value).ok_or(
+                    FixtureChannelError2::InvalidFeatureValue(self.feature_type()),
+                )?;
+
+                Self::write_to_channel(channels, FixtureChannelType::Gobo, macro_value)
             }
             (
                 Self::ToggleFlags { set_flags },

@@ -2227,7 +2227,7 @@
                             "Unused",
                             "Prism",
                             "PrismRotation",
-                            "RotatingGobos",
+                            "Gobo",
                             "GoboRotation",
                             "Unused",
                             "Focus",
@@ -2498,6 +2498,88 @@
                                         ],
                                         "manual_ranges": []
                                     }
+                                }
+                            },
+                            {
+                                "GoboWheel": {
+                                    "wheel_config": {
+                                        "macros": [
+                                            [
+                                                0,
+                                                {
+                                                    "name": "Offen",
+                                                    "image": null
+                                                }
+                                            ],
+                                            [
+                                                32,
+                                                {
+                                                    "name": "Gobo 1 (Multicolor Dichro-Gobo)",
+                                                    "image": null
+                                                }
+                                            ],
+                                            [
+                                                64,
+                                                {
+                                                    "name": "Gobo 2 (Glas)",
+                                                    "image": null
+                                                }
+                                            ],
+                                            [
+                                                96,
+                                                {
+                                                    "name": "Gobo 3 (Metall)",
+                                                    "image": null
+                                                }
+                                            ],
+                                            [
+                                                128,
+                                                {
+                                                    "name": "Gobo 4 (Metall)",
+                                                    "image": null
+                                                }
+                                            ],
+                                            [
+                                                160,
+                                                {
+                                                    "name": "Gobo 5 (Metall)",
+                                                    "image": null
+                                                }
+                                            ],
+                                            [
+                                                192,
+                                                {
+                                                    "name": "Gobo 6 (Metall)",
+                                                    "image": null
+                                                }
+                                            ]
+                                        ],
+                                        "manual_ranges": [
+                                            {
+                                                "start": 224,
+                                                "end": 255,
+                                                "name": "Rotierendes Goborad langsam > schnell"
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "SingleValue": {
+                                    "channel_type": "GoboRotation",
+                                    "is_fine": false
+                                }
+                            },
+                            {
+                                "SingleValue": {
+                                    "channel_type": "Prism",
+                                    "is_fine": false
+                                }
+                            },
+                            {
+                                "SingleValue": {
+                                    "channel_type": "PrismRotation",
+                                    "is_fine": false
                                 }
                             },
                             {

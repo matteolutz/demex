@@ -53,6 +53,8 @@ impl DefaultFeatureGroup {
         let feature_types = match self {
             Self::Position => vec![FixtureFeatureType::PositionPanTilt],
             Self::Color => vec![FixtureFeatureType::ColorRGB, FixtureFeatureType::ColorWheel],
+            Self::Beam => vec![FixtureFeatureType::GoboWheel],
+            Self::Control => vec![FixtureFeatureType::ToggleFlags],
             _ => vec![],
         };
 

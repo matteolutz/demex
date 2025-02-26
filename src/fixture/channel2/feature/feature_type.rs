@@ -24,6 +24,9 @@ pub enum FixtureFeatureType {
 
     ColorRGB,
     ColorWheel,
+
+    GoboWheel,
+
     PositionPanTilt,
 
     ToggleFlags,
@@ -174,6 +177,9 @@ impl FixtureFeatureType {
             }
             (Self::ColorWheel, FixtureFeatureConfig::ColorWheel { .. }) => {
                 Ok(vec![FixtureChannelType::ColorMacro])
+            }
+            (Self::GoboWheel, FixtureFeatureConfig::GoboWheel { .. }) => {
+                Ok(vec![FixtureChannelType::Gobo])
             }
             (Self::ToggleFlags, FixtureFeatureConfig::ToggleFlags { toggle_flags }) => {
                 Ok(toggle_flags
@@ -395,6 +401,20 @@ impl FixtureFeatureType {
                 Ok(FixtureFeatureValue::ColorWheel { wheel_value })
             }
 
+            (Self::GoboWheel, FixtureFeatureConfig::GoboWheel { wheel_config }) => {
+                let gobo_macro_value = Self::find_channel_value(
+                    channels,
+                    FixtureChannelType::Gobo,
+                    fixture_id,
+                    preset_handler,
+                )?;
+
+                let wheel_value = wheel_config
+                    .from_value(gobo_macro_value)
+                    .ok_or(FixtureChannelError2::InvalidFeatureValue(*self))?;
+
+                Ok(FixtureFeatureValue::GoboWheel { wheel_value })
+            }
             (Self::ToggleFlags, FixtureFeatureConfig::ToggleFlags { toggle_flags }) => {
                 let mut set_flags: Vec<Option<String>> = Vec::new();
                 for (idx, toggle_flags) in toggle_flags.iter().enumerate() {
