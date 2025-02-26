@@ -24,7 +24,8 @@ mod led;
 // **Ressources**
 // https://cdn.inmusicbrands.com/akai/attachments/APC%20mini%20mk2%20-%20Communication%20Protocol%20-%20v1.0.pdf
 
-const APC_MINI_MK_2_NAME: &str = "APC mini mk2 Control";
+// const APC_MINI_MK_2_NAME: &str = "APC mini mk2 Control";
+const APC_MINI_MK_2_NAME: &str = "APC mini mk2";
 
 pub struct ApcMiniMk2InputDeviceProfile {
     rx: mpsc::Receiver<MidiMessage>,
