@@ -46,6 +46,7 @@ impl ApcMiniMk2InputDeviceProfile {
         let midi_out = midir::MidiOutput::new("demex-midi-output")
             .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
 
+        println!("finding midi output ports...");
         let out_ports = midi_out.ports();
         let out_port = out_ports
             .iter()
