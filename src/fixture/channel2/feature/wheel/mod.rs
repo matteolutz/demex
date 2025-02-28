@@ -9,12 +9,12 @@ pub struct WheelFeatureConfigManualRange {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WheelFeatureConfig<T> {
-    macros: Vec<(u8, T)>,
+    macros: Vec<((u8, u8), T)>,
     manual_ranges: Vec<WheelFeatureConfigManualRange>,
 }
 
 impl<T> WheelFeatureConfig<T> {
-    pub fn macros(&self) -> impl Iterator<Item = &(u8, T)> {
+    pub fn macros(&self) -> impl Iterator<Item = &((u8, u8), T)> {
         self.macros.iter()
     }
 
@@ -31,7 +31,7 @@ impl<T> WheelFeatureConfig<T> {
 
     pub fn to_value(&self, value: &WheelFeatureValue) -> Option<u8> {
         match value {
-            WheelFeatureValue::Macro(idx) => self.macros.get(*idx).map(|(v, _)| *v),
+            WheelFeatureValue::Macro(idx) => self.macros.get(*idx).map(|((min, _), _)| *min),
             WheelFeatureValue::ManualRange { idx, value } => {
                 self.manual_ranges.get(*idx).map(|range| {
                     let range = range.start..range.end;
@@ -48,7 +48,7 @@ impl<T> WheelFeatureConfig<T> {
             .macros
             .iter()
             .enumerate()
-            .find(|(_, (v, _))| *v == value)
+            .find(|(_, ((min, max), _))| (*min..=*max).contains(&value))
         {
             Some(WheelFeatureValue::Macro(idx))
         } else if let Some((idx, range)) = self

@@ -107,7 +107,7 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, bind_ip: Option<S
 
                     match command {
                         ArtCommand::PollReply(poll_reply) => {
-                            let net_and_subnet: u16 = (poll_reply.port_address[0] as u16) << 8
+                            let net_and_subnet: u16 = ((poll_reply.port_address[0] as u16) << 8)
                                 | (poll_reply.port_address[1] as u16) << 4;
 
                             for uni in poll_reply.swout.iter().unique() {

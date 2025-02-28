@@ -100,7 +100,7 @@ impl MidiMessage {
         let model_id = bytes[3];
         let message_type = bytes[4];
 
-        let data_length: u16 = (bytes[5] as u16) << 8 | bytes[6] as u16;
+        let data_length: u16 = ((bytes[5] as u16) << 8) | bytes[6] as u16;
         let data = bytes[7..bytes.len() - 1].to_vec();
 
         // check if the last byte is the sysex end byte

@@ -248,13 +248,13 @@ impl SequenceRuntime {
     }
 
     pub fn should_auto_restart(&self, preset_handler: &PresetHandler) -> bool {
-        return preset_handler
+        preset_handler
             .get_sequence(self.sequence_id)
             .unwrap()
             .cues()
             .first()
             .map(|c| *c.trigger() == CueTrigger::Follow)
-            .unwrap_or(false);
+            .unwrap_or(false)
     }
 
     pub fn next_cue(&mut self, preset_handler: &PresetHandler) {

@@ -66,9 +66,7 @@ impl AtomicFixtureSelector {
         match self {
             Self::SingleFixture(f) => Ok(vec![*f].into()),
             Self::FixtureRange(begin, end) => Ok((*begin..*end + 1).collect::<Vec<_>>().into()),
-            Self::SelectorGroup(s) => s
-                .get_selection(preset_handler, context)
-                .map(FixtureSelection::from),
+            Self::SelectorGroup(s) => s.get_selection(preset_handler, context),
             Self::FixtureGroup(id) => {
                 let group = preset_handler
                     .get_group(*id)

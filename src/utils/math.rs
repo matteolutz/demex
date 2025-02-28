@@ -1,4 +1,4 @@
-use std::{f32, time, u16};
+use std::{f32, time};
 
 pub fn approx_equal(a: f32, b: f32, decimal_places: u8) -> bool {
     let factor = 10.0f32.powi(decimal_places as i32);
@@ -38,7 +38,7 @@ pub fn coarse_to_f32(coarse: u8) -> f32 {
 }
 
 pub fn coarse_fine_to_f32(coarse: u8, fine: u8) -> f32 {
-    let combined: u16 = (coarse as u16) << 8 | (fine as u16);
+    let combined: u16 = ((coarse as u16) << 8) | (fine as u16);
     combined as f32 / u16::MAX as f32
 }
 

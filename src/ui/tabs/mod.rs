@@ -73,7 +73,7 @@ pub struct DemexTabViewer<'a> {
     detached_tabs: &'a mut HashSet<DemexTab>,
 }
 
-impl<'a> TabViewer for DemexTabViewer<'a> {
+impl TabViewer for DemexTabViewer<'_> {
     type Tab = DemexTab;
 
     fn title(&mut self, tab: &mut Self::Tab) -> WidgetText {
