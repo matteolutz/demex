@@ -218,15 +218,6 @@ impl FixtureFeatureType {
     ) -> Result<(), FixtureChannelError2> {
         let config = self.find_feature_config(feature_configs)?;
 
-        if matches!(self, Self::SingleValue { .. }) {
-            println!("getting SingelValue: {:?}", self);
-            println!(
-                "config: {:?}, channels: {:?}",
-                config,
-                self._get_channel_types(config)
-            );
-        }
-
         for channel_type in self._get_channel_types(config)? {
             let channel_value = channels
                 .iter_mut()

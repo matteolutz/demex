@@ -1,4 +1,6 @@
-use button::{preset_grid_button_ui, PresetGridButtonConfig, PresetGridButtonDecoration};
+use button::{
+    preset_grid_button_ui, PresetGridButton, PresetGridButtonConfig, PresetGridButtonDecoration,
+};
 use itertools::Itertools;
 use row::preset_grid_row_ui;
 
@@ -6,6 +8,7 @@ use crate::{
     fixture::{presets::preset::FixturePresetId, updatables::executor::config::ExecutorConfig},
     lexer::token::Token,
     ui::{
+        components::quick_menu::QuickMenuActions,
         window::{edit::DemexEditWindow, DemexWindow},
         DemexUiContext,
     },
@@ -52,8 +55,21 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     PresetGridButtonConfig::Empty { id }
                 };
 
-                let response =
-                    preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());
+                let (response, _) = PresetGridButton::new(
+                    format!("PresetGrid-Group-{}", id),
+                    config,
+                    PresetGridButtonDecoration::default(),
+                    QuickMenuActions::new()
+                        .top_left((0, "Hello World"))
+                        .top_center((1, "Test"))
+                        .top_right((2, "Test 2"))
+                        .right_center((3, "Test 3"))
+                        .bottom_right((4, "Test 4"))
+                        .bottom_center((5, "Test 5"))
+                        .bottom_left((6, "Test 6"))
+                        .left_center((7, "Test 7")),
+                )
+                .show(ui);
 
                 if response.clicked() {
                     if g.is_ok() {

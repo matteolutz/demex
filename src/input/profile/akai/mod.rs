@@ -42,19 +42,16 @@ impl ApcMiniMk2InputDeviceProfile {
     pub fn new() -> Result<Self, DemexInputDeviceError> {
         let (tx, rx) = mpsc::channel();
 
-        println!("creating midi output port");
         let midi_out = midir::MidiOutput::new("demex-midi-output")
             .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
 
-        println!("finding midi output ports...");
         let out_ports = midi_out.ports();
         let out_port = out_ports
             .iter()
             .find(|p| {
-                let port_name = midi_out.port_name(p);
-                println!("port name: {:?}", port_name);
-
-                port_name.is_ok_and(|port_name| port_name == APC_MINI_MK_2_NAME)
+                midi_out
+                    .port_name(p)
+                    .is_ok_and(|port_name| port_name == APC_MINI_MK_2_NAME)
             })
             .ok_or(DemexInputDeviceError::InputDeviceNotFound(
                 APC_MINI_MK_2_NAME.to_owned(),
