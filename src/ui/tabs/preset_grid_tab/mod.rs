@@ -84,9 +84,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         }
                         PresetGridButtonQuickMenuActions::Edit => {
                             if let Ok(g) = g {
-                                context
-                                    .windows
-                                    .push(DemexWindow::Edit(DemexEditWindow::EditGroup(g.id())));
+                                context.window_handler.add_window(DemexWindow::Edit(
+                                    DemexEditWindow::EditGroup(g.id()),
+                                ));
                             }
                         }
                         _ => {}
@@ -171,7 +171,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                 }
                                 PresetGridButtonQuickMenuActions::Edit => {
                                     if let Ok(p) = p {
-                                        context.windows.push(DemexWindow::Edit(
+                                        context.window_handler.add_window(DemexWindow::Edit(
                                             DemexEditWindow::EditPreset(p.id()),
                                         ));
                                     }
@@ -331,9 +331,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         }
                         PresetGridButtonQuickMenuActions::Edit => {
                             if executor_exists {
-                                context
-                                    .windows
-                                    .push(DemexWindow::Edit(DemexEditWindow::EditExecutor(id)));
+                                context.window_handler.add_window(DemexWindow::Edit(
+                                    DemexEditWindow::EditExecutor(id),
+                                ));
                             }
                         }
                         _ => {}

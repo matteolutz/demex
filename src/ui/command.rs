@@ -33,7 +33,7 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_a
                 )
                 .labelled_by(command_label.id);
 
-            if context.windows.is_empty() {
+            if context.window_handler.is_empty() {
                 if command_input_field
                     .ctx
                     .input(|i| i.key_pressed(eframe::egui::Key::Space))

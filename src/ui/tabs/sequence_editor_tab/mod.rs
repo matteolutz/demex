@@ -98,7 +98,7 @@ impl<'a> SequenceEditorTab<'a> {
                                 CueDataMode::Builder(data) => {
                                     ui.label(format!("{} entries", data.len()));
                                     if ui.button("Edit").clicked() {
-                                        self.context.windows.push(DemexWindow::Edit(
+                                        self.context.window_handler.add_window(DemexWindow::Edit(
                                             DemexEditWindow::EditBuilderCue(
                                                 sequence_id,
                                                 cue.cue_idx(),

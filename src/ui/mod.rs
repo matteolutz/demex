@@ -6,7 +6,7 @@ use egui::IconData;
 use log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use parking_lot::RwLock;
 use tabs::{DemexTab, DemexTabs};
-use window::DemexWindow;
+use window::{DemexWindow, DemexWindowHandler};
 
 #[allow(unused_imports)]
 use crate::{
@@ -88,7 +88,7 @@ impl DemexUiApp {
                 save_show,
 
                 logs: Vec::new(),
-                windows: Vec::new(),
+                window_handler: DemexWindowHandler::default(),
 
                 command_input: String::new(),
                 is_command_input_empty: true,
@@ -149,16 +149,12 @@ impl eframe::App for DemexUiApp {
                 )));
         }
 
-        for i in 0..self.context.windows.len() {
-            if self.context.windows[i].ui(
-                ctx,
-                &mut self.context.fixture_handler,
-                &mut self.context.preset_handler,
-                &mut self.context.updatable_handler,
-            ) {
-                self.context.windows.remove(i);
-            }
-        }
+        self.context.window_handler.show(
+            ctx,
+            &mut self.context.fixture_handler,
+            &mut self.context.preset_handler,
+            &mut self.context.updatable_handler,
+        );
 
         while !self.context.macro_execution_queue.is_empty() {
             let action = self.context.macro_execution_queue.remove(0);
@@ -229,10 +225,10 @@ impl eframe::App for DemexUiApp {
 
                 ui.separator();
 
-                if ui.link("About demex").clicked()
-                    && !self.context.windows.contains(&DemexWindow::AboutDemex)
-                {
-                    self.context.windows.push(DemexWindow::AboutDemex);
+                if ui.link("About demex").clicked() {
+                    self.context
+                        .window_handler
+                        .add_window(DemexWindow::AboutDemex);
                 }
 
                 ui.separator();
