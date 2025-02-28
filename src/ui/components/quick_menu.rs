@@ -1,25 +1,27 @@
+use std::collections::VecDeque;
+
 use strum::{EnumIter, IntoEnumIterator};
 
 use crate::ui::utils::painter::painter_layout_centered;
 
-const CENTER_OFFSET: (f32, f32) = (55.0, 55.0);
+const CENTER_OFFSET: (f32, f32) = (60.0, 60.0);
 
-const ACTION_SIZE: f32 = 50.0;
+const ACTION_SIZE: f32 = 55.0;
 const ACTION_ROUNDING: f32 = 5.0;
 
-pub struct QuickMenuAction {
+pub struct QuickMenuAction<T: Copy> {
     name: String,
-    id: u32,
+    id: T,
 }
 
-impl From<(u32, String)> for QuickMenuAction {
-    fn from((id, name): (u32, String)) -> Self {
+impl<T: Copy> From<(T, String)> for QuickMenuAction<T> {
+    fn from((id, name): (T, String)) -> Self {
         Self { id, name }
     }
 }
 
-impl From<(u32, &str)> for QuickMenuAction {
-    fn from((id, name): (u32, &str)) -> Self {
+impl<T: Copy> From<(T, &str)> for QuickMenuAction<T> {
+    fn from((id, name): (T, &str)) -> Self {
         Self {
             id,
             name: name.to_owned(),
@@ -30,13 +32,15 @@ impl From<(u32, &str)> for QuickMenuAction {
 #[derive(EnumIter, Copy, Clone)]
 pub enum QuickMenuActionPosition {
     TopLeft,
-    TopRight,
-    BottomLeft,
-    BottomRight,
     TopCenter,
-    BottomCenter,
+    TopRight,
+
     LeftCenter,
     RightCenter,
+
+    BottomLeft,
+    BottomCenter,
+    BottomRight,
 }
 
 impl QuickMenuActionPosition {
@@ -100,78 +104,101 @@ impl QuickMenuActionPosition {
     }
 }
 
-#[derive(Default)]
-pub struct QuickMenuActions {
-    actions: [Option<QuickMenuAction>; 8],
+pub struct QuickMenuActions<T: Copy> {
+    actions: [Option<QuickMenuAction<T>>; 8],
 }
 
-impl QuickMenuActions {
+impl<T: Copy> Default for QuickMenuActions<T> {
+    fn default() -> Self {
+        Self {
+            actions: Default::default(),
+        }
+    }
+}
+
+impl<T: Copy> QuickMenuActions<T> {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn actions(&self) -> &[Option<QuickMenuAction>; 8] {
+    pub fn actions(&self) -> &[Option<QuickMenuAction<T>>; 8] {
         &self.actions
     }
 
-    pub fn action(&self, position: QuickMenuActionPosition) -> Option<&QuickMenuAction> {
+    pub fn action(&self, position: QuickMenuActionPosition) -> Option<&QuickMenuAction<T>> {
         self.actions[position.idx()].as_ref()
     }
 
-    pub fn set_action(&mut self, position: QuickMenuActionPosition, action: QuickMenuAction) {
+    pub fn set_action(&mut self, position: QuickMenuActionPosition, action: QuickMenuAction<T>) {
         self.actions[position.idx()] = Some(action);
     }
 
-    pub fn top_left(mut self, action: impl Into<QuickMenuAction>) -> Self {
+    pub fn top_left(mut self, action: impl Into<QuickMenuAction<T>>) -> Self {
         self.set_action(QuickMenuActionPosition::TopLeft, action.into());
         self
     }
 
-    pub fn top_right(mut self, action: impl Into<QuickMenuAction>) -> Self {
+    pub fn top_right(mut self, action: impl Into<QuickMenuAction<T>>) -> Self {
         self.set_action(QuickMenuActionPosition::TopRight, action.into());
         self
     }
 
-    pub fn bottom_left(mut self, action: impl Into<QuickMenuAction>) -> Self {
+    pub fn bottom_left(mut self, action: impl Into<QuickMenuAction<T>>) -> Self {
         self.set_action(QuickMenuActionPosition::BottomLeft, action.into());
         self
     }
 
-    pub fn bottom_right(mut self, action: impl Into<QuickMenuAction>) -> Self {
+    pub fn bottom_right(mut self, action: impl Into<QuickMenuAction<T>>) -> Self {
         self.set_action(QuickMenuActionPosition::BottomRight, action.into());
         self
     }
 
-    pub fn top_center(mut self, action: impl Into<QuickMenuAction>) -> Self {
+    pub fn top_center(mut self, action: impl Into<QuickMenuAction<T>>) -> Self {
         self.set_action(QuickMenuActionPosition::TopCenter, action.into());
         self
     }
 
-    pub fn bottom_center(mut self, action: impl Into<QuickMenuAction>) -> Self {
+    pub fn bottom_center(mut self, action: impl Into<QuickMenuAction<T>>) -> Self {
         self.set_action(QuickMenuActionPosition::BottomCenter, action.into());
         self
     }
 
-    pub fn left_center(mut self, action: impl Into<QuickMenuAction>) -> Self {
+    pub fn left_center(mut self, action: impl Into<QuickMenuAction<T>>) -> Self {
         self.set_action(QuickMenuActionPosition::LeftCenter, action.into());
         self
     }
 
-    pub fn right_center(mut self, action: impl Into<QuickMenuAction>) -> Self {
+    pub fn right_center(mut self, action: impl Into<QuickMenuAction<T>>) -> Self {
         self.set_action(QuickMenuActionPosition::RightCenter, action.into());
+        self
+    }
+
+    pub fn with_vec(mut self, mut actions: VecDeque<impl Into<QuickMenuAction<T>>>) -> Self {
+        for position in QuickMenuActionPosition::iter() {
+            if self.actions[position.idx()].is_some() {
+                continue;
+            }
+
+            if actions.is_empty() {
+                break;
+            }
+
+            self.set_action(position, actions.pop_front().unwrap().into());
+        }
+
         self
     }
 }
 
-pub type QuickMenuResponse = Option<u32>;
+pub type QuickMenuResponse<T> = Option<T>;
 
-pub struct QuickMenu<'a> {
+pub struct QuickMenu<'a, T: Copy> {
     pivot: egui::Pos2,
-    actions: &'a QuickMenuActions,
+    actions: &'a QuickMenuActions<T>,
 }
 
-impl<'a> QuickMenu<'a> {
-    pub fn new(pivot: egui::Pos2, actions: &'a QuickMenuActions) -> Self {
+impl<'a, T: Copy> QuickMenu<'a, T> {
+    pub fn new(pivot: egui::Pos2, actions: &'a QuickMenuActions<T>) -> Self {
         Self { pivot, actions }
     }
 
@@ -182,6 +209,7 @@ impl<'a> QuickMenu<'a> {
         )
     }
 
+    #[allow(dead_code)]
     fn bounding_rect(&self, padding: f32) -> egui::Rect {
         let half_size = ACTION_SIZE / 2.0;
         let padding = egui::vec2(padding, padding);
@@ -197,7 +225,7 @@ impl<'a> QuickMenu<'a> {
         egui::Rect::from_min_max(min, max)
     }
 
-    pub fn interact(&self, pos: egui::Pos2) -> QuickMenuResponse {
+    pub fn interact(&self, pos: egui::Pos2) -> QuickMenuResponse<T> {
         QuickMenuActionPosition::iter()
             .find(|&position| self.action_rect(position).contains(pos))
             .and_then(|position| self.actions.action(position).map(|action| action.id))
@@ -226,7 +254,7 @@ impl<'a> QuickMenu<'a> {
                 overlay_painter.rect_filled(
                     rect,
                     position.rounding(),
-                    egui::Color32::RED.gamma_multiply(if is_hovered { 0.5 } else { 1.0 }),
+                    egui::Color32::from_gray(if is_hovered { 150 } else { 125 }),
                 );
 
                 painter_layout_centered(

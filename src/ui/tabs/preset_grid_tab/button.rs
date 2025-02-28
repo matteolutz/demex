@@ -1,7 +1,7 @@
 use egui::Response;
 
 use crate::ui::{
-    components::quick_menu::{QuickMenu, QuickMenuActions, QuickMenuResponse},
+    components::quick_menu::{QuickMenu, QuickMenuAction, QuickMenuActions, QuickMenuResponse},
     utils::painter::painter_layout_centered,
 };
 
@@ -34,41 +34,75 @@ pub struct PresetGridButtonDecoration {
     pub left_bottom_text: Option<String>,
 }
 
-#[derive(Default, Clone)]
-struct PresetGridButtonState {
-    quick_menu_pivot: Option<egui::Pos2>,
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum PresetGridButtonQuickMenuActions {
+    Edit,
+    Insert,
+    Default,
+
+    Custom(&'static str),
+}
+
+impl std::fmt::Display for PresetGridButtonQuickMenuActions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PresetGridButtonQuickMenuActions::Edit => write!(f, "Edit"),
+            PresetGridButtonQuickMenuActions::Insert => write!(f, "Insert"),
+            PresetGridButtonQuickMenuActions::Default => write!(f, "Default"),
+            PresetGridButtonQuickMenuActions::Custom(custom) => write!(f, "{}", custom),
+        }
+    }
+}
+
+impl From<PresetGridButtonQuickMenuActions> for QuickMenuAction<PresetGridButtonQuickMenuActions> {
+    fn from(value: PresetGridButtonQuickMenuActions) -> Self {
+        (value, value.to_string()).into()
+    }
 }
 
 pub struct PresetGridButton {
-    id_source: egui::Id,
     config: PresetGridButtonConfig,
     decoration: PresetGridButtonDecoration,
 
-    quick_menu_actions: QuickMenuActions,
+    quick_menu_actions: QuickMenuActions<PresetGridButtonQuickMenuActions>,
 }
 
 impl PresetGridButton {
     pub fn new(
-        id_source: impl Into<egui::Id>,
         config: PresetGridButtonConfig,
         decoration: PresetGridButtonDecoration,
-        quick_menu_actions: QuickMenuActions,
+        quick_menu_actions: Option<Vec<PresetGridButtonQuickMenuActions>>,
     ) -> Self {
         Self {
-            id_source: id_source.into(),
+            quick_menu_actions: match config {
+                PresetGridButtonConfig::Empty { .. } => {
+                    QuickMenuActions::default().top_left(PresetGridButtonQuickMenuActions::Insert)
+                }
+                PresetGridButtonConfig::Preset { .. } => {
+                    let mut actions = QuickMenuActions::default()
+                        .top_left(PresetGridButtonQuickMenuActions::Insert)
+                        .top_center(PresetGridButtonQuickMenuActions::Edit)
+                        .top_right(PresetGridButtonQuickMenuActions::Default);
+
+                    if let Some(quick_menu_actions) = quick_menu_actions {
+                        actions = actions.with_vec(quick_menu_actions.into());
+                    }
+
+                    actions
+                }
+            },
             config,
             decoration,
-            quick_menu_actions,
         }
     }
 
-    pub fn show(self, ui: &mut egui::Ui) -> (Response, QuickMenuResponse) {
-        let id = ui.make_persistent_id(self.id_source);
-        let mut state = ui
-            .ctx()
-            .data_mut(|d| d.get_persisted::<PresetGridButtonState>(id))
-            .unwrap_or_default();
-
+    pub fn show(
+        self,
+        ui: &mut egui::Ui,
+    ) -> (
+        Response,
+        QuickMenuResponse<PresetGridButtonQuickMenuActions>,
+    ) {
         let (response, painter) = ui.allocate_painter(
             PRESET_GRID_ELEMENT_SIZE.into(),
             egui::Sense::click_and_drag(),
@@ -160,23 +194,15 @@ impl PresetGridButton {
 
         let quick_menu = QuickMenu::new(response.interact_rect.center(), &self.quick_menu_actions);
 
-        let quick_menu_response =
-            if response.drag_stopped() && response.interact_pointer_pos().is_some() {
-                let drag_end_pos = response.interact_pointer_pos().unwrap();
-                println!("drag stopped at: {:?}", drag_end_pos);
-
-                quick_menu.interact(drag_end_pos)
-            } else {
-                None
-            };
+        let quick_menu_response = response
+            .drag_stopped()
+            .then(|| response.interact_pointer_pos())
+            .flatten()
+            .and_then(|pos| quick_menu.interact(pos));
 
         if response.dragged() {
-            let pivot_center = response.interact_rect.center();
-
             quick_menu.show(ui);
         }
-
-        ui.ctx().data_mut(|d| d.insert_persisted(id, state));
 
         (response, quick_menu_response)
     }
@@ -272,10 +298,6 @@ pub fn preset_grid_button_ui(
             0.0,
             egui::Stroke::new(2.0, egui::Color32::WHITE),
         );
-    }
-
-    if response.secondary_clicked() {
-        let pivot_pos = response.interact_rect.min;
     }
 
     response
