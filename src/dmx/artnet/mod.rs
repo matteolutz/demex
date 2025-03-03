@@ -6,9 +6,21 @@ use std::{
 };
 
 use artnet_protocol::{ArtCommand, Output, Poll, PortAddress};
+use egui_probe::EguiProbe;
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
 use super::DmxData;
+
+#[derive(Clone, Default, Debug, Serialize, Deserialize, EguiProbe)]
+pub struct ArtnetOutputConfig {
+    pub broadcast: bool,
+
+    #[serde(default)]
+    pub broadcast_addresses: Vec<String>,
+
+    pub bind_ip: Option<String>,
+}
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct ArtNetOutputNode {
@@ -17,10 +29,16 @@ struct ArtNetOutputNode {
 
 const ARTNET_PORT: u16 = 6454;
 
-pub fn start_broadcast_artnet_output_thread(rx: mpsc::Receiver<DmxData>, bind_ip: Option<String>) {
+pub fn start_broadcast_artnet_output_thread(
+    rx: mpsc::Receiver<DmxData>,
+    config: ArtnetOutputConfig,
+) {
     thread::spawn(move || {
-        let socket =
-            net::UdpSocket::bind((bind_ip.unwrap_or("0.0.0.0".to_owned()), ARTNET_PORT)).unwrap();
+        let socket = net::UdpSocket::bind((
+            config.bind_ip.unwrap_or_else(|| "0.0.0.0".to_owned()),
+            ARTNET_PORT,
+        ))
+        .unwrap();
         socket
             .set_read_timeout(Some(time::Duration::from_secs(3)))
             .unwrap();
@@ -48,22 +66,21 @@ pub fn start_broadcast_artnet_output_thread(rx: mpsc::Receiver<DmxData>, bind_ip
     });
 }
 
-pub fn start_artnet_output_thread(
-    rx: mpsc::Receiver<DmxData>,
-    bind_ip: Option<String>,
-    broadcast_addresses: Vec<String>,
-) {
+pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, config: ArtnetOutputConfig) {
     thread::spawn(move || {
         log::debug!("Starting ArtNet thread..");
 
-        let socket =
-            net::UdpSocket::bind((bind_ip.unwrap_or_else(|| "0.0.0.0".to_owned()), ARTNET_PORT))
-                .unwrap();
+        let socket = net::UdpSocket::bind((
+            config.bind_ip.unwrap_or_else(|| "0.0.0.0".to_owned()),
+            ARTNET_PORT,
+        ))
+        .unwrap();
         socket
             .set_read_timeout(Some(time::Duration::from_secs(3)))
             .unwrap();
 
-        let broadcast_addresses = broadcast_addresses
+        let broadcast_addresses = config
+            .broadcast_addresses
             .iter()
             .map(|addr| net::SocketAddr::new(net::IpAddr::V4(addr.parse().unwrap()), ARTNET_PORT))
             .collect::<Vec<_>>();

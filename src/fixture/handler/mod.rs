@@ -175,7 +175,7 @@ impl FixtureHandler {
             dirty_universes.insert(f.universe());
         }
 
-        for output in &self.outputs {
+        for output in &mut self.outputs {
             for (universe, data) in &self.universe_output_data {
                 if !dirty_universes.contains(universe) {
                     continue;
