@@ -13,7 +13,7 @@ use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
 use fixture::{channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler};
-use input::DemexInputDeviceHandler;
+use input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler};
 use parking_lot::RwLock;
 use rfd::FileDialog;
 use show::DemexShow;
@@ -38,11 +38,18 @@ struct Args {
     deadlock_test: bool,
 }
 
-const TEST_MAX_FUPS: f64 = 200.0;
+const TEST_MAX_FUPS: f64 = 60.0;
 const TEST_MAX_DMX_FPS: f64 = 30.0;
 const TEST_UI_FPS: f64 = 60.0;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::var("RUST_LOG").is_err() {
+        std::env::set_var("RUST_LOG", "debug");
+    }
+
+    env_logger::init();
+    log::info!("Starting demex");
+
     let args = Args::parse();
 
     if args.deadlock_test {
@@ -53,6 +60,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut show: DemexShow = args
         .show
+        .inspect(|show_path| log::info!("Loading show file: {:?}", show_path))
         .map(|show_path| serde_json::from_reader(std::fs::File::open(show_path).unwrap()).unwrap())
         .unwrap_or(DemexShow::default());
 
@@ -96,7 +104,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         DemexInputDeviceHandler::new(
             show.input_device_configs
                 .into_iter()
-                .flat_map(|v| v.try_into())
+                .map(DemexInputDeviceConfig::into)
                 .collect::<Vec<_>>(),
         ),
     );

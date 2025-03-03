@@ -185,76 +185,79 @@ impl<'a> LayoutViewComponent<'a> {
             );
         }
 
-        if response.dragged() && response.hover_pos().is_some() {
-            if state.drag_context.is_none() {
-                state.drag_context = Some(LayoutViewDragState {
-                    mouse_pos: response.hover_pos().unwrap(),
-                    projection_center: *state.layout_projection.center(),
-                });
-            } else if response.dragged_by(egui::PointerButton::Primary) {
-                painter.rect_filled(
-                    egui::Rect::from_two_pos(
-                        state.drag_context.as_ref().unwrap().mouse_pos,
-                        response.hover_pos().unwrap(),
-                    ),
-                    0.0,
-                    egui::Color32::from_rgba_unmultiplied(255, 255, 255, 50),
-                );
+        if let Some(current_mouse_pos) = response.interact_pointer_pos() {
+            if response.dragged() {
+                if state.drag_context.is_none() {
+                    state.drag_context = Some(LayoutViewDragState {
+                        mouse_pos: current_mouse_pos,
+                        projection_center: *state.layout_projection.center(),
+                    });
+                } else if response.dragged_by(egui::PointerButton::Primary) {
+                    painter.rect_filled(
+                        egui::Rect::from_two_pos(
+                            state.drag_context.as_ref().unwrap().mouse_pos,
+                            current_mouse_pos,
+                        ),
+                        0.0,
+                        egui::Color32::from_rgba_unmultiplied(255, 255, 255, 50),
+                    );
 
-                painter.rect_stroke(
-                    egui::Rect::from_two_pos(
-                        state.drag_context.as_ref().unwrap().mouse_pos,
-                        response.hover_pos().unwrap(),
-                    ),
-                    0.0,
-                    egui::Stroke::new(1.0, egui::Color32::WHITE),
-                );
-            } else if response.dragged_by(egui::PointerButton::Middle) {
-                let drag_start_world_point = state
-                    .layout_projection
-                    .unproject(&state.drag_context.as_ref().unwrap().mouse_pos, &rect);
+                    painter.rect_stroke(
+                        egui::Rect::from_two_pos(
+                            state.drag_context.as_ref().unwrap().mouse_pos,
+                            current_mouse_pos,
+                        ),
+                        0.0,
+                        egui::Stroke::new(1.0, egui::Color32::WHITE),
+                    );
+                } else if response.dragged_by(egui::PointerButton::Middle) {
+                    let drag_start_world_point = state
+                        .layout_projection
+                        .unproject(&state.drag_context.as_ref().unwrap().mouse_pos, &rect);
 
-                let drag_end_world_point = state
-                    .layout_projection
-                    .unproject(response.hover_pos().as_ref().unwrap(), &rect);
+                    let drag_end_world_point =
+                        state.layout_projection.unproject(&current_mouse_pos, &rect);
 
-                let drag_world_offset: egui::Vec2 = drag_end_world_point - drag_start_world_point;
+                    let drag_world_offset: egui::Vec2 =
+                        drag_end_world_point - drag_start_world_point;
 
-                let world_offset: egui::Vec2 =
-                    state.drag_context.as_ref().unwrap().projection_center + drag_world_offset;
+                    let world_offset: egui::Vec2 =
+                        state.drag_context.as_ref().unwrap().projection_center + drag_world_offset;
 
-                *state.layout_projection.center_mut() = world_offset;
-            }
-        } else if state.drag_context.is_some() && response.hover_pos().is_some() {
-            let select_rect = egui::Rect::from_two_pos(
-                state.drag_context.as_ref().unwrap().mouse_pos,
-                response.hover_pos().unwrap(),
-            );
-
-            let selected_fixture_ids = fixture_layout
-                .fixtures()
-                .iter()
-                .map(|fixture| {
-                    let (pos, size) = fixture.get_pos_and_size(&state.layout_projection, &rect);
-                    (fixture, egui::Rect::from_min_size(pos, size))
-                })
-                .filter(|(fixture_layout_entry, fixture_rect)| {
-                    select_rect.contains_rect(*fixture_rect)
-                        && !global_fixture_select_fixtures
-                            .contains(&fixture_layout_entry.fixture_id())
-                })
-                .map(|(fixture, _)| fixture.fixture_id())
-                .collect::<Vec<u32>>();
-
-            if !selected_fixture_ids.is_empty() {
-                if let Some(global_fixture_select) = self.context.global_fixture_select.as_mut() {
-                    global_fixture_select.add_fixtures(&selected_fixture_ids);
-                } else {
-                    self.context.global_fixture_select = Some(selected_fixture_ids.into());
+                    *state.layout_projection.center_mut() = world_offset;
                 }
-            }
+            } else if state.drag_context.is_some() {
+                let select_rect = egui::Rect::from_two_pos(
+                    state.drag_context.as_ref().unwrap().mouse_pos,
+                    current_mouse_pos,
+                );
 
-            state.drag_context = None;
+                let selected_fixture_ids = fixture_layout
+                    .fixtures()
+                    .iter()
+                    .map(|fixture| {
+                        let (pos, size) = fixture.get_pos_and_size(&state.layout_projection, &rect);
+                        (fixture, egui::Rect::from_min_size(pos, size))
+                    })
+                    .filter(|(fixture_layout_entry, fixture_rect)| {
+                        select_rect.contains_rect(*fixture_rect)
+                            && !global_fixture_select_fixtures
+                                .contains(&fixture_layout_entry.fixture_id())
+                    })
+                    .map(|(fixture, _)| fixture.fixture_id())
+                    .collect::<Vec<u32>>();
+
+                if !selected_fixture_ids.is_empty() {
+                    if let Some(global_fixture_select) = self.context.global_fixture_select.as_mut()
+                    {
+                        global_fixture_select.add_fixtures(&selected_fixture_ids);
+                    } else {
+                        self.context.global_fixture_select = Some(selected_fixture_ids.into());
+                    }
+                }
+
+                state.drag_context = None;
+            }
         }
 
         ui.ctx().data_mut(|d| d.insert_persisted(id, state));

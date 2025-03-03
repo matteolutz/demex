@@ -48,16 +48,26 @@ pub fn start_broadcast_artnet_output_thread(rx: mpsc::Receiver<DmxData>, bind_ip
     });
 }
 
-pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, bind_ip: Option<String>) {
+pub fn start_artnet_output_thread(
+    rx: mpsc::Receiver<DmxData>,
+    bind_ip: Option<String>,
+    broadcast_addresses: Vec<String>,
+) {
     thread::spawn(move || {
+        log::debug!("Starting ArtNet thread..");
+
         let socket =
-            net::UdpSocket::bind((bind_ip.unwrap_or("0.0.0.0".to_owned()), ARTNET_PORT)).unwrap();
+            net::UdpSocket::bind((bind_ip.unwrap_or_else(|| "0.0.0.0".to_owned()), ARTNET_PORT))
+                .unwrap();
         socket
             .set_read_timeout(Some(time::Duration::from_secs(3)))
             .unwrap();
 
-        let broadcast_addr =
-            net::SocketAddr::new(net::IpAddr::V4(net::Ipv4Addr::BROADCAST), ARTNET_PORT);
+        let broadcast_addresses = broadcast_addresses
+            .iter()
+            .map(|addr| net::SocketAddr::new(net::IpAddr::V4(addr.parse().unwrap()), ARTNET_PORT))
+            .collect::<Vec<_>>();
+
         socket.set_broadcast(true).unwrap();
         socket.set_nonblocking(true).unwrap();
 
@@ -97,7 +107,11 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, bind_ip: Option<S
                 // should we send a poll?
                 if last_poll_sent.is_none() || last_poll_sent.unwrap().elapsed().as_secs_f64() > 3.0
                 {
-                    socket.send_to(&poll_buff, broadcast_addr).unwrap();
+                    for addr in &broadcast_addresses {
+                        log::debug!("Sending ArtNet Poll to broadcast address {}..", addr);
+                        socket.send_to(&poll_buff, addr).unwrap();
+                    }
+
                     last_poll_sent = Some(time::Instant::now());
                 }
 
@@ -108,7 +122,7 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, bind_ip: Option<S
                     match command {
                         ArtCommand::PollReply(poll_reply) => {
                             let net_and_subnet: u16 = ((poll_reply.port_address[0] as u16) << 8)
-                                | (poll_reply.port_address[1] as u16) << 4;
+                                | ((poll_reply.port_address[1] as u16) << 4);
 
                             for uni in poll_reply.swout.iter().unique() {
                                 let universe: PortAddress =

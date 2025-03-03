@@ -5,7 +5,9 @@ use std::{
 
 use artnet::{start_artnet_output_thread, start_broadcast_artnet_output_thread};
 use debug::{start_debug_output_thread, DebugOutputVerbosity};
+use egui::menu::MenuResponse;
 use egui_probe::EguiProbe;
+use open_dmx::DMXSerial;
 use serde::{Deserialize, Serialize};
 use serial::start_serial_output_thread;
 
@@ -30,6 +32,8 @@ pub enum DemexDmxOutputConfig {
 
     Artnet {
         broadcast: bool,
+        #[serde(default)]
+        broadcast_addresses: Vec<String>,
         bind_ip: Option<String>,
     },
 }
@@ -51,22 +55,52 @@ impl Default for DemexDmxOutputConfig {
 }
 
 impl DemexDmxOutputConfig {
-    fn spawn_thread(&self, rx: mpsc::Receiver<DmxData>) {
+    fn spawn_thread(
+        &self,
+        tx: mpsc::Sender<DmxData>,
+        rx: mpsc::Receiver<DmxData>,
+    ) -> Option<mpsc::Sender<DmxData>> {
         match self {
-            Self::Debug(output_verbosity) => start_debug_output_thread(rx, *output_verbosity),
+            Self::Debug(output_verbosity) => {
+                start_debug_output_thread(rx, *output_verbosity);
+                None
+            }
             Self::Serial {
                 serial_port,
                 universe,
-            } => start_serial_output_thread(rx, serial_port.clone(), *universe),
-            Self::Artnet { broadcast, bind_ip } => {
+            } => {
+                start_serial_output_thread(rx, serial_port.clone(), *universe);
+                None
+            }
+            Self::Artnet {
+                broadcast,
+                broadcast_addresses,
+                bind_ip,
+            } => {
                 if *broadcast {
                     start_broadcast_artnet_output_thread(rx, bind_ip.clone())
                 } else {
-                    start_artnet_output_thread(rx, bind_ip.clone())
+                    start_artnet_output_thread(rx, bind_ip.clone(), broadcast_addresses.clone())
                 }
+
+                Some(tx)
             }
         }
     }
+
+    pub fn update_sync(&self, data: &[u8; 512]) -> Result<(), Box<dyn std::error::Error>> {
+        match self {
+            Self::Debug(_) => Ok(()),
+            Self::Serial { .. } => Ok(()),
+            Self::Artnet { .. } => Ok(()),
+        }
+    }
+}
+
+pub enum DemexDmxSpecificOutput {
+    Artnet { tx: mpsc::Sender<DmxData> },
+    Serial { serial_port: DMXSerial },
+    Debug,
 }
 
 #[derive(Debug, EguiProbe)]
@@ -74,7 +108,7 @@ pub struct DemexDmxOutput {
     config: DemexDmxOutputConfig,
 
     #[egui_probe(skip)]
-    tx: mpsc::Sender<DmxData>,
+    tx: Option<mpsc::Sender<DmxData>>,
 }
 
 impl Default for DemexDmxOutput {
@@ -87,7 +121,7 @@ impl From<DemexDmxOutputConfig> for DemexDmxOutput {
     fn from(config: DemexDmxOutputConfig) -> Self {
         let (tx, rx) = mpsc::channel();
 
-        config.spawn_thread(rx);
+        let tx = config.spawn_thread(tx, rx);
 
         Self { config, tx }
     }
@@ -95,7 +129,15 @@ impl From<DemexDmxOutputConfig> for DemexDmxOutput {
 
 impl DemexDmxOutputTrait for DemexDmxOutput {
     fn send(&self, universe: u16, data: &[u8; 512]) -> Result<(), Box<dyn std::error::Error>> {
-        self.tx.send((universe, *data))?;
+        // If self.tx has a value, we know, that we spawned a thread and can send the data to it.
+        if let Some(tx) = &self.tx {
+            tx.send((universe, *data))?;
+        }
+
+        if let Err(err) = self.config.update_sync(data) {
+            log::warn!("Error updating sync for {:?}: {}", self, err);
+        }
+
         Ok(())
     }
 }

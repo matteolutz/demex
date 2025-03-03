@@ -2,8 +2,8 @@ use std::{collections::HashSet, path::PathBuf, sync::Arc, thread, time};
 
 use command::ui_command_input;
 use context::{DemexUiContext, SaveShowFn};
+use dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use egui::IconData;
-use log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use parking_lot::RwLock;
 use tabs::{DemexTab, DemexTabs};
 use window::{DemexWindow, DemexWindowHandler};
@@ -27,10 +27,10 @@ pub mod command;
 pub mod components;
 pub mod constants;
 pub mod context;
+pub mod dlog;
 pub mod error;
 pub mod graphics;
 pub mod iimpl;
-pub mod log;
 pub mod tabs;
 pub mod traits;
 pub mod utils;
@@ -160,7 +160,7 @@ impl eframe::App for DemexUiApp {
             let action = self.context.macro_execution_queue.remove(0);
 
             if let Err(e) = self.context.run_and_handle_action(&action) {
-                eprintln!("{}", e);
+                log::warn!("{}", e);
 
                 self.context
                     .add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));

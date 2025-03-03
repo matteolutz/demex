@@ -1,4 +1,4 @@
-use crate::{lexer::Lexer, ui::log::dialog::DemexGlobalDialogEntry};
+use crate::{lexer::Lexer, ui::dlog::dialog::DemexGlobalDialogEntry};
 
 use super::context::DemexUiContext;
 
@@ -89,7 +89,7 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_a
                         context.command_input.clear();
 
                         if let Err(e) = context.run_cmd() {
-                            eprintln!("{}", e);
+                            log::warn!("{}", e);
                             context.add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));
                         }
 

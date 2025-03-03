@@ -23,7 +23,7 @@ use crate::{
 };
 
 use super::{
-    log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
+    dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
     window::{DemexWindow, DemexWindowHandler},
 };
 
@@ -174,7 +174,7 @@ impl DemexUiContext {
                     )))
             })?;
 
-        println!(
+        log::debug!(
             "Execution of action {:?} took {:.2?}",
             action,
             now.elapsed()

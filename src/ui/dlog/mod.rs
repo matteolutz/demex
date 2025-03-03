@@ -1,5 +1,3 @@
-use std::fmt;
-
 use dialog::DemexGlobalDialogEntry;
 
 use crate::{
@@ -18,8 +16,8 @@ pub enum DemexLogEntryType {
     Error(String),
 }
 
-impl fmt::Display for DemexLogEntryType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for DemexLogEntryType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             DemexLogEntryType::DialogEntry(entry) => write!(f, "[DLG]: {}", entry),
             DemexLogEntryType::CommandEntry(tokens) => {
@@ -74,8 +72,8 @@ impl DemexLogEntry {
     }
 }
 
-impl fmt::Display for DemexLogEntry {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for DemexLogEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[{}] {}", self.time.format("%H:%M:%S"), self.entry_type)
     }
 }

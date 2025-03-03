@@ -7,7 +7,7 @@ use crate::fixture::{
     handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler,
 };
 
-use super::log::dialog::DemexGlobalDialogEntry;
+use super::dlog::dialog::DemexGlobalDialogEntry;
 
 pub mod edit;
 

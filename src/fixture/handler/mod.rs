@@ -182,7 +182,7 @@ impl FixtureHandler {
                 }
 
                 if let Err(err) = output.send(*universe, data) {
-                    println!(
+                    log::warn!(
                         "Failed to send data via {:?} for universe {}. Did the corresponding output thread panic?\n{}",
                         output, universe, err
                     );

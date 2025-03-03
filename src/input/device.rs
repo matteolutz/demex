@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     button::DemexInputButton,
-    error::DemexInputDeviceError,
     fader::DemexInputFader,
     profile::{akai::ApcMiniMk2InputDeviceProfile, DemexInputDeviceProfileType},
     DemexInputDeviceProfile,
@@ -68,17 +67,15 @@ impl DemexInputDevice {
     }
 }
 
-impl TryFrom<DemexInputDeviceConfig> for DemexInputDevice {
-    type Error = DemexInputDeviceError;
-
-    fn try_from(value: DemexInputDeviceConfig) -> Result<Self, Self::Error> {
+impl From<DemexInputDeviceConfig> for DemexInputDevice {
+    fn from(value: DemexInputDeviceConfig) -> Self {
         let profile = match value.profile_type {
-            DemexInputDeviceProfileType::ApcMiniMk2 => ApcMiniMk2InputDeviceProfile::new()?,
+            DemexInputDeviceProfileType::ApcMiniMk2 => ApcMiniMk2InputDeviceProfile::new(),
         };
 
-        Ok(DemexInputDevice {
+        DemexInputDevice {
             config: value,
             profile: Box::new(profile),
-        })
+        }
     }
 }
