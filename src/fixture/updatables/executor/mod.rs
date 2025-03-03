@@ -79,15 +79,11 @@ impl Executor {
     }
 
     pub fn name(&self) -> &str {
-        /*match &self.config {
-            ExecutorConfig::Sequence { runtime, .. } => preset_handler
-                .get_sequence(runtime.sequence_id())
-                .unwrap()
-                .name()
-                .to_owned(),
-            ExecutorConfig::FeatureEffect { runtime, .. } => format!("{}", runtime.effect()),
-        }*/
         &self.name
+    }
+
+    pub fn name_mut(&mut self) -> &mut String {
+        &mut self.name
     }
 
     pub fn fixtures(&self) -> &[u32] {

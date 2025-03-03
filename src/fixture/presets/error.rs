@@ -16,6 +16,7 @@ pub enum PresetHandlerError {
     FixtureSelectorError(Box<FixtureSelectorError>),
     MacroExecutionError(Box<ActionRunError>),
     CueAlreadyExists(u32, CueIdx),
+    CueNotFound(u32, CueIdx),
 }
 
 impl std::fmt::Display for PresetHandlerError {
@@ -55,6 +56,13 @@ impl std::fmt::Display for PresetHandlerError {
                 write!(
                     f,
                     "Cue {}.{} already exists in sequence {}. Use \"update\" to modify it",
+                    cue_idx_major, cue_idx_minor, preset_id
+                )
+            }
+            PresetHandlerError::CueNotFound(preset_id, (cue_idx_major, cue_idx_minor)) => {
+                write!(
+                    f,
+                    "Cue {}.{} not found in sequence {}",
                     cue_idx_major, cue_idx_minor, preset_id
                 )
             }

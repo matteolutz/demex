@@ -1,4 +1,9 @@
-use std::{collections::HashSet, path::PathBuf, sync::Arc, thread, time};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+    sync::Arc,
+    thread, time,
+};
 
 use command::ui_command_input;
 use context::{DemexUiContext, SaveShowFn};
@@ -38,11 +43,18 @@ pub mod window;
 
 const UI_THREAD_NAME: &str = "demex-ui";
 
+#[derive(Default)]
+pub struct DetachedTabConfig {
+    is_fullscreen: bool,
+}
+
 pub struct DemexUiApp {
     context: DemexUiContext,
 
     tabs: DemexTabs,
+
     detached_tabs: HashSet<DemexTab>,
+    detached_tabs_config: HashMap<DemexTab, DetachedTabConfig>,
 
     command_auto_focus: bool,
 
@@ -99,7 +111,9 @@ impl DemexUiApp {
                 input_device_handler,
             },
             tabs: DemexTabs::default(),
+
             detached_tabs: HashSet::new(),
+            detached_tabs_config: HashMap::new(),
 
             command_auto_focus: true,
 
@@ -173,17 +187,34 @@ impl eframe::App for DemexUiApp {
         for detached_tab in self.detached_tabs.clone() {
             let tab_title = detached_tab.to_string();
 
+            // get current tab config as mut reference
+            // insert if it does not exist
+
+            let tab_config = self.detached_tabs_config.entry(detached_tab).or_default();
+
+            let viewport_builder = egui::ViewportBuilder::default()
+                .with_title(format!("demex - {}", tab_title))
+                .with_icon(self.icon.clone())
+                .with_window_level(egui::WindowLevel::AlwaysOnTop)
+                .with_fullscreen(tab_config.is_fullscreen);
+
             ctx.show_viewport_immediate(
                 egui::ViewportId::from_hash_of(tab_title.as_str()),
-                egui::ViewportBuilder::default()
-                    .with_title(format!("demex - {}", tab_title))
-                    .with_icon(self.icon.clone())
-                    .with_window_level(egui::WindowLevel::AlwaysOnTop),
+                viewport_builder,
                 |ctx, _| {
                     if ctx.input(|reader| reader.viewport().close_requested()) {
                         self.detached_tabs.remove(&detached_tab);
                         self.tabs.re_attach(detached_tab);
                     }
+
+                    egui::TopBottomPanel::top(format!("DemexDetachedTab-{}", tab_title)).show(
+                        ctx,
+                        |ui| {
+                            if ui.button("Fullscreen").clicked() {
+                                tab_config.is_fullscreen = !tab_config.is_fullscreen;
+                            }
+                        },
+                    );
 
                     ui_command_input(ctx, &mut self.context, self.command_auto_focus);
 

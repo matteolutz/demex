@@ -4,7 +4,10 @@ use crate::{
         presets::error::PresetHandlerError, updatables::error::UpdatableHandlerError,
     },
     input::error::DemexInputDeviceError,
-    parser::nodes::fixture_selector::FixtureSelectorError,
+    parser::nodes::{
+        fixture_selector::FixtureSelectorError,
+        object::{Object, ObjectRange},
+    },
 };
 
 use super::Action;
@@ -21,6 +24,10 @@ pub enum ActionRunError {
     FaderIsActive(u32),
     SequenceDeleteDependencies(u32),
     UnimplementedAction(Action),
+
+    ActionNotImplementedForObject(String, Object),
+    ActionNotImplementedForObjectRange(String, ObjectRange),
+
     Todo(String),
 }
 
@@ -54,6 +61,20 @@ impl std::fmt::Display for ActionRunError {
             }
             ActionRunError::SequenceDeleteDependencies(seq_id) => {
                 write!(f, "Sequence with id {} can't be deleted, because there are other objects (executors, faders) referencing it. Delete these first", seq_id)
+            }
+            ActionRunError::ActionNotImplementedForObject(action, object) => {
+                write!(
+                    f,
+                    "Action {:?} is not implemented for object {:?}",
+                    action, object
+                )
+            }
+            ActionRunError::ActionNotImplementedForObjectRange(action, object_range) => {
+                write!(
+                    f,
+                    "Action {:?} is not implemented for object range {:?}",
+                    action, object_range
+                )
             }
             ActionRunError::Todo(s) => write!(f, "To do: {}", s),
         }

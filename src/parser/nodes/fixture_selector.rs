@@ -57,7 +57,6 @@ pub enum AtomicFixtureSelector {
 }
 
 impl AtomicFixtureSelector {
-    // TOOD: change this to get_selection
     pub fn get_selection(
         &self,
         preset_handler: &PresetHandler,
@@ -87,6 +86,13 @@ impl AtomicFixtureSelector {
 
     pub fn is_flat(&self) -> bool {
         !matches!(self, Self::CurrentFixturesSelected)
+    }
+
+    pub fn try_as_group_id(&self) -> Option<u32> {
+        match self {
+            Self::FixtureGroup(id) => Some(*id),
+            _ => None,
+        }
     }
 }
 
@@ -158,6 +164,13 @@ impl FixtureSelector {
             Self::Additive(a, b) => a.is_flat() && b.is_flat(),
             Self::Subtractive(a, b) => a.is_flat() && b.is_flat(),
             Self::Modulus(fixture_selector, _, _) => fixture_selector.is_flat(),
+        }
+    }
+
+    pub fn try_as_group_id(&self) -> Option<u32> {
+        match self {
+            Self::Atomic(a) => a.try_as_group_id(),
+            _ => None,
         }
     }
 }

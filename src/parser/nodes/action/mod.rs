@@ -1,5 +1,7 @@
 use functions::{
+    delete_function::DeleteArgs,
     record_function::{RecordGroupArgs, RecordPresetArgs, RecordSequenceCueArgs},
+    rename_function::RenameObjectArgs,
     set_function::{SetFeatureValueArgs, SetFixturePresetArgs},
     ActionFunction,
 };
@@ -9,7 +11,6 @@ use crate::{
     fixture::{
         handler::FixtureHandler,
         presets::{preset::FixturePresetId, PresetHandler},
-        sequence::cue::CueIdx,
         updatables::{
             error::UpdatableHandlerError, fader::config::DemexFaderConfig, UpdatableHandler,
         },
@@ -25,7 +26,7 @@ use self::{error::ActionRunError, result::ActionRunResult};
 
 use super::{
     fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
-    object::HomeableObject,
+    object::{HomeableObject, Object, ObjectTrait},
 };
 
 pub mod error;
@@ -88,12 +89,9 @@ pub enum Action {
     RecordPreset(RecordPresetArgs),
     RecordGroup2(RecordGroupArgs),
     RecordSequenceCue(RecordSequenceCueArgs),
-
-    RenamePreset(FixturePresetId, String),
-    RenameGroup(u32, String),
-    RenameSequence(u32, String),
-
     RecordMacro(Box<Action>, u32),
+
+    Rename(RenameObjectArgs),
 
     CreateSequence(Option<u32>, Option<String>),
     CreateExecutor(
@@ -107,18 +105,9 @@ pub enum Action {
 
     UpdatePreset(FixturePresetId, FixtureSelector, UpdateModeActionData),
 
-    DeleteMacro((u32, u32)),
-    DeletePreset(ValueOrRange<FixturePresetId>),
-    DeleteSequence((u32, u32)),
-    DeleteExecutor((u32, u32)),
-    DeleteFader((u32, u32)),
-    DeleteGroup((u32, u32)),
+    Delete(DeleteArgs),
 
-    EditSequence(u32),
-    EditSequenceCue(u32, CueIdx),
-    EditExecutor(u32),
-    EditFader(u32),
-    EditPreset(FixturePresetId),
+    Edit(Object),
 
     AssignExecutorToInput {
         executor_id: u32,
@@ -201,14 +190,15 @@ impl Action {
                 input_device_handler,
             ),
 
-            Self::Home(homeable_object) => self.run_home(
+            Self::Home(homeable_object) => homeable_object.run_home(
                 preset_handler,
                 fixture_handler,
                 updatable_handler,
-                homeable_object,
                 fixture_selector_context,
             ),
+
             Self::HomeAll => self.run_home_all(fixture_handler),
+
             Self::RecordPreset(args) => args.run(
                 fixture_handler,
                 preset_handler,
@@ -233,13 +223,13 @@ impl Action {
                 input_device_handler,
             ),
 
-            Self::RenamePreset(id, new_name) => {
-                self.run_rename_preset(preset_handler, *id, new_name)
-            }
-            Self::RenameGroup(id, new_name) => self.run_rename_group(preset_handler, *id, new_name),
-            Self::RenameSequence(id, new_name) => {
-                self.run_rename_sequence(preset_handler, *id, new_name)
-            }
+            Self::Rename(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+            ),
 
             Self::CreateSequence(id, name) => self.run_create_sequence(preset_handler, *id, name),
             Self::CreateExecutor(id, mode, fixture_selector, name) => self.run_create_executor(
@@ -272,34 +262,22 @@ impl Action {
                 update_mode,
             ),
 
-            Self::DeleteMacro(id_range) => self.run_delete_macro(*id_range, preset_handler),
-            Self::DeletePreset(id_range) => self.run_delete_preset(*id_range, preset_handler),
-            Self::DeleteSequence(sequence_range) => {
-                self.run_delete_sequence(*sequence_range, preset_handler, updatable_handler)
-            }
-            Self::DeleteExecutor(executor_range) => {
-                self.run_delete_executor(*executor_range, updatable_handler)
-            }
-            Self::DeleteFader(fader_range) => {
-                self.run_delete_fader(*fader_range, updatable_handler)
-            }
-            Self::DeleteGroup(group_range) => self.run_delete_group(*group_range, preset_handler),
+            Self::Delete(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+            ),
 
-            Self::EditSequence(sequence_id) => Ok(ActionRunResult::EditWindow(
-                DemexEditWindow::EditSequence(*sequence_id),
-            )),
-            Self::EditSequenceCue(sequence_id, cue_idx) => Ok(ActionRunResult::EditWindow(
-                DemexEditWindow::EditSequenceCue(*sequence_id, *cue_idx),
-            )),
-            Self::EditExecutor(executor_id) => Ok(ActionRunResult::EditWindow(
-                DemexEditWindow::EditExecutor(*executor_id),
-            )),
-            Self::EditFader(fader_id) => Ok(ActionRunResult::EditWindow(
-                DemexEditWindow::EditFader(*fader_id),
-            )),
-            Self::EditPreset(preset_id) => Ok(ActionRunResult::EditWindow(
-                DemexEditWindow::EditPreset(*preset_id),
-            )),
+            Self::Edit(object) => object
+                .clone()
+                .edit_window()
+                .ok_or(ActionRunError::ActionNotImplementedForObject(
+                    "Edit".to_owned(),
+                    object.clone(),
+                ))
+                .map(ActionRunResult::EditWindow),
 
             Self::ClearAll => Ok(ActionRunResult::new()),
             Self::FixtureSelector(fixture_selector) => self.run_fixture_selector(
@@ -412,84 +390,6 @@ impl Action {
         fixture_handler
             .home_all()
             .map_err(ActionRunError::FixtureHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_home(
-        &self,
-        preset_handler: &PresetHandler,
-        fixture_handler: &mut FixtureHandler,
-        updatable_handler: &mut UpdatableHandler,
-        homeable_object: &HomeableObject,
-        fixture_selector_context: FixtureSelectorContext,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        match homeable_object {
-            HomeableObject::FixtureSelector(fixture_selector) => {
-                let selection = fixture_selector
-                    .get_selection(preset_handler, fixture_selector_context)
-                    .map_err(ActionRunError::FixtureSelectorError)?;
-
-                for fixture_id in selection.fixtures() {
-                    if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                        fixture.home().map_err(ActionRunError::FixtureError)?;
-                    }
-                }
-
-                Ok(ActionRunResult::new())
-            }
-            HomeableObject::Executor(executor_id) => {
-                updatable_handler
-                    .stop_executor(*executor_id, fixture_handler)
-                    .map_err(ActionRunError::UpdatableHandlerError)?;
-
-                Ok(ActionRunResult::new())
-            }
-            HomeableObject::Fader(fader_id) => {
-                if let Ok(fader) = updatable_handler.fader_mut(*fader_id) {
-                    fader.home(fixture_handler);
-                }
-
-                Ok(ActionRunResult::new())
-            }
-        }
-    }
-
-    fn run_rename_group(
-        &self,
-        preset_handler: &mut PresetHandler,
-        id: u32,
-        new_name: &str,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        preset_handler
-            .rename_group(id, new_name.to_owned())
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_rename_sequence(
-        &self,
-        preset_handler: &mut PresetHandler,
-        id: u32,
-        new_name: &str,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        preset_handler
-            .rename_sequence(id, new_name.to_owned())
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_rename_preset(
-        &self,
-        preset_handler: &mut PresetHandler,
-        id: FixturePresetId,
-        new_name: &str,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        preset_handler
-            .rename_preset(id, new_name.to_owned())
-            .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())
     }
@@ -653,134 +553,6 @@ impl Action {
         } else {
             Ok(ActionRunResult::Info(format!(
                 "Deleted {} macros",
-                id_to - id_from + 1
-            )))
-        }
-    }
-
-    pub fn run_delete_preset(
-        &self,
-        id_range: ValueOrRange<FixturePresetId>,
-        preset_handler: &mut PresetHandler,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        // TODO: what happens with data referring to this preset?
-
-        let (id_from, id_to) = id_range.into();
-        let count = preset_handler
-            .delete_preset_range(id_from, id_to)
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        if id_from == id_to {
-            Ok(ActionRunResult::new())
-        } else {
-            Ok(ActionRunResult::Info(format!("Deleted {} presets", count)))
-        }
-    }
-
-    pub fn run_delete_sequence(
-        &self,
-        (id_from, id_to): (u32, u32),
-        preset_handler: &mut PresetHandler,
-        updatable_handler: &mut UpdatableHandler,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        for id in id_from..=id_to {
-            if !updatable_handler.sequence_deleteable(id) {
-                return Err(ActionRunError::SequenceDeleteDependencies(id));
-            }
-        }
-
-        for id in id_from..=id_to {
-            preset_handler
-                .delete_sequence(id)
-                .map_err(ActionRunError::PresetHandlerError)?;
-        }
-
-        if id_from == id_to {
-            Ok(ActionRunResult::new())
-        } else {
-            Ok(ActionRunResult::Info(format!(
-                "Deleted {} sequences",
-                id_to - id_from + 1
-            )))
-        }
-    }
-
-    pub fn run_delete_executor(
-        &self,
-        (id_from, id_to): (u32, u32),
-        updatable_handler: &mut UpdatableHandler,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        for id in id_from..=id_to {
-            if updatable_handler
-                .executor(id)
-                .is_some_and(|exec| exec.is_started())
-            {
-                return Err(ActionRunError::ExecutorIsRunning(id));
-            }
-        }
-
-        for id in id_from..=id_to {
-            updatable_handler
-                .delete_executor(id)
-                .map_err(ActionRunError::UpdatableHandlerError)?;
-        }
-
-        if id_from == id_to {
-            Ok(ActionRunResult::new())
-        } else {
-            Ok(ActionRunResult::Info(format!(
-                "Deleted {} executors",
-                id_to - id_from + 1
-            )))
-        }
-    }
-
-    pub fn run_delete_fader(
-        &self,
-        (id_from, id_to): (u32, u32),
-        updatable_handler: &mut UpdatableHandler,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        for id in id_from..=id_to {
-            if updatable_handler
-                .fader(id)
-                .is_ok_and(|fader| fader.is_active())
-            {
-                return Err(ActionRunError::FaderIsActive(id));
-            }
-        }
-
-        for id in id_from..=id_to {
-            updatable_handler
-                .delete_fader(id)
-                .map_err(ActionRunError::UpdatableHandlerError)?;
-        }
-
-        if id_from == id_to {
-            Ok(ActionRunResult::new())
-        } else {
-            Ok(ActionRunResult::Info(format!(
-                "Deleted {} faders",
-                id_to - id_from + 1
-            )))
-        }
-    }
-
-    pub fn run_delete_group(
-        &self,
-        (id_from, id_to): (u32, u32),
-        preset_handler: &mut PresetHandler,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        for id in id_from..=id_to {
-            preset_handler
-                .delete_group(id)
-                .map_err(ActionRunError::PresetHandlerError)?;
-        }
-
-        if id_from == id_to {
-            Ok(ActionRunResult::new())
-        } else {
-            Ok(ActionRunResult::Info(format!(
-                "Deleted {} groups",
                 id_to - id_from + 1
             )))
         }

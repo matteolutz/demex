@@ -523,6 +523,27 @@ impl PresetHandler {
         Ok(())
     }
 
+    pub fn rename_sequence_cue(
+        &mut self,
+        sequence_id: u32,
+        cue_idx: CueIdx,
+        new_name: String,
+    ) -> Result<(), PresetHandlerError> {
+        let sequence = self
+            .sequences
+            .get_mut(&sequence_id)
+            .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?;
+
+        let cue = sequence
+            .cues_mut()
+            .iter_mut()
+            .find(|c| c.cue_idx() == cue_idx)
+            .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_idx))?;
+
+        *cue.name_mut() = new_name;
+        Ok(())
+    }
+
     pub fn get_sequence(&self, id: u32) -> Result<&Sequence, PresetHandlerError> {
         self.sequences
             .get(&id)

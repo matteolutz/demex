@@ -6,7 +6,9 @@ use crate::{
 
 use super::{error::ActionRunError, result::ActionRunResult};
 
+pub mod delete_function;
 pub mod record_function;
+pub mod rename_function;
 pub mod set_function;
 
 pub trait ActionFunction {

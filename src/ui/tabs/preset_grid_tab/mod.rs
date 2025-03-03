@@ -200,10 +200,16 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     PresetGridButtonConfig::Empty { id }
                 };
 
-                let response =
-                    preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());
+                /*let response =
+                preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());*/
+                let (response, quick_action) =
+                    PresetGridButton::new(config, PresetGridButtonDecoration::default(), None)
+                        .show(ui);
 
-                if response.clicked() {
+                if response.clicked()
+                    || quick_action
+                        .is_some_and(|action| action == PresetGridButtonQuickMenuActions::Default)
+                {
                     if let Ok(m) = m {
                         context.macro_execution_queue.push(m.action().clone());
                     } else {
@@ -212,6 +218,28 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                             Token::KeywordMacro,
                             Token::Integer(id),
                         ]);
+                    }
+                }
+
+                if let Some(quick_action) = quick_action {
+                    match quick_action {
+                        PresetGridButtonQuickMenuActions::Insert => {
+                            if m.is_ok() {
+                                context
+                                    .command
+                                    .extend_from_slice(&[Token::KeywordMacro, Token::Integer(id)]);
+                            } else {
+                                context.command.extend_from_slice(&[
+                                    Token::KeywordCreate,
+                                    Token::KeywordMacro,
+                                    Token::Integer(id),
+                                ]);
+                            }
+                        }
+                        PresetGridButtonQuickMenuActions::Edit => {
+                            todo!()
+                        }
+                        _ => {}
                     }
                 }
             }
