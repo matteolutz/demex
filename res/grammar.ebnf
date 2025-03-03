@@ -57,9 +57,12 @@ set_function                = channel_type value_single
 create_fader_function       = "for" (fixture_selector)
                                     | "sequence" integer "with" fixture_selector
 
+object_range                = object ["thru" object]
+
 object                      = homeable_object
                             | specific_preset
                             | "sequence" integer ["cue" cue_idx]
+                            | "macro" integer
 
 homeable_object             = fixture_selector
                             | "executor" integer

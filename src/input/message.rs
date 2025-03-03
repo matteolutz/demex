@@ -3,4 +3,5 @@ pub enum DemexInputDeviceMessage {
     ButtonReleased(u32),
 
     FaderValueChanged(u32, f32),
+    FaderValuesChanged(Vec<(u32, f32)>),
 }

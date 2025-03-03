@@ -1,4 +1,7 @@
-use button::{preset_grid_button_ui, PresetGridButtonConfig, PresetGridButtonDecoration};
+use button::{
+    preset_grid_button_ui, PresetGridButton, PresetGridButtonConfig, PresetGridButtonDecoration,
+    PresetGridButtonQuickMenuActions,
+};
 use itertools::Itertools;
 use row::preset_grid_row_ui;
 
@@ -46,43 +49,47 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                 }
                             },
                         ),
+                        display_color: None,
                     }
                 } else {
                     PresetGridButtonConfig::Empty { id }
                 };
 
-                let response =
-                    preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());
+                let (response, quick_action) =
+                    PresetGridButton::new(config, PresetGridButtonDecoration::default(), None)
+                        .show(ui);
 
-                if response.clicked() {
-                    if g.is_ok() {
-                        context
-                            .command
-                            .extend_from_slice(&[Token::KeywordGroup, Token::Integer(id)]);
-                    } else {
-                        context.command.extend_from_slice(&[
-                            Token::KeywordRecord,
-                            Token::KeywordGroup,
-                            Token::Integer(id),
-                        ]);
-                    }
-                }
-
-                if response.secondary_clicked() {
-                    if let Ok(g) = g {
-                        context
-                            .windows
-                            .push(DemexWindow::Edit(DemexEditWindow::EditGroup(g.id())));
-                    }
-                }
-
-                if response.double_clicked() {
-                    context.command.clear();
-                    context.command_input.clear();
-                    context.is_command_input_empty = true;
-
+                if response.clicked()
+                    || quick_action.is_some_and(|a| a == PresetGridButtonQuickMenuActions::Default)
+                {
                     if let Ok(g) = g {
                         context.global_fixture_select = Some(g.fixture_selection().clone());
+                    }
+                }
+
+                if let Some(quick_action) = quick_action {
+                    match quick_action {
+                        PresetGridButtonQuickMenuActions::Insert => {
+                            if g.is_ok() {
+                                context
+                                    .command
+                                    .extend_from_slice(&[Token::KeywordGroup, Token::Integer(id)]);
+                            } else {
+                                context.command.extend_from_slice(&[
+                                    Token::KeywordRecord,
+                                    Token::KeywordGroup,
+                                    Token::Integer(id),
+                                ]);
+                            }
+                        }
+                        PresetGridButtonQuickMenuActions::Edit => {
+                            if let Ok(g) = g {
+                                context.window_handler.add_window(DemexWindow::Edit(
+                                    DemexEditWindow::EditGroup(g.id()),
+                                ));
+                            }
+                        }
+                        _ => {}
                     }
                 }
             }
@@ -114,42 +121,62 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                     .as_ref()
                                     .map(|selected| p.get_target(selected))
                                     .map(|target| target.get_color()),
+                                display_color: p.display_color(),
                             }
                         } else {
                             PresetGridButtonConfig::Empty { id }
                         };
 
-                        let response = preset_grid_button_ui(
+                        /*let response = preset_grid_button_ui(
                             ui,
                             config,
                             PresetGridButtonDecoration::default(),
-                        );
+                        );*/
+                        let (response, quick_action) = PresetGridButton::new(
+                            config,
+                            PresetGridButtonDecoration::default(),
+                            None,
+                        )
+                        .show(ui);
 
-                        if response.clicked() {
-                            if p.is_ok() {
-                                context.command.extend_from_slice(&[
-                                    Token::KeywordPreset,
-                                    Token::FloatingPoint(0.0, (*feature_group_id, id)),
-                                ]);
-                            } else {
-                                context.command.extend_from_slice(&[
-                                    Token::KeywordRecord,
-                                    Token::KeywordPreset,
-                                    Token::FloatingPoint(0.0, (*feature_group_id, id)),
-                                ]);
+                        if response.clicked()
+                            || quick_action
+                                .is_some_and(|a| a == PresetGridButtonQuickMenuActions::Default)
+                        {
+                            if let (Ok(p), Some(selected_fixtures)) =
+                                (p.as_ref(), selected_fixtures)
+                            {
+                                for fixture_id in selected_fixtures {
+                                    p.apply(fixture_handler.fixture(*fixture_id).unwrap())
+                                        .unwrap();
+                                }
                             }
                         }
 
-                        if p.is_ok() && response.double_clicked() && selected_fixtures.is_some() {
-                            context.command.clear();
-                            context.command_input.clear();
-                            context.is_command_input_empty = true;
-
-                            for fixture_id in selected_fixtures.unwrap() {
-                                p.as_ref()
-                                    .unwrap()
-                                    .apply(fixture_handler.fixture(*fixture_id).unwrap())
-                                    .unwrap();
+                        if let Some(quick_action) = quick_action {
+                            match quick_action {
+                                PresetGridButtonQuickMenuActions::Insert => {
+                                    if p.is_ok() {
+                                        context.command.extend_from_slice(&[
+                                            Token::KeywordPreset,
+                                            Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                        ]);
+                                    } else {
+                                        context.command.extend_from_slice(&[
+                                            Token::KeywordRecord,
+                                            Token::KeywordPreset,
+                                            Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                        ]);
+                                    }
+                                }
+                                PresetGridButtonQuickMenuActions::Edit => {
+                                    if let Ok(p) = p {
+                                        context.window_handler.add_window(DemexWindow::Edit(
+                                            DemexEditWindow::EditPreset(p.id()),
+                                        ));
+                                    }
+                                }
+                                _ => {}
                             }
                         }
                     }
@@ -167,15 +194,22 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         id: m.id(),
                         name: m.name().to_owned(),
                         top_bar_color: None,
+                        display_color: None,
                     }
                 } else {
                     PresetGridButtonConfig::Empty { id }
                 };
 
-                let response =
-                    preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());
+                /*let response =
+                preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());*/
+                let (response, quick_action) =
+                    PresetGridButton::new(config, PresetGridButtonDecoration::default(), None)
+                        .show(ui);
 
-                if response.clicked() {
+                if response.clicked()
+                    || quick_action
+                        .is_some_and(|action| action == PresetGridButtonQuickMenuActions::Default)
+                {
                     if let Ok(m) = m {
                         context.macro_execution_queue.push(m.action().clone());
                     } else {
@@ -184,6 +218,28 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                             Token::KeywordMacro,
                             Token::Integer(id),
                         ]);
+                    }
+                }
+
+                if let Some(quick_action) = quick_action {
+                    match quick_action {
+                        PresetGridButtonQuickMenuActions::Insert => {
+                            if m.is_ok() {
+                                context
+                                    .command
+                                    .extend_from_slice(&[Token::KeywordMacro, Token::Integer(id)]);
+                            } else {
+                                context.command.extend_from_slice(&[
+                                    Token::KeywordCreate,
+                                    Token::KeywordMacro,
+                                    Token::Integer(id),
+                                ]);
+                            }
+                        }
+                        PresetGridButtonQuickMenuActions::Edit => {
+                            todo!()
+                        }
+                        _ => {}
                     }
                 }
             }
@@ -199,6 +255,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         id: cs.id(),
                         name: cs.name().to_owned(),
                         top_bar_color: None,
+                        display_color: None,
                     }
                 } else {
                     PresetGridButtonConfig::Empty { id }
@@ -231,6 +288,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         } else {
                             None
                         },
+                        display_color: None,
                     };
 
                     let decoration = match executor.config() {
@@ -259,9 +317,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     )
                 };
 
-                let response = preset_grid_button_ui(ui, config, decoration);
+                // let response = preset_grid_button_ui(ui, config, decoration);
+                let (response, quick_action) = PresetGridButton::new(
+                    config,
+                    decoration,
+                    Some(vec![PresetGridButtonQuickMenuActions::Custom("Stop")]),
+                )
+                .show(ui);
 
-                if response.clicked() {
+                if response.clicked()
+                    || quick_action.is_some_and(|a| a == PresetGridButtonQuickMenuActions::Default)
+                {
                     if executor_exists {
                         updatable_handler
                             .start_or_next_executor(id, &mut fixture_handler, &preset_handler)
@@ -275,318 +341,44 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     }
                 }
 
-                if response.secondary_clicked() && executor_exists {
-                    if updatable_handler.executor(id).unwrap().is_started() {
-                        updatable_handler
-                            .stop_executor(id, &mut fixture_handler)
-                            .unwrap();
-                    } else {
-                        context
-                            .command
-                            .extend_from_slice(&[Token::KeywordExecutor, Token::Integer(id)]);
+                if let Some(quick_action) = quick_action {
+                    match quick_action {
+                        PresetGridButtonQuickMenuActions::Insert => {
+                            if executor_exists {
+                                context.command.extend_from_slice(&[
+                                    Token::KeywordExecutor,
+                                    Token::Integer(id),
+                                ]);
+                            } else {
+                                context.command.extend_from_slice(&[
+                                    Token::KeywordCreate,
+                                    Token::KeywordExecutor,
+                                    Token::Integer(id),
+                                ]);
+                            }
+                        }
+                        PresetGridButtonQuickMenuActions::Edit => {
+                            if executor_exists {
+                                context.window_handler.add_window(DemexWindow::Edit(
+                                    DemexEditWindow::EditExecutor(id),
+                                ));
+                            }
+                        }
+                        _ => {}
                     }
+                }
+
+                if (response.secondary_clicked()
+                    || quick_action
+                        .is_some_and(|a| a == PresetGridButtonQuickMenuActions::Custom("Stop")))
+                    && executor_exists
+                    && updatable_handler.executor(id).unwrap().is_started()
+                {
+                    updatable_handler
+                        .stop_executor(id, &mut fixture_handler)
+                        .unwrap();
                 }
             }
         });
-
-        /*
-        eframe::egui::Grid::new("preset_grid")
-            .spacing((5.0, 5.0))
-            .show(ui, |ui| {
-                // Groups
-                ui.add_sized(
-                    [80.0, 80.0],
-                    eframe::egui::Button::new("Groups")
-                        .stroke(eframe::egui::Stroke::new(1.0, eframe::egui::Color32::RED))
-                        .wrap()
-                        .sense(eframe::egui::Sense {
-                            click: false,
-                            drag: false,
-                            focusable: false,
-                        }),
-                );
-
-                for (_, group) in preset_handler
-                    .groups()
-                    .iter()
-                    .sorted_by(|a, b| a.0.cmp(b.0))
-                {
-                    let group_button =
-                        ui.add_sized([80.0, 80.0], eframe::egui::Button::new(group.name()).wrap());
-                    if group_button.clicked() {
-                        context
-                            .command
-                            .extend_from_slice(&[Token::KeywordGroup, Token::Integer(group.id())])
-                    }
-
-                    if group_button.double_clicked() {
-                        context.command.clear();
-                        context.command_input.clear();
-                        context.is_command_input_empty = true;
-
-                        context.global_fixture_select = Some(FixtureSelector::Atomic(
-                            AtomicFixtureSelector::FixtureGroup(group.id()),
-                        ))
-                    }
-                }
-
-                let add_group_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
-                if add_group_button.clicked() {
-                    context.command.extend_from_slice(&[
-                        Token::KeywordRecord,
-                        Token::KeywordGroup,
-                        Token::Integer(preset_handler.groups().keys().max().unwrap_or(&0) + 1),
-                    ])
-                }
-
-                ui.end_row();
-
-                // Feature group presets
-                for (feature_group_id, feature_group) in preset_handler
-                    .feature_groups()
-                    .iter()
-                    .sorted_by_key(|(id, _)| *id)
-                {
-                    ui.add_sized(
-                        [80.0, 80.0],
-                        eframe::egui::Button::new(feature_group.name())
-                            .stroke(eframe::egui::Stroke::new(1.0, eframe::egui::Color32::GREEN))
-                            .wrap()
-                            .sense(eframe::egui::Sense {
-                                click: false, drag: false, focusable: false,
-                            }),
-                    );
-
-                    for preset in preset_handler
-                        .presets_for_feature_group(*feature_group_id)
-                        .iter()
-                        .sorted_by_key(|p| p.id())
-                    {
-                        let mut preset_button_text = egui::text::LayoutJob::single_section(
-                            preset.name().to_owned(),
-                            egui::TextFormat::simple(
-                                egui::FontId::proportional(12.0),
-                                egui::Color32::PLACEHOLDER,
-                            ),
-                        );
-
-                        if let Some(selected_fixtures) = &selected_fixtures {
-                            let target_mode = preset.get_target(selected_fixtures);
-
-                            preset_button_text.append(
-                                format!("\n{}", target_mode.get_short_name()).as_str(),
-                                0.0,
-                                egui::TextFormat::simple(
-                                    egui::FontId::monospace(8.0),
-                                    target_mode.get_color(),
-                                ),
-                            );
-                        }
-
-                        let preset_button = ui.add_sized(
-                            [80.0, 80.0],
-                            eframe::egui::Button::new(preset_button_text).wrap(),
-                        );
-
-                        if preset_button.clicked() {
-                            context.command.extend_from_slice(&[
-                                Token::KeywordPreset,
-                                Token::Integer(preset.id()),
-                            ])
-                        }
-
-                        if preset_button.double_clicked() && selected_fixtures.is_some() {
-                            context.command.clear();
-                            context.command_input.clear();
-                            context.is_command_input_empty = true;
-
-                            for fixture_id in selected_fixtures.as_ref().unwrap() {
-                                preset
-                                    .apply(fixture_handler.fixture(*fixture_id).unwrap())
-                                    .unwrap();
-                            }
-                        }
-                    }
-
-                    let record_preset_button =
-                        ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
-                    if record_preset_button.clicked() {
-                        context.command.extend_from_slice(&[
-                            Token::KeywordRecord,
-                            Token::KeywordPreset,
-                            Token::KeywordFeature,
-                            Token::Integer(*feature_group_id),
-                            Token::KeywordNext,
-                        ]);
-                    }
-
-                    ui.end_row();
-                }
-
-                // Macros
-                ui.add_sized(
-                    [80.0, 80.0],
-                    eframe::egui::Button::new("Macros")
-                        .stroke(eframe::egui::Stroke::new(
-                            1.0,
-                            eframe::egui::Color32::YELLOW,
-                        ))
-                        .wrap()
-                        .sense(eframe::egui::Sense {
-                            click: false,
-                            drag: false,
-                            focusable: false,
-                        }),
-                );
-
-                for (_, preset) in preset_handler
-                    .macros()
-                    .clone() // i hate myself for doing this
-                    .iter()
-                    .sorted_by(|a, b| a.0.cmp(b.0))
-                {
-                    let preset_button = ui.add_sized(
-                        [80.0, 80.0],
-                        eframe::egui::Button::new(preset.name()).wrap(),
-                    );
-                    if preset_button.clicked() {
-                        context.macro_execution_queue.push(preset.action().clone());
-                    }
-                }
-
-                let add_macro_button = ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
-                if add_macro_button.clicked() {
-                    context.command.extend_from_slice(&[
-                        Token::KeywordCreate,
-                        Token::KeywordMacro,
-                        Token::KeywordNext,
-                    ])
-                }
-
-                ui.end_row();
-
-                // Command Slices
-                ui.add_sized(
-                    [80.0, 80.0],
-                    eframe::egui::Button::new("Command Slices")
-                        .stroke(eframe::egui::Stroke::new(
-                            1.0,
-                            eframe::egui::Color32::LIGHT_YELLOW,
-                        ))
-                        .wrap()
-                        .sense(eframe::egui::Sense {
-                            click: false,
-                            drag: false,
-                            focusable: false,
-                        }),
-                );
-
-                for (_, preset) in preset_handler
-                    .command_slices()
-                    .iter()
-                    .sorted_by(|a, b| a.0.cmp(b.0))
-                {
-                    let preset_button = ui.add_sized(
-                        [80.0, 80.0],
-                        eframe::egui::Button::new(preset.name()).wrap(),
-                    );
-                    if preset_button.clicked() {
-                        context.command.extend_from_slice(preset.command());
-                    }
-                }
-
-                let add_command_slice_button =
-                    ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
-                if add_command_slice_button.clicked() {
-                    // TODO: add command slices command
-                }
-
-                ui.end_row();
-
-                // Executors
-                ui.add_sized(
-                    [80.0, 80.0],
-                    eframe::egui::Button::new("Executors")
-                        .stroke(eframe::egui::Stroke::new(
-                            1.0,
-                            eframe::egui::Color32::LIGHT_GREEN,
-                        ))
-                        .wrap()
-                        .sense(eframe::egui::Sense {
-                            click: false,
-                            drag: false,
-                            focusable: false,
-                        }),
-                );
-
-                for (preset_idx, preset_id) in updatable_handler
-                    .executor_keys()
-                    .iter()
-                    .sorted_by(|a, b| a.cmp(b))
-                    .enumerate()
-                {
-                    let is_started = updatable_handler.executor(*preset_id).unwrap().is_started();
-
-                    let preset_button = ui.add_sized(
-                        [80.0, 80.0],
-                        eframe::egui::Button::new(
-                            updatable_handler
-                                .executor(*preset_id)
-                                .unwrap()
-                                .to_string(&preset_handler),
-                        )
-                        .wrap()
-                        .stroke(if is_started {
-                            eframe::egui::Stroke::new(1.0, eframe::egui::Color32::RED)
-                        } else {
-                            eframe::egui::Stroke::NONE
-                        }),
-                    );
-
-                    if preset_button.clicked()
-                        || (preset_idx < 10
-                            && ui.input(|reader| {
-                                (reader.modifiers.ctrl || reader.modifiers.mac_cmd)
-                                    && reader.key_pressed(NUM_KEYS[preset_idx])
-                            }))
-                    {
-                        if is_started {
-                            updatable_handler
-                                .executor_mut(*preset_id)
-                                .unwrap()
-                                .next_cue(&preset_handler);
-                        } else {
-                            updatable_handler
-                                .start_executor(*preset_id, &mut fixture_handler)
-                                .unwrap();
-                        }
-                    }
-
-                    if preset_button.secondary_clicked() {
-                        if updatable_handler.executor(*preset_id).unwrap().is_started() {
-                            updatable_handler
-                                .stop_executor(*preset_id, &mut fixture_handler)
-                                .unwrap();
-                        } else {
-                            context.command.extend_from_slice(&[
-                                Token::KeywordExecutor,
-                                Token::Integer(*preset_id),
-                            ])
-                        }
-                    }
-                }
-
-                let add_executor_button =
-                    ui.add_sized([80.0, 80.0], eframe::egui::Button::new("+"));
-                if add_executor_button.clicked() {
-                    context.command.extend_from_slice(&[
-                        Token::KeywordCreate,
-                        Token::KeywordExecutor,
-                        Token::KeywordNext,
-                    ])
-                }
-
-                ui.end_row();
-            });*/
     });
 }

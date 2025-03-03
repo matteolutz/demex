@@ -1,5 +1,4 @@
 use egui_probe::EguiProbe;
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 
@@ -15,27 +14,39 @@ use crate::{
 };
 
 use super::{
-    feature_config::FixtureFeatureConfig, feature_group::DefaultFeatureGroup,
-    feature_state::FixtureFeatureDisplayState, feature_value::FixtureFeatureValue, IntoFeatureType,
+    feature_config::FixtureFeatureConfig, feature_state::FixtureFeatureDisplayState,
+    feature_value::FixtureFeatureValue, IntoFeatureType,
 };
 
-#[derive(
-    Debug, Hash, PartialEq, Eq, Copy, Clone, Serialize, Deserialize, EnumIter, EguiProbe, Default,
-)]
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone, Serialize, Deserialize, EnumIter, EguiProbe)]
 pub enum FixtureFeatureType {
-    #[default]
-    Intensity,
-
-    Zoom,
-    Focus,
-
-    Shutter,
+    SingleValue { channel_type: FixtureChannelType },
 
     ColorRGB,
-    ColorMacro,
+    ColorWheel,
+
+    GoboWheel,
+
     PositionPanTilt,
 
     ToggleFlags,
+}
+
+impl Default for FixtureFeatureType {
+    fn default() -> Self {
+        Self::SingleValue {
+            channel_type: FixtureChannelType::Intensity,
+        }
+    }
+}
+
+impl std::fmt::Display for FixtureFeatureType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SingleValue { channel_type } => write!(f, "{:?}", channel_type),
+            _ => write!(f, "{:?}", self),
+        }
+    }
 }
 
 // region private helpers
@@ -113,29 +124,23 @@ impl FixtureFeatureType {
         self._get_channel_types(config)
     }
 
-    fn channel_and_fine(
-        channel_type: FixtureChannelType,
-        optional_fine: FixtureChannelType,
-        is_fine: bool,
-    ) -> Vec<FixtureChannelType> {
-        if is_fine {
-            vec![channel_type, optional_fine]
-        } else {
-            vec![channel_type]
-        }
-    }
-
     fn _get_channel_types(
         &self,
         config: &FixtureFeatureConfig,
     ) -> Result<Vec<FixtureChannelType>, FixtureChannelError2> {
         match (self, config) {
-            (Self::Intensity, FixtureFeatureConfig::Intensity { is_fine }) => {
-                Ok(Self::channel_and_fine(
-                    FixtureChannelType::Intensity,
-                    FixtureChannelType::IntensityFine,
-                    *is_fine,
-                ))
+            (
+                Self::SingleValue { channel_type },
+                FixtureFeatureConfig::SingleValue { is_fine, .. },
+            ) => {
+                if *is_fine {
+                    channel_type
+                        .get_fine()
+                        .ok_or(FixtureChannelError2::FineChannelNotFound(*channel_type))
+                        .map(|fine_channel_type| vec![*channel_type, fine_channel_type])
+                } else {
+                    Ok(vec![*channel_type])
+                }
             }
             (
                 Self::PositionPanTilt,
@@ -170,20 +175,12 @@ impl FixtureFeatureType {
 
                 Ok(channels)
             }
-            (Self::ColorMacro, FixtureFeatureConfig::ColorMacro { .. }) => {
+            (Self::ColorWheel, FixtureFeatureConfig::ColorWheel { .. }) => {
                 Ok(vec![FixtureChannelType::ColorMacro])
             }
-            (Self::Zoom, FixtureFeatureConfig::Zoom { is_fine }) => Ok(Self::channel_and_fine(
-                FixtureChannelType::Zoom,
-                FixtureChannelType::ZoomFine,
-                *is_fine,
-            )),
-            (Self::Focus, FixtureFeatureConfig::Focus { is_fine }) => Ok(Self::channel_and_fine(
-                FixtureChannelType::Focus,
-                FixtureChannelType::FocusFine,
-                *is_fine,
-            )),
-            (Self::Shutter, FixtureFeatureConfig::Shutter) => Ok(vec![FixtureChannelType::Shutter]),
+            (Self::GoboWheel, FixtureFeatureConfig::GoboWheel { .. }) => {
+                Ok(vec![FixtureChannelType::Gobo])
+            }
             (Self::ToggleFlags, FixtureFeatureConfig::ToggleFlags { toggle_flags }) => {
                 Ok(toggle_flags
                     .iter()
@@ -287,38 +284,30 @@ impl FixtureFeatureType {
         let feature_config = self.find_feature_config(feature_configs)?;
 
         match (self, feature_config) {
-            (Self::Intensity, FixtureFeatureConfig::Intensity { is_fine }) => {
-                Self::find_coarse_and_optional_fine(
-                    channels,
-                    FixtureChannelType::Intensity,
-                    FixtureChannelType::IntensityFine,
-                    *is_fine,
-                    fixture_id,
-                    preset_handler,
-                )
-                .map(|intensity| FixtureFeatureValue::Intensity { intensity })
-            }
-            (Self::Zoom, FixtureFeatureConfig::Zoom { is_fine }) => {
-                Self::find_coarse_and_optional_fine(
-                    channels,
-                    FixtureChannelType::Zoom,
-                    FixtureChannelType::ZoomFine,
-                    *is_fine,
-                    fixture_id,
-                    preset_handler,
-                )
-                .map(|zoom| FixtureFeatureValue::Zoom { zoom })
-            }
-            (Self::Focus, FixtureFeatureConfig::Focus { is_fine }) => {
-                Self::find_coarse_and_optional_fine(
-                    channels,
-                    FixtureChannelType::Focus,
-                    FixtureChannelType::FocusFine,
-                    *is_fine,
-                    fixture_id,
-                    preset_handler,
-                )
-                .map(|focus| FixtureFeatureValue::Focus { focus })
+            (
+                Self::SingleValue { channel_type },
+                FixtureFeatureConfig::SingleValue { is_fine, .. },
+            ) => {
+                let value = if *is_fine {
+                    let fine_channel_type = channel_type
+                        .get_fine()
+                        .ok_or(FixtureChannelError2::FineChannelNotFound(*channel_type))?;
+                    Self::find_coarse_and_optional_fine(
+                        channels,
+                        *channel_type,
+                        fine_channel_type,
+                        true,
+                        fixture_id,
+                        preset_handler,
+                    )?
+                } else {
+                    Self::find_coarse(channels, *channel_type, fixture_id, preset_handler)?
+                };
+
+                Ok(FixtureFeatureValue::SingleValue {
+                    channel_type: *channel_type,
+                    value,
+                })
             }
             (
                 Self::PositionPanTilt,
@@ -388,7 +377,7 @@ impl FixtureFeatureType {
 
                 Ok(FixtureFeatureValue::ColorRGB { r, g, b })
             }
-            (Self::ColorMacro, FixtureFeatureConfig::ColorMacro { macros }) => {
+            (Self::ColorWheel, FixtureFeatureConfig::ColorWheel { wheel_config }) => {
                 let color_macro_value = Self::find_channel_value(
                     channels,
                     FixtureChannelType::ColorMacro,
@@ -396,20 +385,27 @@ impl FixtureFeatureType {
                     preset_handler,
                 )?;
 
-                let (macro_idx, _) = macros
-                    .iter()
-                    .find_position(|(macro_value, _)| *macro_value == color_macro_value)
+                let wheel_value = wheel_config
+                    .from_value(color_macro_value)
                     .ok_or(FixtureChannelError2::InvalidFeatureValue(*self))?;
 
-                Ok(FixtureFeatureValue::ColorMacro { macro_idx })
+                Ok(FixtureFeatureValue::ColorWheel { wheel_value })
             }
-            (Self::Shutter, FixtureFeatureConfig::Shutter) => Self::find_coarse(
-                channels,
-                FixtureChannelType::Shutter,
-                fixture_id,
-                preset_handler,
-            )
-            .map(|shutter| FixtureFeatureValue::Shutter { shutter }),
+
+            (Self::GoboWheel, FixtureFeatureConfig::GoboWheel { wheel_config }) => {
+                let gobo_macro_value = Self::find_channel_value(
+                    channels,
+                    FixtureChannelType::Gobo,
+                    fixture_id,
+                    preset_handler,
+                )?;
+
+                let wheel_value = wheel_config
+                    .from_value(gobo_macro_value)
+                    .ok_or(FixtureChannelError2::InvalidFeatureValue(*self))?;
+
+                Ok(FixtureFeatureValue::GoboWheel { wheel_value })
+            }
             (Self::ToggleFlags, FixtureFeatureConfig::ToggleFlags { toggle_flags }) => {
                 let mut set_flags: Vec<Option<String>> = Vec::new();
                 for (idx, toggle_flags) in toggle_flags.iter().enumerate() {
@@ -431,24 +427,6 @@ impl FixtureFeatureType {
                 Ok(FixtureFeatureValue::ToggleFlags { set_flags })
             }
             (_, _) => Err(FixtureChannelError2::FeatureNotFound(*self)),
-        }
-    }
-}
-
-impl FixtureFeatureType {
-    pub fn default_feature_group(&self) -> DefaultFeatureGroup {
-        match self {
-            Self::Intensity => DefaultFeatureGroup::Intensity,
-
-            Self::ColorMacro | Self::ColorRGB => DefaultFeatureGroup::Color,
-
-            Self::PositionPanTilt => DefaultFeatureGroup::Position,
-
-            Self::Zoom | Self::Focus => DefaultFeatureGroup::Focus,
-
-            Self::Shutter => DefaultFeatureGroup::Beam,
-
-            Self::ToggleFlags => DefaultFeatureGroup::Control,
         }
     }
 }

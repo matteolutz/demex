@@ -7,7 +7,7 @@ use crate::{
             color::color_gel::ColorGelTrait,
             feature::{
                 feature_config::FixtureFeatureConfig, feature_type::FixtureFeatureType,
-                feature_value::FixtureFeatureValue,
+                feature_value::FixtureFeatureValue, wheel::WheelFeatureValue,
             },
         },
         handler::FixtureHandler,
@@ -46,13 +46,13 @@ pub fn color_macro_ui(
             return;
         }
 
-        if let Some(FixtureFeatureConfig::ColorMacro { macros }) = fixture_handler
+        if let Some(FixtureFeatureConfig::ColorWheel { wheel_config }) = fixture_handler
             .fixture_immut(selected_fixtures[0])
             .unwrap()
-            .feature_config_by_type(FixtureFeatureType::ColorMacro)
+            .feature_config_by_type(FixtureFeatureType::ColorWheel)
             .cloned()
         {
-            for (macro_idx, (_, macro_color)) in macros.iter().enumerate() {
+            for (macro_idx, (_, macro_color)) in wheel_config.macros().enumerate() {
                 ui.scope(|ui| {
                     let macro_color_rgb = macro_color.get_rgb();
                     let egui_color = egui::Color32::from_rgb(
@@ -73,8 +73,8 @@ pub fn color_macro_ui(
                                 fixture_handler
                                     .fixture(*fixture_id)
                                     .unwrap()
-                                    .set_feature_value(FixtureFeatureValue::ColorMacro {
-                                        macro_idx,
+                                    .set_feature_value(FixtureFeatureValue::ColorWheel {
+                                        wheel_value: WheelFeatureValue::Macro(macro_idx),
                                     })
                                     .unwrap();
                             }

@@ -151,6 +151,14 @@ impl UpdatableHandler {
         Ok(())
     }
 
+    pub fn rename_executor(&mut self, id: u32, name: String) -> Result<(), UpdatableHandlerError> {
+        *self
+            .executor_mut(id)
+            .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?
+            .name_mut() = name;
+        Ok(())
+    }
+
     pub fn executors(&self) -> &HashMap<u32, Executor> {
         &self.executors
     }
@@ -279,5 +287,10 @@ impl UpdatableHandler {
 
     pub fn next_fader_id(&self) -> u32 {
         self.faders.keys().max().unwrap_or(&0) + 1
+    }
+
+    pub fn rename_fader(&mut self, id: u32, name: String) -> Result<(), UpdatableHandlerError> {
+        *self.fader_mut(id)?.name_mut() = name;
+        Ok(())
     }
 }

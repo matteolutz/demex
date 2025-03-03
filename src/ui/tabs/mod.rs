@@ -50,7 +50,7 @@ impl std::fmt::Display for DemexTab {
 impl DemexTab {
     pub fn ui(&self, ui: &mut Ui, context: &mut DemexUiContext) {
         match self {
-            DemexTab::LayoutView => layout_view_tab::ui(ui, context),
+            DemexTab::LayoutView => layout_view_tab::LayoutViewComponent::new(context).show(ui),
             DemexTab::FixtureList => fixture_list_tab::ui(ui, context),
             DemexTab::PresetGrid => preset_grid_tab::ui(ui, context),
             DemexTab::FixtureControls => fixture_controls_tab::ui(ui, context),
@@ -73,7 +73,7 @@ pub struct DemexTabViewer<'a> {
     detached_tabs: &'a mut HashSet<DemexTab>,
 }
 
-impl<'a> TabViewer for DemexTabViewer<'a> {
+impl TabViewer for DemexTabViewer<'_> {
     type Tab = DemexTab;
 
     fn title(&mut self, tab: &mut Self::Tab) -> WidgetText {

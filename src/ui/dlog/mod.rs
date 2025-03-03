@@ -1,5 +1,3 @@
-use std::fmt;
-
 use dialog::DemexGlobalDialogEntry;
 
 use crate::{
@@ -10,6 +8,7 @@ use crate::{
 pub mod dialog;
 
 pub enum DemexLogEntryType {
+    Info(String),
     DialogEntry(DemexGlobalDialogEntry),
     CommandEntry(Vec<Token>),
     CommandFailedEntry(String),
@@ -18,9 +17,10 @@ pub enum DemexLogEntryType {
     Error(String),
 }
 
-impl fmt::Display for DemexLogEntryType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for DemexLogEntryType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            DemexLogEntryType::Info(info) => write!(f, "[INFO]: {}", info),
             DemexLogEntryType::DialogEntry(entry) => write!(f, "[DLG]: {}", entry),
             DemexLogEntryType::CommandEntry(tokens) => {
                 write!(f, "[CMD]: ")?;
@@ -64,6 +64,7 @@ impl DemexLogEntry {
 
     pub fn color(&self) -> egui::Color32 {
         match &self.entry_type {
+            DemexLogEntryType::Info(_) => egui::Color32::DARK_GREEN,
             DemexLogEntryType::DialogEntry(_) => egui::Color32::DARK_GRAY,
             DemexLogEntryType::CommandEntry(_) => egui::Color32::LIGHT_BLUE,
             DemexLogEntryType::CommandFailedEntry(_) => egui::Color32::LIGHT_RED,
@@ -74,8 +75,8 @@ impl DemexLogEntry {
     }
 }
 
-impl fmt::Display for DemexLogEntry {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for DemexLogEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[{}] {}", self.time.format("%H:%M:%S"), self.entry_type)
     }
 }

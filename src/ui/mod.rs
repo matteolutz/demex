@@ -1,13 +1,17 @@
-use std::{collections::HashSet, path::PathBuf, sync::Arc, thread, time};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+    sync::Arc,
+    thread, time,
+};
 
 use command::ui_command_input;
-use constants::VERSION_STR;
 use context::{DemexUiContext, SaveShowFn};
+use dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use egui::IconData;
-use log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use parking_lot::RwLock;
-use tabs::{layout_view_tab::LayoutViewContext, DemexTab, DemexTabs};
-use window::DemexWindow;
+use tabs::{DemexTab, DemexTabs};
+use window::{DemexWindow, DemexWindowHandler};
 
 #[allow(unused_imports)]
 use crate::{
@@ -21,17 +25,17 @@ use crate::{
         nodes::{action::Action, fixture_selector::FixtureSelectorContext},
         Parser2,
     },
-    utils::thread::DemexThreadStatsHandler,
+    utils::{thread::DemexThreadStatsHandler, version::VERSION_STR},
 };
 
 pub mod command;
 pub mod components;
 pub mod constants;
 pub mod context;
+pub mod dlog;
 pub mod error;
 pub mod graphics;
 pub mod iimpl;
-pub mod log;
 pub mod tabs;
 pub mod traits;
 pub mod utils;
@@ -39,11 +43,20 @@ pub mod window;
 
 const UI_THREAD_NAME: &str = "demex-ui";
 
+#[derive(Default)]
+pub struct DetachedTabConfig {
+    is_fullscreen: bool,
+}
+
 pub struct DemexUiApp {
     context: DemexUiContext,
 
     tabs: DemexTabs,
+
     detached_tabs: HashSet<DemexTab>,
+    detached_tabs_config: HashMap<DemexTab, DetachedTabConfig>,
+
+    command_auto_focus: bool,
 
     last_update: std::time::Instant,
 
@@ -81,14 +94,16 @@ impl DemexUiApp {
                 global_fixture_select: None,
 
                 command: Vec::new(),
-                layout_view_context: LayoutViewContext::default(),
                 macro_execution_queue: Vec::new(),
 
                 show_file,
                 save_show,
 
-                logs: Vec::new(),
-                windows: Vec::new(),
+                logs: vec![DemexLogEntry::new(DemexLogEntryType::Info(format!(
+                    "demex v{} (by @matteolutz), welcome!",
+                    VERSION_STR
+                )))],
+                window_handler: DemexWindowHandler::default(),
 
                 command_input: String::new(),
                 is_command_input_empty: true,
@@ -96,9 +111,15 @@ impl DemexUiApp {
                 input_device_handler,
             },
             tabs: DemexTabs::default(),
+
             detached_tabs: HashSet::new(),
+            detached_tabs_config: HashMap::new(),
+
+            command_auto_focus: true,
+
             last_update: time::Instant::now(),
             desired_fps,
+
             icon,
         }
     }
@@ -145,22 +166,18 @@ impl eframe::App for DemexUiApp {
                 )));
         }
 
-        for i in 0..self.context.windows.len() {
-            if self.context.windows[i].ui(
-                ctx,
-                &mut self.context.fixture_handler,
-                &mut self.context.preset_handler,
-                &mut self.context.updatable_handler,
-            ) {
-                self.context.windows.remove(i);
-            }
-        }
+        self.context.window_handler.show(
+            ctx,
+            &mut self.context.fixture_handler,
+            &mut self.context.preset_handler,
+            &mut self.context.updatable_handler,
+        );
 
         while !self.context.macro_execution_queue.is_empty() {
             let action = self.context.macro_execution_queue.remove(0);
 
             if let Err(e) = self.context.run_and_handle_action(&action) {
-                eprintln!("{}", e);
+                log::warn!("{}", e);
 
                 self.context
                     .add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));
@@ -170,19 +187,36 @@ impl eframe::App for DemexUiApp {
         for detached_tab in self.detached_tabs.clone() {
             let tab_title = detached_tab.to_string();
 
+            // get current tab config as mut reference
+            // insert if it does not exist
+
+            let tab_config = self.detached_tabs_config.entry(detached_tab).or_default();
+
+            let viewport_builder = egui::ViewportBuilder::default()
+                .with_title(format!("demex - {}", tab_title))
+                .with_icon(self.icon.clone())
+                .with_window_level(egui::WindowLevel::AlwaysOnTop)
+                .with_fullscreen(tab_config.is_fullscreen);
+
             ctx.show_viewport_immediate(
                 egui::ViewportId::from_hash_of(tab_title.as_str()),
-                egui::ViewportBuilder::default()
-                    .with_title(format!("demex - {}", tab_title))
-                    .with_icon(self.icon.clone())
-                    .with_window_level(egui::WindowLevel::AlwaysOnTop),
+                viewport_builder,
                 |ctx, _| {
                     if ctx.input(|reader| reader.viewport().close_requested()) {
                         self.detached_tabs.remove(&detached_tab);
                         self.tabs.re_attach(detached_tab);
                     }
 
-                    ui_command_input(ctx, &mut self.context);
+                    egui::TopBottomPanel::top(format!("DemexDetachedTab-{}", tab_title)).show(
+                        ctx,
+                        |ui| {
+                            if ui.button("Fullscreen").clicked() {
+                                tab_config.is_fullscreen = !tab_config.is_fullscreen;
+                            }
+                        },
+                    );
+
+                    ui_command_input(ctx, &mut self.context, self.command_auto_focus);
 
                     egui::CentralPanel::default().show(ctx, |ui| {
                         egui::ScrollArea::both().auto_shrink(false).show(ui, |ui| {
@@ -225,23 +259,27 @@ impl eframe::App for DemexUiApp {
 
                 ui.separator();
 
-                if ui.link("About demex").clicked()
-                    && !self.context.windows.contains(&DemexWindow::AboutDemex)
-                {
-                    self.context.windows.push(DemexWindow::AboutDemex);
+                if ui.link("About demex").clicked() {
+                    self.context
+                        .window_handler
+                        .add_window(DemexWindow::AboutDemex);
                 }
 
                 ui.separator();
 
-                ui.label(if let Some(show_file) = self.context.show_file.as_ref() {
-                    show_file.display().to_string()
+                if let Some(show_file) = self.context.show_file.as_ref() {
+                    ui.label(show_file.display().to_string());
                 } else {
-                    "Show not saved".to_string()
-                });
+                    ui.colored_label(egui::Color32::YELLOW, "Show not saved");
+                }
+
+                ui.separator();
+
+                ui.checkbox(&mut self.command_auto_focus, "CMD AF");
             });
         });
 
-        ui_command_input(ctx, &mut self.context);
+        ui_command_input(ctx, &mut self.context, self.command_auto_focus);
 
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
             self.tabs

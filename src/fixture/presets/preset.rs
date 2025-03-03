@@ -89,6 +89,9 @@ pub struct FixturePreset {
 
     name: String,
 
+    #[serde(default)]
+    display_color: Option<egui::Color32>,
+
     #[egui_probe(skip)]
     data: HashMap<u32, HashMap<FixtureChannelType, u8>>,
 }
@@ -151,7 +154,12 @@ impl FixturePreset {
             }
         }
 
-        Ok(Self { id, name, data })
+        Ok(Self {
+            id,
+            name,
+            data,
+            display_color: None,
+        })
     }
 
     pub fn apply(&self, fixture: &mut Fixture) -> Result<(), PresetHandlerError> {
@@ -192,6 +200,10 @@ impl FixturePreset {
 
     pub fn name_mut(&mut self) -> &mut String {
         &mut self.name
+    }
+
+    pub fn display_color(&self) -> Option<egui::Color32> {
+        self.display_color
     }
 
     pub fn value(&self, fixture_id: u32, channel_type: FixtureChannelType) -> Option<u8> {

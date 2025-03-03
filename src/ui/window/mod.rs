@@ -7,9 +7,57 @@ use crate::fixture::{
     handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler,
 };
 
-use super::log::dialog::DemexGlobalDialogEntry;
+use super::dlog::dialog::DemexGlobalDialogEntry;
 
 pub mod edit;
+
+#[derive(Default)]
+pub struct DemexWindowHandler {
+    windows: Vec<DemexWindow>,
+}
+
+impl DemexWindowHandler {
+    pub fn add_window(&mut self, window: DemexWindow) {
+        if self.windows.contains(&window) {
+            return;
+        }
+
+        self.windows.push(window);
+    }
+
+    pub fn add_dialog_window(&mut self, dialog_entry: DemexGlobalDialogEntry) {
+        let dialog_window = self.windows.iter_mut().find(|w| w.is_dialog());
+
+        if let Some(dialog_window) = dialog_window {
+            dialog_window.add_dialog_entry(dialog_entry.clone());
+        } else {
+            self.windows
+                .push(DemexWindow::Dialog(vec![dialog_entry.clone()]));
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.windows.retain(|w| !w.is_dialog());
+    }
+
+    pub fn is_empty(&mut self) -> bool {
+        self.windows.is_empty()
+    }
+
+    pub fn show(
+        &mut self,
+        ctx: &egui::Context,
+        fixture_handler: &mut Arc<RwLock<FixtureHandler>>,
+        preset_handler: &mut Arc<RwLock<PresetHandler>>,
+        updatable_handler: &mut Arc<RwLock<UpdatableHandler>>,
+    ) {
+        for i in 0..self.windows.len() {
+            if self.windows[i].ui(ctx, fixture_handler, preset_handler, updatable_handler) {
+                self.windows.remove(i);
+            }
+        }
+    }
+}
 
 #[derive(Debug, Eq)]
 pub enum DemexWindow {
@@ -25,6 +73,7 @@ impl PartialEq for DemexWindow {
             (Self::Edit(edit_window), Self::Edit(other_edit_window)) => {
                 edit_window == other_edit_window
             }
+            (Self::AboutDemex, Self::AboutDemex) => true,
             _ => false,
         }
     }

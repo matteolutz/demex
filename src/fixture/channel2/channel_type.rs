@@ -1,5 +1,8 @@
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
+use strum::EnumIter;
+
+use super::feature::feature_group::DefaultFeatureGroup;
 
 #[derive(
     Debug,
@@ -14,6 +17,7 @@ use serde::{Deserialize, Serialize};
     Clone,
     EguiProbe,
     Default,
+    EnumIter,
 )]
 pub enum FixtureChannelType {
     #[default]
@@ -45,8 +49,10 @@ pub enum FixtureChannelType {
 
     Prism,
     PrismRotation,
-    RotatingGobos,
+
+    Gobo,
     GoboRotation,
+
     Zoom,
     ZoomFine,
 
@@ -89,7 +95,7 @@ impl FixtureChannelType {
 
             Self::Prism => "Pr".to_string(),
             Self::PrismRotation => "PrR".to_string(),
-            Self::RotatingGobos => "RoGo".to_string(),
+            Self::Gobo => "RoGo".to_string(),
             Self::GoboRotation => "GoRo".to_string(),
             Self::Zoom => "Zo".to_string(),
             Self::ZoomFine => "ZoF".to_string(),
@@ -100,6 +106,46 @@ impl FixtureChannelType {
             Self::Shutter => "Sh".to_string(),
 
             Self::ToggleFlags(idx) => format!("TF{}", idx),
+        }
+    }
+
+    pub fn get_fine(&self) -> Option<Self> {
+        match self {
+            Self::Intensity => Some(Self::IntensityFine),
+            Self::Pan => Some(Self::PanFine),
+            Self::Tilt => Some(Self::TiltFine),
+            Self::Red => Some(Self::RedFine),
+            Self::Green => Some(Self::GreenFine),
+            Self::Blue => Some(Self::BlueFine),
+            Self::White => Some(Self::WhiteFine),
+            Self::Zoom => Some(Self::ZoomFine),
+            Self::Focus => Some(Self::FocusFine),
+            _ => None,
+        }
+    }
+
+    pub fn default_feature_group(&self) -> Option<DefaultFeatureGroup> {
+        match self {
+            Self::Intensity => Some(DefaultFeatureGroup::Intensity),
+
+            Self::Red
+            | Self::Green
+            | Self::Blue
+            | Self::White
+            | Self::ColorTemp
+            | Self::ColorTint
+            | Self::ColorMacro
+            | Self::ColorMacroCrossfade => Some(DefaultFeatureGroup::Color),
+
+            Self::Focus | Self::Zoom => Some(DefaultFeatureGroup::Focus),
+
+            Self::Shutter | Self::Prism | Self::PrismRotation | Self::Gobo | Self::GoboRotation => {
+                Some(DefaultFeatureGroup::Beam)
+            }
+
+            Self::Pan | Self::Tilt | Self::PanTiltSpeed => Some(DefaultFeatureGroup::Position),
+
+            _ => None,
         }
     }
 }

@@ -2,31 +2,30 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::channel2::color::color_gel::ColorGel;
+use crate::fixture::channel2::{
+    channel_type::FixtureChannelType, color::color_gel::ColorGel, gobo::GoboMacro,
+};
 
-use super::{feature_type::FixtureFeatureType, IntoFeatureType};
+use super::{feature_type::FixtureFeatureType, wheel::WheelFeatureConfig, IntoFeatureType};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum FixtureFeatureConfig {
-    Intensity {
+    SingleValue {
+        channel_type: FixtureChannelType,
         is_fine: bool,
     },
-
-    Zoom {
-        is_fine: bool,
-    },
-    Focus {
-        is_fine: bool,
-    },
-
-    Shutter,
 
     ColorRGB {
         is_fine: bool,
     },
-    ColorMacro {
-        macros: Vec<(u8, ColorGel)>,
+    ColorWheel {
+        wheel_config: WheelFeatureConfig<ColorGel>,
     },
+
+    GoboWheel {
+        wheel_config: WheelFeatureConfig<GoboMacro>,
+    },
+
     PositionPanTilt {
         is_fine: bool,
         has_speed: bool,
@@ -40,13 +39,17 @@ pub enum FixtureFeatureConfig {
 impl IntoFeatureType for FixtureFeatureConfig {
     fn feature_type(&self) -> FixtureFeatureType {
         match self {
-            Self::Intensity { .. } => FixtureFeatureType::Intensity,
-            Self::Zoom { .. } => FixtureFeatureType::Zoom,
-            Self::Focus { .. } => FixtureFeatureType::Focus,
-            Self::Shutter => FixtureFeatureType::Shutter,
+            &Self::SingleValue { channel_type, .. } => {
+                FixtureFeatureType::SingleValue { channel_type }
+            }
+
             Self::ColorRGB { .. } => FixtureFeatureType::ColorRGB,
-            Self::ColorMacro { .. } => FixtureFeatureType::ColorMacro,
+            Self::ColorWheel { .. } => FixtureFeatureType::ColorWheel,
+
+            Self::GoboWheel { .. } => FixtureFeatureType::GoboWheel,
+
             Self::PositionPanTilt { .. } => FixtureFeatureType::PositionPanTilt,
+
             Self::ToggleFlags { .. } => FixtureFeatureType::ToggleFlags,
         }
     }

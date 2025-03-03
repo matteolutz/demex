@@ -1,8 +1,12 @@
+use utils::{get_lower_7_bit, get_upper_7_bit};
+
+pub mod utils;
+
 pub(crate) const NOTE_OFF_OP: u8 = 0x8;
 pub(crate) const NOTE_ON_OP: u8 = 0x9;
 pub(crate) const CC_OP: u8 = 0xb;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MidiMessage {
     NoteOn {
         channel: u8,
@@ -19,16 +23,24 @@ pub enum MidiMessage {
         control_code: u8,
         control_value: u8,
     },
+    AkaiSystemExclusive {
+        manufacturer_id: u8,
+        device_id: u8,
+        model_id: u8,
+        message_type: u8,
+        data_length: u16,
+        data: Vec<u8>,
+    },
 }
 
 impl MidiMessage {
-    pub fn to_bytes(self) -> [u8; 3] {
+    pub fn to_bytes(self) -> Vec<u8> {
         match self {
             Self::NoteOn {
                 channel,
                 note_number,
                 key_velocity,
-            } => [
+            } => vec![
                 (NOTE_ON_OP << 4) | (channel & 0xF),
                 note_number,
                 key_velocity,
@@ -37,7 +49,7 @@ impl MidiMessage {
                 channel,
                 note_number,
                 off_velocity,
-            } => [
+            } => vec![
                 (NOTE_OFF_OP << 4) | (channel & 0xF),
                 note_number,
                 off_velocity,
@@ -46,17 +58,73 @@ impl MidiMessage {
                 channel,
                 control_code,
                 control_value,
-            } => [
+            } => vec![
                 (CC_OP << 4) | (channel & 0xF),
                 control_code & 0x7F,
                 control_value,
             ],
+            Self::AkaiSystemExclusive {
+                manufacturer_id,
+                device_id,
+                model_id,
+                message_type,
+                data_length,
+                data,
+            } => {
+                let mut b = vec![
+                    0xF0, // SysEx start
+                    manufacturer_id,
+                    device_id,
+                    model_id,
+                    message_type,
+                    get_upper_7_bit(data_length),
+                    get_lower_7_bit(data_length),
+                ];
+
+                b.extend(data);
+
+                b.push(0xF7); // SysEx end //
+
+                b
+            }
         }
+    }
+
+    fn sysex_from_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() < 5 {
+            return None;
+        }
+
+        let manufacturer_id = bytes[1];
+        let device_id = bytes[2];
+        let model_id = bytes[3];
+        let message_type = bytes[4];
+
+        let data_length: u16 = ((bytes[5] as u16) << 8) | bytes[6] as u16;
+        let data = bytes[7..bytes.len() - 1].to_vec();
+
+        // check if the last byte is the sysex end byte
+        if bytes[bytes.len() - 1] != 0xF7 {
+            return None;
+        }
+
+        Some(Self::AkaiSystemExclusive {
+            manufacturer_id,
+            device_id,
+            model_id,
+            message_type,
+            data_length,
+            data,
+        })
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
         if bytes.len() < 3 {
             return None;
+        }
+
+        if bytes[0] == 0xF0 {
+            return Self::sysex_from_bytes(bytes);
         }
 
         let message_type = (bytes[0] & 0xF0) >> 4;

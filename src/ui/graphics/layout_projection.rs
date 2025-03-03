@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct LayoutProjection {
     zoom: f32,
     center: egui::Vec2,
@@ -44,6 +44,7 @@ impl LayoutProjection {
 }
 
 impl LayoutProjection {
+    /// Project a given world position onto a position on the screen.
     pub fn project(&self, world_pos: &egui::Pos2, screen: &egui::Rect) -> egui::Pos2 {
         let world_pos_vec = world_pos.to_vec2() * self.zoom;
         let screen_center = screen.min.to_vec2() + (screen.size() / 2.0);
@@ -51,6 +52,7 @@ impl LayoutProjection {
         screen_pos.to_pos2()
     }
 
+    /// Unproject a given screen position onto a world position.
     pub fn unproject(&self, screen_pos: &egui::Pos2, screen: &egui::Rect) -> egui::Pos2 {
         let world_pos_vec = screen_pos.to_vec2();
         let screen_center = screen.min.to_vec2() + (screen.size() / 2.0);
@@ -59,6 +61,12 @@ impl LayoutProjection {
         offset /= self.zoom;
 
         offset.to_pos2()
+    }
+
+    pub fn unproject_box(&self, screen_box: &egui::Rect, screen: &egui::Rect) -> egui::Rect {
+        let min = self.unproject(&screen_box.min, screen);
+        let max = self.unproject(&screen_box.max, screen);
+        egui::Rect::from_min_max(min, max)
     }
 
     pub fn scale(&self, vec: &egui::Vec2) -> egui::Vec2 {
@@ -90,4 +98,84 @@ mod tests {
         let unprojected_point = projection.unproject(&screen_point, &screen);
         assert_eq!(unprojected_point, orig_point);
     }
+}
+
+pub fn draw_center_of_mass(
+    painter: &egui::Painter,
+    center: egui::Pos2,
+    radius: f32,
+    color: egui::Color32,
+    stroke_width: f32,
+) {
+    let rect = egui::Rect::from_center_size(center, egui::vec2(radius, radius));
+    let stroke = egui::Stroke::new(stroke_width, color);
+
+    painter.circle(center, radius, egui::Color32::TRANSPARENT, stroke);
+
+    painter.line_segment([rect.center_top(), rect.center_bottom()], stroke);
+    painter.line_segment([rect.left_center(), rect.right_center()], stroke);
+
+    /*
+    // Draw the outer circle
+    painter.add(egui::epaint::Shape::Circle(egui::epaint::CircleShape {
+        center,
+        radius,
+        fill: egui::Color32::TRANSPARENT,
+        stroke: egui::Stroke::new(stroke_width, color),
+    }));
+
+    // Define the vertices of the three triangles
+    let triangle_size = radius / 2.0;
+    let triangle_height = triangle_size * (3.0_f32).sqrt() / 2.0; // Height of an equilateral triangle
+
+    let triangle1_center = center + egui::Vec2::new(0.0, -triangle_height / 2.0);
+    let triangle2_center = center
+        + egui::Vec2::new(
+            triangle_size * (3.0_f32).sqrt() / 4.0,
+            triangle_height / 4.0,
+        );
+    let triangle3_center = center
+        + egui::Vec2::new(
+            -triangle_size * (3.0_f32).sqrt() / 4.0,
+            triangle_height / 4.0,
+        );
+
+    let triangle1 = [
+        triangle1_center + egui::Vec2::new(-triangle_size / 2.0, triangle_height / 2.0),
+        triangle1_center + egui::Vec2::new(triangle_size / 2.0, triangle_height / 2.0),
+        triangle1_center + egui::Vec2::new(0.0, -triangle_height / 2.0),
+    ];
+
+    let triangle2 = [
+        triangle2_center + egui::Vec2::new(-triangle_size / 2.0, -triangle_height / 2.0),
+        triangle2_center + egui::Vec2::new(triangle_size / 2.0, -triangle_height / 2.0),
+        triangle2_center + egui::Vec2::new(0.0, triangle_height / 2.0),
+    ];
+
+    let triangle3 = [
+        triangle3_center + egui::Vec2::new(-triangle_size / 2.0, -triangle_height / 2.0),
+        triangle3_center + egui::Vec2::new(triangle_size / 2.0, -triangle_height / 2.0),
+        triangle3_center + egui::Vec2::new(0.0, triangle_height / 2.0),
+    ];
+
+    // Draw the triangles
+    painter.add(egui::epaint::Shape::Path(egui::epaint::PathShape {
+        points: triangle1.to_vec(),
+        closed: true,
+        fill: color,
+        stroke: egui::epaint::PathStroke::NONE,
+    }));
+    painter.add(egui::epaint::Shape::Path(egui::epaint::PathShape {
+        points: triangle2.to_vec(),
+        closed: true,
+        fill: color,
+        stroke: egui::epaint::PathStroke::NONE,
+    }));
+    painter.add(egui::epaint::Shape::Path(egui::epaint::PathShape {
+        points: triangle3.to_vec(),
+        closed: true,
+        fill: color,
+        stroke: egui::epaint::PathStroke::NONE,
+    }));
+    */
 }

@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use crate::lexer::token::Token;
 
-use super::nodes::object::Object;
+use super::nodes::object::{Object, ObjectError};
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -11,6 +11,7 @@ pub enum ParseError {
     UnexpectedTokenAlternatives(Token, Vec<&'static str>),
     UnknownAction(String),
     NoDefaultActionForObject(Object),
+    ObjectError(ObjectError),
     UnexpectedEndOfInput,
 }
 
@@ -47,6 +48,7 @@ impl std::fmt::Display for ParseError {
             ParseError::NoDefaultActionForObject(o) => {
                 write!(f, "No default action for object: {:?}", o)
             }
+            ParseError::ObjectError(e) => write!(f, "Object error: {}", e),
         }
     }
 }

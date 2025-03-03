@@ -3,3 +3,4 @@ pub mod deadlock;
 pub mod hash;
 pub mod math;
 pub mod thread;
+pub mod version;

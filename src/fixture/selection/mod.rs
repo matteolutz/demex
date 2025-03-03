@@ -103,7 +103,7 @@ impl FixtureSelection {
         };
 
         let wing_size = self.num_grouped_offsets() / self.wings();
-        let mut wing_offset = grouped_offset % wing_size;
+        let mut wing_offset = grouped_offset % wing_size.max(1);
 
         // it's an odd wing
         if (grouped_offset / wing_size) % 2 != 0 {
@@ -155,7 +155,7 @@ mod tests {
         assert_eq!(
             selection
                 .fixtures()
-                .into_iter()
+                .iter()
                 .map(|f| selection.offset_idx(*f).unwrap())
                 .collect::<Vec<_>>(),
             offsets

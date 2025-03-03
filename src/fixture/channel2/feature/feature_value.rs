@@ -9,24 +9,15 @@ use crate::{
 };
 
 use super::{
-    feature_config::FixtureFeatureConfig, feature_type::FixtureFeatureType, IntoFeatureType,
+    feature_config::FixtureFeatureConfig, feature_type::FixtureFeatureType,
+    wheel::WheelFeatureValue, IntoFeatureType,
 };
 
 #[derive(Debug, Clone)]
 pub enum FixtureFeatureValue {
-    Intensity {
-        intensity: f32,
-    },
-
-    Zoom {
-        zoom: f32,
-    },
-    Focus {
-        focus: f32,
-    },
-
-    Shutter {
-        shutter: f32,
+    SingleValue {
+        channel_type: FixtureChannelType,
+        value: f32,
     },
 
     ColorRGB {
@@ -34,8 +25,12 @@ pub enum FixtureFeatureValue {
         g: f32,
         b: f32,
     },
-    ColorMacro {
-        macro_idx: usize,
+    ColorWheel {
+        wheel_value: WheelFeatureValue,
+    },
+
+    GoboWheel {
+        wheel_value: WheelFeatureValue,
     },
 
     PositionPanTilt {
@@ -59,13 +54,12 @@ impl std::fmt::Display for FixtureFeatureValue {
                 g * 100.0,
                 b * 100.0
             ),
-            Self::ColorMacro { macro_idx } => write!(f, "Macro {}", macro_idx),
+            Self::ColorWheel { wheel_value } => write!(f, "{}", wheel_value),
             Self::PositionPanTilt { pan, tilt, .. } => write!(f, "({:.2}, {:.2})", pan, tilt),
 
-            Self::Shutter { shutter: value }
-            | Self::Intensity { intensity: value }
-            | Self::Zoom { zoom: value }
-            | Self::Focus { focus: value } => write!(f, "{:.0}%", *value * 100.0),
+            Self::GoboWheel { wheel_value } => write!(f, "{}", wheel_value),
+
+            Self::SingleValue { value, .. } => write!(f, "{:.0}%", *value * 100.0),
 
             Self::ToggleFlags { set_flags } => {
                 write!(
@@ -81,15 +75,14 @@ impl std::fmt::Display for FixtureFeatureValue {
 impl IntoFeatureType for FixtureFeatureValue {
     fn feature_type(&self) -> super::feature_type::FixtureFeatureType {
         match self {
-            Self::Intensity { .. } => FixtureFeatureType::Intensity,
-
-            Self::Zoom { .. } => FixtureFeatureType::Zoom,
-            Self::Focus { .. } => FixtureFeatureType::Focus,
-
-            Self::Shutter { .. } => FixtureFeatureType::Shutter,
+            &Self::SingleValue { channel_type, .. } => {
+                FixtureFeatureType::SingleValue { channel_type }
+            }
 
             Self::ColorRGB { .. } => FixtureFeatureType::ColorRGB,
-            Self::ColorMacro { .. } => FixtureFeatureType::ColorMacro,
+            Self::ColorWheel { .. } => FixtureFeatureType::ColorWheel,
+
+            Self::GoboWheel { .. } => FixtureFeatureType::GoboWheel,
 
             Self::PositionPanTilt { .. } => FixtureFeatureType::PositionPanTilt,
 
@@ -138,35 +131,29 @@ impl FixtureFeatureValue {
         let config = self.feature_type().find_feature_config(feature_configs)?;
 
         match (self, config) {
-            (Self::Intensity { intensity: value }, FixtureFeatureConfig::Intensity { is_fine }) => {
-                Self::write_to_channel_coarse_and_optional_fine(
-                    channels,
-                    FixtureChannelType::Intensity,
-                    FixtureChannelType::IntensityFine,
-                    *is_fine,
-                    *value,
-                )
-            }
-            (Self::Zoom { zoom: value }, FixtureFeatureConfig::Zoom { is_fine }) => {
-                Self::write_to_channel_coarse_and_optional_fine(
-                    channels,
-                    FixtureChannelType::Zoom,
-                    FixtureChannelType::ZoomFine,
-                    *is_fine,
-                    *value,
-                )
-            }
-            (Self::Focus { focus: value }, FixtureFeatureConfig::Focus { is_fine }) => {
-                Self::write_to_channel_coarse_and_optional_fine(
-                    channels,
-                    FixtureChannelType::Focus,
-                    FixtureChannelType::FocusFine,
-                    *is_fine,
-                    *value,
-                )
-            }
-            (Self::Shutter { shutter: value }, FixtureFeatureConfig::Shutter) => {
-                Self::write_to_channel(channels, FixtureChannelType::Shutter, f32_to_coarse(*value))
+            (
+                Self::SingleValue { value, .. },
+                FixtureFeatureConfig::SingleValue {
+                    channel_type,
+                    is_fine,
+                },
+            ) => {
+                if *is_fine {
+                    channel_type
+                        .get_fine()
+                        .ok_or(FixtureChannelError2::FineChannelNotFound(*channel_type))
+                        .and_then(|fine_channel_type| {
+                            Self::write_to_channel_coarse_and_optional_fine(
+                                channels,
+                                *channel_type,
+                                fine_channel_type,
+                                true,
+                                *value,
+                            )
+                        })
+                } else {
+                    Self::write_to_channel(channels, *channel_type, f32_to_coarse(*value))
+                }
             }
             (
                 Self::PositionPanTilt {
@@ -229,15 +216,22 @@ impl FixtureFeatureValue {
 
                 Ok(())
             }
-            (Self::ColorMacro { macro_idx }, FixtureFeatureConfig::ColorMacro { macros }) => {
-                let (macro_value, _) =
-                    macros
-                        .get(*macro_idx)
-                        .ok_or(FixtureChannelError2::InvalidFeatureValue(
-                            self.feature_type(),
-                        ))?;
+            (
+                Self::ColorWheel { wheel_value },
+                FixtureFeatureConfig::ColorWheel { wheel_config },
+            ) => {
+                let macro_value = wheel_config.to_value(wheel_value).ok_or(
+                    FixtureChannelError2::InvalidFeatureValue(self.feature_type()),
+                )?;
 
-                Self::write_to_channel(channels, FixtureChannelType::ColorMacro, *macro_value)
+                Self::write_to_channel(channels, FixtureChannelType::ColorMacro, macro_value)
+            }
+            (Self::GoboWheel { wheel_value }, FixtureFeatureConfig::GoboWheel { wheel_config }) => {
+                let macro_value = wheel_config.to_value(wheel_value).ok_or(
+                    FixtureChannelError2::InvalidFeatureValue(self.feature_type()),
+                )?;
+
+                Self::write_to_channel(channels, FixtureChannelType::Gobo, macro_value)
             }
             (
                 Self::ToggleFlags { set_flags },

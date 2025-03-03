@@ -1,2 +1,3 @@
 pub mod position_selector;
+pub mod quick_menu;
 pub mod slider;

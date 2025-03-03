@@ -6,6 +6,7 @@ use super::{channel_type::FixtureChannelType, feature::feature_type::FixtureFeat
 pub enum FixtureChannelError2 {
     Failed,
     ChannelNotFound(FixtureChannelType),
+    FineChannelNotFound(FixtureChannelType),
     FeatureNotFound(FixtureFeatureType),
     FeatureConfigNotFound(FixtureFeatureType),
     InvalidFeatureValue(FixtureFeatureType),
@@ -26,6 +27,9 @@ impl std::fmt::Display for FixtureChannelError2 {
             Self::Failed => write!(f, "Failed"),
             Self::ChannelNotFound(channel_type) => {
                 write!(f, "Channel with type {:?} not found", channel_type)
+            }
+            Self::FineChannelNotFound(channel_type) => {
+                write!(f, "Fine channel with type {:?} not found", channel_type)
             }
             Self::FeatureNotFound(feature_type) => {
                 write!(f, "Feature type {:?} not found", feature_type)

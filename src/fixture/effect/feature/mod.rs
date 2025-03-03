@@ -5,8 +5,9 @@ use serde::{Deserialize, Serialize};
 use sine::SineVariant;
 
 use crate::{
-    fixture::channel2::feature::{
-        feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue,
+    fixture::channel2::{
+        channel_type::FixtureChannelType,
+        feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
     },
     utils::color::hsl_to_rgb,
 };
@@ -65,7 +66,9 @@ impl FeatureEffect {
             | Self::PositionPanTiltEllipse { .. }
             | Self::PositionPanTiltRect { .. } => FixtureFeatureType::PositionPanTilt,
             Self::ColorRGBHueRotate { .. } => FixtureFeatureType::ColorRGB,
-            Self::IntensitySine { .. } => FixtureFeatureType::Intensity,
+            Self::IntensitySine { .. } => FixtureFeatureType::SingleValue {
+                channel_type: FixtureChannelType::Intensity,
+            },
         }
     }
 
@@ -80,7 +83,10 @@ impl FeatureEffect {
                 let intensity =
                     sine_variant.apply(t as f32 * speed - phase_offset_deg.to_radians());
 
-                Ok(FixtureFeatureValue::Intensity { intensity })
+                Ok(FixtureFeatureValue::SingleValue {
+                    channel_type: FixtureChannelType::Intensity,
+                    value: intensity,
+                })
             }
             Self::PositionPanTiltRect { .. } => Err(EffectError::EffectNotStarted),
             Self::PositionPanTiltFigureEight {

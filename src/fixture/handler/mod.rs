@@ -175,14 +175,14 @@ impl FixtureHandler {
             dirty_universes.insert(f.universe());
         }
 
-        for output in &self.outputs {
+        for output in &mut self.outputs {
             for (universe, data) in &self.universe_output_data {
                 if !dirty_universes.contains(universe) {
                     continue;
                 }
 
                 if let Err(err) = output.send(*universe, data) {
-                    println!(
+                    log::warn!(
                         "Failed to send data via {:?} for universe {}. Did the corresponding output thread panic?\n{}",
                         output, universe, err
                     );

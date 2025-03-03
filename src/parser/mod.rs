@@ -1,21 +1,32 @@
-use nodes::action::{
-    ConfigTypeActionData, CueIdxSelectorActionData, ExecutorAssignmentModeActionData,
-    ExecutorCreationModeActionData, FaderCreationConfigActionData,
+use nodes::{
+    action::{
+        functions::{
+            delete_function::DeleteArgs,
+            record_function::{
+                RecordChannelTypeSelector, RecordGroupArgs, RecordPresetArgs, RecordSequenceCueArgs,
+            },
+            rename_function::RenameObjectArgs,
+            set_function::{SetFeatureValueArgs, SetFixturePresetArgs},
+        },
+        ConfigTypeActionData, ExecutorAssignmentModeActionData, ExecutorCreationModeActionData,
+        FaderCreationConfigActionData, ValueOrRange,
+    },
+    object::ObjectRange,
 };
 
 use crate::{
     fixture::{
-        channel2::feature::feature_type::FixtureFeatureType, presets::preset::FixturePresetId,
+        channel2::{channel_type::FixtureChannelType, feature::feature_type::FixtureFeatureType},
+        presets::preset::FixturePresetId,
         sequence::cue::CueIdx,
     },
     lexer::token::Token,
-    parser::nodes::action::ChannelTypeSelectorActionData,
 };
 
 use self::{
     error::ParseError,
     nodes::{
-        action::{Action, ChannelValueSingleActionData, UpdateModeActionData},
+        action::{Action, UpdateModeActionData},
         fixture_selector::{AtomicFixtureSelector, FixtureSelector},
         object::{HomeableObject, Object, ObjectTrait},
     },
@@ -221,6 +232,20 @@ impl<'a> Parser2<'a> {
         ))
     }
 
+    fn parse_object_or_range(&mut self) -> Result<ObjectRange, ParseError> {
+        let from_object = self.parse_object()?;
+
+        if matches!(self.current_token()?, Token::KeywordThru) {
+            self.advance();
+
+            let to_object = self.parse_object()?;
+
+            ObjectRange::new(from_object, to_object).map_err(ParseError::ObjectError)
+        } else {
+            Ok(ObjectRange::single(from_object))
+        }
+    }
+
     fn parse_object(&mut self) -> Result<Object, ParseError> {
         let homeable_object = self.try_parse(Self::parse_homeable_object);
 
@@ -252,6 +277,14 @@ impl<'a> Parser2<'a> {
             return Ok(Object::Preset(preset_id));
         }
 
+        if matches!(self.current_token()?, Token::KeywordMacro) {
+            self.advance();
+
+            let macro_id = self.parse_integer()?;
+
+            return Ok(Object::Macro(macro_id));
+        }
+
         Err(ParseError::UnexpectedToken(
             self.current_token()?.clone(),
             "Expected object".to_string(),
@@ -272,7 +305,9 @@ impl<'a> Parser2<'a> {
         match self.current_token()? {
             &Token::KeywordIntens => {
                 self.advance();
-                Ok(FixtureFeatureType::Intensity)
+                Ok(FixtureFeatureType::SingleValue {
+                    channel_type: FixtureChannelType::Intensity,
+                })
             }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
@@ -320,15 +355,15 @@ impl<'a> Parser2<'a> {
 
     fn parse_specific_preset_or_range(
         &mut self,
-    ) -> Result<(FixturePresetId, FixturePresetId), ParseError> {
+    ) -> Result<ValueOrRange<FixturePresetId>, ParseError> {
         let preset_id = self.parse_specific_preset()?;
 
         if matches!(self.current_token()?, Token::KeywordThru) {
             self.advance();
             let end_preset_id = self.parse_preset_id()?;
-            Ok((preset_id, end_preset_id))
+            Ok(ValueOrRange::Thru(preset_id, end_preset_id))
         } else {
-            Ok((preset_id, preset_id))
+            Ok(ValueOrRange::Single(preset_id))
         }
     }
 
@@ -357,16 +392,16 @@ impl<'a> Parser2<'a> {
         }
     }
 
-    fn parse_channel_value_single(&mut self) -> Result<ChannelValueSingleActionData, ParseError> {
+    fn parse_channel_value_single(&mut self) -> Result<ValueOrRange<f32>, ParseError> {
         let value_a = self.parse_discrete_channel_value_single()?;
 
         if matches!(self.current_token()?, Token::KeywordThru) {
             self.advance();
             let value_b = self.parse_discrete_channel_value_single()?;
 
-            Ok(ChannelValueSingleActionData::Thru(value_a, value_b))
+            Ok(ValueOrRange::Thru(value_a, value_b))
         } else {
-            Ok(ChannelValueSingleActionData::Single(value_a))
+            Ok(ValueOrRange::Single(value_a))
         }
     }
 
@@ -375,30 +410,22 @@ impl<'a> Parser2<'a> {
         fixture_selector: FixtureSelector,
     ) -> Result<Action, ParseError> {
         let preset = self.try_parse(Self::parse_specific_preset_or_range);
-        if let Ok((preset_id_from, preset_id_to)) = preset {
-            if preset_id_from == preset_id_to {
-                return Ok(Action::SetChannelValuePreset(
-                    fixture_selector,
-                    preset_id_from,
-                ));
-            }
-
-            return Ok(Action::SetChannelValuePresetRange(
+        if let Ok(preset_id) = preset {
+            return Ok(Action::SetFixturePreset(SetFixturePresetArgs {
                 fixture_selector,
-                preset_id_from,
-                preset_id_to,
-            ));
+                preset_id,
+            }));
         }
 
-        let channel_type = self.parse_feature_type()?;
+        let feature_type = self.parse_feature_type()?;
 
-        let value = self.try_parse(Self::parse_channel_value_single);
-        if let Ok(value) = value {
-            return Ok(Action::SetFeatureValue(
+        let feature_value = self.try_parse(Self::parse_channel_value_single);
+        if let Ok(feature_value) = feature_value {
+            return Ok(Action::SetFeatureValue(SetFeatureValueArgs {
                 fixture_selector,
-                channel_type,
-                value,
-            ));
+                feature_type,
+                feature_value,
+            }));
         }
 
         Err(ParseError::UnexpectedVariant(vec![
@@ -406,7 +433,10 @@ impl<'a> Parser2<'a> {
                 "\"preset\" <channel_type> <id>".to_owned(),
                 preset.err().unwrap(),
             ),
-            ("discrete channel value".to_owned(), value.err().unwrap()),
+            (
+                "discrete channel value".to_owned(),
+                feature_value.err().unwrap(),
+            ),
         ]))
     }
 
@@ -466,7 +496,7 @@ impl<'a> Parser2<'a> {
         }
     }
 
-    fn parse_integer_or_range(&mut self) -> Result<(u32, u32), ParseError> {
+    fn _parse_integer_or_range(&mut self) -> Result<(u32, u32), ParseError> {
         let start = self.parse_integer()?;
 
         if matches!(self.current_token()?, Token::KeywordThru) {
@@ -529,16 +559,16 @@ impl<'a> Parser2<'a> {
         }
     }
 
-    fn parse_cue_idx(&mut self) -> Result<CueIdxSelectorActionData, ParseError> {
+    fn parse_cue_idx_or_next(&mut self) -> Result<Option<CueIdx>, ParseError> {
         let discrete_cue_idx = self.try_parse(Self::parse_discrete_cue_idx);
         if let Ok(discrete_cue_idx) = discrete_cue_idx {
-            return Ok(CueIdxSelectorActionData::Discrete(discrete_cue_idx));
+            return Ok(Some(discrete_cue_idx));
         }
 
         match self.current_token()? {
             &Token::KeywordNext => {
                 self.advance();
-                Ok(CueIdxSelectorActionData::Next)
+                Ok(None)
             }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
@@ -600,7 +630,11 @@ impl<'a> Parser2<'a> {
 
                 let preset_name = self.try_parse(Self::parse_as).ok();
 
-                Ok(Action::RecordPreset(id, fixture_selector, preset_name))
+                Ok(Action::RecordPreset(RecordPresetArgs {
+                    id,
+                    fixture_selector,
+                    name: preset_name,
+                }))
             }
             Token::KeywordGroup => {
                 self.advance();
@@ -613,7 +647,11 @@ impl<'a> Parser2<'a> {
 
                 let group_name = self.try_parse(Self::parse_as).ok();
 
-                Ok(Action::RecordGroup2(id, fixture_selector, group_name))
+                Ok(Action::RecordGroup2(RecordGroupArgs {
+                    id,
+                    fixture_selector,
+                    name: group_name,
+                }))
             }
             Token::KeywordSequence => {
                 self.advance();
@@ -622,7 +660,7 @@ impl<'a> Parser2<'a> {
 
                 expect_and_consume_token!(self, Token::KeywordCue, "\"cue\"");
 
-                let cue_idx = self.parse_cue_idx()?;
+                let cue_idx = self.parse_cue_idx_or_next()?;
 
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
 
@@ -633,20 +671,20 @@ impl<'a> Parser2<'a> {
 
                     if matches!(self.current_token()?, Token::KeywordAll) {
                         self.advance();
-                        ChannelTypeSelectorActionData::All
+                        RecordChannelTypeSelector::All
                     } else {
-                        ChannelTypeSelectorActionData::Features(self.parse_feature_type_list()?)
+                        RecordChannelTypeSelector::Features(self.parse_feature_type_list()?)
                     }
                 } else {
-                    ChannelTypeSelectorActionData::Active
+                    RecordChannelTypeSelector::Active
                 };
 
-                Ok(Action::RecordSequenceCue(
+                Ok(Action::RecordSequenceCue(RecordSequenceCueArgs {
                     sequence_id,
                     cue_idx,
                     fixture_selector,
                     channel_type_selector,
-                ))
+                }))
             }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
@@ -656,45 +694,13 @@ impl<'a> Parser2<'a> {
     }
 
     fn parse_rename_function(&mut self) -> Result<Action, ParseError> {
-        match self.current_token()? {
-            Token::KeywordPreset => {
-                self.advance();
+        let object = self.parse_object()?;
 
-                let id = self.parse_preset_id()?;
+        expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
-                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+        let new_name = self.parse_string()?;
 
-                let preset_name = self.parse_string()?;
-
-                Ok(Action::RenamePreset(id, preset_name))
-            }
-            Token::KeywordGroup => {
-                self.advance();
-
-                let id = self.parse_integer()?;
-
-                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
-
-                let group_name = self.parse_string()?;
-
-                Ok(Action::RenameGroup(id, group_name))
-            }
-            Token::KeywordSequence => {
-                self.advance();
-
-                let id = self.parse_integer()?;
-
-                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
-
-                let seq_name = self.parse_string()?;
-
-                Ok(Action::RenameSequence(id, seq_name))
-            }
-            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
-                unexpected_token.clone(),
-                vec!["\"preset\"", "\"group\"", "\"sequence\""],
-            )),
-        }
+        Ok(Action::Rename(RenameObjectArgs { object, new_name }))
     }
 
     fn parse_create_fader_function(&mut self) -> Result<FaderCreationConfigActionData, ParseError> {
@@ -833,7 +839,7 @@ impl<'a> Parser2<'a> {
     }
 
     fn parse_delete_function(&mut self) -> Result<Action, ParseError> {
-        let action = match self.current_token()? {
+        /*let action = match self.current_token()? {
             Token::KeywordMacro => {
                 self.advance();
 
@@ -889,14 +895,13 @@ impl<'a> Parser2<'a> {
                     "\"group\"",
                 ],
             )),
-        };
+        };*/
 
-        if let Ok(action) = action {
-            expect_and_consume_token!(self, Token::KeywordReally, "\"really\"");
-            Ok(action)
-        } else {
-            action
-        }
+        let object_range = self.parse_object_or_range()?;
+
+        expect_and_consume_token!(self, Token::KeywordReally, "\"really\"");
+
+        Ok(Action::Delete(DeleteArgs { object_range }))
     }
 
     fn parse_config_function(&mut self) -> Result<Action, ParseError> {
@@ -1202,6 +1207,6 @@ mod tests {
         let mut parser = Parser2::new(&tokens);
         let action = parser.parse();
 
-        println!("{:?}", action);
+        log::info!("{:?}", action);
     }
 }

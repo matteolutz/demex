@@ -12,8 +12,8 @@ pub mod utils;
 use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
-use fixture::handler::FixtureHandler;
-use input::DemexInputDeviceHandler;
+use fixture::{channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler};
+use input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler};
 use parking_lot::RwLock;
 use rfd::FileDialog;
 use show::DemexShow;
@@ -38,11 +38,18 @@ struct Args {
     deadlock_test: bool,
 }
 
-const TEST_MAX_FUPS: f64 = 200.0;
+const TEST_MAX_FUPS: f64 = 60.0;
 const TEST_MAX_DMX_FPS: f64 = 30.0;
 const TEST_UI_FPS: f64 = 60.0;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::var("RUST_LOG").is_err() {
+        std::env::set_var("RUST_LOG", "debug");
+    }
+
+    env_logger::init();
+    log::info!("Starting demex");
+
     let args = Args::parse();
 
     if args.deadlock_test {
@@ -51,10 +58,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let show_file = args.show.clone();
 
-    let show: DemexShow = args
+    let mut show: DemexShow = args
         .show
+        .inspect(|show_path| log::info!("Loading show file: {:?}", show_path))
         .map(|show_path| serde_json::from_reader(std::fs::File::open(show_path).unwrap()).unwrap())
         .unwrap_or(DemexShow::default());
+
+    *show.preset_handler.feature_groups_mut() = FeatureGroup::default_feature_groups();
 
     let fixture_handler = Arc::new(RwLock::new(FixtureHandler::new(show.patch).unwrap()));
 
@@ -94,7 +104,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         DemexInputDeviceHandler::new(
             show.input_device_configs
                 .into_iter()
-                .flat_map(|v| v.try_into())
+                .map(DemexInputDeviceConfig::into)
                 .collect::<Vec<_>>(),
         ),
     );
@@ -155,6 +165,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "demex",
         options,
         Box::new(|creation_context| {
+            egui_extras::install_image_loaders(&creation_context.egui_ctx);
+
             let style = Style {
                 visuals: Visuals::dark(),
                 ..Style::default()

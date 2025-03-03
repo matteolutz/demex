@@ -23,9 +23,8 @@ use crate::{
 };
 
 use super::{
-    log::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
-    tabs::layout_view_tab::LayoutViewContext,
-    window::{edit::DemexEditWindow, DemexWindow},
+    dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
+    window::{DemexWindow, DemexWindowHandler},
 };
 
 pub type SaveShowFn =
@@ -52,39 +51,22 @@ pub struct DemexUiContext {
     pub show_file: Option<PathBuf>,
     pub save_show: SaveShowFn,
 
-    pub layout_view_context: LayoutViewContext,
     pub gm_slider_val: u8,
 
     pub input_device_handler: DemexInputDeviceHandler,
 
-    pub windows: Vec<DemexWindow>,
+    // pub windows: Vec<DemexWindow>,
+    pub window_handler: DemexWindowHandler,
 }
 
 impl DemexUiContext {
     pub fn add_dialog_entry(&mut self, dialog_entry: DemexGlobalDialogEntry) {
-        let dialog_window = self.windows.iter_mut().find(|w| w.is_dialog());
-
-        if let Some(dialog_window) = dialog_window {
-            dialog_window.add_dialog_entry(dialog_entry.clone());
-        } else {
-            self.windows
-                .push(DemexWindow::Dialog(vec![dialog_entry.clone()]));
-        }
+        self.window_handler.add_dialog_window(dialog_entry.clone());
 
         self.logs
             .push(DemexLogEntry::new(DemexLogEntryType::DialogEntry(
                 dialog_entry,
             )));
-    }
-
-    pub fn add_edit_window(&mut self, edit_window: DemexEditWindow) {
-        let window = DemexWindow::Edit(edit_window);
-
-        if self.windows.contains(&window) {
-            return;
-        }
-
-        self.windows.push(window);
     }
 
     pub fn run_cmd(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -112,7 +94,7 @@ impl DemexUiContext {
         match &action {
             Action::ClearAll => {
                 self.global_fixture_select = None;
-                self.windows.retain(|el| !el.is_dialog());
+                self.window_handler.clear();
             }
             Action::HomeAll => {
                 let mut updatable_handler_lock = self.updatable_handler.write();
@@ -192,7 +174,7 @@ impl DemexUiContext {
                     )))
             })?;
 
-        println!(
+        log::debug!(
             "Execution of action {:?} took {:.2?}",
             action,
             now.elapsed()
@@ -214,9 +196,7 @@ impl DemexUiContext {
             ActionRunResult::EditWindow(edit_window) => {
                 let demex_edit_window = DemexWindow::Edit(edit_window);
 
-                if !self.windows.contains(&demex_edit_window) {
-                    self.windows.push(demex_edit_window);
-                }
+                self.window_handler.add_window(demex_edit_window);
             }
             ActionRunResult::UpdateSelectedFixtures(selection) => {
                 self.global_fixture_select = Some(selection);

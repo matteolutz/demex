@@ -263,16 +263,21 @@ impl Fixture {
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
     ) -> Result<[f32; 3], FixtureError> {
-        if let Ok(FixtureFeatureValue::ColorMacro { macro_idx }) = self.feature_value(
-            FixtureFeatureType::ColorMacro,
+        if let Ok(FixtureFeatureValue::ColorWheel { wheel_value }) = self.feature_value(
+            FixtureFeatureType::ColorWheel,
             preset_handler,
             updatable_handler,
             timing_handler,
         ) {
-            if let Some(FixtureFeatureConfig::ColorMacro { macros }) =
-                self.feature_config_by_type(FixtureFeatureType::ColorMacro)
+            if let Some(FixtureFeatureConfig::ColorWheel { wheel_config }) =
+                self.feature_config_by_type(FixtureFeatureType::ColorWheel)
             {
-                return Ok(macros[macro_idx].1.get_rgb());
+                if let Some(rgb_color) = wheel_config
+                    .try_get_as_macro(&wheel_value)
+                    .map(|macro_val| macro_val.get_rgb())
+                {
+                    return Ok(rgb_color);
+                }
             }
         }
 

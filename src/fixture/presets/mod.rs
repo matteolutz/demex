@@ -8,9 +8,7 @@ use preset::{FixturePreset, FixturePresetId};
 use serde::{Deserialize, Serialize};
 
 use crate::parser::nodes::{
-    action::{
-        Action, ChannelTypeSelectorActionData, CueIdxSelectorActionData, UpdateModeActionData,
-    },
+    action::{functions::record_function::RecordChannelTypeSelector, Action, UpdateModeActionData},
     fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 
@@ -20,7 +18,7 @@ use super::{
     handler::FixtureHandler,
     selection::FixtureSelection,
     sequence::{
-        cue::{Cue, CueTiming, CueTrigger},
+        cue::{Cue, CueIdx, CueTiming, CueTrigger},
         Sequence,
     },
 };
@@ -439,11 +437,11 @@ impl PresetHandler {
         fixture_handler: &FixtureHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        cue_idx: CueIdxSelectorActionData,
-        channel_type_selector: &ChannelTypeSelectorActionData,
+        cue_idx: Option<CueIdx>,
+        channel_type_selector: &RecordChannelTypeSelector,
     ) -> Result<(), PresetHandlerError> {
         // does this cue already exist?
-        if let CueIdxSelectorActionData::Discrete(cue_idx) = cue_idx {
+        if let Some(cue_idx) = cue_idx {
             if self
                 .sequences
                 .get(&sequence_id)
@@ -457,8 +455,8 @@ impl PresetHandler {
         }
 
         let discrete_cue_idx = match cue_idx {
-            CueIdxSelectorActionData::Discrete(cue_idx) => cue_idx,
-            CueIdxSelectorActionData::Next => {
+            Some(cue_idx) => cue_idx,
+            None => {
                 let sequence = self
                     .sequences
                     .get(&sequence_id)
@@ -522,6 +520,27 @@ impl PresetHandler {
             .get_mut(&id)
             .ok_or(PresetHandlerError::PresetNotFound(id))?;
         *sequence.name_mut() = new_name;
+        Ok(())
+    }
+
+    pub fn rename_sequence_cue(
+        &mut self,
+        sequence_id: u32,
+        cue_idx: CueIdx,
+        new_name: String,
+    ) -> Result<(), PresetHandlerError> {
+        let sequence = self
+            .sequences
+            .get_mut(&sequence_id)
+            .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?;
+
+        let cue = sequence
+            .cues_mut()
+            .iter_mut()
+            .find(|c| c.cue_idx() == cue_idx)
+            .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_idx))?;
+
+        *cue.name_mut() = new_name;
         Ok(())
     }
 

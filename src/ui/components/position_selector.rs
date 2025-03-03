@@ -14,7 +14,7 @@ impl<'a> PositionSelector<'a> {
     }
 }
 
-impl<'a> eframe::egui::Widget for PositionSelector<'a> {
+impl eframe::egui::Widget for PositionSelector<'_> {
     fn ui(mut self, ui: &mut eframe::egui::Ui) -> eframe::egui::Response {
         let position = ((self.get_or_set)(None)).unwrap_or(eframe::egui::vec2(0.0, 0.0));
 

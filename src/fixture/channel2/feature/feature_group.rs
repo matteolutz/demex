@@ -15,7 +15,7 @@ use crate::fixture::{
 
 use super::{feature_config::FixtureFeatureConfig, feature_state::FixtureFeatureDisplayState};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, EnumIter)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, EnumIter, Default)]
 pub enum DefaultFeatureGroup {
     Intensity,
     Position,
@@ -23,6 +23,9 @@ pub enum DefaultFeatureGroup {
     Beam,
     Focus,
     Control,
+
+    #[default]
+    Unused,
 }
 
 impl DefaultFeatureGroup {
@@ -34,7 +37,28 @@ impl DefaultFeatureGroup {
             Self::Beam => 3,
             Self::Focus => 4,
             Self::Control => 5,
+            Self::Unused => unreachable!(),
         }
+    }
+
+    pub fn feature_types(&self) -> Vec<FixtureFeatureType> {
+        let single_value_types = FixtureChannelType::iter()
+            .filter(|channel_type| {
+                channel_type
+                    .default_feature_group()
+                    .is_some_and(|g| g == *self)
+            })
+            .map(|channel_type| FixtureFeatureType::SingleValue { channel_type });
+
+        let feature_types = match self {
+            Self::Position => vec![FixtureFeatureType::PositionPanTilt],
+            Self::Color => vec![FixtureFeatureType::ColorRGB, FixtureFeatureType::ColorWheel],
+            Self::Beam => vec![FixtureFeatureType::GoboWheel],
+            Self::Control => vec![FixtureFeatureType::ToggleFlags],
+            _ => vec![],
+        };
+
+        single_value_types.chain(feature_types).collect()
     }
 
     pub fn get_all() -> [DefaultFeatureGroup; 6] {
@@ -76,18 +100,15 @@ impl FeatureGroup {
 
 impl FeatureGroup {
     pub fn default_feature_groups() -> HashMap<u32, FeatureGroup> {
-        DefaultFeatureGroup::iter()
+        DefaultFeatureGroup::get_all()
+            .into_iter()
             .map(|default_feature_group| {
                 (
                     default_feature_group.id(),
                     FeatureGroup {
                         id: default_feature_group.id(),
                         name: format!("{:?}", default_feature_group),
-                        feature_types: FixtureFeatureType::iter()
-                            .filter(|channel_type| {
-                                channel_type.default_feature_group() == default_feature_group
-                            })
-                            .collect::<Vec<_>>(),
+                        feature_types: default_feature_group.feature_types(),
                     },
                 )
             })

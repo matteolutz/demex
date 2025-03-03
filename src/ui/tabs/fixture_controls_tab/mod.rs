@@ -1,4 +1,5 @@
 use color::{color_macro_ui, color_rgb_controls_ui};
+use gobo::gobo_wheel_ui;
 use itertools::Itertools;
 use position::position_pan_tilt_controls_ui;
 use slider::feature_f32_slider;
@@ -9,6 +10,7 @@ use crate::fixture::channel2::feature::{
 };
 
 pub mod color;
+pub mod gobo;
 pub mod position;
 pub mod slider;
 pub mod toggle_flags;
@@ -60,10 +62,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 ui.horizontal(|ui| {
                     ui.add_space(30.0);
 
-                    for feature_type in mutual_feature_types
-                        .iter()
-                        .filter(|feature_type| feature_group.feature_types().contains(feature_type))
-                    {
+                    let feature_types = mutual_feature_types.iter().filter(|feature_type| {
+                        feature_group.feature_types().contains(feature_type)
+                    });
+
+                    let num_feature_types = feature_types.clone().count();
+
+                    for (idx, feature_type) in feature_types.enumerate() {
                         let is_channel_home = fixture_handler
                             .fixture(selected_fixtures[0])
                             .unwrap()
@@ -72,81 +77,33 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         ui.vertical(|ui| {
                             match feature_type {
-                                FixtureFeatureType::Intensity => {
+                                FixtureFeatureType::SingleValue { channel_type } => {
                                     feature_f32_slider(
                                         ui,
                                         is_channel_home,
                                         selected_fixtures,
-                                        FixtureFeatureType::Intensity,
+                                        FixtureFeatureType::SingleValue {
+                                            channel_type: *channel_type,
+                                        },
                                         &mut fixture_handler,
                                         &preset_handler,
                                         |value| {
-                                            if let FixtureFeatureValue::Intensity { intensity } =
-                                                value
+                                            if let FixtureFeatureValue::SingleValue {
+                                                value, ..
+                                            } = value
                                             {
-                                                Some(intensity)
+                                                Some(value)
                                             } else {
                                                 None
                                             }
                                         },
-                                        |intensity| FixtureFeatureValue::Intensity { intensity },
-                                    );
-                                }
-                                FixtureFeatureType::Zoom => {
-                                    feature_f32_slider(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        FixtureFeatureType::Zoom,
-                                        &mut fixture_handler,
-                                        &preset_handler,
-                                        |value| {
-                                            if let FixtureFeatureValue::Zoom { zoom } = value {
-                                                Some(zoom)
-                                            } else {
-                                                None
-                                            }
+                                        |value| FixtureFeatureValue::SingleValue {
+                                            value,
+                                            channel_type: *channel_type,
                                         },
-                                        |zoom| FixtureFeatureValue::Zoom { zoom },
                                     );
                                 }
-                                FixtureFeatureType::Focus => {
-                                    feature_f32_slider(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        FixtureFeatureType::Focus,
-                                        &mut fixture_handler,
-                                        &preset_handler,
-                                        |value| {
-                                            if let FixtureFeatureValue::Focus { focus } = value {
-                                                Some(focus)
-                                            } else {
-                                                None
-                                            }
-                                        },
-                                        |focus| FixtureFeatureValue::Focus { focus },
-                                    );
-                                }
-                                FixtureFeatureType::Shutter => {
-                                    feature_f32_slider(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        FixtureFeatureType::Shutter,
-                                        &mut fixture_handler,
-                                        &preset_handler,
-                                        |value| {
-                                            if let FixtureFeatureValue::Shutter { shutter } = value
-                                            {
-                                                Some(shutter)
-                                            } else {
-                                                None
-                                            }
-                                        },
-                                        |shutter| FixtureFeatureValue::Shutter { shutter },
-                                    );
-                                }
+
                                 FixtureFeatureType::ColorRGB => {
                                     ui.set_width(100.0);
 
@@ -158,10 +115,20 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                         &mut fixture_handler,
                                     );
                                 }
-                                FixtureFeatureType::ColorMacro => {
+                                FixtureFeatureType::ColorWheel => {
                                     ui.set_width(100.0);
 
                                     color_macro_ui(
+                                        ui,
+                                        is_channel_home,
+                                        selected_fixtures,
+                                        &mut fixture_handler,
+                                    );
+                                }
+                                FixtureFeatureType::GoboWheel => {
+                                    ui.set_width(100.0);
+
+                                    gobo_wheel_ui(
                                         ui,
                                         is_channel_home,
                                         selected_fixtures,
@@ -199,6 +166,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 }
                             }
                         });
+
+                        if idx < num_feature_types - 1 {
+                            ui.separator();
+                        }
                     }
                 });
             });

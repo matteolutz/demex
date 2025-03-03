@@ -1,16 +1,19 @@
+use functions::{
+    delete_function::DeleteArgs,
+    record_function::{RecordGroupArgs, RecordPresetArgs, RecordSequenceCueArgs},
+    rename_function::RenameObjectArgs,
+    set_function::{SetFeatureValueArgs, SetFixturePresetArgs},
+    ActionFunction,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
-        error::FixtureError,
         handler::FixtureHandler,
         presets::{preset::FixturePresetId, PresetHandler},
-        sequence::cue::{CueFixtureChannelValue, CueIdx},
         updatables::{
             error::UpdatableHandlerError, fader::config::DemexFaderConfig, UpdatableHandler,
         },
-        Fixture,
     },
     input::{
         button::DemexInputButton, error::DemexInputDeviceError, fader::DemexInputFader,
@@ -23,23 +26,26 @@ use self::{error::ActionRunError, result::ActionRunResult};
 
 use super::{
     fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
-    object::HomeableObject,
+    object::{HomeableObject, Object, ObjectTrait},
 };
 
 pub mod error;
+pub mod functions;
 pub mod result;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub enum CueIdxSelectorActionData {
-    Discrete(CueIdx),
-    Next,
+pub enum ValueOrRange<T> {
+    Single(T),
+    Thru(T, T),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ChannelTypeSelectorActionData {
-    All,
-    Active,
-    Features(Vec<FixtureFeatureType>),
+impl<T: Copy> From<ValueOrRange<T>> for (T, T) {
+    fn from(value: ValueOrRange<T>) -> Self {
+        match value {
+            ValueOrRange::Single(single) => (single, single),
+            ValueOrRange::Thru(from, to) => (from, to),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -47,50 +53,6 @@ pub enum ExecutorAssignmentModeActionData {
     StartAndNext,
     Stop,
     Flash,
-}
-
-impl ChannelTypeSelectorActionData {
-    pub fn get_channel_values(
-        &self,
-        fixture: &Fixture,
-    ) -> Result<Vec<CueFixtureChannelValue>, FixtureError> {
-        let mut values = Vec::new();
-
-        for channel_type in fixture.channel_types() {
-            match self {
-                Self::All => {
-                    values.push(CueFixtureChannelValue::new(
-                        fixture.channel_value_programmer(*channel_type)?.clone(),
-                        *channel_type,
-                        false,
-                    ));
-                }
-                Self::Active => {
-                    let value = fixture.channel_value_programmer(*channel_type)?;
-                    if value.is_home() {
-                        continue;
-                    }
-
-                    values.push(CueFixtureChannelValue::new(
-                        value.clone(),
-                        *channel_type,
-                        false,
-                    ));
-                }
-                Self::Features(_channels) => {
-                    todo!()
-                }
-            }
-        }
-
-        Ok(values)
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ChannelValueSingleActionData {
-    Single(f32),
-    Thru(f32, f32),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -118,31 +80,18 @@ pub enum ExecutorCreationModeActionData {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum Action {
-    SetFeatureValue(
-        FixtureSelector,
-        FixtureFeatureType,
-        ChannelValueSingleActionData,
-    ),
-    SetChannelValuePreset(FixtureSelector, FixturePresetId),
-    SetChannelValuePresetRange(FixtureSelector, FixturePresetId, FixturePresetId),
+    SetFeatureValue(SetFeatureValueArgs),
+    SetFixturePreset(SetFixturePresetArgs),
 
     Home(HomeableObject),
     HomeAll,
 
-    RecordPreset(FixturePresetId, FixtureSelector, Option<String>),
-    RecordGroup2(Option<u32>, FixtureSelector, Option<String>),
-    RecordSequenceCue(
-        u32,
-        CueIdxSelectorActionData,
-        FixtureSelector,
-        ChannelTypeSelectorActionData,
-    ),
-
-    RenamePreset(FixturePresetId, String),
-    RenameGroup(u32, String),
-    RenameSequence(u32, String),
-
+    RecordPreset(RecordPresetArgs),
+    RecordGroup2(RecordGroupArgs),
+    RecordSequenceCue(RecordSequenceCueArgs),
     RecordMacro(Box<Action>, u32),
+
+    Rename(RenameObjectArgs),
 
     CreateSequence(Option<u32>, Option<String>),
     CreateExecutor(
@@ -156,18 +105,9 @@ pub enum Action {
 
     UpdatePreset(FixturePresetId, FixtureSelector, UpdateModeActionData),
 
-    DeleteMacro((u32, u32)),
-    DeletePreset((FixturePresetId, FixturePresetId)),
-    DeleteSequence((u32, u32)),
-    DeleteExecutor((u32, u32)),
-    DeleteFader((u32, u32)),
-    DeleteGroup((u32, u32)),
+    Delete(DeleteArgs),
 
-    EditSequence(u32),
-    EditSequenceCue(u32, CueIdx),
-    EditExecutor(u32),
-    EditFader(u32),
-    EditPreset(FixturePresetId),
+    Edit(Object),
 
     AssignExecutorToInput {
         executor_id: u32,
@@ -186,7 +126,7 @@ pub enum Action {
         button_id: u32,
     },
     AssignSelectivePresetToInput {
-        preset_id: (FixturePresetId, FixturePresetId),
+        preset_id: ValueOrRange<FixturePresetId>,
         fixture_selector: Option<FixtureSelector>,
         device_idx: usize,
         button_id: u32,
@@ -235,79 +175,61 @@ impl Action {
         input_device_handler: &mut DemexInputDeviceHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
-            Self::SetFeatureValue(fixture_selector, channel_type, value) => self
-                .run_set_channel_value(
-                    preset_handler,
-                    fixture_handler,
-                    fixture_selector,
-                    fixture_selector_context,
-                    *channel_type,
-                    value,
-                ),
-            Self::SetChannelValuePreset(fixture_selector, preset_id) => self
-                .run_set_channel_value_preset(
-                    preset_handler,
-                    fixture_handler,
-                    fixture_selector,
-                    fixture_selector_context,
-                    *preset_id,
-                ),
-            Self::SetChannelValuePresetRange(fixture_selector, preset_id_from, preset_id_to) => {
-                self.run_set_channel_value_preset_range(
-                    preset_handler,
-                    fixture_handler,
-                    fixture_selector,
-                    fixture_selector_context,
-                    *preset_id_from,
-                    *preset_id_to,
-                )
-            }
+            Self::SetFeatureValue(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+            ),
+            Self::SetFixturePreset(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+            ),
 
-            Self::Home(homeable_object) => self.run_home(
+            Self::Home(homeable_object) => homeable_object.run_home(
                 preset_handler,
                 fixture_handler,
                 updatable_handler,
-                homeable_object,
                 fixture_selector_context,
-            ),
-            Self::HomeAll => self.run_home_all(fixture_handler),
-            Self::RecordPreset(id, fixture_selector, name) => self.run_record_preset(
-                preset_handler,
-                fixture_handler,
-                fixture_selector,
-                fixture_selector_context,
-                *id,
-                name,
-            ),
-            Self::RecordGroup2(id, fixture_selector, name) => self.run_record_group(
-                preset_handler,
-                fixture_selector,
-                fixture_selector_context,
-                *id,
-                name,
-            ),
-            Self::RecordSequenceCue(
-                sequence_id,
-                cue_idx,
-                fixture_selector,
-                channel_type_selector,
-            ) => self.run_record_sequence_cue(
-                preset_handler,
-                fixture_handler,
-                fixture_selector,
-                fixture_selector_context,
-                *sequence_id,
-                *cue_idx,
-                channel_type_selector,
             ),
 
-            Self::RenamePreset(id, new_name) => {
-                self.run_rename_preset(preset_handler, *id, new_name)
-            }
-            Self::RenameGroup(id, new_name) => self.run_rename_group(preset_handler, *id, new_name),
-            Self::RenameSequence(id, new_name) => {
-                self.run_rename_sequence(preset_handler, *id, new_name)
-            }
+            Self::HomeAll => self.run_home_all(fixture_handler),
+
+            Self::RecordPreset(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+            ),
+
+            Self::RecordGroup2(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+            ),
+
+            Self::RecordSequenceCue(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+            ),
+
+            Self::Rename(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+            ),
 
             Self::CreateSequence(id, name) => self.run_create_sequence(preset_handler, *id, name),
             Self::CreateExecutor(id, mode, fixture_selector, name) => self.run_create_executor(
@@ -340,34 +262,22 @@ impl Action {
                 update_mode,
             ),
 
-            Self::DeleteMacro(id_range) => self.run_delete_macro(*id_range, preset_handler),
-            Self::DeletePreset(id_range) => self.run_delete_preset(*id_range, preset_handler),
-            Self::DeleteSequence(sequence_range) => {
-                self.run_delete_sequence(*sequence_range, preset_handler, updatable_handler)
-            }
-            Self::DeleteExecutor(executor_range) => {
-                self.run_delete_executor(*executor_range, updatable_handler)
-            }
-            Self::DeleteFader(fader_range) => {
-                self.run_delete_fader(*fader_range, updatable_handler)
-            }
-            Self::DeleteGroup(group_range) => self.run_delete_group(*group_range, preset_handler),
+            Self::Delete(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+            ),
 
-            Self::EditSequence(sequence_id) => Ok(ActionRunResult::EditWindow(
-                DemexEditWindow::EditSequence(*sequence_id),
-            )),
-            Self::EditSequenceCue(sequence_id, cue_idx) => Ok(ActionRunResult::EditWindow(
-                DemexEditWindow::EditSequenceCue(*sequence_id, *cue_idx),
-            )),
-            Self::EditExecutor(executor_id) => Ok(ActionRunResult::EditWindow(
-                DemexEditWindow::EditExecutor(*executor_id),
-            )),
-            Self::EditFader(fader_id) => Ok(ActionRunResult::EditWindow(
-                DemexEditWindow::EditFader(*fader_id),
-            )),
-            Self::EditPreset(preset_id) => Ok(ActionRunResult::EditWindow(
-                DemexEditWindow::EditPreset(*preset_id),
-            )),
+            Self::Edit(object) => object
+                .clone()
+                .edit_window()
+                .ok_or(ActionRunError::ActionNotImplementedForObject(
+                    "Edit".to_owned(),
+                    object.clone(),
+                ))
+                .map(ActionRunResult::EditWindow),
 
             Self::ClearAll => Ok(ActionRunResult::new()),
             Self::FixtureSelector(fixture_selector) => self.run_fixture_selector(
@@ -473,123 +383,6 @@ impl Action {
         }
     }
 
-    fn run_set_channel_value(
-        &self,
-        preset_handler: &PresetHandler,
-        fixture_handler: &mut FixtureHandler,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        feature_type: FixtureFeatureType,
-        value: &ChannelValueSingleActionData,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let selection = fixture_selector
-            .get_selection(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        for fixture_id in selection.fixtures() {
-            let fixture_idx = selection.offset_idx(*fixture_id).unwrap();
-
-            let discrete_value = match value {
-                ChannelValueSingleActionData::Single(value) => *value,
-                ChannelValueSingleActionData::Thru(start, end) => {
-                    let range = end - start;
-                    let step = range / (selection.num_offsets() - 1) as f32;
-                    start + step * fixture_idx as f32
-                }
-            };
-
-            if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                match feature_type {
-                    FixtureFeatureType::Intensity => fixture
-                        .set_feature_value(FixtureFeatureValue::Intensity {
-                            intensity: discrete_value,
-                        })
-                        .map_err(ActionRunError::FixtureError)?,
-                    unhandled_feature_type => {
-                        Err(ActionRunError::Todo(format!(
-                            "Handle set of feature type {:?}",
-                            unhandled_feature_type
-                        )))?;
-                    }
-                }
-            }
-        }
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_set_channel_value_preset(
-        &self,
-        preset_handler: &PresetHandler,
-        fixture_handler: &mut FixtureHandler,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        preset_id: FixturePresetId,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let selection = fixture_selector
-            .get_selection(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        let preset = preset_handler
-            .get_preset(preset_id)
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        for fixture_id in selection.fixtures() {
-            if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                preset
-                    .apply(fixture)
-                    .map_err(ActionRunError::PresetHandlerError)?;
-            }
-        }
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_set_channel_value_preset_range(
-        &self,
-        _preset_handler: &PresetHandler,
-        _fixture_handler: &mut FixtureHandler,
-        _fixture_selector: &FixtureSelector,
-        _fixture_selector_context: FixtureSelectorContext,
-        _preset_id_from: FixturePresetId,
-        _preset_id_to: FixturePresetId,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        /*
-        let fixtures = fixture_selector
-            .get_fixtures(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        let presets = preset_handler
-            .get_preset_range(preset_id_from, preset_id_to, channel_type)
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        for (idx, fixture) in fixtures.iter().enumerate() {
-            if let Some(f) = fixture_handler.fixture(*fixture) {
-                // get the two relevant indexes from the presets
-                let preset_idx_fl =
-                    idx as f32 * ((presets.len() - 1) as f32 / fixtures.len() as f32);
-
-                let preset_idx_low = preset_idx_fl.floor() as usize;
-                let preset_idx_high = preset_idx_low + 1;
-
-                let fade = (idx as f32 * ((presets.len()) as f32 / fixtures.len() as f32))
-                    - preset_idx_low as f32;
-
-                let channel_value = FixtureChannelValue::Mix {
-                    a: Box::new(FixtureChannelValue::Preset(presets[preset_idx_low].id())),
-                    b: Box::new(FixtureChannelValue::Preset(presets[preset_idx_high].id())),
-                    mix: fade,
-                };
-
-                f.set_channel_value(channel_type, channel_value)
-                    .map_err(ActionRunError::FixtureError)?;
-            }
-        }
-        */
-
-        Ok(ActionRunResult::new())
-    }
-
     fn run_home_all(
         &self,
         fixture_handler: &mut FixtureHandler,
@@ -597,153 +390,6 @@ impl Action {
         fixture_handler
             .home_all()
             .map_err(ActionRunError::FixtureHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_home(
-        &self,
-        preset_handler: &PresetHandler,
-        fixture_handler: &mut FixtureHandler,
-        updatable_handler: &mut UpdatableHandler,
-        homeable_object: &HomeableObject,
-        fixture_selector_context: FixtureSelectorContext,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        match homeable_object {
-            HomeableObject::FixtureSelector(fixture_selector) => {
-                let selection = fixture_selector
-                    .get_selection(preset_handler, fixture_selector_context)
-                    .map_err(ActionRunError::FixtureSelectorError)?;
-
-                for fixture_id in selection.fixtures() {
-                    if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                        fixture.home().map_err(ActionRunError::FixtureError)?;
-                    }
-                }
-
-                Ok(ActionRunResult::new())
-            }
-            HomeableObject::Executor(executor_id) => {
-                updatable_handler
-                    .stop_executor(*executor_id, fixture_handler)
-                    .map_err(ActionRunError::UpdatableHandlerError)?;
-
-                Ok(ActionRunResult::new())
-            }
-            HomeableObject::Fader(fader_id) => {
-                if let Ok(fader) = updatable_handler.fader_mut(*fader_id) {
-                    fader.home(fixture_handler);
-                }
-
-                Ok(ActionRunResult::new())
-            }
-        }
-    }
-
-    fn run_record_preset(
-        &self,
-        preset_handler: &mut PresetHandler,
-        fixture_handler: &FixtureHandler,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        id: FixturePresetId,
-        name: &Option<String>,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        preset_handler
-            .record_preset(
-                fixture_selector,
-                fixture_selector_context,
-                id,
-                name.clone(),
-                fixture_handler,
-            )
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_record_group(
-        &self,
-        preset_handler: &mut PresetHandler,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        id: Option<u32>,
-        name: &Option<String>,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let selection = fixture_selector
-            .get_selection(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        preset_handler
-            .record_group(
-                selection,
-                id.unwrap_or_else(|| preset_handler.next_group_id()),
-                name.clone(),
-            )
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_record_sequence_cue(
-        &self,
-        preset_handler: &mut PresetHandler,
-        fixture_handler: &FixtureHandler,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        sequence_id: u32,
-        cue_idx: CueIdxSelectorActionData,
-        channel_type_selector: &ChannelTypeSelectorActionData,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        preset_handler
-            .record_sequence_cue(
-                sequence_id,
-                fixture_handler,
-                fixture_selector,
-                fixture_selector_context,
-                cue_idx,
-                channel_type_selector,
-            )
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_rename_group(
-        &self,
-        preset_handler: &mut PresetHandler,
-        id: u32,
-        new_name: &str,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        preset_handler
-            .rename_group(id, new_name.to_owned())
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_rename_sequence(
-        &self,
-        preset_handler: &mut PresetHandler,
-        id: u32,
-        new_name: &str,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        preset_handler
-            .rename_sequence(id, new_name.to_owned())
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_rename_preset(
-        &self,
-        preset_handler: &mut PresetHandler,
-        id: FixturePresetId,
-        new_name: &str,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        preset_handler
-            .rename_preset(id, new_name.to_owned())
-            .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())
     }
@@ -912,132 +558,6 @@ impl Action {
         }
     }
 
-    pub fn run_delete_preset(
-        &self,
-        (id_from, id_to): (FixturePresetId, FixturePresetId),
-        preset_handler: &mut PresetHandler,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        // TODO: what happens with data referring to this preset?
-        let count = preset_handler
-            .delete_preset_range(id_from, id_to)
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        if id_from == id_to {
-            Ok(ActionRunResult::new())
-        } else {
-            Ok(ActionRunResult::Info(format!("Deleted {} presets", count)))
-        }
-    }
-
-    pub fn run_delete_sequence(
-        &self,
-        (id_from, id_to): (u32, u32),
-        preset_handler: &mut PresetHandler,
-        updatable_handler: &mut UpdatableHandler,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        for id in id_from..=id_to {
-            if !updatable_handler.sequence_deleteable(id) {
-                return Err(ActionRunError::SequenceDeleteDependencies(id));
-            }
-        }
-
-        for id in id_from..=id_to {
-            preset_handler
-                .delete_sequence(id)
-                .map_err(ActionRunError::PresetHandlerError)?;
-        }
-
-        if id_from == id_to {
-            Ok(ActionRunResult::new())
-        } else {
-            Ok(ActionRunResult::Info(format!(
-                "Deleted {} sequences",
-                id_to - id_from + 1
-            )))
-        }
-    }
-
-    pub fn run_delete_executor(
-        &self,
-        (id_from, id_to): (u32, u32),
-        updatable_handler: &mut UpdatableHandler,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        for id in id_from..=id_to {
-            if updatable_handler
-                .executor(id)
-                .is_some_and(|exec| exec.is_started())
-            {
-                return Err(ActionRunError::ExecutorIsRunning(id));
-            }
-        }
-
-        for id in id_from..=id_to {
-            updatable_handler
-                .delete_executor(id)
-                .map_err(ActionRunError::UpdatableHandlerError)?;
-        }
-
-        if id_from == id_to {
-            Ok(ActionRunResult::new())
-        } else {
-            Ok(ActionRunResult::Info(format!(
-                "Deleted {} executors",
-                id_to - id_from + 1
-            )))
-        }
-    }
-
-    pub fn run_delete_fader(
-        &self,
-        (id_from, id_to): (u32, u32),
-        updatable_handler: &mut UpdatableHandler,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        for id in id_from..=id_to {
-            if updatable_handler
-                .fader(id)
-                .is_ok_and(|fader| fader.is_active())
-            {
-                return Err(ActionRunError::FaderIsActive(id));
-            }
-        }
-
-        for id in id_from..=id_to {
-            updatable_handler
-                .delete_fader(id)
-                .map_err(ActionRunError::UpdatableHandlerError)?;
-        }
-
-        if id_from == id_to {
-            Ok(ActionRunResult::new())
-        } else {
-            Ok(ActionRunResult::Info(format!(
-                "Deleted {} faders",
-                id_to - id_from + 1
-            )))
-        }
-    }
-
-    pub fn run_delete_group(
-        &self,
-        (id_from, id_to): (u32, u32),
-        preset_handler: &mut PresetHandler,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        for id in id_from..=id_to {
-            preset_handler
-                .delete_group(id)
-                .map_err(ActionRunError::PresetHandlerError)?;
-        }
-
-        if id_from == id_to {
-            Ok(ActionRunResult::new())
-        } else {
-            Ok(ActionRunResult::Info(format!(
-                "Deleted {} groups",
-                id_to - id_from + 1
-            )))
-        }
-    }
-
     pub fn run_assign_fader_to_input(
         &self,
         updatable_handler: &UpdatableHandler,
@@ -1154,12 +674,14 @@ impl Action {
         &self,
         preset_handler: &PresetHandler,
         input_device_handler: &mut DemexInputDeviceHandler,
-        (preset_id_from, preset_id_to): (FixturePresetId, FixturePresetId),
+        preset_id: ValueOrRange<FixturePresetId>,
         fixture_selector: &Option<FixtureSelector>,
         fixture_selector_context: FixtureSelectorContext,
         device_idx: usize,
         button_id: u32,
     ) -> Result<ActionRunResult, ActionRunError> {
+        let (preset_id_from, preset_id_to) = preset_id.into();
+
         let _ = preset_handler
             .get_preset_range(preset_id_from, preset_id_to)
             .map_err(ActionRunError::PresetHandlerError)?;

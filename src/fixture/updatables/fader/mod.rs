@@ -53,6 +53,10 @@ impl DemexFader {
         &self.name
     }
 
+    pub fn name_mut(&mut self) -> &mut String {
+        &mut self.name
+    }
+
     pub fn display_name(&self, preset_handler: &PresetHandler) -> String {
         match &self.config {
             DemexFaderConfig::Submaster { .. } => self.name().to_owned(),

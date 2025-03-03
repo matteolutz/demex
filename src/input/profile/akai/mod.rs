@@ -14,6 +14,7 @@ use crate::{
         midi::MidiMessage, DemexInputDeviceProfile,
     },
     parser::nodes::fixture_selector::FixtureSelectorContext,
+    utils::version::demex_version,
 };
 
 use super::DemexInputDeviceProfileType;
@@ -27,8 +28,8 @@ const APC_MINI_MK_2_NAME: &str = "APC mini mk2 Control";
 
 pub struct ApcMiniMk2InputDeviceProfile {
     rx: mpsc::Receiver<MidiMessage>,
-    midi_out: midir::MidiOutputConnection,
-    _midi_in: midir::MidiInputConnection<()>,
+    midi_out: Option<midir::MidiOutputConnection>,
+    _midi_in: Option<midir::MidiInputConnection<()>>,
 }
 
 impl std::fmt::Debug for ApcMiniMk2InputDeviceProfile {
@@ -38,9 +39,7 @@ impl std::fmt::Debug for ApcMiniMk2InputDeviceProfile {
 }
 
 impl ApcMiniMk2InputDeviceProfile {
-    pub fn new() -> Result<Self, DemexInputDeviceError> {
-        let (tx, rx) = mpsc::channel();
-
+    fn get_conn_out() -> Result<midir::MidiOutputConnection, DemexInputDeviceError> {
         let midi_out = midir::MidiOutput::new("demex-midi-output")
             .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
 
@@ -56,10 +55,14 @@ impl ApcMiniMk2InputDeviceProfile {
                 APC_MINI_MK_2_NAME.to_owned(),
             ))?;
 
-        let connection = midi_out
+        midi_out
             .connect(out_port, APC_MINI_MK_2_NAME)
-            .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
+            .map_err(|err| DemexInputDeviceError::MidirError(err.into()))
+    }
 
+    fn get_conn_in(
+        tx: mpsc::Sender<MidiMessage>,
+    ) -> Result<midir::MidiInputConnection<()>, DemexInputDeviceError> {
         let midi_in = midir::MidiInput::new("demex-midi-input")
             .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
 
@@ -73,10 +76,9 @@ impl ApcMiniMk2InputDeviceProfile {
             })
             .ok_or(DemexInputDeviceError::InputDeviceNotFound(
                 APC_MINI_MK_2_NAME.to_owned(),
-            ))
-            .unwrap();
+            ))?;
 
-        let conn_in = midi_in
+        midi_in
             .connect(
                 in_port,
                 APC_MINI_MK_2_NAME,
@@ -84,32 +86,71 @@ impl ApcMiniMk2InputDeviceProfile {
                     if let Some(midi_msg) = MidiMessage::from_bytes(msg) {
                         tx.send(midi_msg).unwrap();
                     } else {
-                        println!("failed to deserialize midi bytes: {:02X?}", msg);
+                        log::warn!("failed to deserialize midi bytes: {:02X?}", msg);
                     }
                 },
                 (),
             )
-            .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
+            .map_err(|err| DemexInputDeviceError::MidirError(err.into()))
+    }
+
+    pub fn new() -> Self {
+        let (tx, rx) = mpsc::channel();
+
+        let conn_out = Self::get_conn_out();
+        let conn_in = Self::get_conn_in(tx.clone());
 
         let mut s = Self {
             rx,
-            midi_out: connection,
-            _midi_in: conn_in,
+            midi_out: conn_out
+                .inspect_err(|err| {
+                    log::warn!(
+                        "Failed to establish APC Mini Mk2 MIDI out connection: {}",
+                        err
+                    )
+                })
+                .ok(),
+            _midi_in: conn_in
+                .inspect_err(|err| {
+                    log::warn!(
+                        "Failed to establish APC Mini Mk2 MIDI in connection: {}",
+                        err
+                    )
+                })
+                .ok(),
         };
 
-        s.init()?;
+        if let Err(err) = s.init() {
+            log::warn!("Failed to initialize APC Mini Mk2: {}", err);
+        }
 
-        Ok(s)
+        s
     }
 
     pub fn init(&mut self) -> Result<(), DemexInputDeviceError> {
-        self.midi_out
+        let midi_out = self
+            .midi_out
+            .as_mut()
+            .ok_or(DemexInputDeviceError::OperationNotSupported)?;
+
+        let (version_major, version_minor, version_patch) = demex_version();
+
+        midi_out
             .send(&[
-                0xF0, 0x47, 0x7F, 0x4F, 0x60, 0x0, 0x04, // akai
-                0x0, 0x0, 0x0, 0x1,  // demex version
-                0xF7, // end of sysex
+                0xF0,          // sysex start
+                0x47,          // manufacturer id
+                0x7F,          // device id
+                0x4F,          // mode id
+                0x60,          // message type
+                0x0,           // hi-bytes to follow
+                0x04,          // lo-bytes to follow
+                0x0,           // application id
+                version_major, // demex major version
+                version_minor, // demex minor version
+                version_patch, // demex patch version
+                0xF7,          // end of sysex
             ])
-            .unwrap();
+            .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
 
         for i in (0..=63).chain(100..=107).chain(200..=207).chain(300..=300) {
             self.set_button_led(
@@ -179,10 +220,15 @@ impl ApcMiniMk2InputDeviceProfile {
             .get_button_note_number(button_id)
             .ok_or(DemexInputDeviceError::ButtonNotFound(button_id))?;
 
+        let midi_out = self
+            .midi_out
+            .as_mut()
+            .ok_or(DemexInputDeviceError::OperationNotSupported)?;
+
         match button_id {
             // RGB buttons
             0..=63 => {
-                self.midi_out
+                midi_out
                     .send(
                         &MidiMessage::NoteOn {
                             channel: mode.value(),
@@ -195,7 +241,7 @@ impl ApcMiniMk2InputDeviceProfile {
             }
             // static buttons
             _ => {
-                self.midi_out
+                midi_out
                     .send(
                         &MidiMessage::NoteOn {
                             channel: 0,
@@ -219,6 +265,10 @@ impl ApcMiniMk2InputDeviceProfile {
 }
 
 impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
+    fn is_enabled(&self) -> bool {
+        self.midi_out.is_some()
+    }
+
     fn update_out(
         &mut self,
         device_config: &crate::input::device::DemexInputDeviceConfig,
@@ -287,9 +337,9 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                     selection,
                     preset_id,
                 } => {
-                    let target_mode = preset_handler
-                        .get_preset(*preset_id)
-                        .ok()
+                    let preset = preset_handler.get_preset(*preset_id).ok();
+
+                    let target_mode = preset
                         .map(|preset| {
                             preset.get_target(
                                 global_fixture_selection
@@ -300,6 +350,8 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         })
                         .unwrap_or(FixturePresetTarget::None);
 
+                    let display_color = preset.and_then(|p| p.display_color());
+
                     self.set_button_led(
                         *button_id,
                         if selection.is_some() || target_mode == FixturePresetTarget::AllSelected {
@@ -307,11 +359,15 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         } else {
                             ApcMiniMk2ButtonLedMode::Intens10
                         },
-                        if selection.is_some() {
-                            ApcMiniMk2ButtonLedColor::Orange
-                        } else {
-                            ApcMiniMk2ButtonLedColor::Yellow
-                        },
+                        display_color
+                            .and_then(ApcMiniMk2ButtonLedColor::try_from_color)
+                            .unwrap_or_else(|| {
+                                if selection.is_some() {
+                                    ApcMiniMk2ButtonLedColor::Orange
+                                } else {
+                                    ApcMiniMk2ButtonLedColor::Yellow
+                                }
+                            }),
                     )?;
                 }
                 DemexInputButton::Macro { .. } => {
@@ -348,9 +404,7 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                     self.set_button_led(
                         *button_id,
                         ApcMiniMk2ButtonLedMode::IntensFull,
-                        if speed_master_value.interval().is_none()
-                            || speed_master_value.display_should_blink()
-                        {
+                        if speed_master_value.interval().is_none() || speed_master_value.on_beat() {
                             ApcMiniMk2ButtonLedColor::DarkViolet
                         } else {
                             ApcMiniMk2ButtonLedColor::Off
@@ -396,6 +450,22 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                 } => self.get_fader_idx(channel, control_code).map(|idx| {
                     DemexInputDeviceMessage::FaderValueChanged(idx, control_value as f32 / 127.0)
                 }),
+                MidiMessage::AkaiSystemExclusive {
+                    message_type, data, ..
+                } => {
+                    // answer to init message, contains current fader values
+                    if message_type == 0x61 && data.len() == 9 {
+                        let fader_values = data
+                            .iter()
+                            .enumerate()
+                            .map(|(idx, &v)| (idx as u32, v as f32 / 127.0))
+                            .collect::<Vec<_>>();
+
+                        Some(DemexInputDeviceMessage::FaderValuesChanged(fader_values))
+                    } else {
+                        None
+                    }
+                }
             })
             .collect::<Vec<_>>();
 
