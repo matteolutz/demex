@@ -265,6 +265,10 @@ impl ApcMiniMk2InputDeviceProfile {
 }
 
 impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
+    fn is_enabled(&self) -> bool {
+        self.midi_out.is_some()
+    }
+
     fn update_out(
         &mut self,
         device_config: &crate::input::device::DemexInputDeviceConfig,

@@ -87,7 +87,10 @@ impl DemexUiApp {
                 show_file,
                 save_show,
 
-                logs: Vec::new(),
+                logs: vec![DemexLogEntry::new(DemexLogEntryType::Info(format!(
+                    "demex v{} (by @matteolutz), welcome!",
+                    VERSION_STR
+                )))],
                 window_handler: DemexWindowHandler::default(),
 
                 command_input: String::new(),

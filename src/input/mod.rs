@@ -29,8 +29,12 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
         timing_handler: &TimingHandler,
         global_fixture_selection: &Option<FixtureSelection>,
     ) -> Result<(), DemexInputDeviceError>;
+
     fn poll(&self) -> Result<Vec<DemexInputDeviceMessage>, DemexInputDeviceError>;
+
     fn profile_type(&self) -> DemexInputDeviceProfileType;
+
+    fn is_enabled(&self) -> bool;
 }
 
 #[derive(Default, Debug)]
@@ -68,6 +72,10 @@ impl DemexInputDeviceHandler {
         command_input: &mut Vec<Token>,
     ) -> Result<(), DemexInputDeviceError> {
         for (device_idx, device) in self.devices.iter().enumerate() {
+            if !device.profile().is_enabled() {
+                continue;
+            }
+
             for device_message in device.profile().poll()? {
                 match device_message {
                     DemexInputDeviceMessage::ButtonPressed(button_id) => {
@@ -138,6 +146,10 @@ impl DemexInputDeviceHandler {
         }
 
         for device in &mut self.devices {
+            if !device.profile().is_enabled() {
+                continue;
+            }
+
             device.profile.update_out(
                 &device.config,
                 preset_handler,
