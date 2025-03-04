@@ -5,14 +5,14 @@ use crate::parser::nodes::{
     object::{HomeableObject, Object, ObjectRange},
 };
 
-use super::ActionFunction;
+use super::FunctionArgs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeleteArgs {
     pub object_range: ObjectRange,
 }
 
-impl ActionFunction for DeleteArgs {
+impl FunctionArgs for DeleteArgs {
     fn run(
         &self,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,

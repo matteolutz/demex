@@ -3,10 +3,16 @@ use std::collections::HashMap;
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::{
-    channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
-    presets::{preset::FixturePresetId, PresetHandler},
-    selection::FixtureSelection,
+use crate::{
+    fixture::{
+        channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
+        handler::FixtureHandler,
+        presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler},
+        selection::FixtureSelection,
+    },
+    parser::nodes::action::functions::{
+        record_function::RecordChannelTypeSelector, update_function::UpdateMode,
+    },
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, EguiProbe)]
@@ -54,8 +60,6 @@ pub enum CueTimingOriginDirection {
     #[default]
     LowToHigh,
     HighToLow,
-    CenterToOutside,
-    OutsideToCenter,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, EguiProbe)]
@@ -82,12 +86,6 @@ impl CueTiming {
             CueTimingOriginDirection::LowToHigh | CueTimingOriginDirection::HighToLow => {
                 self.offset * (num_offsets as f32 - 1.0)
             }
-            CueTimingOriginDirection::CenterToOutside
-            | CueTimingOriginDirection::OutsideToCenter => {
-                let half_fixtures = f32::ceil(num_offsets as f32 / 2.0);
-
-                self.offset * (half_fixtures - 1.0)
-            }
         };
 
         f32::max(offset, 0.0)
@@ -98,18 +96,6 @@ impl CueTiming {
             CueTimingOriginDirection::LowToHigh => self.offset * fixture_offset_idx as f32,
             CueTimingOriginDirection::HighToLow => {
                 self.offset * (num_fixtures as f32 - 1.0 - fixture_offset_idx as f32)
-            }
-            CueTimingOriginDirection::CenterToOutside => {
-                let center = f32::max((num_fixtures as f32 / 2.0) + 0.5, 0.0);
-                let center_offset = f32::floor(f32::abs(center - (fixture_offset_idx + 1) as f32));
-
-                self.offset * center_offset
-            }
-            CueTimingOriginDirection::OutsideToCenter => {
-                let center = f32::max((num_fixtures as f32 / 2.0) + 0.5, 0.0);
-                let center_offset = f32::floor(f32::abs(center - (fixture_offset_idx + 1) as f32));
-
-                self.offset * ((num_fixtures / 2) as f32 - 1.0 - center_offset)
             }
         }
     }
@@ -173,6 +159,32 @@ pub struct Cue {
     timing: CueTiming,
 
     trigger: CueTrigger,
+}
+
+impl Cue {
+    pub fn generate_cue_data(
+        fixture_handler: &FixtureHandler,
+        fixture_selection: &FixtureSelection,
+        channel_type_selector: &RecordChannelTypeSelector,
+    ) -> Result<HashMap<u32, Vec<CueFixtureChannelValue>>, PresetHandlerError> {
+        let mut cue_data = HashMap::new();
+
+        for fixture_id in fixture_selection.fixtures() {
+            if let Some(fixture) = fixture_handler.fixture_immut(*fixture_id) {
+                let channel_values = channel_type_selector
+                    .get_channel_values(fixture)
+                    .map_err(PresetHandlerError::FixtureError)?;
+
+                if channel_values.is_empty() {
+                    continue;
+                }
+
+                cue_data.insert(*fixture_id, channel_values);
+            }
+        }
+
+        Ok(cue_data)
+    }
 }
 
 impl Cue {
@@ -350,6 +362,40 @@ impl Cue {
 
                 None
             }
+        }
+    }
+
+    pub fn update(
+        &mut self,
+        sequence_id: u32,
+        new_data: HashMap<u32, Vec<CueFixtureChannelValue>>,
+        new_selection: &FixtureSelection,
+        update_mode: UpdateMode,
+    ) -> Result<usize, PresetHandlerError> {
+        match &mut self.data {
+            CueDataMode::Default(data) => {
+                self.selection.extend_from(new_selection);
+
+                let mut updated = 0;
+
+                for (fixture_id, new_fixture_values) in new_data {
+                    // if we already have a value for this fixture and we are not in override mode, skip
+                    if data.contains_key(&fixture_id) && update_mode != UpdateMode::Override {
+                        continue;
+                    }
+
+                    // Insert or update
+                    data.insert(fixture_id, new_fixture_values);
+
+                    updated += 1;
+                }
+
+                Ok(updated)
+            }
+            _ => Err(PresetHandlerError::CantUpdateNonDefaultCue(
+                sequence_id,
+                self.cue_idx,
+            )),
         }
     }
 

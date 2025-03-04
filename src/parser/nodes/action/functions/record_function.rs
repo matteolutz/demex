@@ -14,7 +14,7 @@ use crate::{
     },
 };
 
-use super::ActionFunction;
+use super::FunctionArgs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RecordChannelTypeSelector {
@@ -68,7 +68,7 @@ pub struct RecordPresetArgs {
     pub name: Option<String>,
 }
 
-impl ActionFunction for RecordPresetArgs {
+impl FunctionArgs for RecordPresetArgs {
     fn run(
         &self,
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,
@@ -101,7 +101,7 @@ pub struct RecordGroupArgs {
     pub name: Option<String>,
 }
 
-impl ActionFunction for RecordGroupArgs {
+impl FunctionArgs for RecordGroupArgs {
     fn run(
         &self,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
@@ -135,7 +135,7 @@ pub struct RecordSequenceCueArgs {
     pub channel_type_selector: RecordChannelTypeSelector,
 }
 
-impl ActionFunction for RecordSequenceCueArgs {
+impl FunctionArgs for RecordSequenceCueArgs {
     fn run(
         &self,
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,

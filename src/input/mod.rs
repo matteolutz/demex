@@ -93,6 +93,7 @@ impl DemexInputDeviceHandler {
                                 fixture_selector_context.clone(),
                                 macro_exec_cue,
                                 global_fixture_selection,
+                                command_input,
                             )?;
                         } else {
                             command_input.extend_from_slice(&[Token::FloatingPoint(

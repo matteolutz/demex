@@ -36,6 +36,7 @@ delete_function             = "macro" integer_or_range
                             | "group" integer_or_range
 
 update_function             = specific_preset "for" fixture_selector [udpate_mode]
+                            | "sequence" integer "cue" cue_idx "for" fixture_selector ["with" (channel_type_list | "active" | "all")] [update_mode]
 
 renane_function             = specific_preset "to" string
                             | "group" integer "to" string

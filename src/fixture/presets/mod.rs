@@ -8,13 +8,15 @@ use preset::{FixturePreset, FixturePresetId};
 use serde::{Deserialize, Serialize};
 
 use crate::parser::nodes::{
-    action::{functions::record_function::RecordChannelTypeSelector, Action, UpdateModeActionData},
+    action::{
+        functions::{record_function::RecordChannelTypeSelector, update_function::UpdateMode},
+        Action,
+    },
     fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 
 use super::{
     channel2::{channel_type::FixtureChannelType, feature::feature_group::FeatureGroup},
-    error::FixtureError,
     handler::FixtureHandler,
     selection::FixtureSelection,
     sequence::{
@@ -123,14 +125,17 @@ impl PresetHandler {
             return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));
         }
 
-        let preset = FixturePreset::new(
-            id,
-            name,
+        let feature_group = self.get_feature_group(id.feature_group_id)?;
+
+        let data = FixturePreset::generate_preset_data(
+            fixture_handler,
+            self,
             fixture_selector,
             fixture_selector_context,
-            self,
-            fixture_handler,
+            feature_group,
         )?;
+
+        let preset = FixturePreset::new(id, name, feature_group, data)?;
 
         self.presets.insert(id, preset);
         Ok(())
@@ -142,54 +147,18 @@ impl PresetHandler {
         fixture_selector_context: FixtureSelectorContext,
         id: FixturePresetId,
         fixture_handler: &FixtureHandler,
-        update_mode: &UpdateModeActionData,
+        update_mode: UpdateMode,
     ) -> Result<usize, PresetHandlerError> {
         let preset = self.get_preset(id)?;
         let feature_group = self.get_feature_group(preset.id().feature_group_id)?;
 
-        let mut new_data: HashMap<u32, HashMap<FixtureChannelType, u8>> = HashMap::new();
-
-        for fixture_id in fixture_selector
-            .get_selection(self, fixture_selector_context)
-            .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?
-            .fixtures()
-        {
-            let fixture = fixture_handler.fixture_immut(*fixture_id);
-            if let Some(fixture) = fixture {
-                let mut new_values = HashMap::new();
-
-                for feature_type in feature_group.feature_types() {
-                    if !fixture.feature_types().contains(feature_type) {
-                        continue;
-                    }
-
-                    if fixture
-                        .feature_is_home_programmer(*feature_type)
-                        .map_err(PresetHandlerError::FixtureError)?
-                    {
-                        continue;
-                    }
-
-                    for channel_type in fixture
-                        .feature_get_channel_types(*feature_type)
-                        .map_err(PresetHandlerError::FixtureError)?
-                    {
-                        let discrete_value = fixture
-                            .channel_value_programmer(channel_type)
-                            .and_then(|value| {
-                                value
-                                    .to_discrete_value(*fixture_id, channel_type, self)
-                                    .map_err(FixtureError::FixtureChannelError2)
-                            })
-                            .map_err(PresetHandlerError::FixtureError)?;
-
-                        new_values.insert(channel_type, discrete_value);
-                    }
-                }
-
-                new_data.insert(*fixture_id, new_values);
-            }
-        }
+        let new_data = FixturePreset::generate_preset_data(
+            fixture_handler,
+            self,
+            fixture_selector,
+            fixture_selector_context,
+            feature_group,
+        )?;
 
         let preset = self.get_preset_mut(id)?;
 
@@ -431,6 +400,38 @@ impl PresetHandler {
         self.sequences.keys().max().unwrap_or(&0) + 1
     }
 
+    pub fn update_sequence_cue(
+        &mut self,
+        sequence_id: u32,
+        cue_idx: CueIdx,
+        fixture_selector: &FixtureSelector,
+        fixture_selector_context: FixtureSelectorContext,
+        fixture_handler: &FixtureHandler,
+        channel_type_selector: &RecordChannelTypeSelector,
+        update_mode: UpdateMode,
+    ) -> Result<usize, PresetHandlerError> {
+        let selection = fixture_selector
+            .get_selection(self, fixture_selector_context)
+            .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?;
+
+        let sequence = self
+            .sequences
+            .get_mut(&sequence_id)
+            .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?;
+
+        let cue = sequence
+            .cues_mut()
+            .iter_mut()
+            .find(|c| c.cue_idx() == cue_idx)
+            .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_idx))?;
+
+        let cue_data = Cue::generate_cue_data(fixture_handler, &selection, channel_type_selector)?;
+
+        let values_updated = cue.update(sequence_id, cue_data, &selection, update_mode)?;
+
+        Ok(values_updated)
+    }
+
     pub fn record_sequence_cue(
         &mut self,
         sequence_id: u32,
@@ -465,22 +466,11 @@ impl PresetHandler {
             }
         };
 
-        let mut cue_data = HashMap::new();
-
         let selection = fixture_selector
             .get_selection(self, fixture_selector_context)
             .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?;
 
-        for fixture_id in selection.fixtures() {
-            if let Some(fixture) = fixture_handler.fixture_immut(*fixture_id) {
-                cue_data.insert(
-                    *fixture_id,
-                    channel_type_selector
-                        .get_channel_values(fixture)
-                        .map_err(PresetHandlerError::FixtureError)?,
-                );
-            }
-        }
+        let cue_data = Cue::generate_cue_data(fixture_handler, &selection, channel_type_selector)?;
 
         let cue = Cue::new(
             discrete_cue_idx,

@@ -17,6 +17,7 @@ pub enum PresetHandlerError {
     MacroExecutionError(Box<ActionRunError>),
     CueAlreadyExists(u32, CueIdx),
     CueNotFound(u32, CueIdx),
+    CantUpdateNonDefaultCue(u32, CueIdx),
 }
 
 impl std::fmt::Display for PresetHandlerError {
@@ -64,6 +65,16 @@ impl std::fmt::Display for PresetHandlerError {
                     f,
                     "Cue {}.{} not found in sequence {}",
                     cue_idx_major, cue_idx_minor, preset_id
+                )
+            }
+            PresetHandlerError::CantUpdateNonDefaultCue(
+                sequence_id,
+                (cue_idx_major, cue_idx_minor),
+            ) => {
+                write!(
+                    f,
+                    "Cue {}.{} in sequence {} is not a default cue and can't be updated",
+                    cue_idx_major, cue_idx_minor, sequence_id
                 )
             }
         }

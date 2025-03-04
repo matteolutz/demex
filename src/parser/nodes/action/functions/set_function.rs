@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-use super::ActionFunction;
+use super::FunctionArgs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetFeatureValueArgs {
@@ -20,7 +20,7 @@ pub struct SetFeatureValueArgs {
     pub feature_value: ValueOrRange<f32>,
 }
 
-impl ActionFunction for SetFeatureValueArgs {
+impl FunctionArgs for SetFeatureValueArgs {
     fn run(
         &self,
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,
@@ -77,7 +77,7 @@ pub struct SetFixturePresetArgs {
     pub preset_id: ValueOrRange<FixturePresetId>,
 }
 
-impl ActionFunction for SetFixturePresetArgs {
+impl FunctionArgs for SetFixturePresetArgs {
     fn run(
         &self,
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,

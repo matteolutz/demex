@@ -6,12 +6,14 @@ use crate::{
 
 use super::{error::ActionRunError, result::ActionRunResult};
 
+pub mod create_function;
 pub mod delete_function;
 pub mod record_function;
 pub mod rename_function;
 pub mod set_function;
+pub mod update_function;
 
-pub trait ActionFunction {
+pub trait FunctionArgs {
     fn run(
         &self,
         fixture_handler: &mut FixtureHandler,

@@ -370,7 +370,7 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                             }),
                     )?;
                 }
-                DemexInputButton::Macro { .. } => {
+                DemexInputButton::Macro { .. } | DemexInputButton::TokenInsert { .. } => {
                     self.set_button_led(
                         *button_id,
                         ApcMiniMk2ButtonLedMode::IntensFull,

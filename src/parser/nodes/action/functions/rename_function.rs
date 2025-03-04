@@ -5,7 +5,7 @@ use crate::parser::nodes::{
     object::{HomeableObject, Object},
 };
 
-use super::ActionFunction;
+use super::FunctionArgs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RenameObjectArgs {
@@ -13,7 +13,7 @@ pub struct RenameObjectArgs {
     pub new_name: String,
 }
 
-impl ActionFunction for RenameObjectArgs {
+impl FunctionArgs for RenameObjectArgs {
     fn run(
         &self,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,

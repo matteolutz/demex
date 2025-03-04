@@ -9,7 +9,9 @@ use fader::{
 use serde::{Deserialize, Serialize};
 
 use crate::parser::nodes::{
-    action::{ExecutorCreationModeActionData, FaderCreationConfigActionData},
+    action::functions::create_function::{
+        CreateExecutorArgsCreationMode, CreateFaderArgsCreationMode,
+    },
     fixture_selector::FixtureSelectorContext,
 };
 
@@ -50,7 +52,7 @@ impl UpdatableHandler {
         &mut self,
         id: u32,
         name: Option<String>,
-        mode: &ExecutorCreationModeActionData,
+        creation_mode: &CreateExecutorArgsCreationMode,
         selection: FixtureSelection,
     ) -> Result<(), UpdatableHandlerError> {
         if self.executors.contains_key(&id) {
@@ -59,14 +61,14 @@ impl UpdatableHandler {
 
         self.executors.insert(
             id,
-            match mode {
-                ExecutorCreationModeActionData::Effect => Executor::new_effect(
+            match creation_mode {
+                CreateExecutorArgsCreationMode::Effect => Executor::new_effect(
                     id,
                     name,
                     selection,
                     FixtureChannelValuePriority::default(),
                 ),
-                ExecutorCreationModeActionData::Sequence(sequence_id) => Executor::new_sequence(
+                CreateExecutorArgsCreationMode::Sequence(sequence_id) => Executor::new_sequence(
                     id,
                     name,
                     *sequence_id,
@@ -201,7 +203,7 @@ impl UpdatableHandler {
     pub fn create_fader(
         &mut self,
         id: u32,
-        config: &FaderCreationConfigActionData,
+        creation_mode: &CreateFaderArgsCreationMode,
         name: Option<String>,
         preset_handler: &PresetHandler,
         fixture_selector_context: FixtureSelectorContext,
@@ -210,15 +212,15 @@ impl UpdatableHandler {
             return Err(UpdatableHandlerError::UpdatableAlreadyExists(id));
         }
 
-        let fader_config = match config {
-            FaderCreationConfigActionData::Submaster(fixture_selector) => {
+        let fader_config = match creation_mode {
+            CreateFaderArgsCreationMode::Submaster(fixture_selector) => {
                 DemexFaderConfig::Submaster {
                     selection: fixture_selector
                         .get_selection(preset_handler, fixture_selector_context)
                         .map_err(UpdatableHandlerError::FixtureSelectorError)?,
                 }
             }
-            FaderCreationConfigActionData::Sequence(sequence_id, fixture_selector) => {
+            CreateFaderArgsCreationMode::Sequence(sequence_id, fixture_selector) => {
                 preset_handler
                     .get_sequence(*sequence_id)
                     .map_err(UpdatableHandlerError::PresetHandlerError)?;

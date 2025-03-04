@@ -13,6 +13,7 @@ use crate::{
             error::UpdatableHandlerError, executor::config::ExecutorConfig, UpdatableHandler,
         },
     },
+    lexer::token::Token,
     parser::nodes::{
         action::Action,
         fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
@@ -40,13 +41,18 @@ pub enum DemexInputButton {
         fixture_selector: FixtureSelector,
     },
 
+    SpeedMasterTap {
+        speed_master_id: u32,
+    },
+
     Macro {
         #[egui_probe(skip)]
         action: Action,
     },
 
-    SpeedMasterTap {
-        speed_master_id: u32,
+    TokenInsert {
+        #[egui_probe(skip)]
+        tokens: Vec<Token>,
     },
 
     #[default]
@@ -63,6 +69,7 @@ impl DemexInputButton {
         fixture_selector_context: FixtureSelectorContext,
         macro_exec_cue: &mut Vec<Action>,
         global_fixture_selection: &mut Option<FixtureSelection>,
+        command_input: &mut Vec<Token>,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
             Self::ExecutorFlash(executor_id) => updatable_handler
@@ -130,6 +137,9 @@ impl DemexInputButton {
                         .get_selection(preset_handler, fixture_selector_context)
                         .map_err(DemexInputDeviceError::FixtureSelectorError)?,
                 );
+            }
+            Self::TokenInsert { tokens } => {
+                command_input.extend_from_slice(tokens);
             }
             Self::SpeedMasterTap { speed_master_id } => {
                 timing_handler
