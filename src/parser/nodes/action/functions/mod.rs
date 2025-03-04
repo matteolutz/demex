@@ -6,6 +6,7 @@ use crate::{
 
 use super::{error::ActionRunError, result::ActionRunResult};
 
+pub mod assign_function;
 pub mod create_function;
 pub mod delete_function;
 pub mod record_function;

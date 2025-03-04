@@ -14,7 +14,7 @@ use crate::{
         Fixture,
     },
     parser::nodes::{
-        action::functions::update_function::UpdateMode,
+        action::{functions::update_function::UpdateMode, ValueOrRange},
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
 };
@@ -25,6 +25,29 @@ use super::{error::PresetHandlerError, PresetHandler};
 pub struct FixturePresetId {
     pub feature_group_id: u32,
     pub preset_id: u32,
+}
+
+impl ValueOrRange<FixturePresetId> {
+    pub fn try_into_id_list(self) -> Result<Vec<FixturePresetId>, PresetHandlerError> {
+        match self {
+            ValueOrRange::Single(value) => Ok(vec![value]),
+            ValueOrRange::Thru(from, to) => {
+                if from.feature_group_id != to.feature_group_id {
+                    return Err(PresetHandlerError::FeatureGroupMismatch(
+                        from.feature_group_id,
+                        to.feature_group_id,
+                    ));
+                }
+
+                Ok((from.preset_id..=to.preset_id)
+                    .map(|preset_id| FixturePresetId {
+                        feature_group_id: from.feature_group_id,
+                        preset_id,
+                    })
+                    .collect())
+            }
+        }
+    }
 }
 
 impl PartialOrd for FixturePresetId {
