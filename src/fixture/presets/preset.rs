@@ -278,13 +278,18 @@ impl FixturePreset {
                 }
 
                 for feature_type in own_feature_types {
-                    for channel_type in feature_type
-                        .get_channel_types(&fixture.feature_configs)
-                        .map_err(PresetHandlerError::FixtureChannelError2)?
+                    // if the fixture doesn't have this feature type, skip
+                    if let Ok(channel_types) =
+                        feature_type.get_channel_types(&fixture.feature_configs)
                     {
-                        fixture
-                            .set_channel_value(channel_type, FixtureChannelValue2::Preset(self.id))
-                            .map_err(PresetHandlerError::FixtureError)?;
+                        for channel_type in channel_types {
+                            fixture
+                                .set_channel_value(
+                                    channel_type,
+                                    FixtureChannelValue2::Preset(self.id),
+                                )
+                                .map_err(PresetHandlerError::FixtureError)?;
+                        }
                     }
                 }
             }
