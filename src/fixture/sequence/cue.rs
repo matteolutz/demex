@@ -9,6 +9,8 @@ use crate::{
         handler::FixtureHandler,
         presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler},
         selection::FixtureSelection,
+        timing::TimingHandler,
+        Fixture,
     },
     parser::nodes::action::functions::{
         record_function::RecordChannelTypeSelector, update_function::UpdateMode,
@@ -325,12 +327,13 @@ impl Cue {
 
     pub fn channel_value_for_fixture(
         &self,
-        fixture_id: u32,
+        fixture: &Fixture,
         channel_type: FixtureChannelType,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Option<FixtureChannelValue2> {
         match &self.data {
-            CueDataMode::Default(data) => data.get(&fixture_id).and_then(|values| {
+            CueDataMode::Default(data) => data.get(&fixture.id()).and_then(|values| {
                 values
                     .iter()
                     .find(|v| v.channel_type() == channel_type)
@@ -346,13 +349,15 @@ impl Cue {
                     let group = preset_handler.get_group(entry.group_id.unwrap());
                     if let Ok(group) = group {
                         // if the group doesn't have the fixture, skip it
-                        if !group.fixture_selection().has_fixture(fixture_id) {
+                        if !group.fixture_selection().has_fixture(fixture.id()) {
                             continue;
                         }
 
                         let preset = preset_handler.get_preset(entry.preset_id.unwrap());
                         if let Ok(preset) = preset {
-                            if let Some(value) = preset.value(fixture_id, channel_type) {
+                            if let Some(value) =
+                                preset.value(fixture, channel_type, preset_handler, timing_handler)
+                            {
                                 // we found the value
                                 return Some(FixtureChannelValue2::Discrete(value));
                             }

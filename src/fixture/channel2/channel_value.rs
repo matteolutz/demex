@@ -3,7 +3,11 @@ use std::hash::Hash;
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler};
+use crate::fixture::{
+    presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler},
+    timing::TimingHandler,
+    Fixture,
+};
 
 use super::{channel_type::FixtureChannelType, error::FixtureChannelError2};
 
@@ -64,26 +68,29 @@ impl FixtureChannelValue2 {
 
     pub fn to_discrete_value(
         &self,
-        fixture_id: u32,
+        fixture: &Fixture,
         channel_type: FixtureChannelType,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<u8, FixtureChannelError2> {
         match self {
             Self::Home => Ok(0),
             Self::Discrete(value) => Ok(*value),
             Self::Preset(preset_id) => preset_handler
-                .get_preset_value_for_fixture(*preset_id, fixture_id, channel_type)
+                .get_preset_value_for_fixture(*preset_id, fixture, channel_type, timing_handler)
                 .ok_or(FixtureChannelError2::PresetHandlerError(
                     PresetHandlerError::FeaturePresetNotFound(*preset_id).into(),
                 )),
             Self::Mix { a, b, mix } => {
                 if *mix == 0.0 {
-                    a.to_discrete_value(fixture_id, channel_type, preset_handler)
+                    a.to_discrete_value(fixture, channel_type, preset_handler, timing_handler)
                 } else if *mix == 1.0 {
-                    b.to_discrete_value(fixture_id, channel_type, preset_handler)
+                    b.to_discrete_value(fixture, channel_type, preset_handler, timing_handler)
                 } else {
-                    let a = a.to_discrete_value(fixture_id, channel_type, preset_handler)?;
-                    let b = b.to_discrete_value(fixture_id, channel_type, preset_handler)?;
+                    let a =
+                        a.to_discrete_value(fixture, channel_type, preset_handler, timing_handler)?;
+                    let b =
+                        b.to_discrete_value(fixture, channel_type, preset_handler, timing_handler)?;
 
                     Ok((a as f32 * (1.0 - mix) + b as f32 * mix) as u8)
                 }

@@ -11,6 +11,7 @@ use crate::fixture::{
     sequence::{runtime::SequenceRuntime, FadeFixtureChannelValue},
     timing::TimingHandler,
     value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
+    Fixture,
 };
 
 pub mod config;
@@ -114,7 +115,7 @@ impl Executor {
 
     pub fn channel_value(
         &self,
-        fixture_id: u32,
+        fixture: &Fixture,
         fixture_feature_configs: &[FixtureFeatureConfig],
         channel_type: FixtureChannelType,
         preset_handler: &PresetHandler,
@@ -122,27 +123,28 @@ impl Executor {
     ) -> Option<FadeFixtureChannelValue> {
         match &self.config {
             ExecutorConfig::Sequence { runtime, fixtures } => {
-                if !fixtures.contains(&fixture_id) {
+                if !fixtures.contains(&fixture.id()) {
                     None
                 } else {
                     runtime.channel_value(
-                        fixture_id,
+                        fixture,
                         channel_type,
                         1.0,
                         1.0,
                         preset_handler,
+                        timing_handler,
                         self.priority,
                     )
                 }
             }
             ExecutorConfig::FeatureEffect { runtime, selection } => {
-                if !selection.has_fixture(fixture_id) {
+                if !selection.has_fixture(fixture.id()) {
                     None
                 } else {
                     runtime.get_channel_value(
                         channel_type,
                         fixture_feature_configs,
-                        selection.offset(fixture_id)?,
+                        selection.offset(fixture.id())?,
                         self.priority,
                         timing_handler,
                     )

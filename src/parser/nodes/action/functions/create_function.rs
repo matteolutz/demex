@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::parser::nodes::{
-    action::{error::ActionRunError, result::ActionRunResult, Action},
-    fixture_selector::FixtureSelector,
+use crate::{
+    fixture::timing::TimingHandler,
+    parser::nodes::{
+        action::{error::ActionRunError, result::ActionRunResult, Action},
+        fixture_selector::FixtureSelector,
+    },
 };
 
 use super::FunctionArgs;
@@ -21,6 +24,7 @@ impl FunctionArgs for CreateSequenceArgs {
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<
         crate::parser::nodes::action::result::ActionRunResult,
         crate::parser::nodes::action::error::ActionRunError,
@@ -58,6 +62,7 @@ impl FunctionArgs for CreateExecutorArgs {
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         let selection = self
             .fixture_selector
@@ -99,6 +104,7 @@ impl FunctionArgs for CreateFaderArgs {
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         updatable_handler
             .create_fader(
@@ -129,6 +135,7 @@ impl FunctionArgs for CreateMacroArgs {
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
             .create_macro(

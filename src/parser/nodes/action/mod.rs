@@ -13,7 +13,10 @@ use functions::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fixture::{handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler},
+    fixture::{
+        handler::FixtureHandler, presets::PresetHandler, timing::TimingHandler,
+        updatables::UpdatableHandler,
+    },
     input::{error::DemexInputDeviceError, DemexInputDeviceHandler},
     ui::{constants::INFO_TEXT, window::edit::DemexEditWindow},
 };
@@ -119,6 +122,7 @@ impl Action {
         fixture_selector_context: FixtureSelectorContext,
         updatable_handler: &mut UpdatableHandler,
         input_device_handler: &mut DemexInputDeviceHandler,
+        timing_handler: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
             // Set
@@ -128,6 +132,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
             Self::SetFixturePreset(args) => args.run(
                 fixture_handler,
@@ -135,6 +140,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
 
             // Home
@@ -154,6 +160,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
             Self::RecordGroup2(args) => args.run(
                 fixture_handler,
@@ -161,6 +168,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
             Self::RecordSequenceCue(args) => args.run(
                 fixture_handler,
@@ -168,6 +176,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
 
             // Rename
@@ -177,6 +186,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
 
             // Create
@@ -186,6 +196,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
             Self::CreateExecutor(args) => args.run(
                 fixture_handler,
@@ -193,6 +204,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
             Self::CreateMacro(args) => args.run(
                 fixture_handler,
@@ -200,6 +212,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
             Self::CreateFader(args) => args.run(
                 fixture_handler,
@@ -207,6 +220,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
 
             // Update
@@ -216,6 +230,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
             Self::UpdateSequenceCue(args) => args.run(
                 fixture_handler,
@@ -223,6 +238,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
 
             // Delete
@@ -232,6 +248,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
 
             Self::Edit(object) => object
@@ -271,6 +288,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
 
             Self::AssignButton(args) => args.run(
@@ -279,6 +297,7 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
 
             Self::UnassignInputButton {

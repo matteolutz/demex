@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 use crate::fixture::{
     channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
     presets::PresetHandler,
+    timing::TimingHandler,
     value_source::FixtureChannelValuePriority,
+    Fixture,
 };
 
 use super::{cue::CueTrigger, FadeFixtureChannelValue, SequenceStopBehavior};
@@ -84,11 +86,12 @@ impl SequenceRuntime {
 
     pub fn channel_value(
         &self,
-        fixture_id: u32,
+        fixture: &Fixture,
         channel_type: FixtureChannelType,
         speed_multiplier: f32,
         intensity_multiplier: f32,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
         priority: FixtureChannelValuePriority,
     ) -> Option<FadeFixtureChannelValue> {
         if let Some((cue_update, cue_idx, is_first_cue)) = self.state.when_started() {
@@ -107,9 +110,9 @@ impl SequenceRuntime {
 
             delta *= speed_multiplier;
 
-            delta = f32::max(delta - cue.offset_for_fixture(fixture_id), 0.0);
+            delta = f32::max(delta - cue.offset_for_fixture(fixture.id()), 0.0);
 
-            let should_snap = cue.should_snap_channel_value_for_fixture(fixture_id, channel_type);
+            let should_snap = cue.should_snap_channel_value_for_fixture(fixture.id(), channel_type);
 
             // its the first cue, so we want to fade in from black
             // TODO: this wont work like this
@@ -130,7 +133,7 @@ impl SequenceRuntime {
                     fade = if fade >= cue.snap_percent() { 1.0 } else { 0.0 };
                 }
 
-                cue.channel_value_for_fixture(fixture_id, channel_type, preset_handler)
+                cue.channel_value_for_fixture(fixture, channel_type, preset_handler, timing_handler)
                     .map(|v| FadeFixtureChannelValue::new(v, fade, priority))
             } else if prev_cue_idx.is_some() {
                 // this isn't the first cue, meaning we should fade between the value of the previous cue
@@ -158,16 +161,22 @@ impl SequenceRuntime {
                 };
 
                 let current_cue_value = cue
-                    .channel_value_for_fixture(fixture_id, channel_type, preset_handler)
+                    .channel_value_for_fixture(
+                        fixture,
+                        channel_type,
+                        preset_handler,
+                        timing_handler,
+                    )
                     .map(|v| {
                         FadeFixtureChannelValue::new(
                             FixtureChannelValue2::Mix {
                                 a: Box::new(
                                     prev_cue
                                         .channel_value_for_fixture(
-                                            fixture_id,
+                                            fixture,
                                             channel_type,
                                             preset_handler,
+                                            timing_handler,
                                         )
                                         .unwrap_or(FixtureChannelValue2::Home),
                                 ),
@@ -181,7 +190,12 @@ impl SequenceRuntime {
 
                 if current_cue_value.is_none() {
                     prev_cue
-                        .channel_value_for_fixture(fixture_id, channel_type, preset_handler)
+                        .channel_value_for_fixture(
+                            fixture,
+                            channel_type,
+                            preset_handler,
+                            timing_handler,
+                        )
                         .map(|v| FadeFixtureChannelValue::new(v, (1.0 - mix) * fade, priority))
                 } else {
                     current_cue_value

@@ -151,7 +151,7 @@ impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         if let Err(input_error) = self.context.input_device_handler.update(
             &mut self.context.fixture_handler.write(),
-            &self.context.preset_handler.read(),
+            &mut self.context.preset_handler.write(),
             &mut self.context.updatable_handler.write(),
             &mut self.context.timing_handler.write(),
             FixtureSelectorContext::new(&self.context.global_fixture_select.clone()),

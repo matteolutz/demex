@@ -17,12 +17,14 @@ use crate::parser::nodes::{
 
 use super::{
     channel2::{channel_type::FixtureChannelType, feature::feature_group::FeatureGroup},
-    handler::FixtureHandler,
+    handler::{error::FixtureHandlerError, FixtureHandler},
     selection::FixtureSelection,
     sequence::{
         cue::{Cue, CueIdx, CueTiming, CueTrigger},
         Sequence,
     },
+    timing::TimingHandler,
+    Fixture,
 };
 
 pub mod command_slice;
@@ -120,22 +122,28 @@ impl PresetHandler {
         id: FixturePresetId,
         name: Option<String>,
         fixture_handler: &FixtureHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<(), PresetHandlerError> {
         if self.presets.contains_key(&id) {
             return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));
         }
 
-        let feature_group = self.get_feature_group(id.feature_group_id)?;
+        let feature_types = self
+            .get_feature_group(id.feature_group_id)?
+            .feature_types()
+            .to_vec();
 
         let data = FixturePreset::generate_preset_data(
             fixture_handler,
             self,
+            timing_handler,
             fixture_selector,
             fixture_selector_context,
-            feature_group,
+            feature_types,
         )?;
 
-        let preset = FixturePreset::new(id, name, feature_group, data)?;
+        let preset =
+            FixturePreset::new(id, name, self.get_feature_group(id.feature_group_id)?, data)?;
 
         self.presets.insert(id, preset);
         Ok(())
@@ -147,17 +155,22 @@ impl PresetHandler {
         fixture_selector_context: FixtureSelectorContext,
         id: FixturePresetId,
         fixture_handler: &FixtureHandler,
+        timing_handler: &TimingHandler,
         update_mode: UpdateMode,
     ) -> Result<usize, PresetHandlerError> {
         let preset = self.get_preset(id)?;
-        let feature_group = self.get_feature_group(preset.id().feature_group_id)?;
+        let feature_types = self
+            .get_feature_group(preset.id().feature_group_id)?
+            .feature_types()
+            .to_vec();
 
         let new_data = FixturePreset::generate_preset_data(
             fixture_handler,
             self,
+            timing_handler,
             fixture_selector,
             fixture_selector_context,
-            feature_group,
+            feature_types,
         )?;
 
         let preset = self.get_preset_mut(id)?;
@@ -248,16 +261,44 @@ impl PresetHandler {
     pub fn get_preset_value_for_fixture(
         &self,
         preset_id: FixturePresetId,
-        fixture_id: u32,
+        fixture: &Fixture,
         channel_type: FixtureChannelType,
+        timing_handler: &TimingHandler,
     ) -> Option<u8> {
         let preset = self.get_preset(preset_id);
 
         if let Ok(preset) = preset {
-            preset.value(fixture_id, channel_type)
+            preset.value(fixture, channel_type, self, timing_handler)
         } else {
             None
         }
+    }
+
+    pub fn apply_preset(
+        &mut self,
+        preset_id: FixturePresetId,
+        fixture_handler: &mut FixtureHandler,
+        selection: FixtureSelection,
+    ) -> Result<(), PresetHandlerError> {
+        let feature_types = self
+            .get_feature_group(preset_id.feature_group_id)?
+            .feature_types()
+            .to_vec();
+        let preset = self.get_preset_mut(preset_id)?;
+
+        for fixture_id in selection.fixtures() {
+            preset.apply(
+                fixture_handler.fixture(*fixture_id).ok_or(
+                    PresetHandlerError::FixtureHandlerError(FixtureHandlerError::FixtureNotFound(
+                        *fixture_id,
+                    )),
+                )?,
+                &feature_types,
+                selection.clone(),
+            )?;
+        }
+
+        Ok(())
     }
 
     pub fn delete_preset(&mut self, preset_id: FixturePresetId) -> Result<(), PresetHandlerError> {
@@ -265,6 +306,12 @@ impl PresetHandler {
             .remove(&preset_id)
             .ok_or(PresetHandlerError::FeaturePresetNotFound(preset_id))?;
         Ok(())
+    }
+
+    pub fn stop_all(&mut self) {
+        for preset in self.presets_mut().values_mut() {
+            preset.stop();
+        }
     }
 
     pub fn delete_preset_range(

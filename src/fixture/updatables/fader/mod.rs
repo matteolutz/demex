@@ -10,6 +10,7 @@ use crate::{
         error::FixtureError,
         handler::FixtureHandler,
         sequence::FadeFixtureChannelValue,
+        timing::TimingHandler,
         value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
         Fixture,
     },
@@ -189,6 +190,7 @@ impl DemexFader {
         fixture: &Fixture,
         channel_type: FixtureChannelType,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<FadeFixtureChannelValue, FixtureError> {
         if !self.is_active() {
             return Err(FixtureError::ChannelValueNotFound(channel_type));
@@ -242,11 +244,12 @@ impl DemexFader {
 
                 runtime
                     .channel_value(
-                        fixture.id(),
+                        fixture,
                         channel_type,
                         speed_multiplier,
                         intensity_multiplier,
                         preset_handler,
+                        timing_handler,
                         self.priority,
                     )
                     .ok_or(FixtureError::ChannelValueNotFound(channel_type))

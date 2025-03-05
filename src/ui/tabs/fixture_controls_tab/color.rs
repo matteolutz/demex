@@ -12,6 +12,7 @@ use crate::{
         },
         handler::FixtureHandler,
         presets::PresetHandler,
+        timing::TimingHandler,
     },
     ui::constants::PLEASE_SELECT_FIXTURES_OF_SAME_TYPE_AND_MODE,
     utils::math::approx_equals_color,
@@ -94,6 +95,7 @@ pub fn color_rgb_controls_ui(
     selected_fixtures: &[u32],
     preset_handler: &PresetHandler,
     fixture_handler: &mut FixtureHandler,
+    timing_handler: &TimingHandler,
 ) {
     ui.vertical(|ui| {
         ui.label(egui::RichText::from("Color RGB").color(if is_channel_home {
@@ -108,7 +110,11 @@ pub fn color_rgb_controls_ui(
                 fixture_handler
                     .fixture(*f_id)
                     .unwrap()
-                    .feature_value_programmer(FixtureFeatureType::ColorRGB, preset_handler)
+                    .feature_value_programmer(
+                        FixtureFeatureType::ColorRGB,
+                        preset_handler,
+                        timing_handler,
+                    )
                     .unwrap()
             })
             .collect::<Vec<_>>();

@@ -1,5 +1,8 @@
 use crate::{
-    fixture::{handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler},
+    fixture::{
+        handler::FixtureHandler, presets::PresetHandler, timing::TimingHandler,
+        updatables::UpdatableHandler,
+    },
     input::DemexInputDeviceHandler,
     parser::nodes::fixture_selector::FixtureSelectorContext,
 };
@@ -22,5 +25,6 @@ pub trait FunctionArgs {
         fixture_selector_context: FixtureSelectorContext,
         updatable_handler: &mut UpdatableHandler,
         input_device_handler: &mut DemexInputDeviceHandler,
+        timing_handler: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError>;
 }

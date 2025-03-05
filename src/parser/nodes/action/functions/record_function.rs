@@ -6,6 +6,7 @@ use crate::{
         error::FixtureError,
         presets::preset::FixturePresetId,
         sequence::cue::{CueFixtureChannelValue, CueIdx},
+        timing::TimingHandler,
         Fixture,
     },
     parser::nodes::{
@@ -76,6 +77,7 @@ impl FunctionArgs for RecordPresetArgs {
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        timing_handler: &mut TimingHandler,
     ) -> Result<
         crate::parser::nodes::action::result::ActionRunResult,
         crate::parser::nodes::action::error::ActionRunError,
@@ -87,6 +89,7 @@ impl FunctionArgs for RecordPresetArgs {
                 self.id,
                 self.name.clone(),
                 fixture_handler,
+                timing_handler,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 
@@ -109,6 +112,7 @@ impl FunctionArgs for RecordGroupArgs {
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         let selection = self
             .fixture_selector
@@ -143,6 +147,7 @@ impl FunctionArgs for RecordSequenceCueArgs {
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
             .record_sequence_cue(

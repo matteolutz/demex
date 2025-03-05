@@ -229,7 +229,7 @@ impl Fixture {
                     preset_handler,
                     timing_handler,
                 )?
-                .to_discrete_value(self.id, *channel_type, preset_handler)
+                .to_discrete_value(self, *channel_type, preset_handler, timing_handler)
                 .map_err(FixtureError::FixtureChannelError2)?;
             data.push(discrete_value);
         }
@@ -302,7 +302,7 @@ impl Fixture {
     ) -> Result<FixtureFeatureDisplayState, FixtureError> {
         feature_type
             .get_display_state(
-                self.id,
+                self,
                 &self.feature_configs,
                 &(|channel_type| {
                     self.sources
@@ -316,6 +316,7 @@ impl Fixture {
                         .ok()
                 }),
                 preset_handler,
+                timing_handler,
             )
             .map_err(FixtureError::FixtureChannelError2)
     }
@@ -331,7 +332,7 @@ impl Fixture {
             .get_feature_group(feature_group_id)
             .map_err(|err| FixtureError::PresetHandlerError(Box::new(err)))?
             .get_display_state(
-                self.id,
+                self,
                 &self.feature_configs,
                 &(|channel_type| {
                     self.sources
@@ -345,6 +346,7 @@ impl Fixture {
                         .ok()
                 }),
                 preset_handler,
+                timing_handler,
             )
             .map_err(FixtureError::FixtureChannelError2)
     }
@@ -399,6 +401,7 @@ impl Fixture {
         &self,
         feature_type: FixtureFeatureType,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<FixtureFeatureValue, FixtureError> {
         feature_type
             .get_value(
@@ -410,8 +413,9 @@ impl Fixture {
                         .map(|(_, value)| value)
                         .cloned()
                 }),
-                self.id,
+                self,
                 preset_handler,
+                timing_handler,
             )
             .map_err(FixtureError::FixtureChannelError2)
     }
@@ -437,8 +441,9 @@ impl Fixture {
                         )
                         .ok()
                 }),
-                self.id,
+                self,
                 preset_handler,
+                timing_handler,
             )
             .map_err(FixtureError::FixtureChannelError2)
     }

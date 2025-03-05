@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fixture::{presets::preset::FixturePresetId, sequence::cue::CueIdx},
+    fixture::{presets::preset::FixturePresetId, sequence::cue::CueIdx, timing::TimingHandler},
     parser::nodes::{
         action::{error::ActionRunError, result::ActionRunResult},
         fixture_selector::FixtureSelector,
@@ -31,6 +31,7 @@ impl FunctionArgs for UpdatePresetArgs {
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        timing_handler: &mut TimingHandler,
     ) -> Result<
         crate::parser::nodes::action::result::ActionRunResult,
         crate::parser::nodes::action::error::ActionRunError,
@@ -41,6 +42,7 @@ impl FunctionArgs for UpdatePresetArgs {
                 fixture_selector_context,
                 self.id,
                 fixture_handler,
+                timing_handler,
                 self.update_mode,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
@@ -72,6 +74,7 @@ impl FunctionArgs for UpdateSequenceCueArgs {
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         let num_updated = preset_handler
             .update_sequence_cue(

@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     fixture::{
         presets::{preset::FixturePresetId, PresetHandler},
+        timing::TimingHandler,
         updatables::{error::UpdatableHandlerError, UpdatableHandler},
     },
     input::{button::DemexInputButton, error::DemexInputDeviceError, fader::DemexInputFader},
@@ -136,6 +137,7 @@ impl FunctionArgs for AssignButtonArgs {
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<
         crate::parser::nodes::action::result::ActionRunResult,
         crate::parser::nodes::action::error::ActionRunError,
@@ -184,6 +186,7 @@ impl FunctionArgs for AssignFaderArgs {
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         let _ = updatable_handler
             .fader(self.fader_id)

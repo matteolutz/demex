@@ -11,6 +11,8 @@ use crate::fixture::{
         error::FixtureChannelError2, feature::feature_type::FixtureFeatureType,
     },
     presets::PresetHandler,
+    timing::TimingHandler,
+    Fixture,
 };
 
 use super::{feature_config::FixtureFeatureConfig, feature_state::FixtureFeatureDisplayState};
@@ -117,20 +119,22 @@ impl FeatureGroup {
 
     pub fn get_display_state(
         &self,
-        fixture_id: u32,
+        fixture: &Fixture,
         feature_configs: &[FixtureFeatureConfig],
         channels: &impl Fn(FixtureChannelType) -> Option<FixtureChannelValue2>,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<Vec<FixtureFeatureDisplayState>, FixtureChannelError2> {
         Ok(self
             .feature_types
             .iter()
             .map(|feature_type| {
                 feature_type.get_display_state(
-                    fixture_id,
+                    fixture,
                     feature_configs,
                     channels,
                     preset_handler,
+                    timing_handler,
                 )
             })
             .filter_map(|display_state| display_state.ok())

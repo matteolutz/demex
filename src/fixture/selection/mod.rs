@@ -47,6 +47,22 @@ impl FixtureSelection {
         }
     }
 
+    pub fn update_from(&mut self, other: &FixtureSelection) {
+        // merge fixture list
+        for fixture in other.fixtures() {
+            if self.fixtures.contains(fixture) {
+                continue;
+            }
+
+            self.fixtures.push(*fixture);
+        }
+
+        // update group, block and wings
+        self.group = other.group;
+        self.block = other.block;
+        self.wings = other.wings;
+    }
+
     pub fn subtract(&mut self, other: &FixtureSelection) {
         self.fixtures.retain(|f| !other.has_fixture(*f));
     }

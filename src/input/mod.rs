@@ -63,7 +63,7 @@ impl DemexInputDeviceHandler {
     pub fn update(
         &mut self,
         fixture_handler: &mut FixtureHandler,
-        preset_handler: &PresetHandler,
+        preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         timing_handler: &mut TimingHandler,
         fixture_selector_context: FixtureSelectorContext,

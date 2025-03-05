@@ -21,7 +21,7 @@ mod row;
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
-    let preset_handler = context.preset_handler.read();
+    let mut preset_handler = context.preset_handler.write();
     let mut updatable_handler = context.updatable_handler.write();
 
     let _selected_fixtures = context
@@ -98,6 +98,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         // Feature Presets
         for (feature_group_id, feature_group) in preset_handler
             .feature_groups()
+            .clone()
             .iter()
             .sorted_by_key(|(id, _)| *id)
         {
@@ -108,10 +109,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 egui::Color32::BLUE,
                 |ui| {
                     for id in 0..=preset_handler.next_preset_id(*feature_group_id) {
-                        let p = preset_handler.get_preset(FixturePresetId {
+                        let preset_id = FixturePresetId {
                             feature_group_id: *feature_group_id,
                             preset_id: id,
-                        });
+                        };
+
+                        let p = preset_handler.get_preset(preset_id);
+                        let is_running = p.as_ref().is_ok_and(|p| p.is_active());
 
                         let config = if let Ok(p) = p {
                             PresetGridButtonConfig::Preset {
@@ -127,31 +131,19 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                             PresetGridButtonConfig::Empty { id }
                         };
 
-                        /*let response = preset_grid_button_ui(
-                            ui,
-                            config,
-                            PresetGridButtonDecoration::default(),
-                        );*/
                         let (response, quick_action) = PresetGridButton::new(
                             config,
-                            PresetGridButtonDecoration::default(),
+                            PresetGridButtonDecoration {
+                                left_bottom_text: None,
+                                right_top_text: if is_running {
+                                    Some("ACT".to_owned())
+                                } else {
+                                    None
+                                },
+                            },
                             None,
                         )
                         .show(ui);
-
-                        if response.clicked()
-                            || quick_action
-                                .is_some_and(|a| a == PresetGridButtonQuickMenuActions::Default)
-                        {
-                            if let (Ok(p), Some(selected_fixtures)) =
-                                (p.as_ref(), selected_fixtures)
-                            {
-                                for fixture_id in selected_fixtures {
-                                    p.apply(fixture_handler.fixture(*fixture_id).unwrap())
-                                        .unwrap();
-                                }
-                            }
-                        }
 
                         if let Some(quick_action) = quick_action {
                             match quick_action {
@@ -177,6 +169,23 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                     }
                                 }
                                 _ => {}
+                            }
+                        }
+
+                        if response.clicked()
+                            || quick_action
+                                .is_some_and(|a| a == PresetGridButtonQuickMenuActions::Default)
+                        {
+                            if let (Ok(_), Some(selection)) =
+                                (p.as_ref(), context.global_fixture_select.as_ref())
+                            {
+                                preset_handler
+                                    .apply_preset(
+                                        preset_id,
+                                        &mut fixture_handler,
+                                        selection.clone(),
+                                    )
+                                    .unwrap();
                             }
                         }
                     }

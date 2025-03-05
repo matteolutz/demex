@@ -9,6 +9,7 @@ use crate::{
         },
         handler::FixtureHandler,
         presets::PresetHandler,
+        timing::TimingHandler,
     },
     ui::constants::PLEASE_SELECT_FIXTURES_OF_SAME_TYPE_AND_MODE,
 };
@@ -19,6 +20,7 @@ pub fn toggle_flags_controls_ui(
     selected_fixtures: &[u32],
     preset_handler: &PresetHandler,
     fixture_handler: &mut FixtureHandler,
+    timing_handler: &TimingHandler,
 ) {
     ui.vertical(|ui| {
         ui.set_width(100.0);
@@ -55,7 +57,11 @@ pub fn toggle_flags_controls_ui(
                 if let FixtureFeatureValue::ToggleFlags { set_flags } = fixture_handler
                     .fixture_immut(selected_fixtures[0])
                     .unwrap()
-                    .feature_value_programmer(FixtureFeatureType::ToggleFlags, preset_handler)
+                    .feature_value_programmer(
+                        FixtureFeatureType::ToggleFlags,
+                        preset_handler,
+                        timing_handler,
+                    )
                     .unwrap()
                 {
                     for (idx, flags) in toggle_flags.iter().enumerate() {

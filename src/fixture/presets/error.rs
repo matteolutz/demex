@@ -1,5 +1,8 @@
 use crate::{
-    fixture::{error::FixtureError, sequence::cue::CueIdx},
+    fixture::{
+        channel2::error::FixtureChannelError2, error::FixtureError,
+        handler::error::FixtureHandlerError, sequence::cue::CueIdx,
+    },
     parser::nodes::{action::error::ActionRunError, fixture_selector::FixtureSelectorError},
 };
 
@@ -13,6 +16,8 @@ pub enum PresetHandlerError {
     FeaturePresetNotFound(FixturePresetId),
     FeatureGroupMismatch(u32, u32),
     FixtureError(FixtureError),
+    FixtureHandlerError(FixtureHandlerError),
+    FixtureChannelError2(FixtureChannelError2),
     FixtureSelectorError(Box<FixtureSelectorError>),
     MacroExecutionError(Box<ActionRunError>),
     CueAlreadyExists(u32, CueIdx),
@@ -76,6 +81,12 @@ impl std::fmt::Display for PresetHandlerError {
                     "Cue {}.{} in sequence {} is not a default cue and can't be updated",
                     cue_idx_major, cue_idx_minor, sequence_id
                 )
+            }
+            PresetHandlerError::FixtureChannelError2(err) => {
+                write!(f, "Fixture channel error: {}", err)
+            }
+            PresetHandlerError::FixtureHandlerError(err) => {
+                write!(f, "Fixture handler error: {}", err)
             }
         }
     }

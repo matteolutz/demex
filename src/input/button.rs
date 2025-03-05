@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        handler::{error::FixtureHandlerError, FixtureHandler},
+        handler::FixtureHandler,
         presets::{preset::FixturePresetId, PresetHandler},
         selection::FixtureSelection,
         timing::TimingHandler,
@@ -63,7 +63,7 @@ impl DemexInputButton {
     pub fn handle_press(
         &self,
         fixture_handler: &mut FixtureHandler,
-        preset_handler: &PresetHandler,
+        preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         timing_handler: &mut TimingHandler,
         fixture_selector_context: FixtureSelectorContext,
@@ -105,9 +105,9 @@ impl DemexInputButton {
                 selection,
                 preset_id,
             } => {
-                let preset = preset_handler
-                    .get_preset(*preset_id)
-                    .map_err(DemexInputDeviceError::PresetHandlerError)?;
+                /*let preset = preset_handler
+                .get_preset(*preset_id)
+                .map_err(DemexInputDeviceError::PresetHandlerError)?;*/
 
                 let selection = if let Some(selection) = selection {
                     Some(selection)
@@ -118,15 +118,9 @@ impl DemexInputButton {
                     FixtureSelectorError::NoFixturesMatched,
                 ))?;
 
-                for fixture_id in selection.fixtures() {
-                    preset
-                        .apply(fixture_handler.fixture(*fixture_id).ok_or_else(|| {
-                            DemexInputDeviceError::FixtureHandlerError(
-                                FixtureHandlerError::FixtureNotFound(*fixture_id),
-                            )
-                        })?)
-                        .map_err(DemexInputDeviceError::PresetHandlerError)?;
-                }
+                preset_handler
+                    .apply_preset(*preset_id, fixture_handler, selection.clone())
+                    .map_err(DemexInputDeviceError::PresetHandlerError)?;
             }
             Self::Macro { action } => {
                 macro_exec_cue.push(action.clone());

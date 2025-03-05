@@ -98,7 +98,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                     if let Some(runtime) = runtime {
                         runtime
                             .channel_value(
-                                fixture.id(),
+                                fixture,
                                 fixture.feature_configs(),
                                 channel_type,
                                 preset_handler,
@@ -113,7 +113,12 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                     let fader = updatable_handler.fader(*id);
 
                     if let Ok(fader) = fader {
-                        fader.get_channel_value(fixture, channel_type, preset_handler)
+                        fader.get_channel_value(
+                            fixture,
+                            channel_type,
+                            preset_handler,
+                            timing_handler,
+                        )
                     } else {
                         Err(FixtureError::ChannelValueNotFound(channel_type))
                     }

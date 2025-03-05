@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::parser::nodes::{
-    action::{error::ActionRunError, result::ActionRunResult},
-    object::{HomeableObject, Object, ObjectRange},
+use crate::{
+    fixture::timing::TimingHandler,
+    parser::nodes::{
+        action::{error::ActionRunError, result::ActionRunResult},
+        object::{HomeableObject, Object, ObjectRange},
+    },
 };
 
 use super::FunctionArgs;
@@ -20,6 +23,7 @@ impl FunctionArgs for DeleteArgs {
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<
         crate::parser::nodes::action::result::ActionRunResult,
         crate::parser::nodes::action::error::ActionRunError,

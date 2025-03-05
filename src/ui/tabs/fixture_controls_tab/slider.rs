@@ -3,6 +3,7 @@ use crate::{
         channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
         handler::FixtureHandler,
         presets::PresetHandler,
+        timing::TimingHandler,
     },
     utils::math::f32_to_coarse,
 };
@@ -14,6 +15,7 @@ pub fn feature_f32_slider(
     feature_type: FixtureFeatureType,
     fixture_handler: &mut FixtureHandler,
     preset_handler: &PresetHandler,
+    timing_handler: &TimingHandler,
     get_f32_val: impl FnOnce(FixtureFeatureValue) -> Option<f32>,
     make_feature_value: impl Fn(f32) -> FixtureFeatureValue,
 ) {
@@ -31,7 +33,7 @@ pub fn feature_f32_slider(
         let value = fixture_handler
             .fixture_immut(selected_fixtures[0])
             .unwrap()
-            .feature_value_programmer(feature_type, preset_handler)
+            .feature_value_programmer(feature_type, preset_handler, timing_handler)
             .unwrap();
 
         if let Some(value) = get_f32_val(value) {
