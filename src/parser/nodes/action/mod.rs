@@ -321,7 +321,7 @@ impl Action {
         fixture_handler: &mut FixtureHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         fixture_handler
-            .home_all()
+            .home_all(true)
             .map_err(ActionRunError::FixtureHandlerError)?;
 
         Ok(ActionRunResult::new())

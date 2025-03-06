@@ -498,10 +498,12 @@ impl Fixture {
 }
 
 impl Fixture {
-    pub fn home(&mut self) -> Result<(), FixtureError> {
-        // remove every source except the programmer
-        self.sources.clear();
-        self.sources.push(FixtureChannelValueSource::Programmer);
+    pub fn home(&mut self, clear_sources: bool) -> Result<(), FixtureError> {
+        if clear_sources {
+            // remove every source except the programmer
+            self.sources.clear();
+            self.sources.push(FixtureChannelValueSource::Programmer);
+        }
 
         for (_, channel_value) in self.channels.iter_mut() {
             *channel_value = FixtureChannelValue2::default();

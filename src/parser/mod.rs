@@ -231,6 +231,12 @@ impl<'a> Parser2<'a> {
             return Ok(HomeableObject::Fader(fader_id));
         }
 
+        if matches!(self.current_token()?, Token::KeywordProgrammer) {
+            self.advance();
+
+            return Ok(HomeableObject::Programmer);
+        }
+
         Err(ParseError::UnexpectedToken(
             self.current_token()?.clone(),
             "Expected homeable object".to_string(),

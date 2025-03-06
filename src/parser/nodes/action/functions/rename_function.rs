@@ -56,6 +56,10 @@ impl FunctionArgs for RenameObjectArgs {
                     .rename_fader(*fader_id, self.new_name.clone())
                     .map_err(ActionRunError::UpdatableHandlerError)
                     .map(|_| ActionRunResult::new()),
+                HomeableObject::Programmer => Err(ActionRunError::ActionNotImplementedForObject(
+                    "Rename".to_owned(),
+                    self.object.clone(),
+                )),
             },
             Object::Macro(id) => preset_handler
                 .rename_macro(*id, self.new_name.clone())

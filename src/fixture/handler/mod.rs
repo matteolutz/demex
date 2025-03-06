@@ -109,9 +109,10 @@ impl FixtureHandler {
         &self.outputs
     }
 
-    pub fn home_all(&mut self) -> Result<(), FixtureHandlerError> {
+    pub fn home_all(&mut self, clear_sources: bool) -> Result<(), FixtureHandlerError> {
         for f in self.fixtures.iter_mut() {
-            f.home().map_err(FixtureHandlerError::FixtureError)?;
+            f.home(clear_sources)
+                .map_err(FixtureHandlerError::FixtureError)?;
         }
 
         Ok(())

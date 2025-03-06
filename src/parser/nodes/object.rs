@@ -46,6 +46,7 @@ pub enum HomeableObject {
     FixtureSelector(FixtureSelector),
     Executor(u32),
     Fader(u32),
+    Programmer,
 }
 
 impl HomeableObject {
@@ -64,7 +65,8 @@ impl HomeableObject {
 
                 for fixture_id in selection.fixtures() {
                     if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                        fixture.home().map_err(ActionRunError::FixtureError)?;
+                        // TODO: should we clear the source list here??
+                        fixture.home(false).map_err(ActionRunError::FixtureError)?;
                     }
                 }
 
@@ -84,6 +86,10 @@ impl HomeableObject {
 
                 Ok(ActionRunResult::new())
             }
+            HomeableObject::Programmer => fixture_handler
+                .home_all(false)
+                .map_err(ActionRunError::FixtureHandlerError)
+                .map(|_| ActionRunResult::new()),
         }
     }
 }
@@ -105,6 +111,7 @@ impl ObjectTrait for HomeableObject {
             Self::FixtureSelector(fixture_selector) => fixture_selector
                 .try_as_group_id()
                 .map(DemexEditWindow::EditGroup),
+            Self::Programmer => None,
         }
     }
 }

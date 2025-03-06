@@ -127,6 +127,7 @@ impl<'a> Lexer<'a> {
                     "effect" => Some(Token::KeywordEffect),
                     "button" => Some(Token::KeywordButton),
                     "tokens" => Some(Token::KeywordTokens),
+                    "programmer" => Some(Token::KeywordProgrammer),
                     _ => None,
                 };
 
