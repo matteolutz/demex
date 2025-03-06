@@ -29,6 +29,14 @@ impl FadeFixtureChannelValue {
         }
     }
 
+    pub fn home_ltp() -> FadeFixtureChannelValue {
+        FadeFixtureChannelValue::new(
+            FixtureChannelValue2::Home,
+            1.0,
+            FixtureChannelValuePriority::Ltp,
+        )
+    }
+
     pub fn value(&self) -> &FixtureChannelValue2 {
         &self.value
     }

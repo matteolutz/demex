@@ -28,6 +28,9 @@ pub struct DemexFader {
 
     priority: FixtureChannelValuePriority,
 
+    #[serde(default)]
+    stomp_protected: bool,
+
     #[serde(default, skip_serializing)]
     #[egui_probe(skip)]
     value: f32,
@@ -43,6 +46,7 @@ impl DemexFader {
             config,
             priority: FixtureChannelValuePriority::Ltp,
             value: 0.0,
+            stomp_protected: false,
         }
     }
 
@@ -56,6 +60,10 @@ impl DemexFader {
 
     pub fn name_mut(&mut self) -> &mut String {
         &mut self.name
+    }
+
+    pub fn stomp_protected(&self) -> bool {
+        self.stomp_protected
     }
 
     pub fn display_name(&self, preset_handler: &PresetHandler) -> String {

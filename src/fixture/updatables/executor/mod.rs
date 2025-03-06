@@ -28,7 +28,7 @@ pub struct Executor {
     priority: FixtureChannelValuePriority,
 
     #[serde(default)]
-    stop_others: bool,
+    stomp_protected: bool,
 
     config: ExecutorConfig,
 }
@@ -49,7 +49,7 @@ impl Executor {
                 fixtures: selection.fixtures().to_vec(),
             },
             priority,
-            stop_others: false,
+            stomp_protected: false,
         }
     }
 
@@ -67,7 +67,7 @@ impl Executor {
                 selection,
             },
             priority,
-            stop_others: false,
+            stomp_protected: false,
         }
     }
 
@@ -87,6 +87,10 @@ impl Executor {
         &mut self.name
     }
 
+    pub fn stomp_protected(&self) -> bool {
+        self.stomp_protected
+    }
+
     pub fn fixtures(&self) -> &[u32] {
         match &self.config {
             ExecutorConfig::Sequence { fixtures, .. } => fixtures,
@@ -103,7 +107,7 @@ impl Executor {
     }
 
     pub fn stop_others(&self) -> bool {
-        self.stop_others
+        self.stomp_protected
     }
 
     pub fn is_started(&self) -> bool {

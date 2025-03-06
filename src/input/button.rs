@@ -26,7 +26,10 @@ use super::error::DemexInputDeviceError;
 pub enum DemexInputButton {
     ExecutorStartAndNext(u32),
     ExecutorStop(u32),
-    ExecutorFlash(u32),
+    ExecutorFlash {
+        id: u32,
+        stomp: bool,
+    },
 
     FaderGo(u32),
 
@@ -72,9 +75,15 @@ impl DemexInputButton {
         command_input: &mut Vec<Token>,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
-            Self::ExecutorFlash(executor_id) => updatable_handler
-                .start_executor(*executor_id, fixture_handler)
-                .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
+            Self::ExecutorFlash { id, stomp } => {
+                updatable_handler
+                    .start_executor(*id, fixture_handler)
+                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+
+                if *stomp {
+                    updatable_handler.executor_stomp(*id);
+                }
+            }
             Self::ExecutorStartAndNext(executor_id) => {
                 let executor = updatable_handler.executor(*executor_id).ok_or(
                     DemexInputDeviceError::UpdatableHandlerError(
@@ -163,9 +172,15 @@ impl DemexInputButton {
                     && executor.is_started()
                 {}
             }
-            Self::ExecutorFlash(executor_id) => updatable_handler
-                .stop_executor(*executor_id, fixture_handler)
-                .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
+            Self::ExecutorFlash { id, stomp } => {
+                updatable_handler
+                    .stop_executor(*id, fixture_handler)
+                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+
+                if *stomp {
+                    updatable_handler.executor_unstomp(*id);
+                }
+            }
             _ => {}
         }
         Ok(())

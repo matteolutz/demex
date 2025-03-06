@@ -79,7 +79,10 @@ impl AssignButtonArgsMode {
                 Ok(vec![DemexInputButton::ExecutorStop(*executor_id)])
             }
             AssignButtonArgsMode::ExecutorFlash(executor_id) => {
-                Ok(vec![DemexInputButton::ExecutorFlash(*executor_id)])
+                Ok(vec![DemexInputButton::ExecutorFlash {
+                    id: *executor_id,
+                    stomp: false,
+                }])
             }
             AssignButtonArgsMode::FaderGo(fader_id) => {
                 Ok(vec![DemexInputButton::FaderGo(*fader_id)])

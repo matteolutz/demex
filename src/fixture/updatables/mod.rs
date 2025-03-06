@@ -25,10 +25,19 @@ pub mod executor;
 pub mod fader;
 pub mod runtime;
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub enum StompSource {
+    Executor(u32),
+    Fader(u32),
+}
+
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct UpdatableHandler {
     executors: HashMap<u32, Executor>,
     faders: HashMap<u32, DemexFader>,
+
+    #[serde(default, skip_serializing, skip_deserializing)]
+    stomps: Vec<StompSource>,
 }
 
 impl UpdatableHandler {
@@ -43,6 +52,10 @@ impl UpdatableHandler {
                 }
                 _ => true,
             }))
+    }
+
+    pub fn last_stomp_source(&self) -> Option<StompSource> {
+        self.stomps.last().cloned()
     }
 }
 
@@ -114,6 +127,18 @@ impl UpdatableHandler {
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
         executor.start(fixture_handler);
         Ok(())
+    }
+
+    pub fn executor_stomp(&mut self, id: u32) {
+        self.executor_unstomp(id);
+        self.stomps.push(StompSource::Executor(id));
+    }
+
+    pub fn executor_unstomp(&mut self, id: u32) {
+        self.stomps.retain(|v| match v {
+            StompSource::Executor(v) => *v != id,
+            _ => true,
+        });
     }
 
     pub fn start_executor(

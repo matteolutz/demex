@@ -4,6 +4,7 @@ use super::{
         feature::feature_type::FixtureFeatureType,
     },
     presets::error::PresetHandlerError,
+    updatables::error::UpdatableHandlerError,
 };
 
 #[derive(Debug)]
@@ -23,6 +24,7 @@ pub enum FixtureError {
 
     NoDisplayColor(u32),
     PresetHandlerError(Box<PresetHandlerError>),
+    UpdatableHandlerError(Box<UpdatableHandlerError>),
 }
 
 impl std::fmt::Display for FixtureError {
@@ -54,6 +56,7 @@ impl std::fmt::Display for FixtureError {
                 write!(f, "Fixture {} has no color feature", fixture_id)
             }
             Self::PresetHandlerError(err) => write!(f, "Preset handler error: {}", err),
+            Self::UpdatableHandlerError(err) => write!(f, "Updatable handler error: {}", err),
         }
     }
 }
