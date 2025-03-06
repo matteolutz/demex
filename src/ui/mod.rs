@@ -154,6 +154,10 @@ impl DemexUiApp {
 
 impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+        ctx.style_mut(|style| {
+            style.spacing.button_padding = egui::vec2(10.0, 10.0);
+        });
+
         if let Err(input_error) = self.context.input_device_handler.update(
             &mut self.context.fixture_handler.write(),
             &mut self.context.preset_handler.write(),
@@ -215,7 +219,18 @@ impl eframe::App for DemexUiApp {
                     egui::TopBottomPanel::top(format!("DemexDetachedTab-{}", tab_title)).show(
                         ctx,
                         |ui| {
-                            if ui.button("Fullscreen").clicked() {
+                            if ui
+                                .button(
+                                    if ctx.input(|reader| {
+                                        reader.viewport().fullscreen.is_some_and(|f| f)
+                                    }) {
+                                        "Exit Fullscreen"
+                                    } else {
+                                        "Fullscreen"
+                                    },
+                                )
+                                .clicked()
+                            {
                                 tab_config.is_fullscreen = !tab_config.is_fullscreen;
                             }
                         },

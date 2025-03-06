@@ -94,18 +94,30 @@ impl FixtureSelection {
         self.group.max(1)
     }
 
+    pub fn group_mut(&mut self) -> &mut usize {
+        &mut self.group
+    }
+
     pub fn block(&self) -> usize {
         self.block.max(1)
+    }
+
+    pub fn block_mut(&mut self) -> &mut usize {
+        &mut self.block
     }
 
     pub fn wings(&self) -> usize {
         self.wings.max(1)
     }
 
+    pub fn wings_mut(&mut self) -> &mut usize {
+        &mut self.wings
+    }
+
     pub fn fixtures_with_offset_idx(&self, offset_idx: usize) -> Vec<u32> {
         self.fixtures
             .iter()
-            .map(|f| *f)
+            .copied()
             .filter(|f| self.offset_idx(*f).is_some_and(|o| o == offset_idx))
             .collect::<Vec<_>>()
     }
