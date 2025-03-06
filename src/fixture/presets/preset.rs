@@ -124,7 +124,7 @@ pub enum FixturePresetData {
 
         #[egui_probe(skip)]
         #[serde(default, skip_serializing, skip_deserializing)]
-        selection: Option<FixtureSelection>,
+        selections: Vec<FixtureSelection>,
     },
 }
 
@@ -242,7 +242,13 @@ impl FixturePreset {
 
     pub fn stop(&mut self) {
         match &mut self.data {
-            FixturePresetData::FeatureEffect { runtime, .. } => runtime.stop(),
+            FixturePresetData::FeatureEffect {
+                runtime,
+                selections,
+            } => {
+                runtime.stop();
+                selections.clear();
+            }
             _ => (),
         }
     }
@@ -266,15 +272,19 @@ impl FixturePreset {
                     }
                 }
             }
-            FixturePresetData::FeatureEffect { runtime, selection } => {
+            FixturePresetData::FeatureEffect {
+                runtime,
+                selections,
+            } => {
                 if !runtime.is_started() {
                     runtime.start();
                 }
 
-                if let Some(selection) = selection.as_mut() {
-                    selection.update_from(&new_selection);
-                } else {
-                    *selection = Some(new_selection);
+                let is_same_selection = selections
+                    .last()
+                    .is_some_and(|selection| selection == &new_selection);
+                if !is_same_selection {
+                    selections.push(new_selection);
                 }
 
                 for feature_type in own_feature_types {
@@ -345,10 +355,19 @@ impl FixturePreset {
             FixturePresetData::Default { data } => data
                 .get(&fixture.id())
                 .and_then(|values| values.get(&channel_type).copied()),
-            FixturePresetData::FeatureEffect { runtime, selection } => {
-                let fixture_offset = selection
-                    .as_ref()
-                    .and_then(|sel| sel.offset(fixture.id()))
+            FixturePresetData::FeatureEffect {
+                runtime,
+                selections,
+            } => {
+                /*let fixture_offset = selection
+                .as_ref()
+                .and_then(|sel| sel.offset(fixture.id()))
+                .unwrap_or_default();*/
+
+                let fixture_offset = selections
+                    .iter()
+                    .rev()
+                    .find_map(|selection| selection.offset(fixture.id()))
                     .unwrap_or_default();
 
                 let fade_val = runtime.get_channel_value(
