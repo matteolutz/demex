@@ -8,6 +8,7 @@ use super::DemexUiContext;
 pub mod faders_tab;
 pub mod fixture_controls_tab;
 pub mod fixture_list_tab;
+pub mod fixture_selection_tab;
 pub mod layout_view_tab;
 pub mod logs_tab;
 pub mod performance_tab;
@@ -26,6 +27,7 @@ pub enum DemexTab {
     SequencesList,
     SequenceEditor,
     Timing,
+    FixtureSelection,
     Logs,
     Performance,
 }
@@ -41,6 +43,7 @@ impl std::fmt::Display for DemexTab {
             DemexTab::SequencesList => write!(f, "Sequences List"),
             DemexTab::SequenceEditor => write!(f, "Sequence Editor"),
             DemexTab::Timing => write!(f, "Timing"),
+            DemexTab::FixtureSelection => write!(f, "Fixture Selection"),
             DemexTab::Logs => write!(f, "Logs"),
             DemexTab::Performance => write!(f, "Performance"),
         }
@@ -60,6 +63,7 @@ impl DemexTab {
                 sequence_editor_tab::SequenceEditorTab::new(context, "MainSequenceEditor").show(ui)
             }
             DemexTab::Timing => timing_tab::ui(ui, context),
+            DemexTab::FixtureSelection => fixture_selection_tab::ui(ui, context),
             DemexTab::Logs => logs_tab::ui(ui, context),
             DemexTab::Performance => performance_tab::ui(ui, context),
         }
@@ -121,7 +125,11 @@ impl Default for DemexTabs {
             vec![DemexTab::FixtureControls, DemexTab::SequenceEditor],
         );
 
-        surface.split_below(new_node, 0.5, vec![DemexTab::LayoutView]);
+        surface.split_below(
+            new_node,
+            0.5,
+            vec![DemexTab::LayoutView, DemexTab::FixtureSelection],
+        );
         surface.split_above(
             old_node,
             0.5,

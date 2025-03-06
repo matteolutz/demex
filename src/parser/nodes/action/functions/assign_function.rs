@@ -20,7 +20,10 @@ use super::FunctionArgs;
 pub enum AssignButtonArgsMode {
     ExecutorStartAndNext(u32),
     ExecutorStop(u32),
-    ExecutorFlash(u32),
+    ExecutorFlash {
+        id: u32,
+        stomp: bool,
+    },
     FaderGo(u32),
     FixtureSelector(FixtureSelector),
     SelectivePreset {
@@ -38,7 +41,9 @@ impl AssignButtonArgsMode {
         updatable_handler: &UpdatableHandler,
     ) -> Result<(), ActionRunError> {
         match self {
-            Self::ExecutorStop(id) | Self::ExecutorFlash(id) | Self::ExecutorStartAndNext(id) => {
+            Self::ExecutorStop(id)
+            | Self::ExecutorFlash { id, .. }
+            | Self::ExecutorStartAndNext(id) => {
                 updatable_handler
                     .executor(*id)
                     .ok_or(ActionRunError::UpdatableHandlerError(
@@ -78,10 +83,10 @@ impl AssignButtonArgsMode {
             AssignButtonArgsMode::ExecutorStop(executor_id) => {
                 Ok(vec![DemexInputButton::ExecutorStop(*executor_id)])
             }
-            AssignButtonArgsMode::ExecutorFlash(executor_id) => {
+            AssignButtonArgsMode::ExecutorFlash { id, stomp } => {
                 Ok(vec![DemexInputButton::ExecutorFlash {
-                    id: *executor_id,
-                    stomp: false,
+                    id: *id,
+                    stomp: *stomp,
                 }])
             }
             AssignButtonArgsMode::FaderGo(fader_id) => {

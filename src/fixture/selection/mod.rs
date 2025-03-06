@@ -102,6 +102,14 @@ impl FixtureSelection {
         self.wings.max(1)
     }
 
+    pub fn fixtures_with_offset_idx(&self, offset_idx: usize) -> Vec<u32> {
+        self.fixtures
+            .iter()
+            .map(|f| *f)
+            .filter(|f| self.offset_idx(*f).is_some_and(|o| o == offset_idx))
+            .collect::<Vec<_>>()
+    }
+
     pub fn offset(&self, fixture_id: u32) -> Option<f32> {
         Some(self.offset_idx(fixture_id)? as f32 / self.num_offsets() as f32)
     }

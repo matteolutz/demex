@@ -36,7 +36,7 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_a
             if context.window_handler.is_empty() {
                 if command_input_field
                     .ctx
-                    .input(|i| i.key_pressed(eframe::egui::Key::Space))
+                    .input_mut(|i| i.consume_key(egui::Modifiers::NONE, ::egui::Key::Space))
                 {
                     let mut lexer = Lexer::new(&context.command_input);
                     let tokens = lexer.tokenize();
@@ -50,18 +50,22 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_a
                     }
                 }
 
-                if context.is_command_input_empty
-                    && command_input_field
-                        .ctx
-                        .input(|i| i.key_pressed(eframe::egui::Key::Backspace))
-                {
+                if context.is_command_input_empty {
                     if command_input_field
                         .ctx
-                        .input(|i| i.modifiers.ctrl || i.modifiers.mac_cmd)
+                        .input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Backspace))
+                    {
+                        context.command.pop();
+                    }
+
+                    if command_input_field
+                        .ctx
+                        .input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Backspace))
+                        || command_input_field.ctx.input_mut(|i| {
+                            i.consume_key(egui::Modifiers::MAC_CMD, egui::Key::Backspace)
+                        })
                     {
                         context.command.clear();
-                    } else {
-                        context.command.pop();
                     }
                 }
 
@@ -76,9 +80,11 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_a
                     command_input_field.request_focus();
                 }
 
-                if command_input_field
-                    .ctx
-                    .input(|i| i.key_pressed(eframe::egui::Key::Enter))
+                let command_empty = context.command.is_empty() && context.command_input.is_empty();
+                if !command_empty
+                    && command_input_field
+                        .ctx
+                        .input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter))
                 {
                     let mut lexer = Lexer::new(&context.command_input);
                     let tokens = lexer.tokenize();

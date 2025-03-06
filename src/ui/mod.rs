@@ -99,10 +99,15 @@ impl DemexUiApp {
                 show_file,
                 save_show,
 
-                logs: vec![DemexLogEntry::new(DemexLogEntryType::Info(format!(
-                    "demex v{} (by @matteolutz), welcome!",
-                    VERSION_STR
-                )))],
+                logs: vec![
+                    DemexLogEntry::new(DemexLogEntryType::Info(format!(
+                        "demex v{} (by @matteolutz), Welcome!",
+                        VERSION_STR
+                    ))),
+                    DemexLogEntry::new(DemexLogEntryType::Info(
+                        "Check out https://demex.matteolutz.de to get started.".to_owned(),
+                    )),
+                ],
                 window_handler: DemexWindowHandler::default(),
 
                 command_input: String::new(),

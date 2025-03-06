@@ -81,6 +81,7 @@ pub enum Token {
     KeywordButton,
     KeywordTokens,
     KeywordProgrammer,
+    KeywordStomp,
 
     KeywordNuzul,
     KeywordSueud,
@@ -162,6 +163,7 @@ impl Token {
             Token::KeywordStop => TokenType::OtherKeyword,
             Token::KeywordFlash => TokenType::OtherKeyword,
             Token::KeywordTokens => TokenType::OtherKeyword,
+            Token::KeywordStomp => TokenType::OtherKeyword,
 
             Token::Eof => TokenType::Eof,
         }
@@ -242,6 +244,7 @@ impl std::fmt::Display for Token {
             Token::KeywordButton => write!(f, "button"),
             Token::KeywordTokens => write!(f, "tokens"),
             Token::KeywordProgrammer => write!(f, "programmer"),
+            Token::KeywordStomp => write!(f, "stomp"),
             Token::Eof => write!(f, "Eof"),
         }
     }

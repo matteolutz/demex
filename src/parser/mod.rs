@@ -989,7 +989,18 @@ impl<'a> Parser2<'a> {
                     }
                     Token::KeywordFlash => {
                         self.advance();
-                        Ok(AssignButtonArgsMode::ExecutorFlash(executor_id))
+
+                        let stomp = if matches!(self.current_token()?, Token::KeywordStomp) {
+                            self.advance();
+                            true
+                        } else {
+                            false
+                        };
+
+                        Ok(AssignButtonArgsMode::ExecutorFlash {
+                            id: executor_id,
+                            stomp,
+                        })
                     }
                     unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                         unexpected_token.clone(),
