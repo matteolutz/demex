@@ -156,6 +156,12 @@ impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         ctx.style_mut(|style| {
             style.spacing.button_padding = egui::vec2(10.0, 10.0);
+
+            // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
+            //
+            style.spacing.interact_size = egui::vec2(40.0, 18.0) * 1.5;
+            style.spacing.slider_rail_height = 8.0 * 2.0;
+            style.spacing.slider_width = 100.0 * 1.5;
         });
 
         if let Err(input_error) = self.context.input_device_handler.update(

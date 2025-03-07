@@ -41,7 +41,7 @@ impl<'a> LayoutViewComponent<'a> {
         ui.heading("Layout View");
 
         ui.with_layout(
-            eframe::egui::Layout::left_to_right(eframe::egui::Align::LEFT),
+            eframe::egui::Layout::left_to_right(eframe::egui::Align::Min),
             |ui| {
                 ui.add(egui::Slider::new(
                     state.layout_projection.zoom_mut(),
