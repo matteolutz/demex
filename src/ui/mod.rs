@@ -157,6 +157,10 @@ impl eframe::App for DemexUiApp {
         ctx.style_mut(|style| {
             style.spacing.button_padding = egui::vec2(10.0, 10.0);
 
+            style.spacing.indent = 18.0 * 2.0;
+            style.spacing.icon_width = 14.0 * 2.0;
+            style.spacing.icon_width_inner = 8.0 * 2.0;
+
             // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
             //
             style.spacing.interact_size = egui::vec2(40.0, 18.0) * 1.5;
