@@ -7,7 +7,7 @@ use crate::{
     fixture::{
         channel2::{
             channel_type::FixtureChannelType,
-            channel_value::FixtureChannelValue2,
+            channel_value::{FixtureChannelValue2, FixtureChannelValue2PresetState},
             feature::{feature_group::FeatureGroup, feature_type::FixtureFeatureType},
         },
         effect::feature::runtime::FeatureEffectRuntime,
@@ -121,10 +121,6 @@ pub enum FixturePresetData {
     },
     FeatureEffect {
         runtime: FeatureEffectRuntime,
-
-        #[egui_probe(skip)]
-        #[serde(default, skip_serializing, skip_deserializing)]
-        selections: Vec<FixtureSelection>,
     },
 }
 
@@ -221,36 +217,20 @@ impl FixturePreset {
         id: FixturePresetId,
         name: Option<String>,
         feature_group: &FeatureGroup,
-        data: HashMap<u32, HashMap<FixtureChannelType, u8>>,
+        data: FixturePresetData,
     ) -> Result<Self, PresetHandlerError> {
         let name = name.unwrap_or(format!("{} Preset {}", feature_group.name(), id));
 
         Ok(Self {
             id,
             name,
-            data: FixturePresetData::Default { data },
+            data,
             display_color: None,
         })
     }
 
-    pub fn is_active(&self) -> bool {
-        match &self.data {
-            FixturePresetData::FeatureEffect { runtime, .. } => runtime.is_started(),
-            _ => false,
-        }
-    }
-
-    pub fn stop(&mut self) {
-        match &mut self.data {
-            FixturePresetData::FeatureEffect {
-                runtime,
-                selections,
-            } => {
-                runtime.stop();
-                selections.clear();
-            }
-            _ => (),
-        }
+    pub fn data(&self) -> &FixturePresetData {
+        &self.data
     }
 
     pub fn apply(
@@ -266,27 +246,18 @@ impl FixturePreset {
                         fixture
                             .set_channel_value(
                                 *preset_chanel_type,
-                                FixtureChannelValue2::Preset(self.id),
+                                FixtureChannelValue2::Preset {
+                                    id: self.id,
+                                    state: Some(FixtureChannelValue2PresetState::now(
+                                        new_selection.clone(),
+                                    )),
+                                },
                             )
                             .map_err(PresetHandlerError::FixtureError)?;
                     }
                 }
             }
-            FixturePresetData::FeatureEffect {
-                runtime,
-                selections,
-            } => {
-                if !runtime.is_started() {
-                    runtime.start();
-                }
-
-                let is_same_selection = selections
-                    .last()
-                    .is_some_and(|selection| selection == &new_selection);
-                if !is_same_selection {
-                    selections.push(new_selection);
-                }
-
+            FixturePresetData::FeatureEffect { .. } => {
                 for feature_type in own_feature_types {
                     // if the fixture doesn't have this feature type, skip
                     if let Ok(channel_types) =
@@ -296,7 +267,12 @@ impl FixturePreset {
                             fixture
                                 .set_channel_value(
                                     channel_type,
-                                    FixtureChannelValue2::Preset(self.id),
+                                    FixtureChannelValue2::Preset {
+                                        id: self.id,
+                                        state: Some(FixtureChannelValue2PresetState::now(
+                                            new_selection.clone(),
+                                        )),
+                                    },
                                 )
                                 .map_err(PresetHandlerError::FixtureError)?;
                         }
@@ -350,27 +326,30 @@ impl FixturePreset {
         channel_type: FixtureChannelType,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
+        state: Option<&FixtureChannelValue2PresetState>,
     ) -> Option<u8> {
         match &self.data {
             FixturePresetData::Default { data } => data
                 .get(&fixture.id())
                 .and_then(|values| values.get(&channel_type).copied()),
-            FixturePresetData::FeatureEffect {
-                runtime,
-                selections,
-            } => {
-                let fixture_offset = selections
-                    .iter()
-                    .rev()
-                    .find_map(|selection| selection.offset(fixture.id()))
+            FixturePresetData::FeatureEffect { runtime } => {
+                /*let fixture_offset = selections
+                .iter()
+                .rev()
+                .find_map(|selection| selection.offset(fixture.id()))
+                .unwrap_or_default();*/
+
+                let fixture_offset = state
+                    .and_then(|state| state.selection().offset(fixture.id()))
                     .unwrap_or_default();
 
-                let fade_val = runtime.get_channel_value(
+                let fade_val = runtime.get_channel_value_with_started(
                     channel_type,
                     &fixture.feature_configs,
                     fixture_offset,
                     FixtureChannelValuePriority::default(),
                     timing_handler,
+                    state.map(|state| state.started()),
                 );
 
                 if let Some(fade_val) = fade_val {

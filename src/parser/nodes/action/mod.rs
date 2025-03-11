@@ -2,7 +2,10 @@ use std::ops::RangeInclusive;
 
 use functions::{
     assign_function::{AssignButtonArgs, AssignFaderArgs},
-    create_function::{CreateExecutorArgs, CreateFaderArgs, CreateMacroArgs, CreateSequenceArgs},
+    create_function::{
+        CreateEffectPresetArgs, CreateExecutorArgs, CreateFaderArgs, CreateMacroArgs,
+        CreateSequenceArgs,
+    },
     delete_function::DeleteArgs,
     record_function::{RecordGroupArgs, RecordPresetArgs, RecordSequenceCueArgs},
     rename_function::RenameObjectArgs,
@@ -79,6 +82,7 @@ pub enum Action {
     CreateExecutor(CreateExecutorArgs),
     CreateFader(CreateFaderArgs),
     CreateMacro(CreateMacroArgs),
+    CreateEffectPreset(CreateEffectPresetArgs),
 
     UpdatePreset(UpdatePresetArgs),
     UpdateSequenceCue(UpdateSequenceCueArgs),
@@ -215,6 +219,14 @@ impl Action {
                 timing_handler,
             ),
             Self::CreateFader(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+            ),
+            Self::CreateEffectPreset(args) => args.run(
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,

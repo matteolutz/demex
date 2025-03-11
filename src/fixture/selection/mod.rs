@@ -15,6 +15,9 @@ pub struct FixtureSelection {
     block: usize,
 
     wings: usize,
+
+    #[serde(default)]
+    reverse: bool,
 }
 
 impl Default for FixtureSelection {
@@ -25,6 +28,7 @@ impl Default for FixtureSelection {
             group: 1,
             block: 1,
             wings: 1,
+            reverse: false,
         }
     }
 }
@@ -114,6 +118,14 @@ impl FixtureSelection {
         &mut self.wings
     }
 
+    pub fn reverse(&self) -> bool {
+        self.reverse
+    }
+
+    pub fn reverse_mut(&mut self) -> &mut bool {
+        &mut self.reverse
+    }
+
     pub fn fixtures_with_offset_idx(&self, offset_idx: usize) -> Vec<u32> {
         self.fixtures
             .iter()
@@ -146,7 +158,11 @@ impl FixtureSelection {
             wing_offset = wing_size - wing_offset - 1;
         }
 
-        Some(wing_offset)
+        Some(if self.reverse {
+            self.num_offsets() - 1 - wing_offset
+        } else {
+            wing_offset
+        })
     }
 
     fn num_blocked_offsets(&self) -> usize {
@@ -205,6 +221,7 @@ mod tests {
             group: 1,
             block: 1,
             wings: 1,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
@@ -218,6 +235,7 @@ mod tests {
             group: 1,
             block: 1,
             wings: 1,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -231,6 +249,7 @@ mod tests {
             group: 1,
             block: 2,
             wings: 1,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
@@ -244,6 +263,7 @@ mod tests {
             group: 1,
             block: 2,
             wings: 1,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5]);
@@ -257,6 +277,7 @@ mod tests {
             group: 2,
             block: 1,
             wings: 1,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 1, 0, 1, 0, 1, 0, 1, 0, 1]);
@@ -270,6 +291,7 @@ mod tests {
             group: 2,
             block: 1,
             wings: 1,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]);
@@ -283,6 +305,7 @@ mod tests {
             group: 3,
             block: 1,
             wings: 1,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 1, 2, 0, 1, 2, 0, 1, 2, 0]);
@@ -296,6 +319,7 @@ mod tests {
             group: 3,
             block: 1,
             wings: 1,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1]);
@@ -309,6 +333,7 @@ mod tests {
             group: 1,
             block: 1,
             wings: 2,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 1, 2, 3, 4, 4, 3, 2, 1, 0]);
@@ -322,6 +347,7 @@ mod tests {
             group: 1,
             block: 1,
             wings: 2,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 1, 2, 3, 4, 4, 3, 2, 1, 0, 0]);
@@ -335,6 +361,7 @@ mod tests {
             group: 1,
             block: 1,
             wings: 3,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 1, 2, 2, 1, 0, 0, 1, 2, 2]);
@@ -348,6 +375,7 @@ mod tests {
             group: 1,
             block: 1,
             wings: 3,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1]);
@@ -361,6 +389,7 @@ mod tests {
             group: 1,
             block: 1,
             wings: 4,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 1, 1, 0, 0, 1, 1, 0, 0, 1]);
@@ -374,6 +403,7 @@ mod tests {
             group: 1,
             block: 1,
             wings: 4,
+            reverse: false,
         };
 
         assert_offsets_equal(&selection, &[0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]);

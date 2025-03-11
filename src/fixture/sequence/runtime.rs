@@ -133,8 +133,14 @@ impl SequenceRuntime {
                     fade = if fade >= cue.snap_percent() { 1.0 } else { 0.0 };
                 }
 
-                cue.channel_value_for_fixture(fixture, channel_type, preset_handler, timing_handler)
-                    .map(|v| FadeFixtureChannelValue::new(v, fade, priority))
+                cue.channel_value_for_fixture(
+                    fixture,
+                    channel_type,
+                    preset_handler,
+                    timing_handler,
+                    Some(cue_update),
+                )
+                .map(|v| FadeFixtureChannelValue::new(v, fade, priority))
             } else if prev_cue_idx.is_some() {
                 // this isn't the first cue, meaning we should fade between the value of the previous cue
                 // and the value of the current cue
@@ -166,6 +172,7 @@ impl SequenceRuntime {
                         channel_type,
                         preset_handler,
                         timing_handler,
+                        Some(cue_update),
                     )
                     .map(|v| {
                         FadeFixtureChannelValue::new(
@@ -177,6 +184,8 @@ impl SequenceRuntime {
                                             channel_type,
                                             preset_handler,
                                             timing_handler,
+                                            // TODO: previous cue update time
+                                            None,
                                         )
                                         .unwrap_or(FixtureChannelValue2::Home),
                                 ),
@@ -195,6 +204,7 @@ impl SequenceRuntime {
                             channel_type,
                             preset_handler,
                             timing_handler,
+                            Some(cue_update),
                         )
                         .map(|v| FadeFixtureChannelValue::new(v, (1.0 - mix) * fade, priority))
                 } else {

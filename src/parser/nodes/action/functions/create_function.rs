@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fixture::timing::TimingHandler,
+    fixture::{presets::preset::FixturePresetId, timing::TimingHandler},
     parser::nodes::{
         action::{error::ActionRunError, result::ActionRunResult, Action},
         fixture_selector::FixtureSelector,
@@ -143,6 +143,30 @@ impl FunctionArgs for CreateMacroArgs {
                 self.name.clone(),
                 self.action.clone(),
             )
+            .map_err(ActionRunError::PresetHandlerError)?;
+
+        Ok(ActionRunResult::new())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateEffectPresetArgs {
+    pub id: FixturePresetId,
+    pub name: Option<String>,
+}
+
+impl FunctionArgs for CreateEffectPresetArgs {
+    fn run(
+        &self,
+        _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        preset_handler: &mut crate::fixture::presets::PresetHandler,
+        _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
+        _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
+        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        preset_handler
+            .create_effect_preset(self.id, self.name.clone())
             .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())

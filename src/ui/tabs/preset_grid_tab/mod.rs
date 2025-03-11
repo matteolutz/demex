@@ -6,7 +6,10 @@ use itertools::Itertools;
 use row::preset_grid_row_ui;
 
 use crate::{
-    fixture::{presets::preset::FixturePresetId, updatables::executor::config::ExecutorConfig},
+    fixture::{
+        presets::preset::{FixturePresetData, FixturePresetId},
+        updatables::executor::config::ExecutorConfig,
+    },
     lexer::token::Token,
     ui::{
         window::{edit::DemexEditWindow, DemexWindow},
@@ -55,9 +58,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     PresetGridButtonConfig::Empty { id }
                 };
 
-                let (response, quick_action) =
-                    PresetGridButton::new(config, PresetGridButtonDecoration::default(), None)
-                        .show(ui);
+                let (response, quick_action) = PresetGridButton::new(
+                    config,
+                    PresetGridButtonDecoration::default(),
+                    None,
+                    None,
+                )
+                .show(ui);
 
                 if response.clicked()
                     || quick_action.is_some_and(|a| a == PresetGridButtonQuickMenuActions::Default)
@@ -70,17 +77,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 if let Some(quick_action) = quick_action {
                     match quick_action {
                         PresetGridButtonQuickMenuActions::Insert => {
-                            if g.is_ok() {
-                                context
-                                    .command
-                                    .extend_from_slice(&[Token::KeywordGroup, Token::Integer(id)]);
-                            } else {
-                                context.command.extend_from_slice(&[
-                                    Token::KeywordRecord,
-                                    Token::KeywordGroup,
-                                    Token::Integer(id),
-                                ]);
-                            }
+                            context
+                                .command
+                                .extend_from_slice(&[Token::KeywordGroup, Token::Integer(id)]);
+                        }
+
+                        PresetGridButtonQuickMenuActions::New => {
+                            context.command.extend_from_slice(&[
+                                Token::KeywordRecord,
+                                Token::KeywordGroup,
+                                Token::Integer(id),
+                            ]);
                         }
                         PresetGridButtonQuickMenuActions::Edit => {
                             if let Ok(g) = g {
@@ -115,7 +122,6 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         };
 
                         let p = preset_handler.get_preset(preset_id);
-                        let is_running = p.as_ref().is_ok_and(|p| p.is_active());
 
                         let config = if let Ok(p) = p {
                             PresetGridButtonConfig::Preset {
@@ -135,31 +141,41 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                             config,
                             PresetGridButtonDecoration {
                                 left_bottom_text: None,
-                                right_top_text: if is_running {
-                                    Some("ACT".to_owned())
-                                } else {
-                                    None
-                                },
+                                right_top_text: p.as_ref().ok().and_then(|p| match p.data() {
+                                    FixturePresetData::FeatureEffect { .. } => {
+                                        Some("FeFX".to_owned())
+                                    }
+                                    _ => None,
+                                }),
                             },
                             None,
+                            Some(vec![PresetGridButtonQuickMenuActions::Custom(
+                                "New (Create)",
+                            )]),
                         )
                         .show(ui);
 
                         if let Some(quick_action) = quick_action {
                             match quick_action {
                                 PresetGridButtonQuickMenuActions::Insert => {
-                                    if p.is_ok() {
-                                        context.command.extend_from_slice(&[
-                                            Token::KeywordPreset,
-                                            Token::FloatingPoint(0.0, (*feature_group_id, id)),
-                                        ]);
-                                    } else {
-                                        context.command.extend_from_slice(&[
-                                            Token::KeywordRecord,
-                                            Token::KeywordPreset,
-                                            Token::FloatingPoint(0.0, (*feature_group_id, id)),
-                                        ]);
-                                    }
+                                    context.command.extend_from_slice(&[
+                                        Token::KeywordPreset,
+                                        Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                    ]);
+                                }
+                                PresetGridButtonQuickMenuActions::New => {
+                                    context.command.extend_from_slice(&[
+                                        Token::KeywordRecord,
+                                        Token::KeywordPreset,
+                                        Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                    ]);
+                                }
+                                PresetGridButtonQuickMenuActions::Custom("New (Create)") => {
+                                    context.command.extend_from_slice(&[
+                                        Token::KeywordCreate,
+                                        Token::KeywordPreset,
+                                        Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                    ]);
                                 }
                                 PresetGridButtonQuickMenuActions::Edit => {
                                     if let Ok(p) = p {
@@ -211,9 +227,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
                 /*let response =
                 preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());*/
-                let (response, quick_action) =
-                    PresetGridButton::new(config, PresetGridButtonDecoration::default(), None)
-                        .show(ui);
+                let (response, quick_action) = PresetGridButton::new(
+                    config,
+                    PresetGridButtonDecoration::default(),
+                    None,
+                    None,
+                )
+                .show(ui);
 
                 if response.clicked()
                     || quick_action
@@ -233,17 +253,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 if let Some(quick_action) = quick_action {
                     match quick_action {
                         PresetGridButtonQuickMenuActions::Insert => {
-                            if m.is_ok() {
-                                context
-                                    .command
-                                    .extend_from_slice(&[Token::KeywordMacro, Token::Integer(id)]);
-                            } else {
-                                context.command.extend_from_slice(&[
-                                    Token::KeywordCreate,
-                                    Token::KeywordMacro,
-                                    Token::Integer(id),
-                                ]);
-                            }
+                            context
+                                .command
+                                .extend_from_slice(&[Token::KeywordMacro, Token::Integer(id)]);
+                        }
+
+                        PresetGridButtonQuickMenuActions::New => {
+                            context.command.extend_from_slice(&[
+                                Token::KeywordCreate,
+                                Token::KeywordMacro,
+                                Token::Integer(id),
+                            ]);
                         }
                         PresetGridButtonQuickMenuActions::Edit => {
                             todo!()
@@ -331,6 +351,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     config,
                     decoration,
                     Some(vec![PresetGridButtonQuickMenuActions::Custom("Stop")]),
+                    None,
                 )
                 .show(ui);
 
@@ -353,18 +374,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 if let Some(quick_action) = quick_action {
                     match quick_action {
                         PresetGridButtonQuickMenuActions::Insert => {
-                            if executor_exists {
-                                context.command.extend_from_slice(&[
-                                    Token::KeywordExecutor,
-                                    Token::Integer(id),
-                                ]);
-                            } else {
-                                context.command.extend_from_slice(&[
-                                    Token::KeywordCreate,
-                                    Token::KeywordExecutor,
-                                    Token::Integer(id),
-                                ]);
-                            }
+                            context
+                                .command
+                                .extend_from_slice(&[Token::KeywordExecutor, Token::Integer(id)]);
+                        }
+
+                        PresetGridButtonQuickMenuActions::New => {
+                            context.command.extend_from_slice(&[
+                                Token::KeywordCreate,
+                                Token::KeywordExecutor,
+                                Token::Integer(id),
+                            ]);
                         }
                         PresetGridButtonQuickMenuActions::Edit => {
                             if executor_exists {

@@ -1,1 +1,1275 @@
-{"preset_handler":{"groups":{"1":{"id":1,"name":"Washes","fixture_selector":{"Atomic":{"FixtureRange":[1,2]}}},"3":{"id":3,"name":"Spots","fixture_selector":{"Atomic":{"FixtureRange":[20,21]}}},"6":{"id":6,"name":"ML","fixture_selector":{"Atomic":{"FixtureIdList":[21,2,1,20]}}},"2":{"id":2,"name":"Top PARs","fixture_selector":{"Atomic":{"FixtureRange":[3,10]}}}},"macros":{"3":{"id":3,"name":"Home","action":"HomeAll"},"4":{"id":4,"name":"Clear","action":"ClearAll"}},"command_slices":{"1":{"id":1,"name":"for ~","command":["KeywordFor","KeywordFixturesSelected"]},"2":{"id":2,"name":"for","command":["KeywordFor"]}},"sequences":{},"presets":{"0.0":{"id":"0.0","name":"Full","data":{"3":{"Intensity":255},"7":{"Intensity":255},"13":{"Intensity":255},"6":{"Intensity":255},"14":{"Intensity":255},"2":{"IntensityFine":255,"Intensity":255},"9":{"Intensity":255},"8":{"Intensity":255},"5":{"Intensity":255},"15":{"Intensity":255},"12":{"Intensity":255},"11":{"Intensity":255},"4":{"Intensity":255},"20":{"Intensity":255},"16":{"Intensity":255},"1":{"IntensityFine":255,"Intensity":255},"21":{"Intensity":255},"10":{"Intensity":255}}},"2.0":{"id":"2.0","name":"Rot","data":{"21":{"ColorMacro":21},"2":{"Blue":0,"GreenFine":0,"Red":255,"Green":0,"RedFine":255,"BlueFine":0},"1":{"GreenFine":0,"BlueFine":0,"RedFine":255,"Green":0,"Red":255,"Blue":0},"20":{"ColorMacro":21}}}},"feature_groups":{"0":{"id":0,"name":"Intensity","feature_types":["Intensity"]},"4":{"id":4,"name":"Focus","feature_types":["Zoom","Focus"]},"5":{"id":5,"name":"Control","feature_types":["ToggleFlags"]},"1":{"id":1,"name":"Position","feature_types":["PositionPanTilt"]},"2":{"id":2,"name":"Color","feature_types":["ColorRGB","ColorMacro"]},"3":{"id":3,"name":"Beam","feature_types":["Shutter"]}}},"updatable_handler":{"executors":{"0":{"id":0,"name":"Funny effect","priority":"Ltp","stop_others":false,"config":{"FeatureEffect":{"runtime":{"effect":{"PositionPanTiltFigureEight":{"pan_size":0.5,"tilt_size":0.5,"pan_center":0.5,"tilt_center":0.5,"speed":1.0}},"phase":{"Single":0.0}},"selection":{"fixtures":[21,2,1,20],"group":1,"block":1,"wings":1}}}}},"faders":{"2":{"id":2,"name":"Washes","priority":"Ltp","config":{"Submaster":{"fixtures":[1,2]}}},"1":{"id":1,"name":"ML","priority":"Ltp","config":{"Submaster":{"fixtures":[21,2,1,20]}}},"3":{"id":3,"name":"Spots","priority":"Ltp","config":{"Submaster":{"fixtures":[20,21]}}}}},"input_device_configs":[],"patch":{"fixtures":[{"id":1,"name":"WASH 1","fixture_type":"CameoWash","fixture_mode":0,"universe":1,"start_address":411},{"id":2,"name":"WASH 2","fixture_type":"CameoWash","fixture_mode":0,"universe":1,"start_address":451},{"id":3,"name":"PAR T1","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":8},{"id":4,"name":"PAR T2","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":7},{"id":5,"name":"PAR T3","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":6},{"id":6,"name":"PAR T4","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":5},{"id":7,"name":"PAR T5","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":4},{"id":8,"name":"PAR T6","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":3},{"id":9,"name":"PAR T7","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":2},{"id":10,"name":"PAR T8","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":1},{"id":11,"name":"PAR L1","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":12},{"id":12,"name":"PAR L2","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":14},{"id":13,"name":"PAR L3","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":16},{"id":14,"name":"PAR R1","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":18},{"id":15,"name":"PAR R2","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":20},{"id":16,"name":"PAR R3","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":22},{"id":20,"name":"Spot 1","fixture_type":"ProHead250","fixture_mode":0,"universe":1,"start_address":270},{"id":21,"name":"Spot 2","fixture_type":"ProHead250","fixture_mode":0,"universe":1,"start_address":310},{"id":101,"name":"Eingang","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":62},{"id":102,"name":"Wand (FOH rechts)","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":53},{"id":103,"name":"Loge","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":61},{"id":104,"name":"Indirekt Hell","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":70},{"id":105,"name":"Indirekt Dunkel","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":71},{"id":111,"name":"Rollo Auf","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":66},{"id":112,"name":"Rollo Ab","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":67},{"id":201,"name":"Saal 1","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":55},{"id":202,"name":"Saal 2","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":56},{"id":203,"name":"Saal 3","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":57},{"id":204,"name":"Saal 4","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":58},{"id":205,"name":"Saal 5","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":59},{"id":206,"name":"Saal 6","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":60},{"id":301,"name":"Bühne Hinten","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":63},{"id":302,"name":"Bühne Mitte","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":64},{"id":303,"name":"Bühne Vorne","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":65},{"id":311,"name":"Vorhang Auf","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":68},{"id":312,"name":"Vorhang Zu","fixture_type":"BasicDimmer","fixture_mode":0,"universe":1,"start_address":69}],"fixture_types":{"CameoWash":{"name":"Cameo EVOS W3","modes":{"0":{"name":"23 Channel","channel_types":["Pan","PanFine","Tilt","TiltFine","Intensity","IntensityFine","Shutter","Red","RedFine","Green","GreenFine","Blue","BlueFine","White","WhiteFine","ColorTemp","ColorTint","ColorMacro","ColorMacroCrossfade","Zoom","ZoomFine","PanTiltSpeed",{"ToggleFlags":0}],"toggle_flags":[],"feature_configs":[{"Intensity":{"is_fine":true}},{"ColorRGB":{"is_fine":true}},{"PositionPanTilt":{"is_fine":true,"has_speed":true}},{"Zoom":{"is_fine":true}},"Shutter",{"ColorMacro":{"macros":[[6,{"Lee":"Lee46"}],[10,{"Lee":"Lee29"}],[14,{"Lee":"Lee26"}],[18,{"Lee":"Lee127"}],[22,{"Lee":"Lee36"}],[26,{"Lee":"Lee19"}]]}},{"ToggleFlags":{"toggle_flags":[{"Reset Zoom (3s)":228,"Display off (3s)":142,"Reset all functions":236,"LED PWM frequency 800Hz (3s)":120,"Color calibration user (3s)":206,"Color calibration factory (3s)":204,"Reset Pan / Tilt (3s)":222,"LED PWM frequency 12kHz (3s)":128,"Dimmer Curve logarithmic":168,"Auto Fan (3s)":100,"Blackout while moving on (3s)":6,"LED PWM frequency 3600Hz (3s)":126,"Invert Tilt on (3s)":46,"Display on (3s)":140,"Blackout while moving off (3s)":8,"Dimmer Curve linear":164,"Silent Fan (3s)":98,"Dimmer Curve exponential":166,"Normal Fan (3s)":102,"LED PWM frequency 25kHz (3s)":130,"LED PWM frequency 1200Hz (3s)":122,"Dimmer Curve s-curve":170,"LED PWM frequency 2000Hz (3s)":124,"Invert Tilt off (5s)":48,"Dimmer response LED (3s)":74,"Dimmer response halogen (3s)":76,"Invert Pan off (5s)":44,"Invert Pan on (3s)":42,"Color calibration off (3s)":202}]}}]}}},"ProHead250":{"name":"Pro Head 250","modes":{"0":{"name":"16bit","channel_types":["Pan","Tilt","PanFine","TiltFine","PanTiltSpeed",{"ToggleFlags":0},"ColorMacro","Unused","Prism","PrismRotation","RotatingGobos","GoboRotation","Unused","Focus","Shutter","Intensity"],"toggle_flags":[{"Turn On":131,"Turn Off":231}],"feature_configs":[{"ToggleFlags":{"toggle_flags":[{"Turn On":131,"Turn Off":231}]}},{"Focus":{"is_fine":false}},{"ColorMacro":{"macros":[[0,{"Custom":{"rgb":[1.0,1.0,1.0],"name":"Offen / Weiß"}}],[10,{"Custom":{"rgb":[0.25,0.87,0.81],"name":"Türkis"}}],[32,{"Custom":{"rgb":[0.0,1.0,1.0],"name":"Rot"}}],[21,{"Custom":{"rgb":[1.0,0.0,0.0],"name":"Cyan"}}],[42,{"Custom":{"rgb":[0.0,1.0,0.0],"name":"Grün"}}],[53,{"Custom":{"rgb":[1.0,1.0,1.0],"name":"Magenta"}}],[64,{"Custom":{"rgb":[0.0,0.5,1.0],"name":"Hellblau"}}],[74,{"Custom":{"rgb":[1.0,1.0,0.0],"name":"Gelb"}}],[85,{"Custom":{"rgb":[0.0,1.0,0.0],"name":"Grün"}}],[96,{"Custom":{"rgb":[1.0,0.05,0.75],"name":"Pink"}}],[106,{"Custom":{"rgb":[0.0,0.0,1.0],"name":"Blau"}}],[117,{"Custom":{"rgb":[1.0,0.5,0.0],"name":"Orange"}}]]}},{"Intensity":{"is_fine":false}},{"PositionPanTilt":{"is_fine":true,"has_speed":true}},"Shutter"]}}},"TestColorFixture":{"name":"Test Color Fixture","modes":{"0":{"name":"8 Channels","channel_types":["Intensity","IntensityFine","Red","RedFine","Green","GreenFine","Blue","BlueFine"],"toggle_flags":[],"feature_configs":[{"Intensity":{"is_fine":true}},{"ColorRGB":{"is_fine":true}}]}}},"BasicDimmer":{"name":"Basic Dimmer","modes":{"0":{"name":"Default","channel_types":["Intensity"],"toggle_flags":[],"feature_configs":[{"Intensity":{"is_fine":false}}]}}}},"layout":{"fixtures":[{"fixture_id":3,"position":{"x":-60.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":20,"position":{"x":-50.0,"y":0.0},"size":{"x":3.0,"y":3.0},"entry_type":"Rect"},{"fixture_id":4,"position":{"x":-40.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":5,"position":{"x":-30.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":1,"position":{"x":-20.0,"y":0.0},"size":{"x":5.0,"y":5.0},"entry_type":"Rect"},{"fixture_id":6,"position":{"x":-10.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":7,"position":{"x":10.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":2,"position":{"x":20.0,"y":0.0},"size":{"x":5.0,"y":5.0},"entry_type":"Rect"},{"fixture_id":8,"position":{"x":30.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":9,"position":{"x":40.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":21,"position":{"x":50.0,"y":0.0},"size":{"x":3.0,"y":3.0},"entry_type":"Rect"},{"fixture_id":10,"position":{"x":60.0,"y":0.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":11,"position":{"x":-100.0,"y":20.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":12,"position":{"x":-100.0,"y":40.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":13,"position":{"x":-100.0,"y":50.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":14,"position":{"x":100.0,"y":20.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":15,"position":{"x":100.0,"y":40.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"},{"fixture_id":16,"position":{"x":100.0,"y":50.0},"size":{"x":2.5,"y":2.5},"entry_type":"Circle"}],"decorations":[{"Label":{"pos":{"x":0.0,"y":-10.0},"text":"Top Truss","font_size":4.0}},{"Label":{"pos":{"x":-100.0,"y":10.0},"text":"Left Truss","font_size":4.0}},{"Label":{"pos":{"x":100.0,"y":10.0},"text":"Right Truss","font_size":4.0}}]},"outputs":[{"Artnet":{"broadcast":false,"bind_ip":null}}]}}
+{
+    "preset_handler": {
+        "groups": {
+            "1": {
+                "id": 1,
+                "name": "Washes",
+                "fixture_selector": {
+                    "Atomic": {
+                        "FixtureRange": [
+                            1,
+                            2
+                        ]
+                    }
+                }
+            },
+            "3": {
+                "id": 3,
+                "name": "Spots",
+                "fixture_selector": {
+                    "Atomic": {
+                        "FixtureRange": [
+                            20,
+                            21
+                        ]
+                    }
+                }
+            },
+            "6": {
+                "id": 6,
+                "name": "ML",
+                "fixture_selector": {
+                    "Atomic": {
+                        "FixtureIdList": [
+                            21,
+                            2,
+                            1,
+                            20
+                        ]
+                    }
+                }
+            },
+            "2": {
+                "id": 2,
+                "name": "Top PARs",
+                "fixture_selector": {
+                    "Atomic": {
+                        "FixtureRange": [
+                            3,
+                            10
+                        ]
+                    }
+                }
+            }
+        },
+        "macros": {
+            "3": {
+                "id": 3,
+                "name": "Home",
+                "action": "HomeAll"
+            },
+            "4": {
+                "id": 4,
+                "name": "Clear",
+                "action": "ClearAll"
+            }
+        },
+        "command_slices": {
+            "1": {
+                "id": 1,
+                "name": "for ~",
+                "command": [
+                    "KeywordFor",
+                    "KeywordFixturesSelected"
+                ]
+            },
+            "2": {
+                "id": 2,
+                "name": "for",
+                "command": [
+                    "KeywordFor"
+                ]
+            }
+        },
+        "sequences": {},
+        "presets": {
+            "0.0": {
+                "id": "0.0",
+                "name": "Full",
+                "data": {
+                    "3": {
+                        "Intensity": 255
+                    },
+                    "7": {
+                        "Intensity": 255
+                    },
+                    "13": {
+                        "Intensity": 255
+                    },
+                    "6": {
+                        "Intensity": 255
+                    },
+                    "14": {
+                        "Intensity": 255
+                    },
+                    "2": {
+                        "IntensityFine": 255,
+                        "Intensity": 255
+                    },
+                    "9": {
+                        "Intensity": 255
+                    },
+                    "8": {
+                        "Intensity": 255
+                    },
+                    "5": {
+                        "Intensity": 255
+                    },
+                    "15": {
+                        "Intensity": 255
+                    },
+                    "12": {
+                        "Intensity": 255
+                    },
+                    "11": {
+                        "Intensity": 255
+                    },
+                    "4": {
+                        "Intensity": 255
+                    },
+                    "20": {
+                        "Intensity": 255
+                    },
+                    "16": {
+                        "Intensity": 255
+                    },
+                    "1": {
+                        "IntensityFine": 255,
+                        "Intensity": 255
+                    },
+                    "21": {
+                        "Intensity": 255
+                    },
+                    "10": {
+                        "Intensity": 255
+                    }
+                }
+            },
+            "2.0": {
+                "id": "2.0",
+                "name": "Rot",
+                "data": {
+                    "21": {
+                        "ColorMacro": 21
+                    },
+                    "2": {
+                        "Blue": 0,
+                        "GreenFine": 0,
+                        "Red": 255,
+                        "Green": 0,
+                        "RedFine": 255,
+                        "BlueFine": 0
+                    },
+                    "1": {
+                        "GreenFine": 0,
+                        "BlueFine": 0,
+                        "RedFine": 255,
+                        "Green": 0,
+                        "Red": 255,
+                        "Blue": 0
+                    },
+                    "20": {
+                        "ColorMacro": 21
+                    }
+                }
+            }
+        },
+        "feature_groups": {
+            "0": {
+                "id": 0,
+                "name": "Intensity",
+                "feature_types": [
+                    "Intensity"
+                ]
+            },
+            "4": {
+                "id": 4,
+                "name": "Focus",
+                "feature_types": [
+                    "Zoom",
+                    "Focus"
+                ]
+            },
+            "5": {
+                "id": 5,
+                "name": "Control",
+                "feature_types": [
+                    "ToggleFlags"
+                ]
+            },
+            "1": {
+                "id": 1,
+                "name": "Position",
+                "feature_types": [
+                    "PositionPanTilt"
+                ]
+            },
+            "2": {
+                "id": 2,
+                "name": "Color",
+                "feature_types": [
+                    "ColorRGB",
+                    "ColorMacro"
+                ]
+            },
+            "3": {
+                "id": 3,
+                "name": "Beam",
+                "feature_types": [
+                    "Shutter"
+                ]
+            }
+        }
+    },
+    "updatable_handler": {
+        "executors": {
+            "0": {
+                "id": 0,
+                "name": "Funny effect",
+                "priority": "Ltp",
+                "stop_others": false,
+                "config": {
+                    "FeatureEffect": {
+                        "runtime": {
+                            "effect": {
+                                "PositionPanTiltFigureEight": {
+                                    "pan_size": 0.5,
+                                    "tilt_size": 0.5,
+                                    "pan_center": 0.5,
+                                    "tilt_center": 0.5,
+                                    "speed": 1.0
+                                }
+                            },
+                            "phase": {
+                                "Single": 0.0
+                            }
+                        },
+                        "selection": {
+                            "fixtures": [
+                                21,
+                                2,
+                                1,
+                                20
+                            ],
+                            "group": 1,
+                            "block": 1,
+                            "wings": 1
+                        }
+                    }
+                }
+            }
+        },
+        "faders": {
+            "2": {
+                "id": 2,
+                "name": "Washes",
+                "priority": "Ltp",
+                "config": {
+                    "Submaster": {
+                        "fixtures": [
+                            1,
+                            2
+                        ]
+                    }
+                }
+            },
+            "1": {
+                "id": 1,
+                "name": "ML",
+                "priority": "Ltp",
+                "config": {
+                    "Submaster": {
+                        "fixtures": [
+                            21,
+                            2,
+                            1,
+                            20
+                        ]
+                    }
+                }
+            },
+            "3": {
+                "id": 3,
+                "name": "Spots",
+                "priority": "Ltp",
+                "config": {
+                    "Submaster": {
+                        "fixtures": [
+                            20,
+                            21
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "input_device_configs": [],
+    "patch": {
+        "fixtures": [
+            {
+                "id": 1,
+                "name": "WASH 1",
+                "fixture_type": "CameoWash",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 411
+            },
+            {
+                "id": 2,
+                "name": "WASH 2",
+                "fixture_type": "CameoWash",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 451
+            },
+            {
+                "id": 3,
+                "name": "PAR T1",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 8
+            },
+            {
+                "id": 4,
+                "name": "PAR T2",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 7
+            },
+            {
+                "id": 5,
+                "name": "PAR T3",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 6
+            },
+            {
+                "id": 6,
+                "name": "PAR T4",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 5
+            },
+            {
+                "id": 7,
+                "name": "PAR T5",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 4
+            },
+            {
+                "id": 8,
+                "name": "PAR T6",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 3
+            },
+            {
+                "id": 9,
+                "name": "PAR T7",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 2
+            },
+            {
+                "id": 10,
+                "name": "PAR T8",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 1
+            },
+            {
+                "id": 11,
+                "name": "PAR L1",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 12
+            },
+            {
+                "id": 12,
+                "name": "PAR L2",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 14
+            },
+            {
+                "id": 13,
+                "name": "PAR L3",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 16
+            },
+            {
+                "id": 14,
+                "name": "PAR R1",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 18
+            },
+            {
+                "id": 15,
+                "name": "PAR R2",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 20
+            },
+            {
+                "id": 16,
+                "name": "PAR R3",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 22
+            },
+            {
+                "id": 20,
+                "name": "Spot 1",
+                "fixture_type": "ProHead250",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 270
+            },
+            {
+                "id": 21,
+                "name": "Spot 2",
+                "fixture_type": "ProHead250",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 310
+            },
+            {
+                "id": 101,
+                "name": "Eingang",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 62
+            },
+            {
+                "id": 102,
+                "name": "Wand (FOH rechts)",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 53
+            },
+            {
+                "id": 103,
+                "name": "Loge",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 61
+            },
+            {
+                "id": 104,
+                "name": "Indirekt Hell",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 70
+            },
+            {
+                "id": 105,
+                "name": "Indirekt Dunkel",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 71
+            },
+            {
+                "id": 111,
+                "name": "Rollo Auf",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 66
+            },
+            {
+                "id": 112,
+                "name": "Rollo Ab",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 67
+            },
+            {
+                "id": 201,
+                "name": "Saal 1",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 55
+            },
+            {
+                "id": 202,
+                "name": "Saal 2",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 56
+            },
+            {
+                "id": 203,
+                "name": "Saal 3",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 57
+            },
+            {
+                "id": 204,
+                "name": "Saal 4",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 58
+            },
+            {
+                "id": 205,
+                "name": "Saal 5",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 59
+            },
+            {
+                "id": 206,
+                "name": "Saal 6",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 60
+            },
+            {
+                "id": 301,
+                "name": "Bühne Hinten",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 63
+            },
+            {
+                "id": 302,
+                "name": "Bühne Mitte",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 64
+            },
+            {
+                "id": 303,
+                "name": "Bühne Vorne",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 65
+            },
+            {
+                "id": 311,
+                "name": "Vorhang Auf",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 68
+            },
+            {
+                "id": 312,
+                "name": "Vorhang Zu",
+                "fixture_type": "BasicDimmer",
+                "fixture_mode": 0,
+                "universe": 1,
+                "start_address": 69
+            }
+        ],
+        "fixture_types": {
+            "CameoWash": {
+                "name": "Cameo EVOS W3",
+                "modes": {
+                    "0": {
+                        "name": "23 Channel",
+                        "channel_types": [
+                            "Pan",
+                            "PanFine",
+                            "Tilt",
+                            "TiltFine",
+                            "Intensity",
+                            "IntensityFine",
+                            "Shutter",
+                            "Red",
+                            "RedFine",
+                            "Green",
+                            "GreenFine",
+                            "Blue",
+                            "BlueFine",
+                            "White",
+                            "WhiteFine",
+                            "ColorTemp",
+                            "ColorTint",
+                            "ColorMacro",
+                            "ColorMacroCrossfade",
+                            "Zoom",
+                            "ZoomFine",
+                            "PanTiltSpeed",
+                            {
+                                "ToggleFlags": 0
+                            }
+                        ],
+                        "toggle_flags": [],
+                        "feature_configs": [
+                            {
+                                "Intensity": {
+                                    "is_fine": true
+                                }
+                            },
+                            {
+                                "ColorRGB": {
+                                    "is_fine": true
+                                }
+                            },
+                            {
+                                "PositionPanTilt": {
+                                    "is_fine": true,
+                                    "has_speed": true
+                                }
+                            },
+                            {
+                                "Zoom": {
+                                    "is_fine": true
+                                }
+                            },
+                            "Shutter",
+                            {
+                                "ColorMacro": {
+                                    "macros": [
+                                        [
+                                            6,
+                                            {
+                                                "Lee": "Lee46"
+                                            }
+                                        ],
+                                        [
+                                            10,
+                                            {
+                                                "Lee": "Lee29"
+                                            }
+                                        ],
+                                        [
+                                            14,
+                                            {
+                                                "Lee": "Lee26"
+                                            }
+                                        ],
+                                        [
+                                            18,
+                                            {
+                                                "Lee": "Lee127"
+                                            }
+                                        ],
+                                        [
+                                            22,
+                                            {
+                                                "Lee": "Lee36"
+                                            }
+                                        ],
+                                        [
+                                            26,
+                                            {
+                                                "Lee": "Lee19"
+                                            }
+                                        ]
+                                    ]
+                                }
+                            },
+                            {
+                                "ToggleFlags": {
+                                    "toggle_flags": [
+                                        {
+                                            "Reset Zoom (3s)": 228,
+                                            "Display off (3s)": 142,
+                                            "Reset all functions": 236,
+                                            "LED PWM frequency 800Hz (3s)": 120,
+                                            "Color calibration user (3s)": 206,
+                                            "Color calibration factory (3s)": 204,
+                                            "Reset Pan / Tilt (3s)": 222,
+                                            "LED PWM frequency 12kHz (3s)": 128,
+                                            "Dimmer Curve logarithmic": 168,
+                                            "Auto Fan (3s)": 100,
+                                            "Blackout while moving on (3s)": 6,
+                                            "LED PWM frequency 3600Hz (3s)": 126,
+                                            "Invert Tilt on (3s)": 46,
+                                            "Display on (3s)": 140,
+                                            "Blackout while moving off (3s)": 8,
+                                            "Dimmer Curve linear": 164,
+                                            "Silent Fan (3s)": 98,
+                                            "Dimmer Curve exponential": 166,
+                                            "Normal Fan (3s)": 102,
+                                            "LED PWM frequency 25kHz (3s)": 130,
+                                            "LED PWM frequency 1200Hz (3s)": 122,
+                                            "Dimmer Curve s-curve": 170,
+                                            "LED PWM frequency 2000Hz (3s)": 124,
+                                            "Invert Tilt off (5s)": 48,
+                                            "Dimmer response LED (3s)": 74,
+                                            "Dimmer response halogen (3s)": 76,
+                                            "Invert Pan off (5s)": 44,
+                                            "Invert Pan on (3s)": 42,
+                                            "Color calibration off (3s)": 202
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            "ProHead250": {
+                "name": "Pro Head 250",
+                "modes": {
+                    "0": {
+                        "name": "16bit",
+                        "channel_types": [
+                            "Pan",
+                            "Tilt",
+                            "PanFine",
+                            "TiltFine",
+                            "PanTiltSpeed",
+                            {
+                                "ToggleFlags": 0
+                            },
+                            "ColorMacro",
+                            "Unused",
+                            "Prism",
+                            "PrismRotation",
+                            "RotatingGobos",
+                            "GoboRotation",
+                            "Unused",
+                            "Focus",
+                            "Shutter",
+                            "Intensity"
+                        ],
+                        "toggle_flags": [
+                            {
+                                "Turn On": 131,
+                                "Turn Off": 231
+                            }
+                        ],
+                        "feature_configs": [
+                            {
+                                "ToggleFlags": {
+                                    "toggle_flags": [
+                                        {
+                                            "Turn On": 131,
+                                            "Turn Off": 231
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "Focus": {
+                                    "is_fine": false
+                                }
+                            },
+                            {
+                                "ColorMacro": {
+                                    "macros": [
+                                        [
+                                            0,
+                                            {
+                                                "Custom": {
+                                                    "rgb": [
+                                                        1.0,
+                                                        1.0,
+                                                        1.0
+                                                    ],
+                                                    "name": "Offen / Weiß"
+                                                }
+                                            }
+                                        ],
+                                        [
+                                            10,
+                                            {
+                                                "Custom": {
+                                                    "rgb": [
+                                                        0.25,
+                                                        0.87,
+                                                        0.81
+                                                    ],
+                                                    "name": "Türkis"
+                                                }
+                                            }
+                                        ],
+                                        [
+                                            32,
+                                            {
+                                                "Custom": {
+                                                    "rgb": [
+                                                        0.0,
+                                                        1.0,
+                                                        1.0
+                                                    ],
+                                                    "name": "Rot"
+                                                }
+                                            }
+                                        ],
+                                        [
+                                            21,
+                                            {
+                                                "Custom": {
+                                                    "rgb": [
+                                                        1.0,
+                                                        0.0,
+                                                        0.0
+                                                    ],
+                                                    "name": "Cyan"
+                                                }
+                                            }
+                                        ],
+                                        [
+                                            42,
+                                            {
+                                                "Custom": {
+                                                    "rgb": [
+                                                        0.0,
+                                                        1.0,
+                                                        0.0
+                                                    ],
+                                                    "name": "Grün"
+                                                }
+                                            }
+                                        ],
+                                        [
+                                            53,
+                                            {
+                                                "Custom": {
+                                                    "rgb": [
+                                                        1.0,
+                                                        1.0,
+                                                        1.0
+                                                    ],
+                                                    "name": "Magenta"
+                                                }
+                                            }
+                                        ],
+                                        [
+                                            64,
+                                            {
+                                                "Custom": {
+                                                    "rgb": [
+                                                        0.0,
+                                                        0.5,
+                                                        1.0
+                                                    ],
+                                                    "name": "Hellblau"
+                                                }
+                                            }
+                                        ],
+                                        [
+                                            74,
+                                            {
+                                                "Custom": {
+                                                    "rgb": [
+                                                        1.0,
+                                                        1.0,
+                                                        0.0
+                                                    ],
+                                                    "name": "Gelb"
+                                                }
+                                            }
+                                        ],
+                                        [
+                                            85,
+                                            {
+                                                "Custom": {
+                                                    "rgb": [
+                                                        0.0,
+                                                        1.0,
+                                                        0.0
+                                                    ],
+                                                    "name": "Grün"
+                                                }
+                                            }
+                                        ],
+                                        [
+                                            96,
+                                            {
+                                                "Custom": {
+                                                    "rgb": [
+                                                        1.0,
+                                                        0.05,
+                                                        0.75
+                                                    ],
+                                                    "name": "Pink"
+                                                }
+                                            }
+                                        ],
+                                        [
+                                            106,
+                                            {
+                                                "Custom": {
+                                                    "rgb": [
+                                                        0.0,
+                                                        0.0,
+                                                        1.0
+                                                    ],
+                                                    "name": "Blau"
+                                                }
+                                            }
+                                        ],
+                                        [
+                                            117,
+                                            {
+                                                "Custom": {
+                                                    "rgb": [
+                                                        1.0,
+                                                        0.5,
+                                                        0.0
+                                                    ],
+                                                    "name": "Orange"
+                                                }
+                                            }
+                                        ]
+                                    ]
+                                }
+                            },
+                            {
+                                "Intensity": {
+                                    "is_fine": false
+                                }
+                            },
+                            {
+                                "PositionPanTilt": {
+                                    "is_fine": true,
+                                    "has_speed": true
+                                }
+                            },
+                            "Shutter"
+                        ]
+                    }
+                }
+            },
+            "TestColorFixture": {
+                "name": "Test Color Fixture",
+                "modes": {
+                    "0": {
+                        "name": "8 Channels",
+                        "channel_types": [
+                            "Intensity",
+                            "IntensityFine",
+                            "Red",
+                            "RedFine",
+                            "Green",
+                            "GreenFine",
+                            "Blue",
+                            "BlueFine"
+                        ],
+                        "toggle_flags": [],
+                        "feature_configs": [
+                            {
+                                "Intensity": {
+                                    "is_fine": true
+                                }
+                            },
+                            {
+                                "ColorRGB": {
+                                    "is_fine": true
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            "BasicDimmer": {
+                "name": "Basic Dimmer",
+                "modes": {
+                    "0": {
+                        "name": "Default",
+                        "channel_types": [
+                            "Intensity"
+                        ],
+                        "toggle_flags": [],
+                        "feature_configs": [
+                            {
+                                "Intensity": {
+                                    "is_fine": false
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        "layout": {
+            "fixtures": [
+                {
+                    "fixture_id": 3,
+                    "position": {
+                        "x": -60.0,
+                        "y": 0.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 20,
+                    "position": {
+                        "x": -50.0,
+                        "y": 0.0
+                    },
+                    "size": {
+                        "x": 3.0,
+                        "y": 3.0
+                    },
+                    "entry_type": "Rect"
+                },
+                {
+                    "fixture_id": 4,
+                    "position": {
+                        "x": -40.0,
+                        "y": 0.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 5,
+                    "position": {
+                        "x": -30.0,
+                        "y": 0.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 1,
+                    "position": {
+                        "x": -20.0,
+                        "y": 0.0
+                    },
+                    "size": {
+                        "x": 5.0,
+                        "y": 5.0
+                    },
+                    "entry_type": "Rect"
+                },
+                {
+                    "fixture_id": 6,
+                    "position": {
+                        "x": -10.0,
+                        "y": 0.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 7,
+                    "position": {
+                        "x": 10.0,
+                        "y": 0.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 2,
+                    "position": {
+                        "x": 20.0,
+                        "y": 0.0
+                    },
+                    "size": {
+                        "x": 5.0,
+                        "y": 5.0
+                    },
+                    "entry_type": "Rect"
+                },
+                {
+                    "fixture_id": 8,
+                    "position": {
+                        "x": 30.0,
+                        "y": 0.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 9,
+                    "position": {
+                        "x": 40.0,
+                        "y": 0.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 21,
+                    "position": {
+                        "x": 50.0,
+                        "y": 0.0
+                    },
+                    "size": {
+                        "x": 3.0,
+                        "y": 3.0
+                    },
+                    "entry_type": "Rect"
+                },
+                {
+                    "fixture_id": 10,
+                    "position": {
+                        "x": 60.0,
+                        "y": 0.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 11,
+                    "position": {
+                        "x": -100.0,
+                        "y": 20.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 12,
+                    "position": {
+                        "x": -100.0,
+                        "y": 40.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 13,
+                    "position": {
+                        "x": -100.0,
+                        "y": 50.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 14,
+                    "position": {
+                        "x": 100.0,
+                        "y": 20.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 15,
+                    "position": {
+                        "x": 100.0,
+                        "y": 40.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                },
+                {
+                    "fixture_id": 16,
+                    "position": {
+                        "x": 100.0,
+                        "y": 50.0
+                    },
+                    "size": {
+                        "x": 2.5,
+                        "y": 2.5
+                    },
+                    "entry_type": "Circle"
+                }
+            ],
+            "decorations": [
+                {
+                    "Label": {
+                        "pos": {
+                            "x": 0.0,
+                            "y": -10.0
+                        },
+                        "text": "Top Truss",
+                        "font_size": 4.0
+                    }
+                },
+                {
+                    "Label": {
+                        "pos": {
+                            "x": -100.0,
+                            "y": 10.0
+                        },
+                        "text": "Left Truss",
+                        "font_size": 4.0
+                    }
+                },
+                {
+                    "Label": {
+                        "pos": {
+                            "x": 100.0,
+                            "y": 10.0
+                        },
+                        "text": "Right Truss",
+                        "font_size": 4.0
+                    }
+                }
+            ]
+        },
+        "outputs": [
+            {
+                "Artnet": {
+                    "broadcast": false,
+                    "bind_ip": null
+                }
+            }
+        ]
+    }
+}

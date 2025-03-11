@@ -4,7 +4,7 @@ use command_slice::CommandSlice;
 use error::PresetHandlerError;
 use group::FixtureGroup;
 use mmacro::MMacro;
-use preset::{FixturePreset, FixturePresetId};
+use preset::{FixturePreset, FixturePresetData, FixturePresetId};
 use serde::{Deserialize, Serialize};
 
 use crate::parser::nodes::{
@@ -16,7 +16,11 @@ use crate::parser::nodes::{
 };
 
 use super::{
-    channel2::{channel_type::FixtureChannelType, feature::feature_group::FeatureGroup},
+    channel2::{
+        channel_type::FixtureChannelType, channel_value::FixtureChannelValue2PresetState,
+        feature::feature_group::FeatureGroup,
+    },
+    effect::feature::{runtime::FeatureEffectRuntime, FeatureEffect},
     handler::{error::FixtureHandlerError, FixtureHandler},
     selection::FixtureSelection,
     sequence::{
@@ -142,8 +146,41 @@ impl PresetHandler {
             feature_types,
         )?;
 
-        let preset =
-            FixturePreset::new(id, name, self.get_feature_group(id.feature_group_id)?, data)?;
+        let preset = FixturePreset::new(
+            id,
+            name,
+            self.get_feature_group(id.feature_group_id)?,
+            FixturePresetData::Default { data },
+        )?;
+
+        self.presets.insert(id, preset);
+        Ok(())
+    }
+
+    pub fn create_effect_preset(
+        &mut self,
+        id: FixturePresetId,
+        name: Option<String>,
+    ) -> Result<(), PresetHandlerError> {
+        if self.presets.contains_key(&id) {
+            return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));
+        }
+
+        let feature_group = self.get_feature_group(id.feature_group_id)?;
+
+        let preset = FixturePreset::new(
+            id,
+            name,
+            feature_group,
+            FixturePresetData::FeatureEffect {
+                runtime: FeatureEffectRuntime::new(
+                    feature_group
+                        .default_feature_group()
+                        .and_then(FeatureEffect::default_for)
+                        .unwrap_or_default(),
+                ),
+            },
+        )?;
 
         self.presets.insert(id, preset);
         Ok(())
@@ -264,11 +301,12 @@ impl PresetHandler {
         fixture: &Fixture,
         channel_type: FixtureChannelType,
         timing_handler: &TimingHandler,
+        state: Option<&FixtureChannelValue2PresetState>,
     ) -> Option<u8> {
         let preset = self.get_preset(preset_id);
 
         if let Ok(preset) = preset {
-            preset.value(fixture, channel_type, self, timing_handler)
+            preset.value(fixture, channel_type, self, timing_handler, state)
         } else {
             None
         }
@@ -306,12 +344,6 @@ impl PresetHandler {
             .remove(&preset_id)
             .ok_or(PresetHandlerError::FeaturePresetNotFound(preset_id))?;
         Ok(())
-    }
-
-    pub fn stop_all(&mut self) {
-        for preset in self.presets_mut().values_mut() {
-            preset.stop();
-        }
     }
 
     pub fn delete_preset_range(

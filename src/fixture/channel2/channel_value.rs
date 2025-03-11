@@ -1,22 +1,59 @@
-use std::hash::Hash;
+use std::{hash::Hash, time};
 
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
     presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler},
+    selection::FixtureSelection,
     timing::TimingHandler,
     Fixture,
 };
 
 use super::{channel_type::FixtureChannelType, error::FixtureChannelError2};
 
+#[derive(Debug, Clone)]
+pub struct FixtureChannelValue2PresetState {
+    started: time::Instant,
+    with_selection: FixtureSelection,
+}
+
+impl FixtureChannelValue2PresetState {
+    pub fn new(started: time::Instant, with_selection: FixtureSelection) -> Self {
+        Self {
+            started,
+            with_selection,
+        }
+    }
+
+    pub fn now(selection: FixtureSelection) -> Self {
+        Self {
+            started: time::Instant::now(),
+            with_selection: selection,
+        }
+    }
+
+    pub fn started(&self) -> time::Instant {
+        self.started
+    }
+
+    pub fn selection(&self) -> &FixtureSelection {
+        &self.with_selection
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Default, EguiProbe)]
 pub enum FixtureChannelValue2 {
     #[default]
     Home,
 
-    Preset(FixturePresetId),
+    Preset {
+        id: FixturePresetId,
+
+        #[serde(default, skip_serializing, skip_deserializing)]
+        #[egui_probe(skip)]
+        state: Option<FixtureChannelValue2PresetState>,
+    },
 
     Discrete(u8),
     Mix {
@@ -30,7 +67,12 @@ impl PartialEq for FixtureChannelValue2 {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Home, Self::Home) => true,
-            (Self::Preset(preset_a), Self::Preset(preset_b)) => preset_a == preset_b,
+
+            // TODO: should we compare the state?
+            (Self::Preset { id: preset_a, .. }, Self::Preset { id: preset_b, .. }) => {
+                preset_a == preset_b
+            }
+
             (Self::Discrete(value_a), Self::Discrete(value_b)) => value_a == value_b,
             _ => false,
         }
@@ -43,9 +85,9 @@ impl Hash for FixtureChannelValue2 {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {
             Self::Home => 0.hash(state),
-            Self::Preset(preset_id) => {
+            Self::Preset { id, .. } => {
                 1.hash(state);
-                preset_id.hash(state);
+                id.hash(state);
             }
             Self::Discrete(value) => {
                 2.hash(state);
@@ -92,8 +134,17 @@ impl FixtureChannelValue2 {
         match self {
             Self::Home => Ok(0),
             Self::Discrete(value) => Ok(*value),
-            Self::Preset(preset_id) => preset_handler
-                .get_preset_value_for_fixture(*preset_id, fixture, channel_type, timing_handler)
+            Self::Preset {
+                id: preset_id,
+                state,
+            } => preset_handler
+                .get_preset_value_for_fixture(
+                    *preset_id,
+                    fixture,
+                    channel_type,
+                    timing_handler,
+                    state.as_ref(),
+                )
                 .ok_or(FixtureChannelError2::PresetHandlerError(
                     PresetHandlerError::FeaturePresetNotFound(*preset_id).into(),
                 )),
@@ -119,7 +170,7 @@ impl FixtureChannelValue2 {
     pub fn to_string(&self, preset_handler: &PresetHandler) -> String {
         match self {
             Self::Home => "Home".to_owned(),
-            Self::Preset(preset_id) => {
+            Self::Preset { id: preset_id, .. } => {
                 if let Ok(preset) = preset_handler.get_preset(*preset_id) {
                     preset.name().to_owned()
                 } else {

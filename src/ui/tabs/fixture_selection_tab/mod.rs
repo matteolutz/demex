@@ -1,3 +1,5 @@
+use egui_probe::Probe;
+
 use crate::{
     lexer::token::Token,
     ui::{
@@ -148,6 +150,23 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                     }
                                 });
                             });
+
+                            // Reverse
+                            ui.row(20.0, |mut ui| {
+                                ui.col(|ui| {
+                                    ui.label("Reverse?");
+                                });
+
+                                ui.col(|_| {});
+
+                                ui.col(|ui| {
+                                    Probe::new(fixture_selection.reverse_mut())
+                                        .with_header("")
+                                        .show(ui);
+                                });
+
+                                ui.col(|_| {});
+                            });
                         });
 
                     ui.add_space(20.0);
@@ -160,14 +179,6 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 });
             },
         );
-
-        /*
-        ui.horizontal(|ui| {
-
-
-
-        });
-        */
     } else {
         ui.centered_and_justified(|ui| {
             ui.label("No fixtures selected");

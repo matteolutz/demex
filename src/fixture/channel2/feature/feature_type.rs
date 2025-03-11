@@ -285,7 +285,9 @@ impl FixtureFeatureType {
 
         let mut preset_id: Option<FixturePresetId> = None;
         for channel_type in channel_types {
-            if let FixtureChannelValue2::Preset(new_preset_id) =
+            if let FixtureChannelValue2::Preset {
+                id: new_preset_id, ..
+            } =
                 channels(channel_type).ok_or(FixtureChannelError2::ChannelNotFound(channel_type))?
             {
                 if preset_id.is_some() && preset_id.unwrap() != new_preset_id {

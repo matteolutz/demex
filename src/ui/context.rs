@@ -98,13 +98,10 @@ impl DemexUiContext {
             }
             Action::HomeAll => {
                 let mut fixture_handler_lock = self.fixture_handler.write();
-                let mut preset_handler_lock = self.preset_handler.write();
                 let mut updatable_handler_lock = self.updatable_handler.write();
 
                 updatable_handler_lock.executors_stop_all(&mut fixture_handler_lock);
                 updatable_handler_lock.faders_home_all(&mut fixture_handler_lock);
-
-                preset_handler_lock.stop_all();
             }
             Action::Save => {
                 let fixture_handler_lock = self.fixture_handler.read();

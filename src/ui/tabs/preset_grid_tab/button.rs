@@ -40,6 +40,8 @@ pub enum PresetGridButtonQuickMenuActions {
     Insert,
     Default,
 
+    New,
+
     Custom(&'static str),
 }
 
@@ -49,6 +51,7 @@ impl std::fmt::Display for PresetGridButtonQuickMenuActions {
             PresetGridButtonQuickMenuActions::Edit => write!(f, "Edit"),
             PresetGridButtonQuickMenuActions::Insert => write!(f, "Insert"),
             PresetGridButtonQuickMenuActions::Default => write!(f, "Default"),
+            PresetGridButtonQuickMenuActions::New => write!(f, "New"),
             PresetGridButtonQuickMenuActions::Custom(custom) => write!(f, "{}", custom),
         }
     }
@@ -72,11 +75,19 @@ impl PresetGridButton {
         config: PresetGridButtonConfig,
         decoration: PresetGridButtonDecoration,
         quick_menu_actions: Option<Vec<PresetGridButtonQuickMenuActions>>,
+        quick_menu_actions_empty: Option<Vec<PresetGridButtonQuickMenuActions>>,
     ) -> Self {
         Self {
             quick_menu_actions: match config {
                 PresetGridButtonConfig::Empty { .. } => {
-                    QuickMenuActions::default().top_left(PresetGridButtonQuickMenuActions::Insert)
+                    let mut actions =
+                        QuickMenuActions::default().top_left(PresetGridButtonQuickMenuActions::New);
+
+                    if let Some(quick_menu_actions_empty) = quick_menu_actions_empty {
+                        actions = actions.with_vec(quick_menu_actions_empty.into());
+                    }
+
+                    actions
                 }
                 PresetGridButtonConfig::Preset { .. } => {
                     let mut actions = QuickMenuActions::default()

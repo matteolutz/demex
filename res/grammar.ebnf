@@ -52,6 +52,7 @@ create_function             = "sequence" (integer | "next") ["as" string]
                             | "executor" (integer | "next") "for" (("sequence" integer) | "effect") "with" fixture_selector ["as" string]
                             | "fader" (integer | "next") create_fader_function ["as" string]
                             | "macro" (integer | "next") "with" command ["as" string]
+                            | "preset" float ["as" string]
 
 set_function                = channel_type value_single
                             | specific_preset_or_range

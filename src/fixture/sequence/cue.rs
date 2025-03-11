@@ -1,11 +1,14 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time};
 
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
+        channel2::{
+            channel_type::FixtureChannelType,
+            channel_value::{FixtureChannelValue2, FixtureChannelValue2PresetState},
+        },
         handler::FixtureHandler,
         presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler},
         selection::FixtureSelection,
@@ -331,6 +334,7 @@ impl Cue {
         channel_type: FixtureChannelType,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
+        cue_started: Option<time::Instant>,
     ) -> Option<FixtureChannelValue2> {
         match &self.data {
             CueDataMode::Default(data) => data.get(&fixture.id()).and_then(|values| {
@@ -353,11 +357,22 @@ impl Cue {
                             continue;
                         }
 
+                        let preset_state = cue_started.map(|cue_started| {
+                            FixtureChannelValue2PresetState::new(
+                                cue_started,
+                                group.fixture_selection().clone(),
+                            )
+                        });
+
                         let preset = preset_handler.get_preset(entry.preset_id.unwrap());
                         if let Ok(preset) = preset {
-                            if let Some(value) =
-                                preset.value(fixture, channel_type, preset_handler, timing_handler)
-                            {
+                            if let Some(value) = preset.value(
+                                fixture,
+                                channel_type,
+                                preset_handler,
+                                timing_handler,
+                                preset_state.as_ref(),
+                            ) {
                                 // we found the value
                                 return Some(FixtureChannelValue2::Discrete(value));
                             }

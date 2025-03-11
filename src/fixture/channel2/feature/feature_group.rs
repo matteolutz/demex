@@ -80,6 +80,10 @@ pub struct FeatureGroup {
     id: u32,
     name: String,
     feature_types: Vec<FixtureFeatureType>,
+
+    #[serde(default, skip_serializing, skip_deserializing)]
+    #[egui_probe(skip)]
+    default_feature_group: Option<DefaultFeatureGroup>,
 }
 
 impl FeatureGroup {
@@ -111,10 +115,15 @@ impl FeatureGroup {
                         id: default_feature_group.id(),
                         name: format!("{:?}", default_feature_group),
                         feature_types: default_feature_group.feature_types(),
+                        default_feature_group: Some(default_feature_group),
                     },
                 )
             })
             .collect::<HashMap<_, _>>()
+    }
+
+    pub fn default_feature_group(&self) -> Option<DefaultFeatureGroup> {
+        self.default_feature_group
     }
 
     pub fn get_display_state(

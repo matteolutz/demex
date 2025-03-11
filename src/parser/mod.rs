@@ -3,8 +3,8 @@ use nodes::{
         functions::{
             assign_function::{AssignButtonArgs, AssignButtonArgsMode, AssignFaderArgs},
             create_function::{
-                CreateExecutorArgs, CreateExecutorArgsCreationMode, CreateFaderArgs,
-                CreateFaderArgsCreationMode, CreateMacroArgs, CreateSequenceArgs,
+                CreateEffectPresetArgs, CreateExecutorArgs, CreateExecutorArgsCreationMode,
+                CreateFaderArgs, CreateFaderArgsCreationMode, CreateMacroArgs, CreateSequenceArgs,
             },
             delete_function::DeleteArgs,
             record_function::{
@@ -809,6 +809,21 @@ impl<'a> Parser2<'a> {
                 Ok(Action::CreateFader(CreateFaderArgs {
                     id,
                     creation_mode,
+                    name,
+                }))
+            }
+            Token::KeywordPreset => {
+                self.advance();
+
+                let (feature_group_id, preset_id) = self.parse_float_individual()?;
+
+                let name = self.try_parse(Self::parse_as).ok();
+
+                Ok(Action::CreateEffectPreset(CreateEffectPresetArgs {
+                    id: FixturePresetId {
+                        feature_group_id,
+                        preset_id,
+                    },
                     name,
                 }))
             }
