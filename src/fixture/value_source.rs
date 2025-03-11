@@ -171,6 +171,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                     }
                 }
             })
+            .map(|val| val.flatten_value())
             .collect::<Vec<_>>();
 
         if values.is_empty() {

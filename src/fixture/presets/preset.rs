@@ -359,11 +359,6 @@ impl FixturePreset {
                 runtime,
                 selections,
             } => {
-                /*let fixture_offset = selection
-                .as_ref()
-                .and_then(|sel| sel.offset(fixture.id()))
-                .unwrap_or_default();*/
-
                 let fixture_offset = selections
                     .iter()
                     .rev()

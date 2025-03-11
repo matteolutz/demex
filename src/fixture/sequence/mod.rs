@@ -41,6 +41,14 @@ impl FadeFixtureChannelValue {
         &self.value
     }
 
+    pub fn flatten_value(self) -> Self {
+        Self {
+            value: self.value.flatten(),
+            alpha: self.alpha,
+            priority: self.priority,
+        }
+    }
+
     pub fn alpha(&self) -> f32 {
         self.alpha
     }

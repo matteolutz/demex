@@ -17,6 +17,7 @@ pub enum FixtureChannelValue2 {
     Home,
 
     Preset(FixturePresetId),
+
     Discrete(u8),
     Mix {
         a: Box<FixtureChannelValue2>,
@@ -64,6 +65,21 @@ impl FixtureChannelValue2 {
 
     pub fn is_home(&self) -> bool {
         matches!(self, Self::Home)
+    }
+
+    pub fn flatten(self) -> Self {
+        match self {
+            Self::Mix { a, b, mix } => {
+                if mix == 0.0 {
+                    a.flatten()
+                } else if mix == 1.0 {
+                    b.flatten()
+                } else {
+                    Self::Mix { a, b, mix }
+                }
+            }
+            val => val,
+        }
     }
 
     pub fn to_discrete_value(
