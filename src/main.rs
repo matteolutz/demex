@@ -107,6 +107,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map(DemexInputDeviceConfig::into)
                 .collect::<Vec<_>>(),
         ),
+        show.ui_config,
     );
 
     let fixture_handler_thread_a = fixture_handler.clone();

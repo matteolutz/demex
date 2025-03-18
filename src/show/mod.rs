@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use ui::DemexShowUiConfig;
 
 use crate::{
     fixture::{
@@ -7,6 +8,8 @@ use crate::{
     input::device::DemexInputDeviceConfig,
 };
 
+pub mod ui;
+
 #[derive(Serialize, Deserialize, Default)]
 pub struct DemexShow {
     pub preset_handler: PresetHandler,
@@ -14,4 +17,7 @@ pub struct DemexShow {
     pub timing_handler: TimingHandler,
     pub input_device_configs: Vec<DemexInputDeviceConfig>,
     pub patch: Patch,
+
+    #[serde(default)]
+    pub ui_config: DemexShowUiConfig,
 }

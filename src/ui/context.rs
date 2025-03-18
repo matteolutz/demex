@@ -17,7 +17,7 @@ use crate::{
         },
         Parser2,
     },
-    show::DemexShow,
+    show::{ui::DemexShowUiConfig, DemexShow},
     ui::error::DemexUiError,
     utils::thread::DemexThreadStatsHandler,
 };
@@ -57,6 +57,8 @@ pub struct DemexUiContext {
 
     // pub windows: Vec<DemexWindow>,
     pub window_handler: DemexWindowHandler,
+
+    pub ui_config: DemexShowUiConfig,
 }
 
 impl DemexUiContext {
@@ -122,6 +124,7 @@ impl DemexUiContext {
                         .map(|d| d.config().clone())
                         .collect::<Vec<_>>(),
                     patch: fixture_handler_lock.patch().clone(),
+                    ui_config: self.ui_config.clone(),
                 };
 
                 let save_result = (self.save_show)(show, self.show_file.as_ref());
