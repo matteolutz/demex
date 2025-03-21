@@ -56,6 +56,11 @@ impl FadeFixtureChannelValue {
     pub fn priority(&self) -> FixtureChannelValuePriority {
         self.priority
     }
+
+    pub fn multiply(mut self, fade: f32) -> Self {
+        self.alpha *= fade;
+        self
+    }
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Default, PartialEq, Eq, EguiProbe)]

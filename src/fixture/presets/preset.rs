@@ -142,6 +142,9 @@ pub struct FixturePreset {
     #[serde(default)]
     display_color: Option<egui::Color32>,
 
+    #[serde(default)]
+    fade_up: f32,
+
     data: FixturePresetData,
 }
 
@@ -226,6 +229,7 @@ impl FixturePreset {
             name,
             data,
             display_color: None,
+            fade_up: 0.0,
         })
     }
 
@@ -328,7 +332,16 @@ impl FixturePreset {
         timing_handler: &TimingHandler,
         state: Option<&FixtureChannelValue2PresetState>,
     ) -> Option<u8> {
-        match &self.data {
+        let started_delta = state
+            .map(|state| state.started().elapsed().as_secs_f32())
+            .unwrap_or(0.0);
+        let fade = if self.fade_up > 0.0 {
+            (started_delta / self.fade_up).clamp(0.0, 1.0)
+        } else {
+            1.0
+        };
+
+        let val = match &self.data {
             FixturePresetData::Default { data } => data
                 .get(&fixture.id())
                 .and_then(|values| values.get(&channel_type).copied()),
@@ -361,7 +374,9 @@ impl FixturePreset {
                     None
                 }
             }
-        }
+        };
+
+        val.map(|val| ((val as f32 / 255.0) * fade * 255.0) as u8)
     }
 
     pub fn update(

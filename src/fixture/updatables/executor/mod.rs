@@ -1,3 +1,5 @@
+use std::time;
+
 use config::ExecutorConfig;
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
@@ -30,7 +32,14 @@ pub struct Executor {
     #[serde(default)]
     stomp_protected: bool,
 
+    #[serde(default)]
+    fade_up: f32,
+
     config: ExecutorConfig,
+
+    #[serde(default, skip_serializing, skip_deserializing)]
+    #[egui_probe(skip)]
+    started_at: Option<time::Instant>,
 }
 
 impl Executor {
@@ -50,6 +59,8 @@ impl Executor {
             },
             priority,
             stomp_protected: false,
+            fade_up: 0.0,
+            started_at: None,
         }
     }
 
@@ -68,6 +79,8 @@ impl Executor {
             },
             priority,
             stomp_protected: false,
+            fade_up: 0.0,
+            started_at: None,
         }
     }
 
@@ -125,33 +138,47 @@ impl Executor {
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
     ) -> Option<FadeFixtureChannelValue> {
+        let started_delta = self
+            .started_at
+            .map(|started_at| started_at.elapsed().as_secs_f32())
+            .unwrap_or(0.0);
+        let fade = if self.fade_up > 0.0 {
+            (started_delta / self.fade_up).clamp(0.0, 1.0)
+        } else {
+            1.0
+        };
+
         match &self.config {
             ExecutorConfig::Sequence { runtime, fixtures } => {
                 if !fixtures.contains(&fixture.id()) {
                     None
                 } else {
-                    runtime.channel_value(
-                        fixture,
-                        channel_type,
-                        1.0,
-                        1.0,
-                        preset_handler,
-                        timing_handler,
-                        self.priority,
-                    )
+                    runtime
+                        .channel_value(
+                            fixture,
+                            channel_type,
+                            1.0,
+                            1.0,
+                            preset_handler,
+                            timing_handler,
+                            self.priority,
+                        )
+                        .map(|val| val.multiply(fade))
                 }
             }
             ExecutorConfig::FeatureEffect { runtime, selection } => {
                 if !selection.has_fixture(fixture.id()) {
                     None
                 } else {
-                    runtime.get_channel_value(
-                        channel_type,
-                        fixture_feature_configs,
-                        selection.offset(fixture.id())?,
-                        self.priority,
-                        timing_handler,
-                    )
+                    runtime
+                        .get_channel_value(
+                            channel_type,
+                            fixture_feature_configs,
+                            selection.offset(fixture.id())?,
+                            self.priority,
+                            timing_handler,
+                        )
+                        .map(|val| val.multiply(fade))
                 }
             }
         }
@@ -183,6 +210,7 @@ impl Executor {
     pub fn start(&mut self, fixture_handler: &mut FixtureHandler) {
         self.child_start();
 
+        self.started_at = Some(time::Instant::now());
         for fixture_id in self.fixtures() {
             if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
                 fixture.push_value_source(FixtureChannelValueSource::Executor {
