@@ -1,6 +1,7 @@
 use std::collections::{hash_map::Keys, HashMap};
 
 use channel2::{
+    channel_modifier::{FixtureChannelModifier, FixtureChannelModifierTrait},
     channel_type::FixtureChannelType,
     channel_value::FixtureChannelValue2,
     color::color_gel::ColorGelTrait,
@@ -41,6 +42,9 @@ pub struct SerializableFixturePatch {
     fixture_type: String,
     fixture_mode: u32,
 
+    #[serde(default)]
+    channel_modifiers: Vec<FixtureChannelModifier>,
+
     universe: u16,
     start_address: u16,
 }
@@ -54,6 +58,7 @@ impl From<Fixture> for SerializableFixturePatch {
             fixture_mode: value.fixture_type.mode,
             universe: value.universe,
             start_address: value.start_address,
+            channel_modifiers: value.channel_modifiers,
         }
     }
 }
@@ -81,6 +86,7 @@ impl SerializableFixturePatch {
                 name: self.fixture_type,
                 mode: self.fixture_mode,
             },
+            self.channel_modifiers,
             self.universe,
             self.start_address,
         )
@@ -96,6 +102,9 @@ pub struct Fixture {
 
     channels: Vec<(FixtureChannelType, FixtureChannelValue2)>,
     feature_configs: Vec<FixtureFeatureConfig>,
+
+    channel_modifiers: Vec<FixtureChannelModifier>,
+
     toggle_flags: Vec<HashMap<String, u8>>,
 
     universe: u16,
@@ -109,6 +118,7 @@ impl Fixture {
         name: String,
         patch: FixturePatchTypeMode,
         fixture_type: FixtureTypeAndMode,
+        channel_modifiers: Vec<FixtureChannelModifier>,
         universe: u16,
         start_address: u16,
     ) -> Result<Self, FixtureError> {
@@ -145,6 +155,7 @@ impl Fixture {
             fixture_type,
             universe,
             start_address,
+            channel_modifiers,
             sources: vec![FixtureChannelValueSource::Programmer],
         })
     }
@@ -220,7 +231,7 @@ impl Fixture {
         // TODO: get data from other sources
         // TODO: optimize this
         for (channel_type, _) in &self.channels {
-            let discrete_value = self
+            let mut discrete_value = self
                 .sources
                 .get_channel_value(
                     self,
@@ -231,6 +242,10 @@ impl Fixture {
                 )?
                 .to_discrete_value(self, *channel_type, preset_handler, timing_handler)
                 .map_err(FixtureError::FixtureChannelError2)?;
+
+            // apply modifiers
+            discrete_value = self.channel_modifiers.apply(*channel_type, discrete_value);
+
             data.push(discrete_value);
         }
 
