@@ -200,6 +200,7 @@ impl PresetGridButton {
                 response.rect,
                 0.0,
                 egui::Stroke::new(2.0, egui::Color32::WHITE),
+                egui::StrokeKind::Middle,
             );
         }
 
@@ -228,6 +229,7 @@ pub fn preset_grid_button_ui(
         ui.allocate_painter(PRESET_GRID_ELEMENT_SIZE.into(), egui::Sense::click());
 
     if response.hovered() {
+        log::debug!("hovering");
         ui.ctx()
             .output_mut(|out| out.cursor_icon = egui::CursorIcon::PointingHand);
     }
@@ -308,6 +310,7 @@ pub fn preset_grid_button_ui(
             response.rect,
             0.0,
             egui::Stroke::new(2.0, egui::Color32::WHITE),
+            egui::StrokeKind::Middle,
         );
     }
 

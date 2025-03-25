@@ -13,21 +13,15 @@ pub fn preset_grid_row_ui<R>(
         ui.horizontal(|ui| {
             ui.style_mut().spacing.item_spacing = egui::vec2(1.0, 0.0);
 
-            let (response, painter) = ui.allocate_painter(
-                PRESET_GRID_ELEMENT_SIZE.into(),
-                egui::Sense {
-                    click: false,
-                    drag: false,
-                    focusable: false,
-                },
-            );
+            let (response, painter) =
+                ui.allocate_painter(PRESET_GRID_ELEMENT_SIZE.into(), egui::Sense::empty());
             painter.rect_filled(
                 response.rect,
-                egui::Rounding {
-                    nw: 5.0,
-                    sw: 5.0,
-                    ne: 0.0,
-                    se: 0.0,
+                egui::CornerRadius {
+                    nw: 5,
+                    sw: 5,
+                    ne: 0,
+                    se: 0,
                 },
                 header_color,
             );

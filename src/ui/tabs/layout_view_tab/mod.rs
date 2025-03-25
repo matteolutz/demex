@@ -209,6 +209,7 @@ impl<'a> LayoutViewComponent<'a> {
                         ),
                         0.0,
                         egui::Stroke::new(1.0, egui::Color32::WHITE),
+                        egui::StrokeKind::Middle,
                     );
                 } else if response.dragged_by(egui::PointerButton::Middle) {
                     let drag_start_world_point = state

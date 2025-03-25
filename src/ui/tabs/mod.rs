@@ -10,6 +10,7 @@ pub mod fixture_list_tab;
 pub mod fixture_selection_tab;
 pub mod layout_view_tab;
 pub mod logs_tab;
+pub mod patch_tab;
 pub mod performance_tab;
 pub mod preset_grid_tab;
 pub mod sequence_editor_tab;
@@ -25,6 +26,7 @@ pub enum DemexTab {
     Faders,
     SequencesList,
     SequenceEditor,
+    Patch,
     Timing,
     FixtureSelection,
     Logs,
@@ -41,6 +43,7 @@ impl std::fmt::Display for DemexTab {
             DemexTab::Faders => write!(f, "Faders"),
             DemexTab::SequencesList => write!(f, "Sequences List"),
             DemexTab::SequenceEditor => write!(f, "Sequence Editor"),
+            DemexTab::Patch => write!(f, "Patch"),
             DemexTab::Timing => write!(f, "Timing"),
             DemexTab::FixtureSelection => write!(f, "Fixture Selection"),
             DemexTab::Logs => write!(f, "Logs"),
@@ -60,6 +63,9 @@ impl DemexTab {
             DemexTab::SequencesList => sequences_list_tab::ui(ui, context),
             DemexTab::SequenceEditor => {
                 sequence_editor_tab::SequenceEditorTab::new(context, "MainSequenceEditor").show(ui)
+            }
+            DemexTab::Patch => {
+                patch_tab::PatchViewComponent::new(context).show(ui);
             }
             DemexTab::Timing => timing_tab::ui(ui, context),
             DemexTab::FixtureSelection => fixture_selection_tab::ui(ui, context),
@@ -122,8 +128,9 @@ impl Default for DemexTabs {
             0.65,
             vec![
                 DemexTab::FixtureControls,
-                DemexTab::SequenceEditor,
                 DemexTab::FixtureSelection,
+                DemexTab::SequenceEditor,
+                DemexTab::Patch,
             ],
         );
 

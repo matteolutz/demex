@@ -42,7 +42,12 @@ impl FixtureLayoutEntry {
                 let top_left = pos - (size / 2.0);
                 let rect = egui::Rect::from_min_size(top_left, size);
 
-                painter.rect_stroke(rect, 0.0, (stroke_width, stroke_color));
+                painter.rect_stroke(
+                    rect,
+                    0.0,
+                    (stroke_width, stroke_color),
+                    egui::StrokeKind::Middle,
+                );
 
                 painter.rect_filled(
                     egui::Rect::from_min_size(

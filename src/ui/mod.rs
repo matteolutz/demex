@@ -33,6 +33,7 @@ pub mod dlog;
 pub mod error;
 pub mod graphics;
 pub mod iimpl;
+pub mod patch;
 pub mod tabs;
 pub mod traits;
 pub mod utils;

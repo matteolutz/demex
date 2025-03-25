@@ -7,7 +7,7 @@ use crate::ui::utils::painter::painter_layout_centered;
 const CENTER_OFFSET: (f32, f32) = (60.0, 60.0);
 
 const ACTION_SIZE: f32 = 55.0;
-const ACTION_ROUNDING: f32 = 5.0;
+const ACTION_ROUNDING: u8 = 5;
 
 pub struct QuickMenuAction<T: Copy> {
     name: String,
@@ -70,35 +70,35 @@ impl QuickMenuActionPosition {
         }
     }
 
-    pub fn rounding(&self) -> egui::Rounding {
+    pub fn rounding(&self) -> egui::CornerRadius {
         match self {
-            Self::TopLeft => egui::Rounding {
+            Self::TopLeft => egui::CornerRadius {
                 nw: ACTION_ROUNDING,
-                ne: 0.0,
-                se: 0.0,
-                sw: 0.0,
+                ne: 0,
+                se: 0,
+                sw: 0,
             },
-            Self::TopRight => egui::Rounding {
-                nw: 0.0,
+            Self::TopRight => egui::CornerRadius {
+                nw: 0,
                 ne: ACTION_ROUNDING,
-                se: 0.0,
-                sw: 0.0,
+                se: 0,
+                sw: 0,
             },
-            Self::BottomLeft => egui::Rounding {
-                nw: 0.0,
-                ne: 0.0,
-                se: 0.0,
+            Self::BottomLeft => egui::CornerRadius {
+                nw: 0,
+                ne: 0,
+                se: 0,
                 sw: ACTION_ROUNDING,
             },
-            Self::BottomRight => egui::Rounding {
-                nw: 0.0,
-                ne: 0.0,
+            Self::BottomRight => egui::CornerRadius {
+                nw: 0,
+                ne: 0,
                 se: ACTION_ROUNDING,
-                sw: 0.0,
+                sw: 0,
             },
 
             Self::TopCenter | Self::BottomCenter | Self::LeftCenter | Self::RightCenter => {
-                egui::Rounding::ZERO
+                egui::CornerRadius::ZERO
             }
         }
     }
