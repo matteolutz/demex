@@ -12,6 +12,8 @@ mod decoration;
 mod entry;
 mod state;
 
+const LAYOUT_VIEW_BACKGROUND_COLOR: egui::Color32 = egui::Color32::from_gray(50);
+
 pub struct LayoutViewComponent<'a> {
     context: &'a mut DemexUiContext,
     id_source: egui::Id,
@@ -98,7 +100,7 @@ impl<'a> LayoutViewComponent<'a> {
             self.context.global_fixture_select = None;
         }
 
-        painter.rect_filled(rect, 0.0, egui::Color32::BLACK);
+        painter.rect_filled(rect, 0.0, LAYOUT_VIEW_BACKGROUND_COLOR);
 
         draw_center_of_mass(
             &painter,
@@ -158,6 +160,8 @@ impl<'a> LayoutViewComponent<'a> {
             } else {
                 egui::Color32::from_rgba_unmultiplied(255, 255, 255, (intensity * 255.0) as u8)
             };
+
+            let rect_color = egui::Color32::BLACK.blend(rect_color);
 
             let position: Option<egui::Vec2> = fixture
                 .feature_value(

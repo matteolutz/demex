@@ -35,6 +35,7 @@ pub mod graphics;
 pub mod iimpl;
 pub mod patch;
 pub mod tabs;
+pub mod theme;
 pub mod traits;
 pub mod utils;
 pub mod window;
@@ -159,20 +160,6 @@ impl DemexUiApp {
 
 impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        ctx.style_mut(|style| {
-            style.spacing.button_padding = egui::vec2(10.0, 10.0);
-
-            style.spacing.indent = 18.0 * 2.0;
-            style.spacing.icon_width = 14.0 * 2.0;
-            style.spacing.icon_width_inner = 8.0 * 2.0;
-
-            // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
-            //
-            style.spacing.interact_size = egui::vec2(40.0, 18.0) * 1.5;
-            style.spacing.slider_rail_height = 8.0 * 2.0;
-            style.spacing.slider_width = 100.0 * 1.5;
-        });
-
         if let Err(input_error) = self.context.input_device_handler.update(
             &mut self.context.fixture_handler.write(),
             &mut self.context.preset_handler.write(),
@@ -292,25 +279,9 @@ impl eframe::App for DemexUiApp {
         eframe::egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("demex");
-                ui.separator();
-
-                let slider = ui.add(
-                    eframe::egui::Slider::new(&mut self.context.gm_slider_val, 0..=255).text("GM"),
-                );
-
-                if slider.changed() {
-                    *self.context.fixture_handler.write().grand_master_mut() =
-                        self.context.gm_slider_val;
-                }
 
                 ui.separator();
 
-                if ui.button("Clear Selection").clicked() {
-                    self.context.global_fixture_select = None;
-                }
-            });
-
-            ui.horizontal(|ui| {
                 ui.label(format!("v{}", VERSION_STR));
 
                 ui.separator();

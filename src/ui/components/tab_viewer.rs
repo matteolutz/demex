@@ -1,5 +1,6 @@
 use std::hash::Hash;
 
+#[allow(dead_code)]
 pub struct TabViewerResponse<T> {
     selected_tab: u32,
     inner_response: egui::InnerResponse<T>,
@@ -37,7 +38,7 @@ impl TabViewer {
         let mut cell_rect =
             egui::Rect::from_min_size(available_rect.min, egui::vec2(cell_width, self.height));
 
-        for (i, tab) in self.tabs.iter().enumerate() {
+        for (i, _tab) in self.tabs.iter().enumerate() {
             let response = ui.allocate_rect(cell_rect, egui::Sense::click());
 
             if response.clicked() {
@@ -45,7 +46,7 @@ impl TabViewer {
             }
 
             let is_selected = i as u32 == selected_tab;
-            let text_color = if is_selected {
+            let _text_color = if is_selected {
                 egui::Color32::WHITE
             } else {
                 egui::Color32::GRAY

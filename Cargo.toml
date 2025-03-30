@@ -1,10 +1,13 @@
 [package]
 name = "demex"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2021"
 
 [dependencies]
 artnet_protocol = { git = "https://github.com/matteolutz/artnet_protocol" }
+catppuccin-egui = { version = "5.5.0", default-features = false, features = [
+    "egui31",
+] }
 chrono = "0.4.39"
 clap = { version = "4.5.28", features = ["derive"] }
 eframe = { features = ["default"], version = "0.31.1" }

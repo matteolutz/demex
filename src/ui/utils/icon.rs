@@ -1,6 +1,6 @@
 pub fn load_icon() -> egui::IconData {
     let (icon_rgba, icon_width, icon_height) = {
-        let icon = include_bytes!("../../../assets/LogoV1-128.png");
+        let icon = include_bytes!("../../../assets/LogoV1 - macOS 1024.png");
         let image = image::load_from_memory(icon)
             .expect("Failed to open icon path")
             .into_rgba8();

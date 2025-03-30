@@ -1,5 +1,6 @@
 use crate::ui::context::DemexUiContext;
 
+#[allow(dead_code)]
 pub struct PatchViewComponent<'a> {
     context: &'a mut DemexUiContext,
     id_source: egui::Id,

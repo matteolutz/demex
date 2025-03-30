@@ -8,7 +8,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     ui.heading("Speed Masters");
 
     egui_extras::TableBuilder::new(ui)
-        .columns(egui_extras::Column::auto(), 3)
+        .columns(egui_extras::Column::auto(), 4)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
         .header(20.0, |mut ui| {
             ui.col(|ui| {
@@ -21,6 +21,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
             ui.col(|ui| {
                 ui.strong("Tap");
+            });
+
+            ui.col(|ui| {
+                ui.strong("QA's");
             });
         })
         .body(|mut ui| {
@@ -53,6 +57,16 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             .clicked()
                         {
                             speed_master_value.tap(time::Instant::now());
+                        }
+                    });
+
+                    ui.col(|ui| {
+                        if ui.button("/2").clicked() {
+                            *speed_master_value.bpm_mut() /= 2.0;
+                        }
+
+                        if ui.button("*2").clicked() {
+                            *speed_master_value.bpm_mut() *= 2.0;
                         }
                     });
                 });

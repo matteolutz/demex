@@ -3,6 +3,8 @@ use crate::{
     ui::{graphics::layout_projection::LayoutProjection, utils::rect::rect_vertices},
 };
 
+const DRAW_DIRECTION: bool = false;
+
 impl FixtureLayoutEntry {
     pub fn get_pos_and_size(
         &self,
@@ -30,7 +32,7 @@ impl FixtureLayoutEntry {
 
         let stroke_width = 0.25 * projection.zoom();
         let stroke_color = if is_selected {
-            egui::Color32::DARK_GREEN
+            egui::Color32::GREEN
         } else if is_about_to_selected {
             egui::Color32::BLUE
         } else {
@@ -59,24 +61,26 @@ impl FixtureLayoutEntry {
                 );
 
                 if let Some(fixture_direction) = fixture_direction {
-                    let pos_in_rect = rect.left_top() + (fixture_direction * size);
+                    if DRAW_DIRECTION {
+                        let pos_in_rect = rect.left_top() + (fixture_direction * size);
 
-                    for pos in rect_vertices(&rect) {
-                        // draw line from pos to pos_in_rect
-                        painter.line_segment(
-                            [pos, pos_in_rect],
-                            egui::Stroke::new(
-                                0.25 * projection.zoom(),
-                                egui::Color32::YELLOW.gamma_multiply(0.5),
-                            ),
+                        for pos in rect_vertices(&rect) {
+                            // draw line from pos to pos_in_rect
+                            painter.line_segment(
+                                [pos, pos_in_rect],
+                                egui::Stroke::new(
+                                    0.25 * projection.zoom(),
+                                    egui::Color32::YELLOW.gamma_multiply(0.5),
+                                ),
+                            );
+                        }
+
+                        painter.circle_filled(
+                            pos_in_rect,
+                            0.5 * projection.zoom(),
+                            egui::Color32::YELLOW.gamma_multiply(0.5),
                         );
                     }
-
-                    painter.circle_filled(
-                        pos_in_rect,
-                        0.5 * projection.zoom(),
-                        egui::Color32::YELLOW.gamma_multiply(0.5),
-                    );
                 }
             }
             FixtureLayoutEntryType::Circle => {
