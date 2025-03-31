@@ -1,3 +1,4 @@
+use input::read_layout_view_input;
 use state::{LayoutViewDragState, LayoutViewState};
 
 use crate::{
@@ -10,6 +11,7 @@ use crate::{
 
 mod decoration;
 mod entry;
+mod input;
 mod state;
 
 const LAYOUT_VIEW_BACKGROUND_COLOR: egui::Color32 = egui::Color32::from_gray(50);
@@ -65,29 +67,9 @@ impl<'a> LayoutViewComponent<'a> {
         let rect = ui.available_rect_before_wrap();
         let size = rect.size();
 
-        ui.input(|reader| {
-            if reader.pointer.hover_pos().is_none()
-                || !rect.contains(reader.pointer.hover_pos().unwrap())
-            {
-                return;
-            }
-
-            let zoom_delta = reader.zoom_delta();
-            if zoom_delta != 1.0 && reader.pointer.hover_pos().is_some() {
-                let hover_pos = reader.pointer.hover_pos().unwrap();
-                let center_delta: egui::Vec2 =
-                    (hover_pos - (rect.min + rect.size() / 2.0)) / state.layout_projection.zoom();
-
-                let zoom_amount = zoom_delta - 1.0;
-
-                *state.layout_projection.zoom_mut() += zoom_amount;
-                *state.layout_projection.center_mut() -=
-                    center_delta * ((zoom_amount / 2.0).min(1.0));
-            } else if reader.raw_scroll_delta != egui::Vec2::ZERO {
-                let offset = reader.raw_scroll_delta / state.layout_projection.zoom();
-                *state.layout_projection.center_mut() += offset;
-            }
-        });
+        let input_offset = read_layout_view_input(ui, rect, state.layout_projection.zoom());
+        *state.layout_projection.zoom_mut() += input_offset.zoom;
+        *state.layout_projection.center_mut() += input_offset.center;
 
         let (response, painter) = ui.allocate_painter(size, egui::Sense::click_and_drag());
         let rect = response.rect;
