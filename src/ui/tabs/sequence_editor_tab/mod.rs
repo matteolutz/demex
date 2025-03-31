@@ -183,7 +183,7 @@ impl<'a> SequenceEditorTab<'a> {
         let id = ui.make_persistent_id(self.id_source);
         let mut state = ui
             .ctx()
-            .data_mut(|d| d.get_persisted::<SequenceEditorState>(id))
+            .data_mut(|d| d.get_temp::<SequenceEditorState>(id))
             .unwrap_or_default();
 
         if let Some(sequence_id) = state.selected_sequence {
@@ -193,7 +193,7 @@ impl<'a> SequenceEditorTab<'a> {
         }
 
         ui.ctx().data_mut(|d| {
-            d.insert_persisted(id, state);
+            d.insert_temp(id, state);
         });
     }
 }

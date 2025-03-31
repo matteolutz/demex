@@ -1,21 +1,20 @@
-use std::hash::Hash;
+use std::{fmt::Display, hash::Hash};
 
-#[allow(dead_code)]
-pub struct TabViewerResponse<T> {
-    selected_tab: u32,
-    inner_response: egui::InnerResponse<T>,
+use crate::ui::utils::painter::painter_layout_centered;
+
+pub struct TabViewerResponse<Tab: Display + Eq + Copy> {
+    pub selected_tab: Tab,
 }
 
-pub struct TabViewer {
+pub struct TabViewer<Tab: Display + Eq + Copy> {
     id: egui::Id,
-    tabs: Vec<String>,
-    initial_selected_tab: u32,
-    height: f32,
+    tabs: Vec<Tab>,
+    initial_selected_tab: usize,
 }
 
-impl TabViewer {
-    pub fn new(id_source: impl Hash, tabs: Vec<String>, selected_tab: u32, height: f32) -> Self {
-        if selected_tab >= tabs.len() as u32 {
+impl<Tab: Display + Eq + Copy> TabViewer<Tab> {
+    pub fn new(id_source: impl Hash, tabs: Vec<Tab>, selected_tab: usize) -> Self {
+        if selected_tab >= tabs.len() {
             panic!("Selected tab index out of bounds");
         }
 
@@ -23,38 +22,72 @@ impl TabViewer {
             id: egui::Id::new(id_source),
             tabs,
             initial_selected_tab: selected_tab,
-            height,
         }
     }
 
-    pub fn show(&self, ui: &mut egui::Ui) {
+    pub fn show(&self, ui: &mut egui::Ui) -> TabViewerResponse<Tab> {
         let mut selected_tab = ui
-            .data(|reader| reader.get_temp::<u32>(self.id))
+            .data(|reader| reader.get_temp::<usize>(self.id))
             .unwrap_or(self.initial_selected_tab);
 
         let available_rect = ui.available_rect_before_wrap();
         let cell_width = available_rect.width() / self.tabs.len() as f32;
+        let cell_height = 40.0;
 
         let mut cell_rect =
-            egui::Rect::from_min_size(available_rect.min, egui::vec2(cell_width, self.height));
+            egui::Rect::from_min_size(available_rect.min, egui::vec2(cell_width, cell_height));
 
-        for (i, _tab) in self.tabs.iter().enumerate() {
+        for (i, tab) in self.tabs.iter().enumerate() {
             let response = ui.allocate_rect(cell_rect, egui::Sense::click());
 
-            if response.clicked() {
-                selected_tab = i as u32;
+            if response.hovered() {
+                ui.ctx()
+                    .output_mut(|writer| writer.cursor_icon = egui::CursorIcon::PointingHand);
             }
 
-            let is_selected = i as u32 == selected_tab;
-            let _text_color = if is_selected {
+            if response.clicked() {
+                selected_tab = i;
+            }
+
+            let is_selected = i == selected_tab;
+            let rect_fill = ui
+                .style()
+                .interact_selectable(&response, is_selected)
+                .bg_fill;
+
+            let text_color = if is_selected {
                 egui::Color32::WHITE
             } else {
                 egui::Color32::GRAY
             };
 
+            ui.painter().rect_filled(cell_rect, 0.0, rect_fill);
+
+            if is_selected {
+                ui.painter().rect_stroke(
+                    cell_rect,
+                    0.0,
+                    (2.0, ui.style().visuals.text_color()),
+                    egui::StrokeKind::Middle,
+                );
+            }
+
+            painter_layout_centered(
+                ui.painter(),
+                tab.to_string(),
+                egui::FontId::proportional(12.0),
+                text_color,
+                cell_rect,
+            );
+
             cell_rect.min.x += cell_width;
+            cell_rect.max.x += cell_width;
         }
 
         ui.data_mut(|writer| writer.insert_temp(self.id, selected_tab));
+
+        TabViewerResponse {
+            selected_tab: self.tabs[selected_tab],
+        }
     }
 }

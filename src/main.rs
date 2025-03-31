@@ -42,7 +42,8 @@ const TEST_MAX_FUPS: f64 = 60.0;
 const TEST_MAX_DMX_FPS: f64 = 30.0;
 const TEST_UI_FPS: f64 = 60.0;
 
-const TEST_UI_THEME: DemexUiTheme = DemexUiTheme::Catppuccin(catppuccin_egui::FRAPPE);
+const TEST_UI_THEME: DemexUiTheme = DemexUiTheme::Default;
+const TEST_TOUCHSCREEN_FRIENDLY: bool = true;
 
 fn load_fonts() -> egui::FontDefinitions {
     let mut fonts = egui::FontDefinitions::default();
@@ -211,19 +212,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             TEST_UI_THEME.apply(&creation_context.egui_ctx);
 
-            creation_context.egui_ctx.style_mut(|style| {
-                style.spacing.button_padding = egui::vec2(10.0, 10.0);
+            if TEST_TOUCHSCREEN_FRIENDLY {
+                creation_context.egui_ctx.style_mut(|style| {
+                    style.spacing.button_padding = egui::vec2(10.0, 10.0);
 
-                style.spacing.indent = 18.0 * 2.0;
-                style.spacing.icon_width = 14.0 * 2.0;
-                style.spacing.icon_width_inner = 8.0 * 2.0;
+                    style.spacing.indent = 18.0 * 2.0;
+                    style.spacing.icon_width = 14.0 * 2.0;
+                    style.spacing.icon_width_inner = 8.0 * 2.0;
 
-                // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
-                //
-                style.spacing.interact_size = egui::vec2(40.0, 18.0) * 1.5;
-                style.spacing.slider_rail_height = 8.0 * 2.0;
-                style.spacing.slider_width = 100.0 * 1.5;
-            });
+                    // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
+                    //
+                    style.spacing.interact_size = egui::vec2(40.0, 18.0) * 1.5;
+                    style.spacing.slider_rail_height = 8.0 * 2.0;
+                    style.spacing.slider_width = 100.0 * 1.5;
+                });
+            }
 
             Ok(Box::new(ui_app_state))
         }),
