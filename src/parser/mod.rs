@@ -8,7 +8,8 @@ use nodes::{
             },
             delete_function::DeleteArgs,
             record_function::{
-                RecordChannelTypeSelector, RecordGroupArgs, RecordPresetArgs, RecordSequenceCueArgs,
+                RecordChannelTypeSelector, RecordGroupArgs, RecordPresetArgs,
+                RecordSequenceCueArgs, RecordSequenceCueShorthandArgs,
             },
             rename_function::RenameObjectArgs,
             set_function::{SetFeatureValueArgs, SetFixturePresetArgs},
@@ -687,6 +688,35 @@ impl<'a> Parser2<'a> {
                     channel_type_selector,
                 }))
             }
+            Token::KeywordExecutor | Token::KeywordFader => {
+                let id_type_token = self.current_token()?.clone();
+                self.advance();
+
+                let id = self.parse_integer()?;
+
+                let cue_idx = self.try_parse(Self::parse_cue_idx_or_next).unwrap_or(None);
+
+                expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
+
+                let fixture_selector = self.parse_fixture_selector()?;
+
+                let channel_type_selector = if matches!(self.current_token()?, Token::KeywordWith) {
+                    self.advance();
+
+                    self.parse_record_channel_type_selector()?
+                } else {
+                    RecordChannelTypeSelector::Active
+                };
+
+                Ok(Action::RecordSequenceCueShorthand(
+                    RecordSequenceCueShorthandArgs {
+                        id: (id_type_token, id).try_into()?,
+                        cue_idx,
+                        fixture_selector,
+                        channel_type_selector,
+                    },
+                ))
+            }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
                 vec!["\"preset\"", "\"group\"", "\"sequence\""],
@@ -713,14 +743,7 @@ impl<'a> Parser2<'a> {
 
                 let sequence_id = self.parse_integer()?;
 
-                expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
-
-                let fixture_selector = self.parse_fixture_selector()?;
-
-                Ok(CreateFaderArgsCreationMode::Sequence(
-                    sequence_id,
-                    fixture_selector,
-                ))
+                Ok(CreateFaderArgsCreationMode::Sequence(sequence_id))
             }
             _ => {
                 let fixture_selector = self.parse_fixture_selector()?;
@@ -855,10 +878,12 @@ impl<'a> Parser2<'a> {
                     update_mode,
                 }))
             }
-            Token::KeywordSequence => {
+            Token::KeywordSequence | Token::KeywordExecutor | Token::KeywordFader => {
+                let id_type_keyword = self.current_token()?.clone();
+
                 self.advance();
 
-                let sequence_id = self.parse_integer()?;
+                let id = self.parse_integer()?;
 
                 expect_and_consume_token!(self, Token::KeywordCue, "\"cue\"");
 
@@ -881,7 +906,7 @@ impl<'a> Parser2<'a> {
                     .unwrap_or(UpdateMode::Merge);
 
                 Ok(Action::UpdateSequenceCue(UpdateSequenceCueArgs {
-                    sequence_id,
+                    id: (id_type_keyword, id).try_into()?,
                     cue_idx,
                     fixture_selector,
                     channel_type_selector,

@@ -1,9 +1,12 @@
+use std::collections::HashSet;
+
 use cue::{Cue, CueIdx};
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    channel2::channel_value::FixtureChannelValue2, value_source::FixtureChannelValuePriority,
+    channel2::channel_value::FixtureChannelValue2, presets::PresetHandler,
+    value_source::FixtureChannelValuePriority,
 };
 
 pub mod cue;
@@ -139,5 +142,12 @@ impl Sequence {
 
     pub fn find_cue_mut(&mut self, cue_idx: CueIdx) -> Option<&mut Cue> {
         self.cues.iter_mut().find(|cue| cue.cue_idx() == cue_idx)
+    }
+
+    pub fn affected_fixtures(&self, preset_handler: &PresetHandler) -> HashSet<u32> {
+        self.cues
+            .iter()
+            .flat_map(|c| c.affected_fixtures(preset_handler))
+            .collect()
     }
 }

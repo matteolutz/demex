@@ -404,7 +404,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     && updatable_handler.executor(id).unwrap().is_started()
                 {
                     updatable_handler
-                        .stop_executor(id, &mut fixture_handler)
+                        .stop_executor(id, &mut fixture_handler, &preset_handler)
                         .unwrap();
                 }
             }

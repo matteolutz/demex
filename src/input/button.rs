@@ -77,7 +77,7 @@ impl DemexInputButton {
         match self {
             Self::ExecutorFlash { id, stomp } => {
                 updatable_handler
-                    .start_executor(*id, fixture_handler)
+                    .start_executor(*id, fixture_handler, preset_handler)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
                 if *stomp {
@@ -95,7 +95,7 @@ impl DemexInputButton {
                     && executor.is_started()
                 {
                     updatable_handler
-                        .stop_executor(*executor_id, fixture_handler)
+                        .stop_executor(*executor_id, fixture_handler, preset_handler)
                         .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
                 } else {
                     updatable_handler
@@ -104,7 +104,7 @@ impl DemexInputButton {
                 }
             }
             Self::ExecutorStop(executor_id) => updatable_handler
-                .stop_executor(*executor_id, fixture_handler)
+                .stop_executor(*executor_id, fixture_handler, preset_handler)
                 .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
             Self::FaderGo(fader_id) => updatable_handler
                 .fader_mut(*fader_id)
@@ -157,7 +157,7 @@ impl DemexInputButton {
     pub fn handle_release(
         &self,
         fixture_handler: &mut FixtureHandler,
-        _preset_handler: &PresetHandler,
+        preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
@@ -174,7 +174,7 @@ impl DemexInputButton {
             }
             Self::ExecutorFlash { id, stomp } => {
                 updatable_handler
-                    .stop_executor(*id, fixture_handler)
+                    .stop_executor(*id, fixture_handler, preset_handler)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
                 if *stomp {

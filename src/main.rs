@@ -43,7 +43,7 @@ const TEST_MAX_DMX_FPS: f64 = 30.0;
 const TEST_UI_FPS: f64 = 60.0;
 
 const TEST_UI_THEME: DemexUiTheme = DemexUiTheme::Default;
-const TEST_TOUCHSCREEN_FRIENDLY: bool = true;
+const TEST_TOUCHSCREEN_FRIENDLY: bool = false;
 
 fn load_fonts() -> egui::FontDefinitions {
     let mut fonts = egui::FontDefinitions::default();

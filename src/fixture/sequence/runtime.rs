@@ -110,7 +110,10 @@ impl SequenceRuntime {
 
             delta *= speed_multiplier;
 
-            delta = f32::max(delta - cue.offset_for_fixture(fixture.id()), 0.0);
+            delta = f32::max(
+                delta - cue.offset_for_fixture(fixture.id(), preset_handler),
+                0.0,
+            );
 
             let should_snap = cue.should_snap_channel_value_for_fixture(fixture.id(), channel_type);
 
@@ -236,10 +239,10 @@ impl SequenceRuntime {
             let next_cue_idx = self.next_cue_idx(preset_handler);
 
             let previous_cue_out_time = previous_cue_idx
-                .map(|i| sequence.cue(i).out_time())
+                .map(|i| sequence.cue(i).out_time(preset_handler))
                 .unwrap_or(0.0);
 
-            let cue_time = previous_cue_out_time + current_cue.in_time();
+            let cue_time = previous_cue_out_time + current_cue.in_time(preset_handler);
 
             if delta > cue_time {
                 // is the next cue, a follow cue?
@@ -250,7 +253,7 @@ impl SequenceRuntime {
                     // it's the last cue, so we should wait for the out time of the last cue
                     // and then stop the sequence, if the sequence is set to auto stop
                 } else if sequence.stop_behavior() == SequenceStopBehavior::AutoStop
-                    && delta > cue_time + current_cue.out_time()
+                    && delta > cue_time + current_cue.out_time(preset_handler)
                 {
                     self.stop();
                     return true;
@@ -281,23 +284,25 @@ impl SequenceRuntime {
             .unwrap_or(false)
     }
 
-    pub fn next_cue(&mut self, preset_handler: &PresetHandler) {
+    pub fn next_cue(&mut self, preset_handler: &PresetHandler) -> bool {
         if let Some((_, cue_idx, _)) = self.state.when_started() {
             let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
             if cue_idx == sequence.cues().len() - 1 && !self.should_auto_restart(preset_handler) {
                 if sequence.stop_behavior() == SequenceStopBehavior::Restart {
                     self.state = SequenceRuntimeState::Cue(time::Instant::now(), 0);
-                    return;
+                    return false;
                 } else {
                     self.stop();
-                    return;
+                    return true;
                 }
             }
 
             let cue_idx = (cue_idx + 1) % sequence.cues().len();
             self.state = SequenceRuntimeState::Cue(time::Instant::now(), cue_idx);
         }
+
+        false
     }
 
     pub fn previous_cue_idx(&self, preset_handler: &PresetHandler) -> Option<usize> {

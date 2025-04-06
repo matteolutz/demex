@@ -1,4 +1,4 @@
-use std::time;
+use std::{collections::HashSet, time};
 
 use config::ExecutorConfig;
 use egui_probe::EguiProbe;
@@ -47,7 +47,6 @@ impl Executor {
         id: u32,
         name: Option<String>,
         sequence_id: u32,
-        selection: FixtureSelection,
         priority: FixtureChannelValuePriority,
     ) -> Self {
         Self {
@@ -55,7 +54,6 @@ impl Executor {
             name: name.unwrap_or_else(|| format!("Sequence Executor {}", id)),
             config: ExecutorConfig::Sequence {
                 runtime: SequenceRuntime::new(sequence_id),
-                fixtures: selection.fixtures().to_vec(),
             },
             priority,
             stomp_protected: false,
@@ -88,6 +86,10 @@ impl Executor {
         &self.config
     }
 
+    pub fn config_mut(&mut self) -> &mut ExecutorConfig {
+        &mut self.config
+    }
+
     pub fn id(&self) -> u32 {
         self.id
     }
@@ -104,10 +106,15 @@ impl Executor {
         self.stomp_protected
     }
 
-    pub fn fixtures(&self) -> &[u32] {
+    pub fn fixtures(&self, preset_handler: &PresetHandler) -> HashSet<u32> {
         match &self.config {
-            ExecutorConfig::Sequence { fixtures, .. } => fixtures,
-            ExecutorConfig::FeatureEffect { selection, .. } => selection.fixtures(),
+            ExecutorConfig::Sequence { runtime } => {
+                let sequence = preset_handler.get_sequence(runtime.sequence_id()).unwrap();
+                sequence.affected_fixtures(preset_handler)
+            }
+            ExecutorConfig::FeatureEffect { selection, .. } => {
+                selection.fixtures().iter().copied().collect()
+            }
         }
     }
 
@@ -149,7 +156,9 @@ impl Executor {
         };
 
         match &self.config {
-            ExecutorConfig::Sequence { runtime, fixtures } => {
+            ExecutorConfig::Sequence { runtime } => {
+                let fixtures = self.fixtures(preset_handler);
+
                 if !fixtures.contains(&fixture.id()) {
                     None
                 } else {
@@ -193,7 +202,7 @@ impl Executor {
         match &mut self.config {
             ExecutorConfig::Sequence { runtime, .. } => {
                 if runtime.update(1.0, preset_handler) {
-                    self.stop(fixture_handler);
+                    self.stop(fixture_handler, preset_handler);
                 }
             }
             ExecutorConfig::FeatureEffect { .. } => {}
@@ -207,12 +216,12 @@ impl Executor {
         }
     }
 
-    pub fn start(&mut self, fixture_handler: &mut FixtureHandler) {
+    pub fn start(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
         self.child_start();
 
         self.started_at = Some(time::Instant::now());
-        for fixture_id in self.fixtures() {
-            if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
+        for fixture_id in self.fixtures(preset_handler) {
+            if let Some(fixture) = fixture_handler.fixture(fixture_id) {
                 fixture.push_value_source(FixtureChannelValueSource::Executor {
                     executor_id: self.id,
                 });
@@ -227,11 +236,11 @@ impl Executor {
         }
     }
 
-    pub fn stop(&mut self, fixture_handler: &mut FixtureHandler) {
+    pub fn stop(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
         self.child_stop();
 
-        for fixture_id in self.fixtures() {
-            if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
+        for fixture_id in self.fixtures(preset_handler) {
+            if let Some(fixture) = fixture_handler.fixture(fixture_id) {
                 fixture.remove_value_source(FixtureChannelValueSource::Executor {
                     executor_id: self.id,
                 });
@@ -239,9 +248,15 @@ impl Executor {
         }
     }
 
-    pub fn next_cue(&mut self, preset_handler: &PresetHandler) {
+    pub fn next_cue(
+        &mut self,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+    ) {
         if let ExecutorConfig::Sequence { runtime, .. } = &mut self.config {
-            runtime.next_cue(preset_handler);
+            if runtime.next_cue(preset_handler) {
+                self.stop(fixture_handler, preset_handler);
+            }
         }
     }
 

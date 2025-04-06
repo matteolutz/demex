@@ -1,4 +1,7 @@
-use std::{collections::HashMap, time};
+use std::{
+    collections::{HashMap, HashSet},
+    time,
+};
 
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
@@ -199,6 +202,7 @@ impl Cue {
             name: format!("Cue {}.{}", cue_idx.0, cue_idx.1),
 
             data: CueDataMode::Builder(Vec::new()),
+            // Unused
             selection: FixtureSelection::default(),
 
             in_fade: 0.0,
@@ -316,15 +320,18 @@ impl Cue {
         &mut self.trigger
     }
 
-    pub fn total_offset(&self) -> f32 {
-        self.timing.total_offset(self.selection.num_offsets())
+    pub fn total_offset(&self, preset_handler: &PresetHandler) -> f32 {
+        self.timing
+            .total_offset(self.selection(preset_handler).num_offsets())
     }
 
-    pub fn offset_for_fixture(&self, fixture_id: u32) -> f32 {
+    pub fn offset_for_fixture(&self, fixture_id: u32, preset_handler: &PresetHandler) -> f32 {
         self.timing.offset_for_fixture(
             // TOOD: is .unwrap_or(0) the right thing to do?
-            self.selection.offset_idx(fixture_id).unwrap_or(0),
-            self.selection.num_offsets(),
+            self.selection(preset_handler)
+                .offset_idx(fixture_id)
+                .unwrap_or(0),
+            self.selection(preset_handler).num_offsets(),
         )
     }
 
@@ -438,11 +445,38 @@ impl Cue {
         }
     }
 
-    pub fn in_time(&self) -> f32 {
-        self.in_delay + self.in_fade + self.total_offset()
+    pub fn in_time(&self, preset_handler: &PresetHandler) -> f32 {
+        self.in_delay + self.in_fade + self.total_offset(preset_handler)
     }
 
-    pub fn out_time(&self) -> f32 {
-        self.out_delay() + self.out_fade() + self.total_offset()
+    pub fn out_time(&self, preset_handler: &PresetHandler) -> f32 {
+        self.out_delay() + self.out_fade() + self.total_offset(preset_handler)
+    }
+
+    pub fn selection(&self, preset_handler: &PresetHandler) -> FixtureSelection {
+        match self.data {
+            CueDataMode::Default(_) => self.selection.clone(),
+            CueDataMode::Builder(ref entries) => {
+                let mut selection = FixtureSelection::default();
+
+                for entry in entries {
+                    if let Some(group_id) = entry.group_id {
+                        if let Ok(group) = preset_handler.get_group(group_id) {
+                            selection.extend_from(group.fixture_selection());
+                        }
+                    }
+                }
+
+                selection
+            }
+        }
+    }
+
+    pub fn affected_fixtures(&self, preset_handler: &PresetHandler) -> HashSet<u32> {
+        self.selection(preset_handler)
+            .fixtures()
+            .iter()
+            .copied()
+            .collect()
     }
 }

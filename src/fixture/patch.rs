@@ -1,9 +1,12 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Range};
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::dmx::{DemexDmxOutput, DemexDmxOutputConfig};
+use crate::{
+    dmx::{DemexDmxOutput, DemexDmxOutputConfig},
+    utils::range::ranges_overlap,
+};
 
 use super::{
     channel2::{channel_type::FixtureChannelType, feature::feature_config::FixtureFeatureConfig},
@@ -31,6 +34,12 @@ pub struct FixturePatchType {
     pub modes: HashMap<u32, FixturePatchTypeMode>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FixtureFile {
+    pub id: String,
+    pub config: FixturePatchType,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Patch {
     fixtures: Vec<SerializableFixturePatch>,
@@ -44,8 +53,16 @@ impl Patch {
         &self.fixtures
     }
 
+    pub fn fixtures_mut(&mut self) -> &mut Vec<SerializableFixturePatch> {
+        &mut self.fixtures
+    }
+
     pub fn fixture_types(&self) -> &HashMap<String, FixturePatchType> {
         &self.fixture_types
+    }
+
+    pub fn fixture_types_mut(&mut self) -> &mut HashMap<String, FixturePatchType> {
+        &mut self.fixture_types
     }
 
     pub fn layout(&self) -> &FixtureLayout {
@@ -58,6 +75,22 @@ impl Patch {
 
     pub fn output_configs_mut(&mut self) -> &mut Vec<DemexDmxOutputConfig> {
         &mut self.outputs
+    }
+
+    pub fn is_address_range_unpatched(&self, address_range: Range<u16>, universe: u16) -> bool {
+        for fixture in self.fixtures.iter().filter(|f| f.universe == universe) {
+            let fixture_type = self.fixture_types().get(&fixture.fixture_type).unwrap();
+            let fixture_mode = fixture_type.modes.get(&fixture.fixture_mode).unwrap();
+
+            let fixture_range = fixture.start_address
+                ..(fixture.start_address + fixture_mode.channel_types.len() as u16);
+
+            if ranges_overlap(fixture_range, address_range.clone()) {
+                return false;
+            }
+        }
+
+        true
     }
 }
 

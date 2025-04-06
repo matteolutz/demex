@@ -1,0 +1,34 @@
+{
+  "id": "ExpoLite-TourLED",
+  "config": {
+    "name": "ExpoLite TourLED",
+    "modes": {
+      "0": {
+        "name": "SSR",
+        "channel_types": [
+          "Intensity",
+          "Red",
+          "Green",
+          "Blue",
+          "White",
+          "Shutter",
+          "Unused"
+        ],
+        "toggle_flags": [],
+        "feature_configs": [
+          {
+            "SingleValue": {
+              "channel_type": "Intensity",
+              "is_fine": false
+            }
+          },
+          {
+            "ColorRGB": {
+              "is_fine": false
+            }
+          }
+        ]
+      }
+    }
+  }
+}

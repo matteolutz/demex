@@ -35,18 +35,18 @@ pub mod value_source;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerializableFixturePatch {
-    id: u32,
-    name: String,
+    pub id: u32,
+    pub name: String,
 
     // TODO: refactor this, to use FixtureTypeAndMode
-    fixture_type: String,
-    fixture_mode: u32,
+    pub fixture_type: String,
+    pub fixture_mode: u32,
 
     #[serde(default)]
-    channel_modifiers: Vec<FixtureChannelModifier>,
+    pub channel_modifiers: Vec<FixtureChannelModifier>,
 
-    universe: u16,
-    start_address: u16,
+    pub universe: u16,
+    pub start_address: u16,
 }
 
 impl From<Fixture> for SerializableFixturePatch {

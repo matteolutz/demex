@@ -74,14 +74,14 @@ impl HomeableObject {
             }
             HomeableObject::Executor(executor_id) => {
                 updatable_handler
-                    .stop_executor(*executor_id, fixture_handler)
+                    .stop_executor(*executor_id, fixture_handler, preset_handler)
                     .map_err(ActionRunError::UpdatableHandlerError)?;
 
                 Ok(ActionRunResult::new())
             }
             HomeableObject::Fader(fader_id) => {
                 if let Ok(fader) = updatable_handler.fader_mut(*fader_id) {
-                    fader.home(fixture_handler);
+                    fader.home(fixture_handler, preset_handler);
                 }
 
                 Ok(ActionRunResult::new())

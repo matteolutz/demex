@@ -10,7 +10,6 @@ use crate::fixture::{
 pub enum ExecutorConfig {
     Sequence {
         runtime: SequenceRuntime,
-        fixtures: Vec<u32>,
     },
     FeatureEffect {
         runtime: FeatureEffectRuntime,

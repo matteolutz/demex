@@ -1,10 +1,22 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fixture::{presets::preset::FixturePresetId, sequence::cue::CueIdx, timing::TimingHandler},
-    parser::nodes::{
-        action::{error::ActionRunError, result::ActionRunResult},
-        fixture_selector::FixtureSelector,
+    fixture::{
+        presets::preset::FixturePresetId,
+        sequence::cue::CueIdx,
+        timing::TimingHandler,
+        updatables::{
+            error::UpdatableHandlerError, executor::config::ExecutorConfig,
+            fader::config::DemexFaderConfig,
+        },
+    },
+    lexer::token::Token,
+    parser::{
+        error::ParseError,
+        nodes::{
+            action::{error::ActionRunError, result::ActionRunResult},
+            fixture_selector::FixtureSelector,
+        },
     },
 };
 
@@ -57,9 +69,31 @@ impl FunctionArgs for UpdatePresetArgs {
     }
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum UpdateSequenceCueArgsId {
+    SequenceId(u32),
+    ExecutorId(u32),
+    FaderId(u32),
+}
+
+impl TryFrom<(Token, u32)> for UpdateSequenceCueArgsId {
+    type Error = ParseError;
+
+    fn try_from((token, id): (Token, u32)) -> Result<Self, Self::Error> {
+        match token {
+            Token::KeywordSequence => Ok(UpdateSequenceCueArgsId::SequenceId(id)),
+            Token::KeywordExecutor => Ok(UpdateSequenceCueArgsId::ExecutorId(id)),
+            Token::KeywordFader => Ok(UpdateSequenceCueArgsId::FaderId(id)),
+            _ => Err(ParseError::UnexpectedArgs(
+                "Expected 'sequence', 'executor' or 'fader'".to_owned(),
+            )),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateSequenceCueArgs {
-    pub sequence_id: u32,
+    pub id: UpdateSequenceCueArgsId,
     pub cue_idx: CueIdx,
     pub fixture_selector: FixtureSelector,
     pub channel_type_selector: RecordChannelTypeSelector,
@@ -72,13 +106,44 @@ impl FunctionArgs for UpdateSequenceCueArgs {
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
+        updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
+        let sequence_id = match self.id {
+            UpdateSequenceCueArgsId::SequenceId(id) => id,
+            UpdateSequenceCueArgsId::ExecutorId(id) => {
+                let executor = updatable_handler
+                    .executor(id)
+                    .ok_or(UpdatableHandlerError::UpdatableNotFound(id))
+                    .map_err(ActionRunError::UpdatableHandlerError)?;
+                match executor.config() {
+                    ExecutorConfig::Sequence { runtime, .. } => runtime.sequence_id(),
+                    _ => {
+                        return Err(ActionRunError::UpdatableHandlerError(
+                            UpdatableHandlerError::ExecutorIsNotASequence(id),
+                        ))
+                    }
+                }
+            }
+            UpdateSequenceCueArgsId::FaderId(id) => {
+                let fader = updatable_handler
+                    .fader(id)
+                    .map_err(ActionRunError::UpdatableHandlerError)?;
+                match fader.config() {
+                    DemexFaderConfig::SequenceRuntime { runtime, .. } => runtime.sequence_id(),
+                    _ => {
+                        return Err(ActionRunError::UpdatableHandlerError(
+                            UpdatableHandlerError::FaderIsNotASequence(id),
+                        ))
+                    }
+                }
+            }
+        };
+
         let num_updated = preset_handler
             .update_sequence_cue(
-                self.sequence_id,
+                sequence_id,
                 self.cue_idx,
                 &self.fixture_selector,
                 fixture_selector_context,

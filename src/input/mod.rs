@@ -123,6 +123,7 @@ impl DemexInputDeviceHandler {
                         fader.handle_change(
                             value,
                             fixture_handler,
+                            preset_handler,
                             updatable_handler,
                             timing_handler,
                         )?;
@@ -137,6 +138,7 @@ impl DemexInputDeviceHandler {
                             fader.handle_change(
                                 value,
                                 fixture_handler,
+                                preset_handler,
                                 updatable_handler,
                                 timing_handler,
                             )?;

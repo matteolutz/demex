@@ -1,5 +1,6 @@
 use crate::ui::{components::tab_viewer::TabViewer, context::DemexUiContext};
 
+pub mod fixture_types;
 pub mod new_fixtures;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
@@ -25,6 +26,7 @@ impl PatchViewTab {
             Self::PatchNewFixtures => {
                 new_fixtures::PatchNewFixturesComponent::new(context).show(ui)
             }
+            Self::FixtureTypes => fixture_types::ui(ui, context),
             _ => {
                 ui.centered_and_justified(|ui| {
                     ui.label(self.to_string());

@@ -86,6 +86,10 @@ impl DemexFader {
         &self.config
     }
 
+    pub fn config_mut(&mut self) -> &mut DemexFaderConfig {
+        &mut self.config
+    }
+
     pub fn value(&self) -> f32 {
         self.value
     }
@@ -107,33 +111,36 @@ impl DemexFader {
         }
     }
 
-    pub fn set_value(&mut self, value: f32, fixture_handler: &mut FixtureHandler) {
+    pub fn set_value(
+        &mut self,
+        value: f32,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+    ) {
         if value == 0.0 {
-            self.home(fixture_handler);
+            self.home(fixture_handler, preset_handler);
             return;
         }
 
         if !self.is_active() {
-            self.activate(fixture_handler);
+            self.activate(fixture_handler, preset_handler);
         }
 
         self.value = value;
     }
 
-    pub fn home(&mut self, fixture_handler: &mut FixtureHandler) {
+    pub fn home(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
         self.value = 0.0;
 
         match &mut self.config {
-            DemexFaderConfig::SequenceRuntime {
-                selection: fixtures,
-                runtime,
-                ..
-            } => {
+            DemexFaderConfig::SequenceRuntime { runtime, .. } => {
                 runtime.stop();
 
-                for fixture_id in fixtures.fixtures() {
+                let sequence = preset_handler.get_sequence(runtime.sequence_id()).unwrap();
+
+                for fixture_id in sequence.affected_fixtures(preset_handler) {
                     fixture_handler
-                        .fixture(*fixture_id)
+                        .fixture(fixture_id)
                         .unwrap()
                         .remove_value_source(FixtureChannelValueSource::Fader {
                             fader_id: self.id,
@@ -162,7 +169,7 @@ impl DemexFader {
         }
     }
 
-    fn activate(&mut self, fixture_handler: &mut FixtureHandler) {
+    fn activate(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
         match &mut self.config {
             DemexFaderConfig::Submaster {
                 selection: fixtures,
@@ -174,18 +181,16 @@ impl DemexFader {
                         .push_value_source(FixtureChannelValueSource::Fader { fader_id: self.id });
                 }
             }
-            DemexFaderConfig::SequenceRuntime {
-                selection: fixtures,
-                runtime,
-                ..
-            } => {
+            DemexFaderConfig::SequenceRuntime { runtime, .. } => {
+                let sequence = preset_handler.get_sequence(runtime.sequence_id()).unwrap();
+
                 if !runtime.is_started() {
                     runtime.start();
                 }
 
-                for fixture_id in fixtures.fixtures() {
+                for fixture_id in sequence.affected_fixtures(preset_handler) {
                     fixture_handler
-                        .fixture(*fixture_id)
+                        .fixture(fixture_id)
                         .unwrap()
                         .push_value_source(FixtureChannelValueSource::Fader { fader_id: self.id });
                 }
@@ -229,12 +234,11 @@ impl DemexFader {
                     self.priority,
                 ))
             }
-            DemexFaderConfig::SequenceRuntime {
-                selection: fixtures,
-                runtime,
-                function,
-            } => {
-                if !fixtures.has_fixture(fixture.id()) {
+            DemexFaderConfig::SequenceRuntime { runtime, function } => {
+                let sequence = preset_handler.get_sequence(runtime.sequence_id()).unwrap();
+                let fixtures = sequence.affected_fixtures(preset_handler);
+
+                if !fixtures.contains(&fixture.id()) {
                     return Err(FixtureError::ChannelValueNotFound(channel_type));
                 }
 

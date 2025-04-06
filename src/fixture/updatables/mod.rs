@@ -85,7 +85,6 @@ impl UpdatableHandler {
                     id,
                     name,
                     *sequence_id,
-                    selection,
                     FixtureChannelValuePriority::default(),
                 ),
             },
@@ -112,20 +111,21 @@ impl UpdatableHandler {
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
 
         if executor.is_started() {
-            executor.next_cue(preset_handler);
+            executor.next_cue(fixture_handler, preset_handler);
             return Ok(());
         }
 
         let should_stop_others = executor.stop_others();
 
         if should_stop_others {
-            self.executors_stop_all(fixture_handler);
+            self.executors_stop_all(fixture_handler, preset_handler);
         }
 
         let executor = self
             .executor_mut(id)
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
-        executor.start(fixture_handler);
+
+        executor.start(fixture_handler, preset_handler);
         Ok(())
     }
 
@@ -145,6 +145,7 @@ impl UpdatableHandler {
         &mut self,
         id: u32,
         fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
     ) -> Result<(), UpdatableHandlerError> {
         let executor = self
             .executor_mut(id)
@@ -157,13 +158,14 @@ impl UpdatableHandler {
         let should_stop_others = executor.stop_others();
 
         if should_stop_others {
-            self.executors_stop_all(fixture_handler);
+            self.executors_stop_all(fixture_handler, preset_handler);
         }
 
         let executor = self
             .executor_mut(id)
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
-        executor.start(fixture_handler);
+
+        executor.start(fixture_handler, preset_handler);
         Ok(())
     }
 
@@ -171,10 +173,11 @@ impl UpdatableHandler {
         &mut self,
         id: u32,
         fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
     ) -> Result<(), UpdatableHandlerError> {
         self.executor_mut(id)
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?
-            .stop(fixture_handler);
+            .stop(fixture_handler, preset_handler);
         Ok(())
     }
 
@@ -190,9 +193,13 @@ impl UpdatableHandler {
         &self.executors
     }
 
-    pub fn executors_stop_all(&mut self, fixture_handler: &mut FixtureHandler) {
+    pub fn executors_stop_all(
+        &mut self,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+    ) {
         for (_, sr) in self.executors.iter_mut() {
-            sr.stop(fixture_handler);
+            sr.stop(fixture_handler, preset_handler);
         }
     }
 
@@ -245,17 +252,12 @@ impl UpdatableHandler {
                         .map_err(UpdatableHandlerError::FixtureSelectorError)?,
                 }
             }
-            CreateFaderArgsCreationMode::Sequence(sequence_id, fixture_selector) => {
+            CreateFaderArgsCreationMode::Sequence(sequence_id) => {
                 preset_handler
                     .get_sequence(*sequence_id)
                     .map_err(UpdatableHandlerError::PresetHandlerError)?;
 
-                let fixtures = fixture_selector
-                    .get_selection(preset_handler, fixture_selector_context)
-                    .map_err(UpdatableHandlerError::FixtureSelectorError)?;
-
                 DemexFaderConfig::SequenceRuntime {
-                    selection: fixtures,
                     runtime: SequenceRuntime::new(*sequence_id),
                     function: DemexFaderRuntimeFunction::default(),
                 }
@@ -289,9 +291,13 @@ impl UpdatableHandler {
         &self.faders
     }
 
-    pub fn faders_home_all(&mut self, fixture_handler: &mut FixtureHandler) {
+    pub fn faders_home_all(
+        &mut self,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+    ) {
         for (_, fader) in self.faders.iter_mut() {
-            fader.home(fixture_handler);
+            fader.home(fixture_handler, preset_handler);
         }
     }
 

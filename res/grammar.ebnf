@@ -37,7 +37,7 @@ delete_function             = "macro" integer_or_range
                             | "group" integer_or_range
 
 update_function             = specific_preset "for" fixture_selector [udpate_mode]
-                            | "sequence" integer "cue" cue_idx "for" fixture_selector ["with" (channel_type_list | "active" | "all")] [update_mode]
+                            | ("sequence" | "executor" | "fader") integer "cue" cue_idx "for" fixture_selector ["with" (channel_type_list | "active" | "all")] [update_mode]
 
 renane_function             = specific_preset "to" string
                             | "group" integer "to" string
@@ -47,6 +47,7 @@ renane_function             = specific_preset "to" string
 record_function             = "preset" feature_group (integer | "next") "for" fixture_selector ["as" string]
                             | "group" (integer | "next") "for" fixture_selector ["as" string]
                             | "sequence" integer "cue" cue_idx "for" fixture_selector ["with" (channel_type_list | "active" | "all")]
+                            | ("fader" | "executor") integer ["cue" cue_idx] "for" fixture_selector ["with" (channel_type_list | "active" | "all")]
 
 create_function             = "sequence" (integer | "next") ["as" string]
                             | "executor" (integer | "next") "for" (("sequence" integer) | "effect") "with" fixture_selector ["as" string]
@@ -58,7 +59,7 @@ set_function                = channel_type value_single
                             | specific_preset_or_range
 
 create_fader_function       = "for" (fixture_selector)
-                                    | "sequence" integer "with" fixture_selector
+                            | "sequence" integer
 
 object_range                = object ["thru" object]
 

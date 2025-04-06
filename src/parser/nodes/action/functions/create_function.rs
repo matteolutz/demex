@@ -86,7 +86,7 @@ impl FunctionArgs for CreateExecutorArgs {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum CreateFaderArgsCreationMode {
     Submaster(FixtureSelector),
-    Sequence(u32, FixtureSelector),
+    Sequence(u32),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
