@@ -10,7 +10,7 @@ use crate::{
 
 pub mod ui;
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct DemexShow {
     pub preset_handler: PresetHandler,
     pub updatable_handler: UpdatableHandler,

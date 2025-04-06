@@ -44,6 +44,10 @@ impl Patch {
         &self.fixtures
     }
 
+    pub fn fixture_types(&self) -> &HashMap<String, FixturePatchType> {
+        &self.fixture_types
+    }
+
     pub fn layout(&self) -> &FixtureLayout {
         &self.layout
     }

@@ -1,16 +1,18 @@
 use crate::ui::{components::tab_viewer::TabViewer, context::DemexUiContext};
 
+pub mod new_fixtures;
+
 #[derive(PartialEq, Eq, Copy, Clone)]
 pub enum PatchViewTab {
     PatchedFixtures,
     FixtureTypes,
-    PatchNewFixture,
+    PatchNewFixtures,
 }
 
 impl std::fmt::Display for PatchViewTab {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::PatchNewFixture => write!(f, "Patch New Fixture"),
+            Self::PatchNewFixtures => write!(f, "Patch New Fixtures"),
             Self::PatchedFixtures => write!(f, "Patched Fixtures"),
             Self::FixtureTypes => write!(f, "Fixture Types"),
         }
@@ -18,14 +20,20 @@ impl std::fmt::Display for PatchViewTab {
 }
 
 impl PatchViewTab {
-    pub fn ui(&self, ui: &mut egui::Ui) {
-        ui.centered_and_justified(|ui| {
-            ui.label(self.to_string());
-        });
+    pub fn ui(&self, ui: &mut egui::Ui, context: &mut DemexUiContext) {
+        match self {
+            Self::PatchNewFixtures => {
+                new_fixtures::PatchNewFixturesComponent::new(context).show(ui)
+            }
+            _ => {
+                ui.centered_and_justified(|ui| {
+                    ui.label(self.to_string());
+                });
+            }
+        }
     }
 }
 
-#[allow(dead_code)]
 pub struct PatchViewComponent<'a> {
     context: &'a mut DemexUiContext,
     id_source: egui::Id,
@@ -42,11 +50,11 @@ impl<'a> PatchViewComponent<'a> {
     pub fn show(&mut self, ui: &mut egui::Ui) {
         ui.vertical(|ui| {
             let response = TabViewer::new(
-                "DemexPatchViewTabViewer",
+                self.id_source,
                 vec![
                     PatchViewTab::PatchedFixtures,
                     PatchViewTab::FixtureTypes,
-                    PatchViewTab::PatchNewFixture,
+                    PatchViewTab::PatchNewFixtures,
                 ],
                 0,
             )
@@ -54,7 +62,7 @@ impl<'a> PatchViewComponent<'a> {
 
             ui.separator();
 
-            response.selected_tab.ui(ui);
+            response.selected_tab.ui(ui, self.context);
         });
     }
 }

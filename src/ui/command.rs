@@ -53,7 +53,7 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_a
                 if context.is_command_input_empty {
                     if command_input_field
                         .ctx
-                        .input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Backspace))
+                        .input_mut(|i| i.key_pressed(egui::Key::Backspace))
                     {
                         context.command.pop();
                     }

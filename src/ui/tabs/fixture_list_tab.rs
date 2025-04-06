@@ -67,7 +67,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         row.col(|ui| {
                             ui.label(format!(
-                                "{}.{}",
+                                "U{}.{}",
                                 fixture.universe(),
                                 fixture.start_address()
                             ));
