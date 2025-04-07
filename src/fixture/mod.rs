@@ -10,7 +10,6 @@ use channel2::{
         feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue, IntoFeatureType,
     },
 };
-use itertools::Itertools;
 use patch::{FixturePatchType, FixturePatchTypeMode, FixtureTypeAndMode};
 use presets::PresetHandler;
 use serde::{Deserialize, Serialize};
@@ -127,7 +126,7 @@ impl Fixture {
             return Err(FixtureError::EmptyPatch);
         }
 
-        if patch
+        /*if patch
             .channel_types
             .iter()
             .filter(|channel_type| **channel_type != FixtureChannelType::Unused)
@@ -140,7 +139,7 @@ impl Fixture {
                 .count()
         {
             return Err(FixtureError::DuplicateChannelType);
-        }
+        }*/
 
         Ok(Self {
             id,

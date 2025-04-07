@@ -126,7 +126,7 @@ impl DemexUiApp {
             },
             tabs: DemexTabs::default(),
 
-            command_auto_focus: true,
+            command_auto_focus: false,
 
             last_update: time::Instant::now(),
             desired_fps,

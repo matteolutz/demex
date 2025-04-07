@@ -89,6 +89,10 @@ impl FixtureHandler {
         })
     }
 
+    pub fn reload_patch(&mut self) {
+        self.fixtures = self.patch.clone().into();
+    }
+
     pub fn fixture_immut(&self, fixture_id: u32) -> Option<&Fixture> {
         self.fixtures.iter().find(|f| f.id() == fixture_id)
     }

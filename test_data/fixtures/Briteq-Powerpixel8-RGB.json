@@ -1,18 +1,38 @@
 {
-  "id": "ExpoLite-TourLED",
+  "id": "Briteq-Powerpixel8-RGB",
   "config": {
-    "name": "ExpoLite TourLED",
+    "name": "Briteq Powerpixel 8 RGB",
     "modes": {
       "0": {
-        "name": "SSR",
+        "name": "All projectors individually",
         "channel_types": [
+          "Unused",
           "Intensity",
+          "Shutter",
           "Red",
           "Green",
           "Blue",
-          "White",
-          "Shutter",
-          "Unused"
+          "Red",
+          "Green",
+          "Blue",
+          "Red",
+          "Green",
+          "Blue",
+          "Red",
+          "Green",
+          "Blue",
+          "Red",
+          "Green",
+          "Blue",
+          "Red",
+          "Green",
+          "Blue",
+          "Red",
+          "Green",
+          "Blue",
+          "Red",
+          "Green",
+          "Blue"
         ],
         "toggle_flags": [],
         "feature_configs": [

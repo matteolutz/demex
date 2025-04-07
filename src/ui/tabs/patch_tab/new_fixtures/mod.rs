@@ -1,4 +1,11 @@
-use crate::ui::{context::DemexUiContext, dlog::dialog::DemexGlobalDialogEntry};
+use crate::{
+    fixture::{patch::FixtureTypeAndMode, SerializableFixturePatch},
+    ui::{
+        context::DemexUiContext,
+        dlog::dialog::DemexGlobalDialogEntry,
+        patch::{template::render_new_fixture_patch_name, PatchUiNewFixture},
+    },
+};
 
 #[derive(Default, Clone)]
 struct State {
@@ -7,6 +14,7 @@ struct State {
 
     pub universe: u16,
     pub start_address: u16,
+    pub address_padding: u16,
 
     pub start_id: u32,
     pub num_fixutres: u16,
@@ -127,6 +135,18 @@ impl<'a> PatchNewFixturesComponent<'a> {
 
                 ui.row(70.0, |mut ui| {
                     ui.col(|ui| {
+                        ui.label("Adress Padding");
+                    });
+
+                    ui.col(|ui| {
+                        egui_probe::Probe::new(&mut state.address_padding)
+                            .with_header("")
+                            .show(ui);
+                    });
+                });
+
+                ui.row(70.0, |mut ui| {
+                    ui.col(|ui| {
                         ui.label("Start Id");
                     });
 
@@ -175,14 +195,13 @@ impl<'a> PatchNewFixturesComponent<'a> {
                         "Invalid patch configuration!".to_owned(),
                     ));
             } else {
-                let fixture_type = patch
-                    .fixture_types()
-                    .get(state.fixture_type.as_ref().unwrap())
-                    .unwrap();
-                let fixture_mode = fixture_type
-                    .modes
-                    .get(state.fixture_mode.as_ref().unwrap())
-                    .unwrap();
+                let fixture_type_id = state.fixture_type.clone().unwrap();
+                let fixture_type = patch.fixture_types().get(&fixture_type_id).unwrap();
+
+                let fixture_mode_id = state.fixture_mode.unwrap();
+                let fixture_mode = fixture_type.modes.get(&fixture_mode_id).unwrap();
+
+                let dmx_footprint = fixture_mode.channel_types.len() as u16;
 
                 let address_range = state.start_address
                     ..(state.start_address
@@ -196,7 +215,45 @@ impl<'a> PatchNewFixturesComponent<'a> {
                             address_range, state.universe
                         )));
                 } else {
-                    // Insert into patch
+                    for idx in 0..state.num_fixutres {
+                        let fixture_id = state.start_id + idx as u32;
+                        let fixture_address = state.start_address
+                            + (idx * dmx_footprint)
+                            + idx * state.address_padding;
+
+                        let fixture_name = render_new_fixture_patch_name(
+                            PatchUiNewFixture {
+                                id: fixture_id,
+                                universe: state.universe,
+                                start_address: state.start_address,
+                                type_and_mode: FixtureTypeAndMode {
+                                    name: fixture_type_id.clone(),
+                                    mode: fixture_mode_id,
+                                },
+                            },
+                            &state.name_format,
+                        )
+                        .unwrap();
+
+                        patch.fixtures_mut().push(SerializableFixturePatch {
+                            id: fixture_id,
+                            name: fixture_name,
+                            fixture_type: fixture_type_id.clone(),
+                            fixture_mode: fixture_mode_id,
+
+                            channel_modifiers: Vec::new(),
+
+                            universe: state.universe,
+                            start_address: fixture_address,
+                        });
+                    }
+
+                    fixture_handler.reload_patch();
+
+                    drop(fixture_handler);
+                    self.context.add_dialog_entry(DemexGlobalDialogEntry::info(
+                        format!("Patched {} fixtures", state.num_fixutres).as_str(),
+                    ));
                 }
             }
         }
