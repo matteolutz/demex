@@ -18,6 +18,9 @@ function                    = fixture_selector set_function
                             | "test" string
                             | "assign" assign_command
                             | "unassign" unassign_command
+                            | "recall" recall_command
+
+recall_command              = "sequence" integer "cue" cue_idx
 
 unassign_command            = "button" float
                             | "fader" float

@@ -7,6 +7,11 @@ pub enum FixtureLayoutDecoration {
         text: String,
         font_size: f32,
     },
+    Rect {
+        min: egui::Pos2,
+        max: egui::Pos2,
+        stroke_width: f32,
+    },
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]

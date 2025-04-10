@@ -7,6 +7,7 @@ use functions::{
         CreateSequenceArgs,
     },
     delete_function::DeleteArgs,
+    recall_function::RecallSequenceCueArgs,
     record_function::{
         RecordGroupArgs, RecordPresetArgs, RecordSequenceCueArgs, RecordSequenceCueShorthandArgs,
     },
@@ -89,6 +90,8 @@ pub enum Action {
 
     UpdatePreset(UpdatePresetArgs),
     UpdateSequenceCue(UpdateSequenceCueArgs),
+
+    RecallSequenceCue(RecallSequenceCueArgs),
 
     Delete(DeleteArgs),
 
@@ -256,6 +259,15 @@ impl Action {
                 timing_handler,
             ),
             Self::UpdateSequenceCue(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+            ),
+
+            Self::RecallSequenceCue(args) => args.run(
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,

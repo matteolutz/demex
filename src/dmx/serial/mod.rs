@@ -18,6 +18,7 @@ pub struct SerialOutputConfig {
 pub fn start_serial_output_thread(rx: mpsc::Receiver<DmxData>, config: SerialOutputConfig) {
     thread::spawn(move || {
         let mut serial = DMXSerial::open(config.serial_port.as_str()).unwrap();
+        serial.set_sync();
 
         loop {
             let recv_result = rx.try_recv();
@@ -28,6 +29,7 @@ pub fn start_serial_output_thread(rx: mpsc::Receiver<DmxData>, config: SerialOut
                 }
 
                 serial.set_channels(send_universe_data);
+                serial.update().unwrap();
             } else if recv_result.err().unwrap() == TryRecvError::Disconnected {
                 break;
             }

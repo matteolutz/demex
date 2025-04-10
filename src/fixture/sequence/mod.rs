@@ -140,6 +140,10 @@ impl Sequence {
         &self.cues[idx]
     }
 
+    pub fn find_cue(&self, cue_idx: CueIdx) -> Option<&Cue> {
+        self.cues.iter().find(|cue| cue.cue_idx() == cue_idx)
+    }
+
     pub fn find_cue_mut(&mut self, cue_idx: CueIdx) -> Option<&mut Cue> {
         self.cues.iter_mut().find(|cue| cue.cue_idx() == cue_idx)
     }

@@ -479,4 +479,21 @@ impl Cue {
             .copied()
             .collect()
     }
+
+    pub fn recall(&self, fixture_handler: &mut FixtureHandler) {
+        match self.data {
+            CueDataMode::Default(ref data) => {
+                for (fixture_id, data) in data {
+                    if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
+                        for value in data {
+                            fixture
+                                .set_channel_value(value.channel_type(), value.value().clone())
+                                .unwrap();
+                        }
+                    }
+                }
+            }
+            CueDataMode::Builder { .. } => {}
+        }
+    }
 }

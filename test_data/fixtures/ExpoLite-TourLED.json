@@ -11,7 +11,7 @@
           "Green",
           "Blue",
           "White",
-          "Shutter",
+          "Zoom",
           "Unused"
         ],
         "toggle_flags": [],
@@ -24,7 +24,7 @@
           },
           {
             "SingleValue": {
-              "channel_type": "Shutter",
+              "channel_type": "Zoom",
               "is_fine": false
             }
           },

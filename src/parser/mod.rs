@@ -7,6 +7,7 @@ use nodes::{
                 CreateFaderArgs, CreateFaderArgsCreationMode, CreateMacroArgs, CreateSequenceArgs,
             },
             delete_function::DeleteArgs,
+            recall_function::RecallSequenceCueArgs,
             record_function::{
                 RecordChannelTypeSelector, RecordGroupArgs, RecordPresetArgs,
                 RecordSequenceCueArgs, RecordSequenceCueShorthandArgs,
@@ -1195,6 +1196,29 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_recall_function(&mut self) -> Result<Action, ParseError> {
+        match self.current_token()? {
+            Token::KeywordSequence => {
+                self.advance();
+
+                let sequence_id = self.parse_integer()?;
+
+                expect_and_consume_token!(self, Token::KeywordCue, "\"\"cue");
+
+                let cue_idx = self.parse_discrete_cue_idx()?;
+
+                Ok(Action::RecallSequenceCue(RecallSequenceCueArgs {
+                    sequence_id,
+                    cue_idx,
+                }))
+            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec!["\"sequence\""],
+            )),
+        }
+    }
+
     fn parse_function(&mut self) -> Result<Action, ParseError> {
         if matches!(self.current_token()?, Token::KeywordHome) {
             self.advance();
@@ -1259,6 +1283,11 @@ impl<'a> Parser2<'a> {
         if matches!(self.current_token()?, Token::KeywordConfig) {
             self.advance();
             return self.parse_config_function();
+        }
+
+        if matches!(self.current_token()?, Token::KeywordRecall) {
+            self.advance();
+            return self.parse_recall_function();
         }
 
         if matches!(self.current_token()?, Token::KeywordTest) {
