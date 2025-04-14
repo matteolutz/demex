@@ -8,6 +8,7 @@ pub enum DemexFaderRuntimeFunction {
     #[default]
     Intensity,
     Speed,
+    FadeAll,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]

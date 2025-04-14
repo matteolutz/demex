@@ -167,8 +167,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     delta_time,
                     last_user_update.elapsed().as_secs_f64() > 1.0,
                 )
-                .unwrap()
-                > 0
+                .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err))
+                .is_ok_and(|res| res > 0)
             {
                 *last_user_update = time::Instant::now();
             }

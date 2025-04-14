@@ -345,10 +345,17 @@ impl Cue {
     ) -> Option<FixtureChannelValue2> {
         match &self.data {
             CueDataMode::Default(data) => data.get(&fixture.id()).and_then(|values| {
+                let preset_state = cue_started.map(|cue_started| {
+                    FixtureChannelValue2PresetState::new(
+                        cue_started,
+                        self.selection(preset_handler),
+                    )
+                });
+
                 values
                     .iter()
                     .find(|v| v.channel_type() == channel_type)
-                    .map(|v| v.value().clone())
+                    .map(|v| v.value().clone().with_preset_state(preset_state))
             }),
             CueDataMode::Builder(entries) => {
                 for entry in entries {
