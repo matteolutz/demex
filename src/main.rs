@@ -6,6 +6,7 @@ pub mod input;
 pub mod lexer;
 pub mod parser;
 pub mod show;
+pub mod storage;
 pub mod ui;
 pub mod utils;
 
@@ -13,7 +14,9 @@ use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
 use fixture::{channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler};
+use gdtf::GdtfFile;
 use input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler};
+use itertools::Itertools;
 use parking_lot::RwLock;
 use rfd::FileDialog;
 use show::DemexShow;
@@ -44,6 +47,8 @@ const TEST_UI_FPS: f64 = 60.0;
 
 const TEST_UI_THEME: DemexUiTheme = DemexUiTheme::Default;
 const TEST_TOUCHSCREEN_FRIENDLY: bool = false;
+
+const APP_ID: &str = "demex";
 
 fn load_fonts() -> egui::FontDefinitions {
     let mut fonts = egui::FontDefinitions::default();
@@ -91,6 +96,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let show_file = args.show.clone();
+
+    let fixture_files = std::fs::read_dir(storage::fixture_types(APP_ID))
+        .unwrap()
+        .flat_map(|file| {
+            file.ok()
+                .and_then(|f| std::fs::File::open(f.path()).ok())
+                .and_then(|f| GdtfFile::new(f).ok())
+        })
+        .collect::<Vec<_>>();
+
+    log::info!(
+        "Found {} valid fixtures file(s), with {} fixture type(s)",
+        fixture_files.len(),
+        fixture_files
+            .iter()
+            .map(|f| f.description.fixture_types.len())
+            .sum::<usize>()
+    );
+    log::debug!(
+        "Valid fixture type(s): {}",
+        fixture_files
+            .iter()
+            .flat_map(|f| &f.description.fixture_types)
+            .map(|fixture_type| format!(
+                "{} (man.: {}, id: {})",
+                fixture_type.long_name, fixture_type.manufacturer, fixture_type.fixture_type_id
+            ))
+            .join(", ")
+    );
 
     let mut show: DemexShow = args
         .show
@@ -197,7 +231,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     eframe::run_native(
-        "demex",
+        APP_ID,
         options,
         Box::new(|creation_context| {
             egui_extras::install_image_loaders(&creation_context.egui_ctx);

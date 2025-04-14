@@ -10,12 +10,13 @@ catppuccin-egui = { version = "5.5.0", default-features = false, features = [
 ] }
 chrono = "0.4.39"
 clap = { version = "4.5.28", features = ["derive"] }
-eframe = { features = ["default"], version = "0.31.1" }
+eframe = { features = ["default", "persistence"], version = "0.31.1" }
 egui = { features = ["default", "serde"], version = "0.31.1" }
 egui-probe = { version = "0.8.0", features = ["derive"] }
 egui_dock = "0.16.0"
 egui_extras = { features = ["default", "all_loaders"], version = "0.31.1" }
 env_logger = "0.11.6"
+gdtf = { git = "https://github.com/matteolutz/gdtf-rs" }
 image = { version = "0.25.5", features = ["png"] }
 interpolator = "0.5.0"
 itertools = "0.13.0"
