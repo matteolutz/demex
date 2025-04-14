@@ -315,7 +315,7 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         ApcMiniMk2ButtonLedColor::Red,
                     )?;
                 }
-                DemexInputButton::ExecutorFlash(id) => {
+                DemexInputButton::ExecutorFlash { id, .. } => {
                     let is_started = updatable_handler
                         .executor(*id)
                         .ok_or(DemexInputDeviceError::UpdatableHandlerError(
@@ -370,7 +370,7 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                             }),
                     )?;
                 }
-                DemexInputButton::Macro { .. } => {
+                DemexInputButton::Macro { .. } | DemexInputButton::TokenInsert { .. } => {
                     self.set_button_led(
                         *button_id,
                         ApcMiniMk2ButtonLedMode::IntensFull,

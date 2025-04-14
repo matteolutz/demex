@@ -89,6 +89,10 @@ impl FixtureHandler {
         })
     }
 
+    pub fn reload_patch(&mut self) {
+        self.fixtures = self.patch.clone().into();
+    }
+
     pub fn fixture_immut(&self, fixture_id: u32) -> Option<&Fixture> {
         self.fixtures.iter().find(|f| f.id() == fixture_id)
     }
@@ -109,9 +113,10 @@ impl FixtureHandler {
         &self.outputs
     }
 
-    pub fn home_all(&mut self) -> Result<(), FixtureHandlerError> {
+    pub fn home_all(&mut self, clear_sources: bool) -> Result<(), FixtureHandlerError> {
         for f in self.fixtures.iter_mut() {
-            f.home().map_err(FixtureHandlerError::FixtureError)?;
+            f.home(clear_sources)
+                .map_err(FixtureHandlerError::FixtureError)?;
         }
 
         Ok(())

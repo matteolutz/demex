@@ -160,6 +160,7 @@ impl DemexWindow {
                     }
                 };
 
+                ui.add_space(20.0);
                 if ui.button("Close").clicked() {
                     return true;
                 }

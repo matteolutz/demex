@@ -63,7 +63,7 @@ impl DemexInputDeviceHandler {
     pub fn update(
         &mut self,
         fixture_handler: &mut FixtureHandler,
-        preset_handler: &PresetHandler,
+        preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         timing_handler: &mut TimingHandler,
         fixture_selector_context: FixtureSelectorContext,
@@ -93,6 +93,7 @@ impl DemexInputDeviceHandler {
                                 fixture_selector_context.clone(),
                                 macro_exec_cue,
                                 global_fixture_selection,
+                                command_input,
                             )?;
                         } else {
                             command_input.extend_from_slice(&[Token::FloatingPoint(
@@ -122,6 +123,7 @@ impl DemexInputDeviceHandler {
                         fader.handle_change(
                             value,
                             fixture_handler,
+                            preset_handler,
                             updatable_handler,
                             timing_handler,
                         )?;
@@ -136,6 +138,7 @@ impl DemexInputDeviceHandler {
                             fader.handle_change(
                                 value,
                                 fixture_handler,
+                                preset_handler,
                                 updatable_handler,
                                 timing_handler,
                             )?;

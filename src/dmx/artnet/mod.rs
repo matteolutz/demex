@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     net::{self, SocketAddr},
     sync::mpsc::{self, TryRecvError},
     thread, time,
@@ -22,7 +22,7 @@ pub struct ArtnetOutputConfig {
     pub bind_ip: Option<String>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 struct ArtNetOutputNode {
     pub addr: SocketAddr,
 }
@@ -88,7 +88,7 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, config: ArtnetOut
         socket.set_broadcast(true).unwrap();
         socket.set_nonblocking(true).unwrap();
 
-        let mut nodes: HashMap<PortAddress, HashSet<ArtNetOutputNode>> = HashMap::new();
+        let mut nodes: HashMap<PortAddress, Vec<ArtNetOutputNode>> = HashMap::new();
 
         let poll_buff = ArtCommand::Poll(Poll::default()).write_to_buffer().unwrap();
         let mut last_poll_sent: Option<time::Instant> = None;
@@ -110,10 +110,18 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, config: ArtnetOut
 
                 let command_bytes = output_command.write_to_buffer().unwrap();
 
-                if let Some(nodes) = nodes.get(&send_universe) {
-                    for node in nodes {
-                        socket.send_to(&command_bytes, node.addr).unwrap();
-                    }
+                if let Some(nodes) = nodes.get_mut(&send_universe) {
+                    nodes.retain(|node| {
+                        if let Ok(_) = socket.send_to(&command_bytes, node.addr) {
+                            true
+                        } else {
+                            // If we fail to send, the node is probably disconnected and we should remove it
+                            // from the list of nodes.
+                            // If anything else hapended, it should added back to the list with the next poll.
+                            log::debug!("Failed to send to node {:?}, removing it..", node);
+                            false
+                        }
+                    });
                 }
             } else if recv_result.err().unwrap() == TryRecvError::Disconnected {
                 break;
@@ -149,7 +157,10 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, config: ArtnetOut
                                     addr: (poll_reply.address, ARTNET_PORT).into(),
                                 };
 
-                                nodes.entry(universe).or_default().insert(node);
+                                let universe_nodes = nodes.entry(universe).or_default();
+                                if !universe_nodes.contains(&node) {
+                                    universe_nodes.push(node);
+                                }
                             }
                         }
                         _ => {}

@@ -44,6 +44,7 @@ impl eframe::egui::Widget for PositionSelector<'_> {
             rect,
             5.0,
             eframe::egui::Stroke::new(1.0, eframe::egui::Color32::WHITE),
+            egui::StrokeKind::Middle,
         );
 
         // draw crosshair

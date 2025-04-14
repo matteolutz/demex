@@ -18,6 +18,7 @@ pub mod toggle_flags;
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
     let preset_handler = context.preset_handler.read();
+    let timing_handler = context.timing_handler.read();
 
     if context.global_fixture_select.is_none() {
         ui.centered_and_justified(|ui| ui.label("No fixtures selected"));
@@ -87,6 +88,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                         },
                                         &mut fixture_handler,
                                         &preset_handler,
+                                        &timing_handler,
                                         |value| {
                                             if let FixtureFeatureValue::SingleValue {
                                                 value, ..
@@ -113,6 +115,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                         selected_fixtures,
                                         &preset_handler,
                                         &mut fixture_handler,
+                                        &timing_handler,
                                     );
                                 }
                                 FixtureFeatureType::ColorWheel => {
@@ -142,6 +145,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                         selected_fixtures,
                                         &preset_handler,
                                         &mut fixture_handler,
+                                        &timing_handler,
                                     );
                                 }
                                 FixtureFeatureType::ToggleFlags => {
@@ -151,6 +155,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                         selected_fixtures,
                                         &preset_handler,
                                         &mut fixture_handler,
+                                        &timing_handler,
                                     );
                                 }
                             }

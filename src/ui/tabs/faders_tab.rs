@@ -42,7 +42,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                             let fader = updatable_handler.fader_mut(*id).unwrap();
 
-                            fader.set_value(val as f32, &mut fixture_handler);
+                            fader.set_value(val as f32, &mut fixture_handler, &preset_handler);
 
                             val
                         } else {
@@ -56,7 +56,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     updatable_handler
                         .fader_mut(*id)
                         .unwrap()
-                        .home(&mut fixture_handler);
+                        .home(&mut fixture_handler, &preset_handler);
                 }
 
                 if ui.button("Sel").clicked() {

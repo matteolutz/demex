@@ -4,6 +4,7 @@ use crate::{
     fixture::{
         channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
         presets::preset::FixturePresetId,
+        timing::TimingHandler,
     },
     parser::nodes::{
         action::{error::ActionRunError, result::ActionRunResult, ValueOrRange},
@@ -11,7 +12,7 @@ use crate::{
     },
 };
 
-use super::ActionFunction;
+use super::FunctionArgs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetFeatureValueArgs {
@@ -20,7 +21,7 @@ pub struct SetFeatureValueArgs {
     pub feature_value: ValueOrRange<f32>,
 }
 
-impl ActionFunction for SetFeatureValueArgs {
+impl FunctionArgs for SetFeatureValueArgs {
     fn run(
         &self,
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,
@@ -28,6 +29,7 @@ impl ActionFunction for SetFeatureValueArgs {
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<
         crate::parser::nodes::action::result::ActionRunResult,
         crate::parser::nodes::action::error::ActionRunError,
@@ -77,7 +79,7 @@ pub struct SetFixturePresetArgs {
     pub preset_id: ValueOrRange<FixturePresetId>,
 }
 
-impl ActionFunction for SetFixturePresetArgs {
+impl FunctionArgs for SetFixturePresetArgs {
     fn run(
         &self,
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,
@@ -85,6 +87,7 @@ impl ActionFunction for SetFixturePresetArgs {
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         let selection = self
             .fixture_selector
@@ -93,17 +96,9 @@ impl ActionFunction for SetFixturePresetArgs {
 
         match self.preset_id {
             ValueOrRange::Single(preset_id) => {
-                let preset = preset_handler
-                    .get_preset(preset_id)
+                preset_handler
+                    .apply_preset(preset_id, fixture_handler, selection)
                     .map_err(ActionRunError::PresetHandlerError)?;
-
-                for fixture_id in selection.fixtures() {
-                    if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                        preset
-                            .apply(fixture)
-                            .map_err(ActionRunError::PresetHandlerError)?;
-                    }
-                }
             }
             ValueOrRange::Thru(_, _) => {
                 todo!()

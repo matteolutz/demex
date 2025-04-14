@@ -1,22 +1,23 @@
-use std::collections::HashSet;
-
 use eframe::egui::{Ui, WidgetText};
 use egui_dock::{DockArea, DockState, Style, TabViewer};
+use serde::{Deserialize, Serialize};
 
 use super::DemexUiContext;
 
 pub mod faders_tab;
 pub mod fixture_controls_tab;
 pub mod fixture_list_tab;
+pub mod fixture_selection_tab;
 pub mod layout_view_tab;
 pub mod logs_tab;
+pub mod patch_tab;
 pub mod performance_tab;
 pub mod preset_grid_tab;
 pub mod sequence_editor_tab;
 pub mod sequences_list_tab;
 pub mod timing_tab;
 
-#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, Serialize, Deserialize)]
 pub enum DemexTab {
     LayoutView,
     FixtureList,
@@ -25,7 +26,9 @@ pub enum DemexTab {
     Faders,
     SequencesList,
     SequenceEditor,
+    Patch,
     Timing,
+    FixtureSelection,
     Logs,
     Performance,
 }
@@ -40,7 +43,9 @@ impl std::fmt::Display for DemexTab {
             DemexTab::Faders => write!(f, "Faders"),
             DemexTab::SequencesList => write!(f, "Sequences List"),
             DemexTab::SequenceEditor => write!(f, "Sequence Editor"),
+            DemexTab::Patch => write!(f, "Patch"),
             DemexTab::Timing => write!(f, "Timing"),
+            DemexTab::FixtureSelection => write!(f, "Fixture Selection"),
             DemexTab::Logs => write!(f, "Logs"),
             DemexTab::Performance => write!(f, "Performance"),
         }
@@ -59,7 +64,11 @@ impl DemexTab {
             DemexTab::SequenceEditor => {
                 sequence_editor_tab::SequenceEditorTab::new(context, "MainSequenceEditor").show(ui)
             }
+            DemexTab::Patch => {
+                patch_tab::PatchViewComponent::new(context).show(ui);
+            }
             DemexTab::Timing => timing_tab::ui(ui, context),
+            DemexTab::FixtureSelection => fixture_selection_tab::ui(ui, context),
             DemexTab::Logs => logs_tab::ui(ui, context),
             DemexTab::Performance => performance_tab::ui(ui, context),
         }
@@ -70,7 +79,6 @@ pub struct DemexTabViewer<'a> {
     context: &'a mut DemexUiContext,
     #[allow(dead_code)]
     egui_ctx: &'a eframe::egui::Context,
-    detached_tabs: &'a mut HashSet<DemexTab>,
 }
 
 impl TabViewer for DemexTabViewer<'_> {
@@ -92,7 +100,7 @@ impl TabViewer for DemexTabViewer<'_> {
         _node: egui_dock::NodeIndex,
     ) {
         if ui.button("Window").clicked() {
-            self.detached_tabs.insert(*tab);
+            self.context.ui_config.detached_tabs.insert(*tab);
         }
     }
 
@@ -118,7 +126,12 @@ impl Default for DemexTabs {
         let [old_node, new_node] = surface.split_left(
             egui_dock::NodeIndex::root(),
             0.65,
-            vec![DemexTab::FixtureControls, DemexTab::SequenceEditor],
+            vec![
+                DemexTab::FixtureControls,
+                DemexTab::FixtureSelection,
+                DemexTab::SequenceEditor,
+                DemexTab::Patch,
+            ],
         );
 
         surface.split_below(new_node, 0.5, vec![DemexTab::LayoutView]);
@@ -138,22 +151,16 @@ impl DemexTabs {
         ui: &mut Ui,
         context: &mut DemexUiContext,
         egui_ctx: &eframe::egui::Context,
-        detached_tabs: &mut HashSet<DemexTab>,
     ) {
-        self.dock_state = self.dock_state.filter_tabs(|f| !detached_tabs.contains(f));
+        self.dock_state = self
+            .dock_state
+            .filter_tabs(|f| !context.ui_config.detached_tabs.contains(f));
 
         DockArea::new(&mut self.dock_state)
             .show_add_buttons(true)
             .show_close_buttons(false)
             .style(Style::from_egui(ui.style().as_ref()))
-            .show_inside(
-                ui,
-                &mut DemexTabViewer {
-                    context,
-                    egui_ctx,
-                    detached_tabs,
-                },
-            );
+            .show_inside(ui, &mut DemexTabViewer { context, egui_ctx });
     }
 
     pub fn re_attach(&mut self, tab: DemexTab) {

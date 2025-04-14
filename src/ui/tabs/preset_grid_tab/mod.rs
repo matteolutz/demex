@@ -6,7 +6,10 @@ use itertools::Itertools;
 use row::preset_grid_row_ui;
 
 use crate::{
-    fixture::{presets::preset::FixturePresetId, updatables::executor::config::ExecutorConfig},
+    fixture::{
+        presets::preset::{FixturePresetData, FixturePresetId},
+        updatables::executor::config::ExecutorConfig,
+    },
     lexer::token::Token,
     ui::{
         window::{edit::DemexEditWindow, DemexWindow},
@@ -21,7 +24,7 @@ mod row;
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
-    let preset_handler = context.preset_handler.read();
+    let mut preset_handler = context.preset_handler.write();
     let mut updatable_handler = context.updatable_handler.write();
 
     let _selected_fixtures = context
@@ -55,9 +58,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     PresetGridButtonConfig::Empty { id }
                 };
 
-                let (response, quick_action) =
-                    PresetGridButton::new(config, PresetGridButtonDecoration::default(), None)
-                        .show(ui);
+                let (response, quick_action) = PresetGridButton::new(
+                    config,
+                    PresetGridButtonDecoration::default(),
+                    None,
+                    None,
+                )
+                .show(ui);
 
                 if response.clicked()
                     || quick_action.is_some_and(|a| a == PresetGridButtonQuickMenuActions::Default)
@@ -70,17 +77,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 if let Some(quick_action) = quick_action {
                     match quick_action {
                         PresetGridButtonQuickMenuActions::Insert => {
-                            if g.is_ok() {
-                                context
-                                    .command
-                                    .extend_from_slice(&[Token::KeywordGroup, Token::Integer(id)]);
-                            } else {
-                                context.command.extend_from_slice(&[
-                                    Token::KeywordRecord,
-                                    Token::KeywordGroup,
-                                    Token::Integer(id),
-                                ]);
-                            }
+                            context
+                                .command
+                                .extend_from_slice(&[Token::KeywordGroup, Token::Integer(id)]);
+                        }
+
+                        PresetGridButtonQuickMenuActions::New => {
+                            context.command.extend_from_slice(&[
+                                Token::KeywordRecord,
+                                Token::KeywordGroup,
+                                Token::Integer(id),
+                            ]);
                         }
                         PresetGridButtonQuickMenuActions::Edit => {
                             if let Ok(g) = g {
@@ -98,6 +105,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         // Feature Presets
         for (feature_group_id, feature_group) in preset_handler
             .feature_groups()
+            .clone()
             .iter()
             .sorted_by_key(|(id, _)| *id)
         {
@@ -108,10 +116,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 egui::Color32::BLUE,
                 |ui| {
                     for id in 0..=preset_handler.next_preset_id(*feature_group_id) {
-                        let p = preset_handler.get_preset(FixturePresetId {
+                        let preset_id = FixturePresetId {
                             feature_group_id: *feature_group_id,
                             preset_id: id,
-                        });
+                        };
+
+                        let p = preset_handler.get_preset(preset_id);
 
                         let config = if let Ok(p) = p {
                             PresetGridButtonConfig::Preset {
@@ -127,47 +137,45 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                             PresetGridButtonConfig::Empty { id }
                         };
 
-                        /*let response = preset_grid_button_ui(
-                            ui,
-                            config,
-                            PresetGridButtonDecoration::default(),
-                        );*/
                         let (response, quick_action) = PresetGridButton::new(
                             config,
-                            PresetGridButtonDecoration::default(),
+                            PresetGridButtonDecoration {
+                                left_bottom_text: None,
+                                right_top_text: p.as_ref().ok().and_then(|p| match p.data() {
+                                    FixturePresetData::FeatureEffect { .. } => {
+                                        Some("FeFX".to_owned())
+                                    }
+                                    _ => None,
+                                }),
+                            },
                             None,
+                            Some(vec![PresetGridButtonQuickMenuActions::Custom(
+                                "New (Create)",
+                            )]),
                         )
                         .show(ui);
-
-                        if response.clicked()
-                            || quick_action
-                                .is_some_and(|a| a == PresetGridButtonQuickMenuActions::Default)
-                        {
-                            if let (Ok(p), Some(selected_fixtures)) =
-                                (p.as_ref(), selected_fixtures)
-                            {
-                                for fixture_id in selected_fixtures {
-                                    p.apply(fixture_handler.fixture(*fixture_id).unwrap())
-                                        .unwrap();
-                                }
-                            }
-                        }
 
                         if let Some(quick_action) = quick_action {
                             match quick_action {
                                 PresetGridButtonQuickMenuActions::Insert => {
-                                    if p.is_ok() {
-                                        context.command.extend_from_slice(&[
-                                            Token::KeywordPreset,
-                                            Token::FloatingPoint(0.0, (*feature_group_id, id)),
-                                        ]);
-                                    } else {
-                                        context.command.extend_from_slice(&[
-                                            Token::KeywordRecord,
-                                            Token::KeywordPreset,
-                                            Token::FloatingPoint(0.0, (*feature_group_id, id)),
-                                        ]);
-                                    }
+                                    context.command.extend_from_slice(&[
+                                        Token::KeywordPreset,
+                                        Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                    ]);
+                                }
+                                PresetGridButtonQuickMenuActions::New => {
+                                    context.command.extend_from_slice(&[
+                                        Token::KeywordRecord,
+                                        Token::KeywordPreset,
+                                        Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                    ]);
+                                }
+                                PresetGridButtonQuickMenuActions::Custom("New (Create)") => {
+                                    context.command.extend_from_slice(&[
+                                        Token::KeywordCreate,
+                                        Token::KeywordPreset,
+                                        Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                    ]);
                                 }
                                 PresetGridButtonQuickMenuActions::Edit => {
                                     if let Ok(p) = p {
@@ -177,6 +185,23 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                     }
                                 }
                                 _ => {}
+                            }
+                        }
+
+                        if response.clicked()
+                            || quick_action
+                                .is_some_and(|a| a == PresetGridButtonQuickMenuActions::Default)
+                        {
+                            if let (Ok(_), Some(selection)) =
+                                (p.as_ref(), context.global_fixture_select.as_ref())
+                            {
+                                preset_handler
+                                    .apply_preset(
+                                        preset_id,
+                                        &mut fixture_handler,
+                                        selection.clone(),
+                                    )
+                                    .unwrap();
                             }
                         }
                     }
@@ -202,9 +227,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
                 /*let response =
                 preset_grid_button_ui(ui, config, PresetGridButtonDecoration::default());*/
-                let (response, quick_action) =
-                    PresetGridButton::new(config, PresetGridButtonDecoration::default(), None)
-                        .show(ui);
+                let (response, quick_action) = PresetGridButton::new(
+                    config,
+                    PresetGridButtonDecoration::default(),
+                    None,
+                    None,
+                )
+                .show(ui);
 
                 if response.clicked()
                     || quick_action
@@ -224,17 +253,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 if let Some(quick_action) = quick_action {
                     match quick_action {
                         PresetGridButtonQuickMenuActions::Insert => {
-                            if m.is_ok() {
-                                context
-                                    .command
-                                    .extend_from_slice(&[Token::KeywordMacro, Token::Integer(id)]);
-                            } else {
-                                context.command.extend_from_slice(&[
-                                    Token::KeywordCreate,
-                                    Token::KeywordMacro,
-                                    Token::Integer(id),
-                                ]);
-                            }
+                            context
+                                .command
+                                .extend_from_slice(&[Token::KeywordMacro, Token::Integer(id)]);
+                        }
+
+                        PresetGridButtonQuickMenuActions::New => {
+                            context.command.extend_from_slice(&[
+                                Token::KeywordCreate,
+                                Token::KeywordMacro,
+                                Token::Integer(id),
+                            ]);
                         }
                         PresetGridButtonQuickMenuActions::Edit => {
                             todo!()
@@ -322,6 +351,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     config,
                     decoration,
                     Some(vec![PresetGridButtonQuickMenuActions::Custom("Stop")]),
+                    None,
                 )
                 .show(ui);
 
@@ -344,18 +374,17 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 if let Some(quick_action) = quick_action {
                     match quick_action {
                         PresetGridButtonQuickMenuActions::Insert => {
-                            if executor_exists {
-                                context.command.extend_from_slice(&[
-                                    Token::KeywordExecutor,
-                                    Token::Integer(id),
-                                ]);
-                            } else {
-                                context.command.extend_from_slice(&[
-                                    Token::KeywordCreate,
-                                    Token::KeywordExecutor,
-                                    Token::Integer(id),
-                                ]);
-                            }
+                            context
+                                .command
+                                .extend_from_slice(&[Token::KeywordExecutor, Token::Integer(id)]);
+                        }
+
+                        PresetGridButtonQuickMenuActions::New => {
+                            context.command.extend_from_slice(&[
+                                Token::KeywordCreate,
+                                Token::KeywordExecutor,
+                                Token::Integer(id),
+                            ]);
                         }
                         PresetGridButtonQuickMenuActions::Edit => {
                             if executor_exists {
@@ -375,7 +404,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     && updatable_handler.executor(id).unwrap().is_started()
                 {
                     updatable_handler
-                        .stop_executor(id, &mut fixture_handler)
+                        .stop_executor(id, &mut fixture_handler, &preset_handler)
                         .unwrap();
                 }
             }

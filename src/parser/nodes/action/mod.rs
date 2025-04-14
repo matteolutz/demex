@@ -1,24 +1,29 @@
+use std::ops::RangeInclusive;
+
 use functions::{
+    assign_function::{AssignButtonArgs, AssignFaderArgs},
+    create_function::{
+        CreateEffectPresetArgs, CreateExecutorArgs, CreateFaderArgs, CreateMacroArgs,
+        CreateSequenceArgs,
+    },
     delete_function::DeleteArgs,
-    record_function::{RecordGroupArgs, RecordPresetArgs, RecordSequenceCueArgs},
+    recall_function::RecallSequenceCueArgs,
+    record_function::{
+        RecordGroupArgs, RecordPresetArgs, RecordSequenceCueArgs, RecordSequenceCueShorthandArgs,
+    },
     rename_function::RenameObjectArgs,
     set_function::{SetFeatureValueArgs, SetFixturePresetArgs},
-    ActionFunction,
+    update_function::{UpdatePresetArgs, UpdateSequenceCueArgs},
+    FunctionArgs,
 };
 use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        handler::FixtureHandler,
-        presets::{preset::FixturePresetId, PresetHandler},
-        updatables::{
-            error::UpdatableHandlerError, fader::config::DemexFaderConfig, UpdatableHandler,
-        },
+        handler::FixtureHandler, presets::PresetHandler, timing::TimingHandler,
+        updatables::UpdatableHandler,
     },
-    input::{
-        button::DemexInputButton, error::DemexInputDeviceError, fader::DemexInputFader,
-        DemexInputDeviceHandler,
-    },
+    input::{error::DemexInputDeviceError, DemexInputDeviceHandler},
     ui::{constants::INFO_TEXT, window::edit::DemexEditWindow},
 };
 
@@ -33,7 +38,7 @@ pub mod error;
 pub mod functions;
 pub mod result;
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ValueOrRange<T> {
     Single(T),
     Thru(T, T),
@@ -48,34 +53,18 @@ impl<T: Copy> From<ValueOrRange<T>> for (T, T) {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub enum ExecutorAssignmentModeActionData {
-    StartAndNext,
-    Stop,
-    Flash,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum UpdateModeActionData {
-    Merge,
-    Override,
+impl<T: Copy> From<ValueOrRange<T>> for RangeInclusive<T> {
+    fn from(value: ValueOrRange<T>) -> Self {
+        match value {
+            ValueOrRange::Single(single) => single..=single,
+            ValueOrRange::Thru(from, to) => from..=to,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum ConfigTypeActionData {
     Output,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum FaderCreationConfigActionData {
-    Submaster(FixtureSelector),
-    Sequence(u32, FixtureSelector),
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum ExecutorCreationModeActionData {
-    Sequence(u32),
-    Effect,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -89,58 +78,28 @@ pub enum Action {
     RecordPreset(RecordPresetArgs),
     RecordGroup2(RecordGroupArgs),
     RecordSequenceCue(RecordSequenceCueArgs),
-    RecordMacro(Box<Action>, u32),
+    RecordSequenceCueShorthand(RecordSequenceCueShorthandArgs),
 
     Rename(RenameObjectArgs),
 
-    CreateSequence(Option<u32>, Option<String>),
-    CreateExecutor(
-        Option<u32>,
-        ExecutorCreationModeActionData,
-        FixtureSelector,
-        Option<String>,
-    ),
-    CreateMacro(Option<u32>, Box<Action>, Option<String>),
-    CreateFader(Option<u32>, FaderCreationConfigActionData, Option<String>),
+    CreateSequence(CreateSequenceArgs),
+    CreateExecutor(CreateExecutorArgs),
+    CreateFader(CreateFaderArgs),
+    CreateMacro(CreateMacroArgs),
+    CreateEffectPreset(CreateEffectPresetArgs),
 
-    UpdatePreset(FixturePresetId, FixtureSelector, UpdateModeActionData),
+    UpdatePreset(UpdatePresetArgs),
+    UpdateSequenceCue(UpdateSequenceCueArgs),
+
+    RecallSequenceCue(RecallSequenceCueArgs),
 
     Delete(DeleteArgs),
 
     Edit(Object),
 
-    AssignExecutorToInput {
-        executor_id: u32,
-        mode: ExecutorAssignmentModeActionData,
-        device_idx: usize,
-        button_id: u32,
-    },
-    AssignFaderToInput {
-        fader_id: u32,
-        device_idx: usize,
-        input_fader_id: u32,
-    },
-    AssignFaderGoToInput {
-        fader_id: u32,
-        device_idx: usize,
-        button_id: u32,
-    },
-    AssignSelectivePresetToInput {
-        preset_id: ValueOrRange<FixturePresetId>,
-        fixture_selector: Option<FixtureSelector>,
-        device_idx: usize,
-        button_id: u32,
-    },
-    AssignFixtureSelectorToInput {
-        fixture_selector: FixtureSelector,
-        device_idx: usize,
-        button_id: u32,
-    },
-    AssignMacroToInput {
-        action: Box<Action>,
-        device_idx: usize,
-        button_id: u32,
-    },
+    // Assign
+    AssignButton(AssignButtonArgs),
+    AssignFader(AssignFaderArgs),
 
     UnassignInputButton {
         device_idx: usize,
@@ -173,14 +132,17 @@ impl Action {
         fixture_selector_context: FixtureSelectorContext,
         updatable_handler: &mut UpdatableHandler,
         input_device_handler: &mut DemexInputDeviceHandler,
+        timing_handler: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
+            // Set
             Self::SetFeatureValue(args) => args.run(
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
             Self::SetFixturePreset(args) => args.run(
                 fixture_handler,
@@ -188,8 +150,10 @@ impl Action {
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
 
+            // Home
             Self::Home(homeable_object) => homeable_object.run_home(
                 preset_handler,
                 fixture_handler,
@@ -199,75 +163,127 @@ impl Action {
 
             Self::HomeAll => self.run_home_all(fixture_handler),
 
+            // Record
             Self::RecordPreset(args) => args.run(
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
-
             Self::RecordGroup2(args) => args.run(
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
-
             Self::RecordSequenceCue(args) => args.run(
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
+            ),
+            Self::RecordSequenceCueShorthand(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
             ),
 
+            // Rename
             Self::Rename(args) => args.run(
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
 
-            Self::CreateSequence(id, name) => self.run_create_sequence(preset_handler, *id, name),
-            Self::CreateExecutor(id, mode, fixture_selector, name) => self.run_create_executor(
-                updatable_handler,
-                preset_handler,
-                *id,
-                name,
-                mode,
-                fixture_selector,
-                fixture_selector_context,
-            ),
-            Self::CreateMacro(id, action, name) => {
-                self.run_create_macro(*id, action, name, preset_handler)
-            }
-            Self::CreateFader(id, config, name) => self.run_create_fader(
-                *id,
-                config,
-                name,
-                updatable_handler,
-                preset_handler,
-                fixture_selector_context,
-            ),
-
-            Self::UpdatePreset(preset_id, fixture_selector, update_mode) => self.run_update_preset(
-                preset_handler,
+            // Create
+            Self::CreateSequence(args) => args.run(
                 fixture_handler,
-                fixture_selector,
+                preset_handler,
                 fixture_selector_context,
-                *preset_id,
-                update_mode,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+            ),
+            Self::CreateExecutor(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+            ),
+            Self::CreateMacro(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+            ),
+            Self::CreateFader(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+            ),
+            Self::CreateEffectPreset(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
             ),
 
+            // Update
+            Self::UpdatePreset(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+            ),
+            Self::UpdateSequenceCue(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+            ),
+
+            Self::RecallSequenceCue(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+            ),
+
+            // Delete
             Self::Delete(args) => args.run(
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
                 updatable_handler,
                 input_device_handler,
+                timing_handler,
             ),
 
             Self::Edit(object) => object
@@ -301,72 +317,23 @@ impl Action {
                 "https://matteolutz.de".to_owned(),
             )),
 
-            Self::AssignFaderToInput {
-                fader_id,
-                device_idx,
-                input_fader_id,
-            } => self.run_assign_fader_to_input(
-                updatable_handler,
-                input_device_handler,
-                fader_id,
-                device_idx,
-                input_fader_id,
-            ),
-            Self::AssignFaderGoToInput {
-                fader_id,
-                device_idx,
-                button_id,
-            } => self.run_assign_fader_go_to_input(
-                updatable_handler,
-                input_device_handler,
-                fader_id,
-                device_idx,
-                button_id,
-            ),
-            Self::AssignExecutorToInput {
-                executor_id,
-                mode,
-                device_idx,
-                button_id,
-            } => self.run_assign_executor_to_input(
-                updatable_handler,
-                input_device_handler,
-                executor_id,
-                mode,
-                device_idx,
-                button_id,
-            ),
-            Self::AssignSelectivePresetToInput {
-                preset_id,
-                fixture_selector,
-                device_idx,
-                button_id,
-            } => self.run_assign_selective_preset_to_input(
+            Self::AssignFader(args) => args.run(
+                fixture_handler,
                 preset_handler,
-                input_device_handler,
-                *preset_id,
-                fixture_selector,
                 fixture_selector_context,
-                *device_idx,
-                *button_id,
-            ),
-            Self::AssignFixtureSelectorToInput {
-                fixture_selector,
-                device_idx,
-                button_id,
-            } => self.run_assign_fixture_selector_to_input(
+                updatable_handler,
                 input_device_handler,
-                fixture_selector,
-                device_idx,
-                button_id,
+                timing_handler,
             ),
-            Self::AssignMacroToInput {
-                action,
-                device_idx,
-                button_id,
-            } => {
-                self.run_assign_macro_to_input(input_device_handler, action, device_idx, button_id)
-            }
+
+            Self::AssignButton(args) => args.run(
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+            ),
 
             Self::UnassignInputButton {
                 device_idx,
@@ -377,6 +344,7 @@ impl Action {
                 fader_id,
             } => self.run_unassign_input_fader(input_device_handler, *device_idx, *fader_id),
 
+            #[allow(unreachable_patterns)]
             unimplemented_action => Err(ActionRunError::UnimplementedAction(
                 unimplemented_action.clone(),
             )),
@@ -388,120 +356,10 @@ impl Action {
         fixture_handler: &mut FixtureHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         fixture_handler
-            .home_all()
+            .home_all(true)
             .map_err(ActionRunError::FixtureHandlerError)?;
 
         Ok(ActionRunResult::new())
-    }
-
-    fn run_create_sequence(
-        &self,
-        preset_handler: &mut PresetHandler,
-        id: Option<u32>,
-        name: &Option<String>,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        preset_handler
-            .create_sequence(
-                id.unwrap_or_else(|| preset_handler.next_sequence_id()),
-                name.clone(),
-            )
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_create_executor(
-        &self,
-        updatable_handler: &mut UpdatableHandler,
-        preset_handler: &PresetHandler,
-        id: Option<u32>,
-        name: &Option<String>,
-        mode: &ExecutorCreationModeActionData,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let selection = fixture_selector
-            .get_selection(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        updatable_handler
-            .create_executor(
-                id.unwrap_or_else(|| updatable_handler.next_executor_id()),
-                name.clone(),
-                mode,
-                selection,
-            )
-            .map_err(ActionRunError::UpdatableHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_create_macro(
-        &self,
-        id: Option<u32>,
-        action: &Action,
-        name: &Option<String>,
-        preset_handler: &mut PresetHandler,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        preset_handler
-            .create_macro(
-                id.unwrap_or_else(|| preset_handler.next_macro_id()),
-                name.clone(),
-                Box::new(action.clone()),
-            )
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_create_fader(
-        &self,
-        id: Option<u32>,
-        config: &FaderCreationConfigActionData,
-        name: &Option<String>,
-        updatable_handler: &mut UpdatableHandler,
-        preset_handler: &PresetHandler,
-        fixture_selector_context: FixtureSelectorContext,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        updatable_handler
-            .create_fader(
-                id.unwrap_or_else(|| updatable_handler.next_fader_id()),
-                config,
-                name.clone(),
-                preset_handler,
-                fixture_selector_context,
-            )
-            .map_err(ActionRunError::UpdatableHandlerError)?;
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_update_preset(
-        &self,
-        preset_handler: &mut PresetHandler,
-        fixture_handler: &mut FixtureHandler,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        preset_id: FixturePresetId,
-        update_mode: &UpdateModeActionData,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let num_updated = preset_handler
-            .update_preset(
-                fixture_selector,
-                fixture_selector_context,
-                preset_id,
-                fixture_handler,
-                update_mode,
-            )
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        if num_updated == 0 {
-            Ok(ActionRunResult::Warn(
-                "No fixtures we're affected. If you're trying override existing preset data, try running with the \"override\" flag.".to_owned(),
-            ))
-        } else {
-            Ok(ActionRunResult::new())
-        }
     }
 
     fn run_fixture_selector(
@@ -556,226 +414,6 @@ impl Action {
                 id_to - id_from + 1
             )))
         }
-    }
-
-    pub fn run_assign_fader_to_input(
-        &self,
-        updatable_handler: &UpdatableHandler,
-        input_device_handler: &mut DemexInputDeviceHandler,
-        fader_id: &u32,
-        device_idx: &usize,
-        input_fader_id: &u32,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let _ = updatable_handler
-            .fader(*fader_id)
-            .map_err(ActionRunError::UpdatableHandlerError)?;
-
-        let device = input_device_handler
-            .device_mut(*device_idx)
-            .map_err(ActionRunError::InputDeviceError)?;
-
-        if device.config.faders().get(input_fader_id).is_some() {
-            return Err(ActionRunError::InputDeviceError(
-                DemexInputDeviceError::FaderAlreadyAssigned(*input_fader_id),
-            ));
-        }
-
-        device
-            .config
-            .faders_mut()
-            .insert(*input_fader_id, DemexInputFader::new(*fader_id));
-
-        Ok(ActionRunResult::new())
-    }
-
-    pub fn run_assign_fader_go_to_input(
-        &self,
-        updatable_handler: &UpdatableHandler,
-        input_device_handler: &mut DemexInputDeviceHandler,
-        fader_id: &u32,
-        device_idx: &usize,
-        button_id: &u32,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let fader = updatable_handler
-            .fader(*fader_id)
-            .map_err(ActionRunError::UpdatableHandlerError)?;
-
-        match fader.config() {
-            DemexFaderConfig::SequenceRuntime { .. } => {}
-            _ => {
-                return Err(ActionRunError::UpdatableHandlerError(
-                    UpdatableHandlerError::FaderIsNotASequence(*fader_id),
-                ))
-            }
-        }
-
-        let device = input_device_handler
-            .device_mut(*device_idx)
-            .map_err(ActionRunError::InputDeviceError)?;
-
-        if device.config.buttons().get(button_id).is_some() {
-            return Err(ActionRunError::InputDeviceError(
-                DemexInputDeviceError::FaderAlreadyAssigned(*button_id),
-            ));
-        }
-
-        device
-            .config
-            .buttons_mut()
-            .insert(*button_id, DemexInputButton::FaderGo(*fader_id));
-
-        Ok(ActionRunResult::new())
-    }
-
-    pub fn run_assign_executor_to_input(
-        &self,
-        updatable_handler: &UpdatableHandler,
-        input_device_handler: &mut DemexInputDeviceHandler,
-        executor_id: &u32,
-        mode: &ExecutorAssignmentModeActionData,
-        device_idx: &usize,
-        button_id: &u32,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let _ = updatable_handler.executor(*executor_id).ok_or(
-            ActionRunError::UpdatableHandlerError(UpdatableHandlerError::UpdatableNotFound(
-                *executor_id,
-            )),
-        )?;
-
-        let device = input_device_handler
-            .device_mut(*device_idx)
-            .map_err(ActionRunError::InputDeviceError)?;
-
-        if device.config.buttons().get(button_id).is_some() {
-            return Err(ActionRunError::InputDeviceError(
-                DemexInputDeviceError::ButtonAlreadyAssigned(*button_id),
-            ));
-        }
-
-        device.config.buttons_mut().insert(
-            *button_id,
-            match mode {
-                ExecutorAssignmentModeActionData::StartAndNext => {
-                    DemexInputButton::ExecutorStartAndNext(*executor_id)
-                }
-                ExecutorAssignmentModeActionData::Stop => {
-                    DemexInputButton::ExecutorStop(*executor_id)
-                }
-                ExecutorAssignmentModeActionData::Flash => {
-                    DemexInputButton::ExecutorFlash(*executor_id)
-                }
-            },
-        );
-
-        Ok(ActionRunResult::new())
-    }
-
-    pub fn run_assign_selective_preset_to_input(
-        &self,
-        preset_handler: &PresetHandler,
-        input_device_handler: &mut DemexInputDeviceHandler,
-        preset_id: ValueOrRange<FixturePresetId>,
-        fixture_selector: &Option<FixtureSelector>,
-        fixture_selector_context: FixtureSelectorContext,
-        device_idx: usize,
-        button_id: u32,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let (preset_id_from, preset_id_to) = preset_id.into();
-
-        let _ = preset_handler
-            .get_preset_range(preset_id_from, preset_id_to)
-            .map_err(ActionRunError::PresetHandlerError)?;
-
-        let range = preset_id_to.preset_id - preset_id_from.preset_id + 1;
-
-        let device = input_device_handler
-            .device_mut(device_idx)
-            .map_err(ActionRunError::InputDeviceError)?;
-
-        for button_id in button_id..button_id + range {
-            if device.config.buttons().get(&button_id).is_some() {
-                return Err(ActionRunError::InputDeviceError(
-                    DemexInputDeviceError::ButtonAlreadyAssigned(button_id),
-                ));
-            }
-        }
-
-        let selection = fixture_selector
-            .as_ref()
-            .map(|fs| fs.get_selection(preset_handler, fixture_selector_context))
-            .transpose()
-            .map_err(ActionRunError::FixtureSelectorError)?;
-
-        for i in 0..range {
-            let preset_id = FixturePresetId {
-                feature_group_id: preset_id_from.feature_group_id,
-                preset_id: preset_id_from.preset_id + i,
-            };
-
-            device.config.buttons_mut().insert(
-                button_id + i,
-                DemexInputButton::SelectivePreset {
-                    preset_id,
-                    selection: selection.clone(),
-                },
-            );
-        }
-
-        Ok(ActionRunResult::new())
-    }
-
-    pub fn run_assign_fixture_selector_to_input(
-        &self,
-        input_device_handler: &mut DemexInputDeviceHandler,
-        fixture_selector: &FixtureSelector,
-        device_idx: &usize,
-        button_id: &u32,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let device = input_device_handler
-            .device_mut(*device_idx)
-            .map_err(ActionRunError::InputDeviceError)?;
-
-        if device.config.buttons().get(button_id).is_some() {
-            return Err(ActionRunError::InputDeviceError(
-                DemexInputDeviceError::ButtonAlreadyAssigned(*button_id),
-            ));
-        }
-
-        device.config.buttons_mut().insert(
-            *button_id,
-            DemexInputButton::FixtureSelector {
-                fixture_selector: fixture_selector.clone(),
-            },
-        );
-
-        Ok(ActionRunResult::new())
-    }
-
-    fn run_assign_macro_to_input(
-        &self,
-        input_device_handler: &mut DemexInputDeviceHandler,
-        action: &Action,
-        device_idx: &usize,
-        button_id: &u32,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        let device = input_device_handler
-            .device_mut(*device_idx)
-            .map_err(ActionRunError::InputDeviceError)?;
-
-        if device.config.buttons().get(button_id).is_some() {
-            return Err(ActionRunError::InputDeviceError(
-                DemexInputDeviceError::ButtonAlreadyAssigned(*button_id),
-            ));
-        }
-
-        device.config.buttons_mut().insert(
-            *button_id,
-            DemexInputButton::Macro {
-                action: action.clone(),
-            },
-        );
-
-        Ok(ActionRunResult::new())
     }
 
     fn run_unassign_input_button(

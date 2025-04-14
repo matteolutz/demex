@@ -11,6 +11,8 @@ use crate::fixture::{
         error::FixtureChannelError2, feature::feature_type::FixtureFeatureType,
     },
     presets::PresetHandler,
+    timing::TimingHandler,
+    Fixture,
 };
 
 use super::{feature_config::FixtureFeatureConfig, feature_state::FixtureFeatureDisplayState};
@@ -78,6 +80,10 @@ pub struct FeatureGroup {
     id: u32,
     name: String,
     feature_types: Vec<FixtureFeatureType>,
+
+    #[serde(default, skip_serializing, skip_deserializing)]
+    #[egui_probe(skip)]
+    default_feature_group: Option<DefaultFeatureGroup>,
 }
 
 impl FeatureGroup {
@@ -109,28 +115,35 @@ impl FeatureGroup {
                         id: default_feature_group.id(),
                         name: format!("{:?}", default_feature_group),
                         feature_types: default_feature_group.feature_types(),
+                        default_feature_group: Some(default_feature_group),
                     },
                 )
             })
             .collect::<HashMap<_, _>>()
     }
 
+    pub fn default_feature_group(&self) -> Option<DefaultFeatureGroup> {
+        self.default_feature_group
+    }
+
     pub fn get_display_state(
         &self,
-        fixture_id: u32,
+        fixture: &Fixture,
         feature_configs: &[FixtureFeatureConfig],
         channels: &impl Fn(FixtureChannelType) -> Option<FixtureChannelValue2>,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<Vec<FixtureFeatureDisplayState>, FixtureChannelError2> {
         Ok(self
             .feature_types
             .iter()
             .map(|feature_type| {
                 feature_type.get_display_state(
-                    fixture_id,
+                    fixture,
                     feature_configs,
                     channels,
                     preset_handler,
+                    timing_handler,
                 )
             })
             .filter_map(|display_state| display_state.ok())

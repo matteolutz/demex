@@ -7,7 +7,10 @@ use sine::SineVariant;
 use crate::{
     fixture::channel2::{
         channel_type::FixtureChannelType,
-        feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
+        feature::{
+            feature_group::DefaultFeatureGroup, feature_type::FixtureFeatureType,
+            feature_value::FixtureFeatureValue,
+        },
     },
     utils::color::hsl_to_rgb,
 };
@@ -60,6 +63,26 @@ impl Default for FeatureEffect {
 }
 
 impl FeatureEffect {
+    pub fn default_for(feature_group: DefaultFeatureGroup) -> Option<Self> {
+        match feature_group {
+            DefaultFeatureGroup::Intensity => Some(Self::IntensitySine {
+                sine_variant: SineVariant::default(),
+            }),
+            DefaultFeatureGroup::Position => Some(Self::PositionPanTiltEllipse {
+                pan_size: 1.0,
+                tilt_size: 1.0,
+                pan_center: 0.5,
+                tilt_center: 0.5,
+                sine_variant: SineVariant::default(),
+            }),
+            DefaultFeatureGroup::Color => Some(Self::ColorRGBHueRotate {
+                hue_size: 1.0,
+                hue_center: 0.5,
+            }),
+            _ => None,
+        }
+    }
+
     pub fn feature_type(&self) -> FixtureFeatureType {
         match self {
             Self::PositionPanTiltFigureEight { .. }

@@ -17,7 +17,7 @@ use input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler};
 use parking_lot::RwLock;
 use rfd::FileDialog;
 use show::DemexShow;
-use ui::{error::DemexUiError, utils::icon::load_icon, DemexUiApp};
+use ui::{error::DemexUiError, theme::DemexUiTheme, utils::icon::load_icon, DemexUiApp};
 use utils::{
     deadlock::start_deadlock_checking_thread,
     thread::{demex_update_thread, DemexThreadStatsHandler},
@@ -41,6 +41,40 @@ struct Args {
 const TEST_MAX_FUPS: f64 = 60.0;
 const TEST_MAX_DMX_FPS: f64 = 30.0;
 const TEST_UI_FPS: f64 = 60.0;
+
+const TEST_UI_THEME: DemexUiTheme = DemexUiTheme::Default;
+const TEST_TOUCHSCREEN_FRIENDLY: bool = false;
+
+fn load_fonts() -> egui::FontDefinitions {
+    let mut fonts = egui::FontDefinitions::default();
+
+    fonts.font_data.insert(
+        "open-sans".to_string(),
+        Arc::new(egui::FontData::from_static(include_bytes!(
+            "../assets/fonts/OpenSans-Regular.ttf"
+        ))),
+    );
+    fonts.font_data.insert(
+        "jetbrains-mono".to_string(),
+        Arc::new(egui::FontData::from_static(include_bytes!(
+            "../assets/fonts/JetBrainsMono-Regular.ttf"
+        ))),
+    );
+
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Proportional)
+        .unwrap()
+        .insert(0, "open-sans".to_string());
+
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Monospace)
+        .unwrap()
+        .insert(0, "jetbrains-mono".to_string());
+
+    fonts
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::var("RUST_LOG").is_err() {
@@ -107,6 +141,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map(DemexInputDeviceConfig::into)
                 .collect::<Vec<_>>(),
         ),
+        show.ui_config,
     );
 
     let fixture_handler_thread_a = fixture_handler.clone();
@@ -132,8 +167,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     delta_time,
                     last_user_update.elapsed().as_secs_f64() > 1.0,
                 )
-                .unwrap()
-                > 0
+                .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err))
+                .is_ok_and(|res| res > 0)
             {
                 *last_user_update = time::Instant::now();
             }
@@ -171,7 +206,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 visuals: Visuals::dark(),
                 ..Style::default()
             };
+
             creation_context.egui_ctx.set_style(style);
+            creation_context.egui_ctx.set_fonts(load_fonts());
+
+            TEST_UI_THEME.apply(&creation_context.egui_ctx);
+
+            if TEST_TOUCHSCREEN_FRIENDLY {
+                creation_context.egui_ctx.style_mut(|style| {
+                    style.spacing.button_padding = egui::vec2(10.0, 10.0);
+
+                    style.spacing.indent = 18.0 * 2.0;
+                    style.spacing.icon_width = 14.0 * 2.0;
+                    style.spacing.icon_width_inner = 8.0 * 2.0;
+
+                    // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
+                    //
+                    style.spacing.interact_size = egui::vec2(40.0, 18.0) * 1.5;
+                    style.spacing.slider_rail_height = 8.0 * 2.0;
+                    style.spacing.slider_width = 100.0 * 1.5;
+                });
+            }
+
             Ok(Box::new(ui_app_state))
         }),
     )?;

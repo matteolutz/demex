@@ -2,7 +2,8 @@ use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
-    handler::FixtureHandler, timing::TimingHandler, updatables::UpdatableHandler,
+    handler::FixtureHandler, presets::PresetHandler, timing::TimingHandler,
+    updatables::UpdatableHandler,
 };
 
 use super::error::DemexInputDeviceError;
@@ -34,6 +35,7 @@ impl DemexInputFader {
         &self,
         value: f32,
         fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         timing_handler: &mut TimingHandler,
     ) -> Result<(), DemexInputDeviceError> {
@@ -43,7 +45,7 @@ impl DemexInputFader {
                     .fader_mut(*fader_id)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
-                fader.set_value(value, fixture_handler);
+                fader.set_value(value, fixture_handler, preset_handler);
 
                 Ok(())
             }

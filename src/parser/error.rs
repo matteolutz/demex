@@ -13,6 +13,8 @@ pub enum ParseError {
     NoDefaultActionForObject(Object),
     ObjectError(ObjectError),
     UnexpectedEndOfInput,
+
+    UnexpectedArgs(String),
 }
 
 impl std::fmt::Display for ParseError {
@@ -49,6 +51,8 @@ impl std::fmt::Display for ParseError {
                 write!(f, "No default action for object: {:?}", o)
             }
             ParseError::ObjectError(e) => write!(f, "Object error: {}", e),
+
+            ParseError::UnexpectedArgs(e) => write!(f, "Unexpected args: {}", e),
         }
     }
 }

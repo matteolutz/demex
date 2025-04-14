@@ -1,6 +1,7 @@
 use std::collections::{hash_map::Keys, HashMap};
 
 use channel2::{
+    channel_modifier::{FixtureChannelModifier, FixtureChannelModifierTrait},
     channel_type::FixtureChannelType,
     channel_value::FixtureChannelValue2,
     color::color_gel::ColorGelTrait,
@@ -9,7 +10,6 @@ use channel2::{
         feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue, IntoFeatureType,
     },
 };
-use itertools::Itertools;
 use patch::{FixturePatchType, FixturePatchTypeMode, FixtureTypeAndMode};
 use presets::PresetHandler;
 use serde::{Deserialize, Serialize};
@@ -34,15 +34,18 @@ pub mod value_source;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerializableFixturePatch {
-    id: u32,
-    name: String,
+    pub id: u32,
+    pub name: String,
 
     // TODO: refactor this, to use FixtureTypeAndMode
-    fixture_type: String,
-    fixture_mode: u32,
+    pub fixture_type: String,
+    pub fixture_mode: u32,
 
-    universe: u16,
-    start_address: u16,
+    #[serde(default)]
+    pub channel_modifiers: Vec<FixtureChannelModifier>,
+
+    pub universe: u16,
+    pub start_address: u16,
 }
 
 impl From<Fixture> for SerializableFixturePatch {
@@ -54,6 +57,7 @@ impl From<Fixture> for SerializableFixturePatch {
             fixture_mode: value.fixture_type.mode,
             universe: value.universe,
             start_address: value.start_address,
+            channel_modifiers: value.channel_modifiers,
         }
     }
 }
@@ -81,6 +85,7 @@ impl SerializableFixturePatch {
                 name: self.fixture_type,
                 mode: self.fixture_mode,
             },
+            self.channel_modifiers,
             self.universe,
             self.start_address,
         )
@@ -96,6 +101,9 @@ pub struct Fixture {
 
     channels: Vec<(FixtureChannelType, FixtureChannelValue2)>,
     feature_configs: Vec<FixtureFeatureConfig>,
+
+    channel_modifiers: Vec<FixtureChannelModifier>,
+
     toggle_flags: Vec<HashMap<String, u8>>,
 
     universe: u16,
@@ -109,6 +117,7 @@ impl Fixture {
         name: String,
         patch: FixturePatchTypeMode,
         fixture_type: FixtureTypeAndMode,
+        channel_modifiers: Vec<FixtureChannelModifier>,
         universe: u16,
         start_address: u16,
     ) -> Result<Self, FixtureError> {
@@ -117,7 +126,7 @@ impl Fixture {
             return Err(FixtureError::EmptyPatch);
         }
 
-        if patch
+        /*if patch
             .channel_types
             .iter()
             .filter(|channel_type| **channel_type != FixtureChannelType::Unused)
@@ -130,7 +139,7 @@ impl Fixture {
                 .count()
         {
             return Err(FixtureError::DuplicateChannelType);
-        }
+        }*/
 
         Ok(Self {
             id,
@@ -145,6 +154,7 @@ impl Fixture {
             fixture_type,
             universe,
             start_address,
+            channel_modifiers,
             sources: vec![FixtureChannelValueSource::Programmer],
         })
     }
@@ -220,7 +230,7 @@ impl Fixture {
         // TODO: get data from other sources
         // TODO: optimize this
         for (channel_type, _) in &self.channels {
-            let discrete_value = self
+            let mut discrete_value = self
                 .sources
                 .get_channel_value(
                     self,
@@ -229,8 +239,12 @@ impl Fixture {
                     preset_handler,
                     timing_handler,
                 )?
-                .to_discrete_value(self.id, *channel_type, preset_handler)
+                .to_discrete_value(self, *channel_type, preset_handler, timing_handler)
                 .map_err(FixtureError::FixtureChannelError2)?;
+
+            // apply modifiers
+            discrete_value = self.channel_modifiers.apply(*channel_type, discrete_value);
+
             data.push(discrete_value);
         }
 
@@ -302,7 +316,7 @@ impl Fixture {
     ) -> Result<FixtureFeatureDisplayState, FixtureError> {
         feature_type
             .get_display_state(
-                self.id,
+                self,
                 &self.feature_configs,
                 &(|channel_type| {
                     self.sources
@@ -316,6 +330,7 @@ impl Fixture {
                         .ok()
                 }),
                 preset_handler,
+                timing_handler,
             )
             .map_err(FixtureError::FixtureChannelError2)
     }
@@ -331,7 +346,7 @@ impl Fixture {
             .get_feature_group(feature_group_id)
             .map_err(|err| FixtureError::PresetHandlerError(Box::new(err)))?
             .get_display_state(
-                self.id,
+                self,
                 &self.feature_configs,
                 &(|channel_type| {
                     self.sources
@@ -345,6 +360,7 @@ impl Fixture {
                         .ok()
                 }),
                 preset_handler,
+                timing_handler,
             )
             .map_err(FixtureError::FixtureChannelError2)
     }
@@ -399,6 +415,7 @@ impl Fixture {
         &self,
         feature_type: FixtureFeatureType,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<FixtureFeatureValue, FixtureError> {
         feature_type
             .get_value(
@@ -410,8 +427,9 @@ impl Fixture {
                         .map(|(_, value)| value)
                         .cloned()
                 }),
-                self.id,
+                self,
                 preset_handler,
+                timing_handler,
             )
             .map_err(FixtureError::FixtureChannelError2)
     }
@@ -437,8 +455,9 @@ impl Fixture {
                         )
                         .ok()
                 }),
-                self.id,
+                self,
                 preset_handler,
+                timing_handler,
             )
             .map_err(FixtureError::FixtureChannelError2)
     }
@@ -493,10 +512,12 @@ impl Fixture {
 }
 
 impl Fixture {
-    pub fn home(&mut self) -> Result<(), FixtureError> {
-        // remove every source except the programmer
-        self.sources.clear();
-        self.sources.push(FixtureChannelValueSource::Programmer);
+    pub fn home(&mut self, clear_sources: bool) -> Result<(), FixtureError> {
+        if clear_sources {
+            // remove every source except the programmer
+            self.sources.clear();
+            self.sources.push(FixtureChannelValueSource::Programmer);
+        }
 
         for (_, channel_value) in self.channels.iter_mut() {
             *channel_value = FixtureChannelValue2::default();

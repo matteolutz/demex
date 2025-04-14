@@ -1,11 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-use crate::parser::nodes::{
-    action::{error::ActionRunError, result::ActionRunResult},
-    object::{HomeableObject, Object},
+use crate::{
+    fixture::timing::TimingHandler,
+    parser::nodes::{
+        action::{error::ActionRunError, result::ActionRunResult},
+        object::{HomeableObject, Object},
+    },
 };
 
-use super::ActionFunction;
+use super::FunctionArgs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RenameObjectArgs {
@@ -13,7 +16,7 @@ pub struct RenameObjectArgs {
     pub new_name: String,
 }
 
-impl ActionFunction for RenameObjectArgs {
+impl FunctionArgs for RenameObjectArgs {
     fn run(
         &self,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
@@ -21,6 +24,7 @@ impl ActionFunction for RenameObjectArgs {
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _: &mut TimingHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         match &self.object {
             Object::Preset(preset_id) => preset_handler
@@ -52,6 +56,10 @@ impl ActionFunction for RenameObjectArgs {
                     .rename_fader(*fader_id, self.new_name.clone())
                     .map_err(ActionRunError::UpdatableHandlerError)
                     .map(|_| ActionRunResult::new()),
+                HomeableObject::Programmer => Err(ActionRunError::ActionNotImplementedForObject(
+                    "Rename".to_owned(),
+                    self.object.clone(),
+                )),
             },
             Object::Macro(id) => preset_handler
                 .rename_macro(*id, self.new_name.clone())

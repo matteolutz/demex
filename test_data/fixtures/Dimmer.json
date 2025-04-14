@@ -1,0 +1,21 @@
+{
+  "id": "BasicDimmer",
+  "config": {
+    "name": "Basic 1ch Dimmer",
+    "modes": {
+      "0": {
+        "name": "1 channel",
+        "channel_types": ["Intensity"],
+        "toggle_flags": [],
+        "feature_configs": [
+          {
+            "SingleValue": {
+              "channel_type": "Intensity",
+              "is_fine": false
+            }
+          }
+        ]
+      }
+    }
+  }
+}

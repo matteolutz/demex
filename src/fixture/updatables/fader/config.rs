@@ -8,6 +8,7 @@ pub enum DemexFaderRuntimeFunction {
     #[default]
     Intensity,
     Speed,
+    FadeAll,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
@@ -16,7 +17,6 @@ pub enum DemexFaderConfig {
         selection: FixtureSelection,
     },
     SequenceRuntime {
-        selection: FixtureSelection,
         runtime: SequenceRuntime,
         function: DemexFaderRuntimeFunction,
     },
@@ -35,7 +35,6 @@ impl std::fmt::Display for DemexFaderConfig {
         match self {
             Self::Submaster { selection: _ } => write!(f, "Sub"),
             Self::SequenceRuntime {
-                selection: _,
                 runtime: _,
                 function: _,
             } => write!(f, "Seq"),

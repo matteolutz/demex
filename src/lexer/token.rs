@@ -61,6 +61,7 @@ pub enum Token {
     KeywordCue,
     KeywordWith,
     KeywordAll,
+    KeywordActive,
     KeywordUpdate,
     KeywordMerge,
     KeywordOverride,
@@ -78,6 +79,10 @@ pub enum Token {
     KeywordFlash,
     KeywordEffect,
     KeywordButton,
+    KeywordTokens,
+    KeywordProgrammer,
+    KeywordStomp,
+    KeywordRecall,
 
     KeywordNuzul,
     KeywordSueud,
@@ -129,6 +134,7 @@ impl Token {
             Token::KeywordConfig => TokenType::ActionKeyword,
             Token::KeywordAssign => TokenType::ActionKeyword,
             Token::KeywordUnassign => TokenType::ActionKeyword,
+            Token::KeywordRecall => TokenType::ActionKeyword,
 
             Token::KeywordGroup => TokenType::ObjectKeyword,
             Token::KeywordMacro => TokenType::ObjectKeyword,
@@ -141,6 +147,7 @@ impl Token {
             Token::KeywordFeature => TokenType::ObjectKeyword,
             Token::KeywordEffect => TokenType::ObjectKeyword,
             Token::KeywordButton => TokenType::ObjectKeyword,
+            Token::KeywordProgrammer => TokenType::ObjectKeyword,
 
             Token::KeywordThru => TokenType::OtherKeyword,
             Token::KeywordFor => TokenType::OtherKeyword,
@@ -148,6 +155,7 @@ impl Token {
             Token::KeywordTo => TokenType::OtherKeyword,
             Token::KeywordWith => TokenType::OtherKeyword,
             Token::KeywordAll => TokenType::OtherKeyword,
+            Token::KeywordActive => TokenType::OtherKeyword,
             Token::KeywordMerge => TokenType::OtherKeyword,
             Token::KeywordOverride => TokenType::OtherKeyword,
             Token::KeywordReally => TokenType::OtherKeyword,
@@ -156,6 +164,8 @@ impl Token {
             Token::KeywordGo => TokenType::OtherKeyword,
             Token::KeywordStop => TokenType::OtherKeyword,
             Token::KeywordFlash => TokenType::OtherKeyword,
+            Token::KeywordTokens => TokenType::OtherKeyword,
+            Token::KeywordStomp => TokenType::OtherKeyword,
 
             Token::Eof => TokenType::Eof,
         }
@@ -211,6 +221,7 @@ impl std::fmt::Display for Token {
             Token::KeywordCue => write!(f, "cue"),
             Token::KeywordWith => write!(f, "with"),
             Token::KeywordAll => write!(f, "all"),
+            Token::KeywordActive => write!(f, "active"),
             Token::KeywordUpdate => write!(f, "update"),
             Token::KeywordMerge => write!(f, "merge"),
             Token::KeywordOverride => write!(f, "override"),
@@ -233,6 +244,10 @@ impl std::fmt::Display for Token {
             Token::KeywordFlash => write!(f, "flash"),
             Token::KeywordEffect => write!(f, "effect"),
             Token::KeywordButton => write!(f, "button"),
+            Token::KeywordTokens => write!(f, "tokens"),
+            Token::KeywordProgrammer => write!(f, "programmer"),
+            Token::KeywordStomp => write!(f, "stomp"),
+            Token::KeywordRecall => write!(f, "recall"),
             Token::Eof => write!(f, "Eof"),
         }
     }

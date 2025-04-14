@@ -17,7 +17,7 @@ use crate::{
         },
         Parser2,
     },
-    show::DemexShow,
+    show::{ui::DemexShowUiConfig, DemexShow},
     ui::error::DemexUiError,
     utils::thread::DemexThreadStatsHandler,
 };
@@ -57,6 +57,8 @@ pub struct DemexUiContext {
 
     // pub windows: Vec<DemexWindow>,
     pub window_handler: DemexWindowHandler,
+
+    pub ui_config: DemexShowUiConfig,
 }
 
 impl DemexUiContext {
@@ -97,12 +99,14 @@ impl DemexUiContext {
                 self.window_handler.clear();
             }
             Action::HomeAll => {
-                let mut updatable_handler_lock = self.updatable_handler.write();
                 let mut fixture_handler_lock = self.fixture_handler.write();
+                let preset_handler_lock = self.preset_handler.read();
+                let mut updatable_handler_lock = self.updatable_handler.write();
 
-                updatable_handler_lock.executors_stop_all(&mut fixture_handler_lock);
-
-                updatable_handler_lock.faders_home_all(&mut fixture_handler_lock);
+                updatable_handler_lock
+                    .executors_stop_all(&mut fixture_handler_lock, &preset_handler_lock);
+                updatable_handler_lock
+                    .faders_home_all(&mut fixture_handler_lock, &preset_handler_lock);
             }
             Action::Save => {
                 let fixture_handler_lock = self.fixture_handler.read();
@@ -123,6 +127,7 @@ impl DemexUiContext {
                         .map(|d| d.config().clone())
                         .collect::<Vec<_>>(),
                     patch: fixture_handler_lock.patch().clone(),
+                    ui_config: self.ui_config.clone(),
                 };
 
                 let save_result = (self.save_show)(show, self.show_file.as_ref());
@@ -158,6 +163,7 @@ impl DemexUiContext {
                 FixtureSelectorContext::new(&self.global_fixture_select),
                 &mut self.updatable_handler.write(),
                 &mut self.input_device_handler,
+                &mut self.timing_handler.write(),
             )
             .inspect(|result| {
                 self.logs

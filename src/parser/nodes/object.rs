@@ -46,6 +46,7 @@ pub enum HomeableObject {
     FixtureSelector(FixtureSelector),
     Executor(u32),
     Fader(u32),
+    Programmer,
 }
 
 impl HomeableObject {
@@ -64,7 +65,8 @@ impl HomeableObject {
 
                 for fixture_id in selection.fixtures() {
                     if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                        fixture.home().map_err(ActionRunError::FixtureError)?;
+                        // TODO: should we clear the source list here??
+                        fixture.home(false).map_err(ActionRunError::FixtureError)?;
                     }
                 }
 
@@ -72,25 +74,34 @@ impl HomeableObject {
             }
             HomeableObject::Executor(executor_id) => {
                 updatable_handler
-                    .stop_executor(*executor_id, fixture_handler)
+                    .stop_executor(*executor_id, fixture_handler, preset_handler)
                     .map_err(ActionRunError::UpdatableHandlerError)?;
 
                 Ok(ActionRunResult::new())
             }
             HomeableObject::Fader(fader_id) => {
                 if let Ok(fader) = updatable_handler.fader_mut(*fader_id) {
-                    fader.home(fixture_handler);
+                    fader.home(fixture_handler, preset_handler);
                 }
 
                 Ok(ActionRunResult::new())
             }
+            HomeableObject::Programmer => fixture_handler
+                .home_all(false)
+                .map_err(ActionRunError::FixtureHandlerError)
+                .map(|_| ActionRunResult::new()),
         }
     }
 }
 
 impl ObjectTrait for HomeableObject {
     fn default_action(self) -> Option<Action> {
-        Some(Action::Edit(Object::HomeableObject(self)))
+        match self {
+            Self::FixtureSelector(fixture_selector) => {
+                Some(Action::FixtureSelector(fixture_selector))
+            }
+            _ => Some(Action::Edit(Object::HomeableObject(self))),
+        }
     }
 
     fn edit_window(self) -> Option<DemexEditWindow> {
@@ -100,12 +111,13 @@ impl ObjectTrait for HomeableObject {
             Self::FixtureSelector(fixture_selector) => fixture_selector
                 .try_as_group_id()
                 .map(DemexEditWindow::EditGroup),
+            Self::Programmer => None,
         }
     }
 }
 
 impl HomeableObject {
-    pub fn variant_matches(&self, other: &HomeableObject) -> bool {
+    pub fn rangable_with(&self, other: &HomeableObject) -> bool {
         match (self, other) {
             (Self::FixtureSelector(_), Self::FixtureSelector(_)) => true,
             (Self::Executor(_), Self::Executor(_)) => true,
@@ -126,7 +138,10 @@ pub enum Object {
 
 impl ObjectTrait for Object {
     fn default_action(self) -> Option<Action> {
-        Some(Action::Edit(self))
+        match self {
+            Self::HomeableObject(homeable_object) => homeable_object.default_action(),
+            _ => Some(Action::Edit(self)),
+        }
     }
 
     fn edit_window(self) -> Option<DemexEditWindow> {
@@ -143,12 +158,12 @@ impl ObjectTrait for Object {
 }
 
 impl Object {
-    pub fn variant_matches(&self, other: &Object) -> bool {
+    pub fn rangable_with(&self, other: &Object) -> bool {
         match (self, other) {
             (
                 Self::HomeableObject(homeable_object),
                 Self::HomeableObject(other_homeable_object),
-            ) => homeable_object.variant_matches(other_homeable_object),
+            ) => homeable_object.rangable_with(other_homeable_object),
             (Self::Sequence(_), Self::Sequence(_)) => true,
             (Self::SequenceCue(sequence_id_a, _), Self::SequenceCue(sequence_id_b, _)) => {
                 sequence_id_a == sequence_id_b
@@ -168,7 +183,7 @@ pub struct ObjectRange {
 
 impl ObjectRange {
     pub fn new(from: Object, to: Object) -> Result<Self, ObjectError> {
-        if from.variant_matches(&to) {
+        if from.rangable_with(&to) {
             Ok(Self { from, to })
         } else {
             Err(ObjectError::ObjectVariantMismatch(from, to))

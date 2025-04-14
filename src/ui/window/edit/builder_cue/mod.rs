@@ -56,7 +56,7 @@ pub fn edit_builder_cue_ui(
                         });
 
                         ui.col(|ui| {
-                            egui::ComboBox::from_id_source(format!(
+                            egui::ComboBox::from_id_salt(format!(
                                 "{} - {:?} - GroupSelector",
                                 sequence_id, cue_idx
                             ))
@@ -85,7 +85,7 @@ pub fn edit_builder_cue_ui(
                         });
 
                         ui.col(|ui| {
-                            egui::ComboBox::from_id_source(format!(
+                            egui::ComboBox::from_id_salt(format!(
                                 "{} - {:?} - PresetSelector",
                                 sequence_id, cue_idx
                             ))

@@ -1,0 +1,69 @@
+{
+  "id": "eurolite-LED-TMH-X4",
+  "config": {
+    "name": "EUROLITE LED TMH-X4 Moving-Head Wash Zoom",
+    "modes": {
+      "0": {
+        "name": "24 channel",
+        "channel_types": [
+          "Pan",
+          "PanFine",
+          "Tilt",
+          "TiltFine",
+          "PanTiltSpeed",
+          "Zoom",
+          "Intensity",
+          "Shutter",
+          "Red",
+          "Green",
+          "Blue",
+          "White",
+          "Red",
+          "Green",
+          "Blue",
+          "White",
+          "Red",
+          "Green",
+          "Blue",
+          "White",
+          "Unused",
+          "Unused",
+          "Unused",
+          "Unused"
+        ],
+        "toggle_flags": [],
+        "feature_configs": [
+          {
+            "SingleValue": {
+              "channel_type": "Intensity",
+              "is_fine": false
+            }
+          },
+          {
+            "SingleValue": {
+              "channel_type": "Zoom",
+              "is_fine": false
+            }
+          },
+          {
+            "SingleValue": {
+              "channel_type": "Shutter",
+              "is_fine": false
+            }
+          },
+          {
+            "PositionPanTilt": {
+              "is_fine": true,
+              "has_speed": true
+            }
+          },
+          {
+            "ColorRGB": {
+              "is_fine": false
+            }
+          }
+        ]
+      }
+    }
+  }
+}

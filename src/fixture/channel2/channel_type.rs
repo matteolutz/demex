@@ -149,3 +149,9 @@ impl FixtureChannelType {
         }
     }
 }
+
+impl std::fmt::Display for FixtureChannelType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.short_name())
+    }
+}

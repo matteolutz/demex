@@ -9,6 +9,8 @@ use crate::{
             error::FixtureChannelError2,
         },
         presets::{preset::FixturePresetId, PresetHandler},
+        timing::TimingHandler,
+        Fixture,
     },
     utils::math::{coarse_fine_to_f32, coarse_to_f32},
 };
@@ -54,27 +56,35 @@ impl FixtureFeatureType {
     fn find_channel_value(
         channels: &impl Fn(FixtureChannelType) -> Option<FixtureChannelValue2>,
         find_channel_type: FixtureChannelType,
-        fixture_id: u32,
+        fixture: &Fixture,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<u8, FixtureChannelError2> {
         channels(find_channel_type)
             .ok_or(FixtureChannelError2::ChannelNotFound(find_channel_type))
             .and_then(|channel_value| {
-                channel_value.to_discrete_value(fixture_id, find_channel_type, preset_handler)
+                channel_value.to_discrete_value(
+                    fixture,
+                    find_channel_type,
+                    preset_handler,
+                    timing_handler,
+                )
             })
     }
 
     fn find_coarse(
         channels: &impl Fn(FixtureChannelType) -> Option<FixtureChannelValue2>,
         find_channel_type_coarse: FixtureChannelType,
-        fixture_id: u32,
+        fixture: &Fixture,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<f32, FixtureChannelError2> {
         let coarse = Self::find_channel_value(
             channels,
             find_channel_type_coarse,
-            fixture_id,
+            fixture,
             preset_handler,
+            timing_handler,
         )?;
 
         Ok(coarse_to_f32(coarse))
@@ -85,18 +95,26 @@ impl FixtureFeatureType {
         find_channel_type_coarse: FixtureChannelType,
         find_channel_type_fine: FixtureChannelType,
         has_fine: bool,
-        fixture_id: u32,
+        fixture: &Fixture,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<f32, FixtureChannelError2> {
         let coarse = Self::find_channel_value(
             channels,
             find_channel_type_coarse,
-            fixture_id,
+            fixture,
             preset_handler,
+            timing_handler,
         )?;
 
         let fine = if has_fine {
-            Self::find_channel_value(channels, find_channel_type_fine, fixture_id, preset_handler)?
+            Self::find_channel_value(
+                channels,
+                find_channel_type_fine,
+                fixture,
+                preset_handler,
+                timing_handler,
+            )?
         } else {
             0
         };
@@ -194,10 +212,11 @@ impl FixtureFeatureType {
 
     pub fn get_display_state(
         &self,
-        fixture_id: u32,
+        fixture: &Fixture,
         feature_configs: &[FixtureFeatureConfig],
         channels: &impl Fn(FixtureChannelType) -> Option<FixtureChannelValue2>,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<FixtureFeatureDisplayState, FixtureChannelError2> {
         if self.is_home(feature_configs, channels)? {
             return Ok(FixtureFeatureDisplayState::Home);
@@ -207,8 +226,14 @@ impl FixtureFeatureType {
             return Ok(FixtureFeatureDisplayState::Preset(preset_id));
         }
 
-        self.get_value(feature_configs, channels, fixture_id, preset_handler)
-            .map(FixtureFeatureDisplayState::FixtureFeatureValue)
+        self.get_value(
+            feature_configs,
+            channels,
+            fixture,
+            preset_handler,
+            timing_handler,
+        )
+        .map(FixtureFeatureDisplayState::FixtureFeatureValue)
     }
 
     pub fn home(
@@ -260,7 +285,9 @@ impl FixtureFeatureType {
 
         let mut preset_id: Option<FixturePresetId> = None;
         for channel_type in channel_types {
-            if let FixtureChannelValue2::Preset(new_preset_id) =
+            if let FixtureChannelValue2::Preset {
+                id: new_preset_id, ..
+            } =
                 channels(channel_type).ok_or(FixtureChannelError2::ChannelNotFound(channel_type))?
             {
                 if preset_id.is_some() && preset_id.unwrap() != new_preset_id {
@@ -278,8 +305,9 @@ impl FixtureFeatureType {
         &self,
         feature_configs: &[FixtureFeatureConfig],
         channels: &impl Fn(FixtureChannelType) -> Option<FixtureChannelValue2>,
-        fixture_id: u32,
+        fixture: &Fixture,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<FixtureFeatureValue, FixtureChannelError2> {
         let feature_config = self.find_feature_config(feature_configs)?;
 
@@ -297,11 +325,18 @@ impl FixtureFeatureType {
                         *channel_type,
                         fine_channel_type,
                         true,
-                        fixture_id,
+                        fixture,
                         preset_handler,
+                        timing_handler,
                     )?
                 } else {
-                    Self::find_coarse(channels, *channel_type, fixture_id, preset_handler)?
+                    Self::find_coarse(
+                        channels,
+                        *channel_type,
+                        fixture,
+                        preset_handler,
+                        timing_handler,
+                    )?
                 };
 
                 Ok(FixtureFeatureValue::SingleValue {
@@ -318,24 +353,27 @@ impl FixtureFeatureType {
                     FixtureChannelType::Pan,
                     FixtureChannelType::PanFine,
                     *is_fine,
-                    fixture_id,
+                    fixture,
                     preset_handler,
+                    timing_handler,
                 )?;
                 let tilt = Self::find_coarse_and_optional_fine(
                     channels,
                     FixtureChannelType::Tilt,
                     FixtureChannelType::TiltFine,
                     *is_fine,
-                    fixture_id,
+                    fixture,
                     preset_handler,
+                    timing_handler,
                 )?;
 
                 let pan_tilt_speed = if *has_speed {
                     Some(coarse_to_f32(Self::find_channel_value(
                         channels,
                         FixtureChannelType::PanTiltSpeed,
-                        fixture_id,
+                        fixture,
                         preset_handler,
+                        timing_handler,
                     )?))
                 } else {
                     None
@@ -353,8 +391,9 @@ impl FixtureFeatureType {
                     FixtureChannelType::Red,
                     FixtureChannelType::RedFine,
                     *is_fine,
-                    fixture_id,
+                    fixture,
                     preset_handler,
+                    timing_handler,
                 )?;
 
                 let g = Self::find_coarse_and_optional_fine(
@@ -362,8 +401,9 @@ impl FixtureFeatureType {
                     FixtureChannelType::Green,
                     FixtureChannelType::GreenFine,
                     *is_fine,
-                    fixture_id,
+                    fixture,
                     preset_handler,
+                    timing_handler,
                 )?;
 
                 let b = Self::find_coarse_and_optional_fine(
@@ -371,8 +411,9 @@ impl FixtureFeatureType {
                     FixtureChannelType::Blue,
                     FixtureChannelType::BlueFine,
                     *is_fine,
-                    fixture_id,
+                    fixture,
                     preset_handler,
+                    timing_handler,
                 )?;
 
                 Ok(FixtureFeatureValue::ColorRGB { r, g, b })
@@ -381,8 +422,9 @@ impl FixtureFeatureType {
                 let color_macro_value = Self::find_channel_value(
                     channels,
                     FixtureChannelType::ColorMacro,
-                    fixture_id,
+                    fixture,
                     preset_handler,
+                    timing_handler,
                 )?;
 
                 let wheel_value = wheel_config
@@ -396,8 +438,9 @@ impl FixtureFeatureType {
                 let gobo_macro_value = Self::find_channel_value(
                     channels,
                     FixtureChannelType::Gobo,
-                    fixture_id,
+                    fixture,
                     preset_handler,
+                    timing_handler,
                 )?;
 
                 let wheel_value = wheel_config
@@ -412,8 +455,9 @@ impl FixtureFeatureType {
                     let flag_value = Self::find_channel_value(
                         channels,
                         FixtureChannelType::ToggleFlags(idx),
-                        fixture_id,
+                        fixture,
                         preset_handler,
+                        timing_handler,
                     )?;
 
                     set_flags.push(

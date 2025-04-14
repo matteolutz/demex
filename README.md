@@ -13,13 +13,26 @@ demex is currently in development and not yet ready for use. If you want to try 
 git clone https://github.com/matteolutz/demex
 ```
 
-and run the proejct using
+and run the project using
 
 ```bash
-cargo run -- -s test_data/show.json
+cargo run -- -s test_data/cinema.json
 ```
 
 There will be test data loaded and you can start playing around with the commands and the UI.
+
+### Installation
+
+#### Ubuntu / Debian
+
+Before you can run demex, you need to install some additional packages. You can do this by running
+
+```bash
+sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
+```
+
+#### Windows
+> TODO
 
 ## Contributing
 

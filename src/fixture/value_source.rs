@@ -11,6 +11,7 @@ use crate::fixture::{
 use super::{
     channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
     timing::TimingHandler,
+    updatables::{error::UpdatableHandlerError, StompSource},
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, EguiProbe, Default)]
@@ -69,6 +70,46 @@ pub enum FixtureChannelValueSource {
     Fader { fader_id: u32 },
 }
 
+impl FixtureChannelValueSource {
+    fn is_stomped_by(
+        &self,
+        updatable_handler: &UpdatableHandler,
+        stomp_source: &Option<StompSource>,
+    ) -> Result<bool, FixtureError> {
+        match self {
+            Self::Programmer => {
+                // TODO: should the programmer be stomp protected?
+                // Maybe we should add a setting for this
+                let programmer_stomp_protected = true;
+
+                Ok(!programmer_stomp_protected)
+            }
+            Self::Executor { executor_id } => {
+                let executor = updatable_handler.executor(*executor_id).ok_or(
+                    FixtureError::UpdatableHandlerError(Box::new(
+                        UpdatableHandlerError::UpdatableNotFound(*executor_id),
+                    )),
+                )?;
+
+                Ok(!executor.stomp_protected()
+                    && stomp_source.as_ref().is_some_and(
+                        |s| !matches!(s, StompSource::Executor(id) if id == executor_id),
+                    ))
+            }
+            Self::Fader { fader_id } => {
+                let fader = updatable_handler
+                    .fader(*fader_id)
+                    .map_err(|err| FixtureError::UpdatableHandlerError(Box::new(err)))?;
+
+                Ok(!fader.stomp_protected()
+                    && stomp_source
+                        .as_ref()
+                        .is_some_and(|s| !matches!(s, StompSource::Fader(id) if id == fader_id)))
+            }
+        }
+    }
+}
+
 impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
     fn get_channel_value(
         &self,
@@ -78,47 +119,59 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
     ) -> Result<FixtureChannelValue2, FixtureError> {
+        let last_stomp_source = updatable_handler.last_stomp_source();
+
         let mut values = self
             .iter()
-            .flat_map(|source| match source {
-                FixtureChannelValueSource::Programmer => {
-                    fixture.channel_value_programmer(channel_type).map(|v| {
-                        FadeFixtureChannelValue::new(
-                            v.clone(),
-                            1.0,
-                            FixtureChannelValuePriority::programmer(),
-                        )
-                    })
-                }
-                FixtureChannelValueSource::Executor {
-                    executor_id: runtime_id,
-                } => {
-                    let runtime = updatable_handler.executor(*runtime_id);
+            .flat_map(|source| {
+                if source.is_stomped_by(updatable_handler, &last_stomp_source)? {
+                    Ok(FadeFixtureChannelValue::home_ltp())
+                } else {
+                    match source {
+                        FixtureChannelValueSource::Programmer => {
+                            fixture.channel_value_programmer(channel_type).map(|v| {
+                                FadeFixtureChannelValue::new(
+                                    v.clone(),
+                                    1.0,
+                                    FixtureChannelValuePriority::programmer(),
+                                )
+                            })
+                        }
+                        FixtureChannelValueSource::Executor { executor_id } => {
+                            let runtime = updatable_handler.executor(*executor_id);
 
-                    if let Some(runtime) = runtime {
-                        runtime
-                            .channel_value(
-                                fixture.id(),
-                                fixture.feature_configs(),
-                                channel_type,
-                                preset_handler,
-                                timing_handler,
-                            )
-                            .ok_or(FixtureError::ChannelValueNotFound(channel_type))
-                    } else {
-                        Err(FixtureError::ChannelValueNotFound(channel_type))
-                    }
-                }
-                FixtureChannelValueSource::Fader { fader_id: id } => {
-                    let fader = updatable_handler.fader(*id);
+                            if let Some(runtime) = runtime {
+                                runtime
+                                    .channel_value(
+                                        fixture,
+                                        fixture.feature_configs(),
+                                        channel_type,
+                                        preset_handler,
+                                        timing_handler,
+                                    )
+                                    .ok_or(FixtureError::ChannelValueNotFound(channel_type))
+                            } else {
+                                Err(FixtureError::ChannelValueNotFound(channel_type))
+                            }
+                        }
+                        FixtureChannelValueSource::Fader { fader_id } => {
+                            let fader = updatable_handler.fader(*fader_id);
 
-                    if let Ok(fader) = fader {
-                        fader.get_channel_value(fixture, channel_type, preset_handler)
-                    } else {
-                        Err(FixtureError::ChannelValueNotFound(channel_type))
+                            if let Ok(fader) = fader {
+                                fader.get_channel_value(
+                                    fixture,
+                                    channel_type,
+                                    preset_handler,
+                                    timing_handler,
+                                )
+                            } else {
+                                Err(FixtureError::ChannelValueNotFound(channel_type))
+                            }
+                        }
                     }
                 }
             })
+            .map(|val| val.flatten_value())
             .collect::<Vec<_>>();
 
         if values.is_empty() {

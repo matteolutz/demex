@@ -40,6 +40,13 @@ pub struct FeatureEffectRuntime {
 }
 
 impl FeatureEffectRuntime {
+    pub fn new(effect: FeatureEffect) -> Self {
+        Self {
+            effect,
+            ..Default::default()
+        }
+    }
+
     pub fn effect(&self) -> &FeatureEffect {
         &self.effect
     }
@@ -64,6 +71,25 @@ impl FeatureEffectRuntime {
         priority: FixtureChannelValuePriority,
         timing_handler: &TimingHandler,
     ) -> Option<FadeFixtureChannelValue> {
+        self.get_channel_value_with_started(
+            find_channel_type,
+            fixture_feature_configs,
+            fixture_offset,
+            priority,
+            timing_handler,
+            self.effect_started,
+        )
+    }
+
+    pub fn get_channel_value_with_started(
+        &self,
+        find_channel_type: FixtureChannelType,
+        fixture_feature_configs: &[FixtureFeatureConfig],
+        fixture_offset: f32,
+        priority: FixtureChannelValuePriority,
+        timing_handler: &TimingHandler,
+        started: Option<time::Instant>,
+    ) -> Option<FadeFixtureChannelValue> {
         let channel_types = self
             .effect
             .feature_type()
@@ -80,7 +106,7 @@ impl FeatureEffectRuntime {
             .collect::<Vec<_>>();
 
         let feature_value = self
-            .get_feature_value(fixture_offset, timing_handler)
+            .get_feature_value_with_started(fixture_offset, timing_handler, started)
             .ok()?;
         feature_value
             .write_back(fixture_feature_configs, &mut channel_values)
@@ -98,7 +124,16 @@ impl FeatureEffectRuntime {
         fixture_offset: f32,
         timing_handler: &TimingHandler,
     ) -> Result<FixtureFeatureValue, EffectError> {
-        self.effect_started
+        self.get_feature_value_with_started(fixture_offset, timing_handler, self.effect_started)
+    }
+
+    pub fn get_feature_value_with_started(
+        &self,
+        fixture_offset: f32,
+        timing_handler: &TimingHandler,
+        started: Option<time::Instant>,
+    ) -> Result<FixtureFeatureValue, EffectError> {
+        started
             .ok_or(EffectError::EffectNotStarted)
             .and_then(|effect_started| {
                 let phase_offset = self.phase.phase(fixture_offset);

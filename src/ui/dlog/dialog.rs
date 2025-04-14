@@ -67,6 +67,10 @@ impl DemexGlobalDialogEntry {
         Self::new(DemexGlobalDialogEntryType::Error, error.to_string(), None)
     }
 
+    pub fn error_str(error: String) -> Self {
+        Self::new(DemexGlobalDialogEntryType::Error, error, None)
+    }
+
     pub fn warn(warn: &str) -> Self {
         Self::new(DemexGlobalDialogEntryType::Warn, warn.to_string(), None)
     }

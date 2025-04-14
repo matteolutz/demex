@@ -3,6 +3,7 @@ use crate::{
         channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
         handler::FixtureHandler,
         presets::PresetHandler,
+        timing::TimingHandler,
     },
     ui::components::position_selector::PositionSelector,
 };
@@ -13,6 +14,7 @@ pub fn position_pan_tilt_controls_ui(
     selected_fixtures: &[u32],
     preset_handler: &PresetHandler,
     fixture_handler: &mut FixtureHandler,
+    timing_handler: &TimingHandler,
 ) {
     ui.vertical(|ui| {
         ui.label(
@@ -42,7 +44,11 @@ pub fn position_pan_tilt_controls_ui(
                 if let FixtureFeatureValue::PositionPanTilt { pan, tilt, .. } = fixture_handler
                     .fixture(selected_fixtures[0])
                     .unwrap()
-                    .feature_value_programmer(FixtureFeatureType::PositionPanTilt, preset_handler)
+                    .feature_value_programmer(
+                        FixtureFeatureType::PositionPanTilt,
+                        preset_handler,
+                        timing_handler,
+                    )
                     .expect("")
                 {
                     Some(egui::vec2(pan, tilt))
