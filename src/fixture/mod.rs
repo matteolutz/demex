@@ -22,6 +22,7 @@ use self::error::FixtureError;
 pub mod channel2;
 pub mod effect;
 pub mod error;
+pub mod gdtf;
 pub mod handler;
 pub mod layout;
 pub mod patch;
