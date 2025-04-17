@@ -128,15 +128,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .join(", ")
     );
 
-    let gdtf_fixture = GdtfFixture::new(
+    let mut gdtf_fixture = GdtfFixture::new(
         1,
         "Test Fixture".to_owned(),
         &fixture_files[1].description.fixture_types[0],
-        "Standard mode".to_owned(),
+        "24CH".to_owned(),
         0,
         1,
     )
     .unwrap();
+    /*gdtf_fixture
+    .set_programmer_value(
+        "Beam_Dimmer",
+        FixtureChannelValue3::Discrete {
+            channel_function_idx: 0,
+            value: 1.0,
+        },
+    )
+    .unwrap();*/
+    log::info!("programmer values: {:?}", gdtf_fixture.programmer_values());
+
     let gdtf_fixture_output = gdtf_fixture.generate_data_packet(1.0);
     log::info!("output is: {:?}", gdtf_fixture_output);
 

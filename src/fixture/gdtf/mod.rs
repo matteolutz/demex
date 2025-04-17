@@ -1,12 +1,5 @@
+use super::{channel3::channel_value::FixtureChannelValue3, error::FixtureError};
 use std::collections::HashMap;
-
-use gdtf::values::DmxValue;
-
-use super::{
-    channel2::channel_value::FixtureChannelValue2, channel3::channel_value::FixtureChannelValue3,
-    error::FixtureError, presets::PresetHandler, timing::TimingHandler,
-    updatables::UpdatableHandler,
-};
 
 pub mod error;
 
@@ -23,7 +16,7 @@ pub struct GdtfFixture<'a> {
     universe: u16,
     start_address: u16,
 
-    values: Box<[FixtureChannelValue3]>,
+    values: HashMap<String, FixtureChannelValue3>,
 }
 
 impl<'a> GdtfFixture<'a> {
@@ -39,7 +32,16 @@ impl<'a> GdtfFixture<'a> {
             FixtureError::GdtfFixtureDmxModeNotFound(dmx_mode_name.clone()),
         )?;
 
-        let values = vec![FixtureChannelValue3::Home; dmx_mode.dmx_channels.len()];
+        let values: HashMap<String, FixtureChannelValue3> = dmx_mode
+            .dmx_channels
+            .iter()
+            .map(|channel| {
+                (
+                    channel.name().as_ref().to_owned(),
+                    FixtureChannelValue3::Home,
+                )
+            })
+            .collect();
 
         Ok(Self {
             id,
@@ -48,8 +50,26 @@ impl<'a> GdtfFixture<'a> {
             dmx_mode: dmx_mode_name,
             universe,
             start_address,
-            values: values.into_boxed_slice(),
+            values,
         })
+    }
+
+    pub fn programmer_values(&self) -> &HashMap<String, FixtureChannelValue3> {
+        &self.values
+    }
+
+    pub fn set_programmer_value(
+        &mut self,
+        channel: &str,
+        value: FixtureChannelValue3,
+    ) -> Result<(), FixtureError> {
+        // self.values.insert(channel.to_owned(), value);
+        let programmer_value = self
+            .values
+            .get_mut(channel)
+            .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel.to_owned()))?;
+        *programmer_value = value;
+        Ok(())
     }
 
     pub fn generate_data_packet(
@@ -75,13 +95,13 @@ impl<'a> GdtfFixture<'a> {
         let mut data = vec![0u8; max_offset];
 
         // loop through dmx_channels
-        for (idx, dmx_channel) in dmx_mode.dmx_channels.iter().enumerate() {
+        for dmx_channel in &dmx_mode.dmx_channels {
             let offsets = match &dmx_channel.offset {
                 Some(offsets) => offsets,
                 None => continue,
             };
 
-            let value = &self.values[idx];
+            let value = self.values.get(dmx_channel.name().as_ref()).unwrap();
 
             let dmx_value = value.to_dmx(dmx_mode, dmx_channel, &self.values).ok_or(
                 FixtureError::GdtfChannelValueNotConvertable(
