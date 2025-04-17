@@ -49,7 +49,7 @@ impl<'a> PatchViewComponent<'a> {
         }
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui) {
+    pub fn show(&'a mut self, ui: &mut egui::Ui) {
         ui.vertical(|ui| {
             let response = TabViewer::new(
                 self.id_source,

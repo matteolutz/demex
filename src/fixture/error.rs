@@ -22,6 +22,7 @@ pub enum FixtureError {
     FixtureTypeNotFound(String),
     FixtureTypeModeNotFound(String, u32),
 
+    GdtfFixtureTypeNotFound(uuid::Uuid),
     GdtfFixtureDmxModeNotFound(String),
     GdtfChannelValueNotConvertable(String),
     GdtfMaxDmxOffsetNotFound,
@@ -78,6 +79,9 @@ impl std::fmt::Display for FixtureError {
             }
             Self::GdtfChannelNotFound(channel) => {
                 write!(f, "GDTF channel {} not found", channel)
+            }
+            Self::GdtfFixtureTypeNotFound(type_id) => {
+                write!(f, "GDTF fixture type with id {} not found", type_id)
             }
         }
     }

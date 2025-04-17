@@ -65,7 +65,8 @@ impl DemexTab {
                 sequence_editor_tab::SequenceEditorTab::new(context, "MainSequenceEditor").show(ui)
             }
             DemexTab::Patch => {
-                patch_tab::PatchViewComponent::new(context).show(ui);
+                let mut patch_view_component = patch_tab::PatchViewComponent::new(context);
+                patch_view_component.show(ui);
             }
             DemexTab::Timing => timing_tab::ui(ui, context),
             DemexTab::FixtureSelection => fixture_selection_tab::ui(ui, context),
@@ -81,7 +82,7 @@ pub struct DemexTabViewer<'a> {
     egui_ctx: &'a eframe::egui::Context,
 }
 
-impl TabViewer for DemexTabViewer<'_> {
+impl<'a> TabViewer for DemexTabViewer<'a> {
     type Tab = DemexTab;
 
     fn title(&mut self, tab: &mut Self::Tab) -> WidgetText {

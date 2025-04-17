@@ -148,9 +148,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     .unwrap();*/
     log::info!("programmer values: {:?}", gdtf_fixture.programmer_values());
 
-    let gdtf_fixture_output = gdtf_fixture.generate_data_packet(1.0);
-    log::info!("output is: {:?}", gdtf_fixture_output);
-
     let mut show: DemexShow = args
         .show
         .inspect(|show_path| log::info!("Loading show file: {:?}", show_path))
@@ -159,7 +156,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     *show.preset_handler.feature_groups_mut() = FeatureGroup::default_feature_groups();
 
-    let fixture_handler = Arc::new(RwLock::new(FixtureHandler::new(show.patch).unwrap()));
+    let fixture_handler = Arc::new(RwLock::new(
+        FixtureHandler::new(show.patch, fixture_files).unwrap(),
+    ));
 
     let preset_handler = Arc::new(RwLock::new(show.preset_handler));
     let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));

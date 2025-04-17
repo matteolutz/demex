@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use egui_probe::EguiProbe;
+use gdtf::GdtfFile;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -12,6 +13,7 @@ use crate::{
         },
         effect::feature::runtime::FeatureEffectRuntime,
         error::FixtureError,
+        gdtf::GdtfFixture,
         handler::{error::FixtureHandlerError, FixtureHandler},
         selection::FixtureSelection,
         timing::TimingHandler,
@@ -239,7 +241,7 @@ impl FixturePreset {
 
     pub fn apply(
         &mut self,
-        fixture: &mut Fixture,
+        fixture: &mut GdtfFixture,
         own_feature_types: &[FixtureFeatureType],
         new_selection: FixtureSelection,
     ) -> Result<(), PresetHandlerError> {

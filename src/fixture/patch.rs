@@ -10,6 +10,7 @@ use crate::{
 
 use super::{
     channel2::{channel_type::FixtureChannelType, feature::feature_config::FixtureFeatureConfig},
+    gdtf::{GdtfFixture, GdtfFixturePatch},
     layout::FixtureLayout,
     Fixture, SerializableFixturePatch,
 };
@@ -42,18 +43,18 @@ pub struct FixtureFile {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Patch {
-    fixtures: Vec<SerializableFixturePatch>,
+    fixtures: Vec<GdtfFixturePatch>,
     fixture_types: HashMap<String, FixturePatchType>,
     layout: FixtureLayout,
     outputs: Vec<DemexDmxOutputConfig>,
 }
 
 impl Patch {
-    pub fn fixtures(&self) -> &[SerializableFixturePatch] {
+    pub fn fixtures(&self) -> &[GdtfFixturePatch] {
         &self.fixtures
     }
 
-    pub fn fixtures_mut(&mut self) -> &mut Vec<SerializableFixturePatch> {
+    pub fn fixtures_mut(&mut self) -> &mut Vec<GdtfFixturePatch> {
         &mut self.fixtures
     }
 
@@ -78,6 +79,7 @@ impl Patch {
     }
 
     pub fn is_address_range_unpatched(&self, address_range: Range<u16>, universe: u16) -> bool {
+        todo!();
         for fixture in self.fixtures.iter().filter(|f| f.universe == universe) {
             let fixture_type = self.fixture_types().get(&fixture.fixture_type).unwrap();
             let fixture_mode = fixture_type.modes.get(&fixture.fixture_mode).unwrap();
@@ -94,42 +96,23 @@ impl Patch {
     }
 }
 
-impl From<Patch> for Vec<Fixture> {
-    fn from(value: Patch) -> Self {
-        value
-            .fixtures
-            .into_iter()
-            .map(|f| f.try_into_fixture(&value.fixture_types).unwrap())
-            .collect()
-    }
-}
-
-impl From<&Patch> for Vec<Fixture> {
-    fn from(value: &Patch) -> Self {
-        value
-            .fixtures
-            .iter()
-            .cloned()
-            .map(|f| f.try_into_fixture(&value.fixture_types).unwrap())
-            .collect()
-    }
-}
-
 impl From<&Patch> for Vec<DemexDmxOutput> {
     fn from(value: &Patch) -> Self {
         value.outputs.iter().cloned().map_into().collect()
     }
 }
 
-impl From<Patch> for (Vec<Fixture>, Vec<DemexDmxOutput>) {
-    fn from(value: Patch) -> Self {
+impl Patch {
+    pub fn into_fixures_and_outputs<'a>(
+        self,
+        fixture_types: &[gdtf::fixture_type::FixtureType],
+    ) -> (Vec<GdtfFixture>, Vec<DemexDmxOutput>) {
         (
-            value
-                .fixtures
+            self.fixtures
                 .into_iter()
-                .map(|f| f.try_into_fixture(&value.fixture_types).unwrap())
+                .map(|f| f.into_fixture(fixture_types).unwrap())
                 .collect(),
-            value.outputs.into_iter().map_into().collect(),
+            self.outputs.into_iter().map_into().collect(),
         )
     }
 }
