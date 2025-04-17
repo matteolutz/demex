@@ -1,4 +1,7 @@
-use super::{channel3::channel_value::FixtureChannelValue3, error::FixtureError};
+use super::{
+    channel3::channel_value::FixtureChannelValue3, error::FixtureError,
+    value_source::FixtureChannelValueSource,
+};
 use std::collections::HashMap;
 
 pub mod error;
@@ -17,6 +20,8 @@ pub struct GdtfFixture<'a> {
     start_address: u16,
 
     values: HashMap<String, FixtureChannelValue3>,
+
+    sources: Vec<FixtureChannelValueSource>,
 }
 
 impl<'a> GdtfFixture<'a> {
@@ -51,19 +56,45 @@ impl<'a> GdtfFixture<'a> {
             universe,
             start_address,
             values,
+            sources: vec![FixtureChannelValueSource::Programmer],
         })
+    }
+
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn fixture_type(&self) -> &'a gdtf::fixture_type::FixtureType {
+        &self.fixture_type
+    }
+
+    pub fn dmx_mode(&self) -> &str {
+        &self.dmx_mode
+    }
+
+    pub fn universe(&self) -> u16 {
+        self.universe
+    }
+
+    pub fn start_address(&self) -> u16 {
+        self.start_address
     }
 
     pub fn programmer_values(&self) -> &HashMap<String, FixtureChannelValue3> {
         &self.values
     }
+}
 
+impl<'a> GdtfFixture<'a> {
     pub fn set_programmer_value(
         &mut self,
         channel: &str,
         value: FixtureChannelValue3,
     ) -> Result<(), FixtureError> {
-        // self.values.insert(channel.to_owned(), value);
         let programmer_value = self
             .values
             .get_mut(channel)

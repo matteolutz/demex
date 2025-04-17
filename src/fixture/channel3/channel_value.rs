@@ -34,7 +34,72 @@ pub enum FixtureChannelValue3 {
     },
 }
 
+impl PartialEq for FixtureChannelValue3 {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Home, Self::Home) => true,
+
+            // TODO: should we compare the state?
+            (Self::Preset { id: preset_a, .. }, Self::Preset { id: preset_b, .. }) => {
+                preset_a == preset_b
+            }
+
+            (
+                Self::Discrete {
+                    value: value_a,
+                    channel_function_idx: idx_a,
+                },
+                Self::Discrete {
+                    value: value_b,
+                    channel_function_idx: idx_b,
+                },
+            ) => idx_a == idx_b && value_a == value_b,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for FixtureChannelValue3 {}
+
 impl FixtureChannelValue3 {
+    pub fn is_home(&self) -> bool {
+        matches!(self, Self::Home)
+    }
+
+    pub fn flatten(self) -> Self {
+        match self {
+            Self::Mix { a, b, mix } => {
+                if mix == 0.0 {
+                    a.flatten()
+                } else if mix == 1.0 {
+                    b.flatten()
+                } else {
+                    Self::Mix { a, b, mix }
+                }
+            }
+            val => val,
+        }
+    }
+
+    fn find_multiply_relation(
+        dmx_mode: &gdtf::dmx_mode::DmxMode,
+        values: &HashMap<String, FixtureChannelValue3>,
+        channel_function: &gdtf::dmx_mode::ChannelFunction,
+    ) -> Option<gdtf::values::DmxValue> {
+        let relation = dmx_mode.relations.iter().find(|rel| {
+            rel.follower(dmx_mode)
+                .is_some_and(|(_, _, rel_function)| rel_function == channel_function)
+        });
+        relation.map(|rel| {
+            let relation_master = rel.master(dmx_mode).unwrap();
+            let relation_master_value = values.get(relation_master.name().as_ref()).unwrap();
+
+            relation_master_value
+                .to_dmx(dmx_mode, relation_master, values)
+                .unwrap()
+        })
+    }
+
     /// Converts the channel value to a DMX value (0.0..=1.0)
     pub fn to_dmx(
         &self,
@@ -46,21 +111,8 @@ impl FixtureChannelValue3 {
 
         match self {
             Self::Home => dmx_channel.initial_function().map(|(_, f)| {
-                let relation = dmx_mode.relations.iter().find(|rel| {
-                    rel.follower(dmx_mode)
-                        .is_some_and(|(_, _, rel_function)| rel_function == f)
-                });
-
-                if let Some(relation) = relation {
-                    let relation_master = relation.master(dmx_mode).unwrap();
-                    let relation_master_value =
-                        values.get(relation_master.name().as_ref()).unwrap();
-
-                    let relation_master_dmx_value = relation_master_value
-                        .to_dmx(dmx_mode, relation_master, values)
-                        .unwrap();
-
-                    multiply_dmx_value(f.default, relation_master_dmx_value)
+                if let Some(relation_value) = Self::find_multiply_relation(dmx_mode, values, f) {
+                    multiply_dmx_value(f.default, relation_value)
                 } else {
                     f.default
                 }
@@ -86,7 +138,15 @@ impl FixtureChannelValue3 {
                 // map value (0.0..=1.0) to dmx value (dmx_from..=dmx_to)
                 let dmx_value = dmx_from + ((dmx_to - dmx_from) as f32 * value) as u64;
 
-                gdtf::values::DmxValue::new(dmx_value, n_bytes, false)
+                let value = gdtf::values::DmxValue::new(dmx_value, n_bytes, false);
+
+                if let Some(relation_value) =
+                    Self::find_multiply_relation(dmx_mode, values, channel_function)
+                {
+                    value.map(|val| multiply_dmx_value(val, relation_value))
+                } else {
+                    value
+                }
             }
             Self::Preset { .. } => Some(gdtf::values::DmxValue::default()),
             Self::Mix { .. } => Some(gdtf::values::DmxValue::default()),
