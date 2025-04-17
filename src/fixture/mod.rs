@@ -20,6 +20,7 @@ use value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait};
 use self::error::FixtureError;
 
 pub mod channel2;
+pub mod channel3;
 pub mod effect;
 pub mod error;
 pub mod gdtf;

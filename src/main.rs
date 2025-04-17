@@ -13,7 +13,9 @@ pub mod utils;
 use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
-use fixture::{channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler};
+use fixture::{
+    channel2::feature::feature_group::FeatureGroup, gdtf::GdtfFixture, handler::FixtureHandler,
+};
 use gdtf::GdtfFile;
 use input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler};
 use itertools::Itertools;
@@ -125,6 +127,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ))
             .join(", ")
     );
+
+    let gdtf_fixture = GdtfFixture::new(
+        1,
+        "Test Fixture".to_owned(),
+        &fixture_files[1].description.fixture_types[0],
+        "Standard mode".to_owned(),
+        0,
+        1,
+    )
+    .unwrap();
+    let gdtf_fixture_output = gdtf_fixture.generate_data_packet(1.0);
+    log::info!("output is: {:?}", gdtf_fixture_output);
 
     let mut show: DemexShow = args
         .show

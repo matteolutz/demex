@@ -22,6 +22,10 @@ pub enum FixtureError {
     FixtureTypeNotFound(String),
     FixtureTypeModeNotFound(String, u32),
 
+    GdtfFixtureDmxModeNotFound(String),
+    GdtfChannelValueNotConvertable(String),
+    GdtfMaxDmxOffsetNotFound,
+
     NoDisplayColor(u32),
     PresetHandlerError(Box<PresetHandlerError>),
     UpdatableHandlerError(Box<UpdatableHandlerError>),
@@ -57,6 +61,20 @@ impl std::fmt::Display for FixtureError {
             }
             Self::PresetHandlerError(err) => write!(f, "Preset handler error: {}", err),
             Self::UpdatableHandlerError(err) => write!(f, "Updatable handler error: {}", err),
+
+            Self::GdtfFixtureDmxModeNotFound(mode) => {
+                write!(f, "GDTF fixture DMX mode {} not found", mode)
+            }
+            Self::GdtfChannelValueNotConvertable(dmx_channel_name) => {
+                write!(
+                    f,
+                    "GDTF channel value for channel {} not convertable",
+                    dmx_channel_name
+                )
+            }
+            Self::GdtfMaxDmxOffsetNotFound => {
+                write!(f, "GDTF fixture DMX mode has no max offset")
+            }
         }
     }
 }
