@@ -5,11 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel2::{
-            channel_type::FixtureChannelType,
-            channel_value::FixtureChannelValue2,
-            feature::{feature_config::FixtureFeatureConfig, feature_value::FixtureFeatureValue},
-        },
         effect::{
             error::EffectError,
             speed::{EffectSpeed, EffectSpeedSyncMode},
@@ -63,6 +58,7 @@ impl FeatureEffectRuntime {
         self.effect_started = None;
     }
 
+    /*
     pub fn get_channel_value(
         &self,
         find_channel_type: FixtureChannelType,
@@ -90,6 +86,8 @@ impl FeatureEffectRuntime {
         timing_handler: &TimingHandler,
         started: Option<time::Instant>,
     ) -> Option<FadeFixtureChannelValue> {
+        todo!();
+        /*
         let channel_types = self
             .effect
             .feature_type()
@@ -117,6 +115,7 @@ impl FeatureEffectRuntime {
             .into_iter()
             .find(|(channel_type, _)| *channel_type == find_channel_type)
             .map(|(_, channel_value)| FadeFixtureChannelValue::new(channel_value, 1.0, priority))
+            */
     }
 
     pub fn get_feature_value(
@@ -171,4 +170,5 @@ impl FeatureEffectRuntime {
                     .get_feature_value(started_elapsed, phase_offset, speed_multiplier)
             })
     }
+    */
 }

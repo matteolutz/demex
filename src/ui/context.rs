@@ -4,9 +4,8 @@ use parking_lot::RwLock;
 
 use crate::{
     fixture::{
-        channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler,
-        presets::PresetHandler, selection::FixtureSelection, timing::TimingHandler,
-        updatables::UpdatableHandler,
+        handler::FixtureHandler, presets::PresetHandler, selection::FixtureSelection,
+        timing::TimingHandler, updatables::UpdatableHandler,
     },
     input::DemexInputDeviceHandler,
     lexer::token::Token,
@@ -113,8 +112,6 @@ impl DemexUiContext {
                 let mut preset_handler_lock = self.preset_handler.write();
                 let updatable_handler_lock = self.updatable_handler.read();
                 let timing_handler_lock = self.timing_handler.read();
-
-                *preset_handler_lock.feature_groups_mut() = FeatureGroup::default_feature_groups();
 
                 let show = DemexShow {
                     preset_handler: preset_handler_lock.clone(),

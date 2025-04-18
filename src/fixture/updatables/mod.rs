@@ -245,13 +245,6 @@ impl UpdatableHandler {
         }
 
         let fader_config = match creation_mode {
-            CreateFaderArgsCreationMode::Submaster(fixture_selector) => {
-                DemexFaderConfig::Submaster {
-                    selection: fixture_selector
-                        .get_selection(preset_handler, fixture_selector_context)
-                        .map_err(UpdatableHandlerError::FixtureSelectorError)?,
-                }
-            }
             CreateFaderArgsCreationMode::Sequence(sequence_id) => {
                 preset_handler
                     .get_sequence(*sequence_id)

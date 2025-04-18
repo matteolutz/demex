@@ -132,11 +132,6 @@ impl FunctionArgs for UpdateSequenceCueArgs {
                     .map_err(ActionRunError::UpdatableHandlerError)?;
                 match fader.config() {
                     DemexFaderConfig::SequenceRuntime { runtime, .. } => runtime.sequence_id(),
-                    _ => {
-                        return Err(ActionRunError::UpdatableHandlerError(
-                            UpdatableHandlerError::FaderIsNotASequence(id),
-                        ))
-                    }
                 }
             }
         };

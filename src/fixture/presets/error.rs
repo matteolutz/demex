@@ -1,6 +1,6 @@
 use crate::{
     fixture::{
-        channel2::error::FixtureChannelError2, error::FixtureError,
+        channel3::feature::feature_group::FixtureChannel3FeatureGroup, error::FixtureError,
         handler::error::FixtureHandlerError, sequence::cue::CueIdx,
     },
     parser::nodes::{action::error::ActionRunError, fixture_selector::FixtureSelectorError},
@@ -14,10 +14,9 @@ pub enum PresetHandlerError {
     FeaturePresetAlreadyExists(FixturePresetId),
     PresetNotFound(u32),
     FeaturePresetNotFound(FixturePresetId),
-    FeatureGroupMismatch(u32, u32),
+    FeatureGroupMismatch(FixtureChannel3FeatureGroup, FixtureChannel3FeatureGroup),
     FixtureError(FixtureError),
     FixtureHandlerError(FixtureHandlerError),
-    FixtureChannelError2(FixtureChannelError2),
     FixtureSelectorError(Box<FixtureSelectorError>),
     MacroExecutionError(Box<ActionRunError>),
     CueAlreadyExists(u32, CueIdx),
@@ -48,11 +47,12 @@ impl std::fmt::Display for PresetHandlerError {
             PresetHandlerError::FeaturePresetNotFound(id) => {
                 write!(f, "Object with id {} not found", id)
             }
-            PresetHandlerError::FeatureGroupMismatch(id1, id2) => {
+            PresetHandlerError::FeatureGroupMismatch(g1, g2) => {
                 write!(
                     f,
                     "Feature group mismatch: {} and {} are not in the same group",
-                    id1, id2
+                    g1.name(),
+                    g2.name()
                 )
             }
             PresetHandlerError::FixtureError(err) => write!(f, "{}", err),
@@ -81,9 +81,6 @@ impl std::fmt::Display for PresetHandlerError {
                     "Cue {}.{} in sequence {} is not a default cue and can't be updated",
                     cue_idx_major, cue_idx_minor, sequence_id
                 )
-            }
-            PresetHandlerError::FixtureChannelError2(err) => {
-                write!(f, "Fixture channel error: {}", err)
             }
             PresetHandlerError::FixtureHandlerError(err) => {
                 write!(f, "Fixture handler error: {}", err)

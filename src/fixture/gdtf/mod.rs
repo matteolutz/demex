@@ -1,9 +1,16 @@
 use serde::{Deserialize, Serialize};
 
 use super::{
-    channel3::channel_value::FixtureChannelValue3, error::FixtureError, handler::FixtureHandler,
-    presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler,
-    value_source::FixtureChannelValueSource,
+    channel3::{
+        channel_value::FixtureChannelValue3, feature::feature_group::FixtureChannel3FeatureGroup,
+        utils::dmx_value_to_f32,
+    },
+    error::FixtureError,
+    handler::FixtureHandler,
+    presets::PresetHandler,
+    timing::TimingHandler,
+    updatables::UpdatableHandler,
+    value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait},
 };
 use std::collections::HashMap;
 
@@ -134,6 +141,29 @@ impl GdtfFixture {
     pub fn programmer_values(&self) -> &HashMap<String, FixtureChannelValue3> {
         &self.values
     }
+
+    pub fn sources(&self) -> &[FixtureChannelValueSource] {
+        &self.sources
+    }
+
+    pub fn fixture_type_and_dmx_mode<'a>(
+        &self,
+        fixture_handler: &'a FixtureHandler,
+    ) -> Result<
+        (
+            &'a gdtf::fixture_type::FixtureType,
+            &'a gdtf::dmx_mode::DmxMode,
+        ),
+        FixtureError,
+    > {
+        let fixture_type = fixture_handler.fixture_type(self.fixture_type_id)?;
+
+        let dmx_mode = fixture_type.dmx_mode(&self.fixture_type_dmx_mode).ok_or(
+            FixtureError::GdtfFixtureDmxModeNotFound(self.fixture_type_dmx_mode.clone()),
+        )?;
+
+        Ok((fixture_type, dmx_mode))
+    }
 }
 
 impl GdtfFixture {
@@ -158,6 +188,145 @@ impl GdtfFixture {
 
     pub fn remove_value_source(&mut self, value_source: FixtureChannelValueSource) {
         self.sources.retain(|source| source != &value_source);
+    }
+
+    pub fn get_channels_in_feature_group(
+        &self,
+        fixture_handler: &FixtureHandler,
+        feature_group: FixtureChannel3FeatureGroup,
+    ) -> Result<Vec<String>, FixtureError> {
+        let (fixture_type, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_handler)?;
+
+        Ok(dmx_mode
+            .dmx_channels
+            .iter()
+            .filter(|channel| {
+                let attribute = channel.logical_channels[0].attribute(fixture_type).unwrap();
+                let (group_name, _) = attribute.feature.as_ref().unwrap().split_first().unwrap();
+                group_name.as_ref() == feature_group.name()
+            })
+            .map(|channel| channel.name().as_ref().to_owned())
+            .collect())
+    }
+
+    pub fn get_attribute_display_value(
+        &self,
+        fixture_handler: &FixtureHandler,
+        attribute: &str,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
+    ) -> Result<f32, FixtureError> {
+        let (fixture_type, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_handler)?;
+
+        let channel = dmx_mode
+            .dmx_channels
+            .iter()
+            .find(|dmx_channel| {
+                dmx_channel.logical_channels[0]
+                    .attribute(fixture_type)
+                    .is_some_and(|fixture_attribute| {
+                        fixture_attribute.name.as_ref().unwrap().as_ref() == attribute
+                    })
+            })
+            .ok_or_else(|| FixtureError::GdtfNoChannelForAttributeFound(attribute.to_owned()))?;
+
+        let value = self._get_value(
+            fixture_handler,
+            channel,
+            preset_handler,
+            updatable_handler,
+            timing_handler,
+        )?;
+
+        let dmx_value = value
+            .to_dmx(fixture_handler, self, channel)
+            .ok_or_else(|| FixtureError::GdtfNoChannelForAttributeFound(attribute.to_owned()))?;
+
+        Ok(dmx_value_to_f32(dmx_value))
+    }
+
+    pub fn get_attribute_value(
+        &self,
+        fixture_handler: &FixtureHandler,
+        attribute: &str,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
+    ) -> Result<FixtureChannelValue3, FixtureError> {
+        let (fixture_type, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_handler)?;
+
+        let channel = dmx_mode
+            .dmx_channels
+            .iter()
+            .find(|dmx_channel| {
+                dmx_channel.logical_channels[0]
+                    .attribute(fixture_type)
+                    .is_some_and(|fixture_attribute| {
+                        fixture_attribute.name.as_ref().unwrap().as_ref() == attribute
+                    })
+            })
+            .ok_or_else(|| FixtureError::GdtfNoChannelForAttributeFound(attribute.to_owned()))?;
+
+        self._get_value(
+            fixture_handler,
+            channel,
+            preset_handler,
+            updatable_handler,
+            timing_handler,
+        )
+    }
+
+    pub fn get_value(
+        &self,
+        fixture_handler: &FixtureHandler,
+        channel: &str,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
+    ) -> Result<FixtureChannelValue3, FixtureError> {
+        let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_handler)?;
+
+        let channel = dmx_mode
+            .dmx_channels
+            .iter()
+            .find(|dmx_channel| dmx_channel.name().as_ref() == channel)
+            .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel.to_owned()))?;
+
+        self._get_value(
+            fixture_handler,
+            channel,
+            preset_handler,
+            updatable_handler,
+            timing_handler,
+        )
+    }
+
+    fn _get_value(
+        &self,
+        fixture_handler: &FixtureHandler,
+        channel: &gdtf::dmx_mode::DmxChannel,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
+    ) -> Result<FixtureChannelValue3, FixtureError> {
+        self.sources.get_channel_value(
+            fixture_handler,
+            self,
+            channel,
+            updatable_handler,
+            preset_handler,
+            timing_handler,
+        )
+    }
+
+    pub fn get_programmer_value(
+        &self,
+        channel: &str,
+    ) -> Result<&FixtureChannelValue3, FixtureError> {
+        self.values
+            .get(channel)
+            .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel.to_owned()))
     }
 
     pub fn set_programmer_value(
@@ -196,9 +365,16 @@ impl GdtfFixture {
                 None => continue,
             };
 
-            let value = self.values.get(dmx_channel.name().as_ref()).unwrap();
+            let value = self.sources.get_channel_value(
+                fixture_handler,
+                self,
+                dmx_channel,
+                updatable_handler,
+                preset_handler,
+                timing_handler,
+            )?;
 
-            let dmx_value = value.to_dmx(dmx_mode, dmx_channel, &self.values).ok_or(
+            let dmx_value = value.to_dmx(fixture_handler, self, dmx_channel).ok_or(
                 FixtureError::GdtfChannelValueNotConvertable(
                     dmx_channel.name().as_ref().to_owned(),
                 ),

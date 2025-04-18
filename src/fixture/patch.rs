@@ -9,10 +9,8 @@ use crate::{
 };
 
 use super::{
-    channel2::{channel_type::FixtureChannelType, feature::feature_config::FixtureFeatureConfig},
     gdtf::{GdtfFixture, GdtfFixturePatch},
     layout::FixtureLayout,
-    Fixture, SerializableFixturePatch,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -24,9 +22,7 @@ pub struct FixtureTypeAndMode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FixturePatchTypeMode {
     pub name: String,
-    pub channel_types: Vec<FixtureChannelType>,
     pub toggle_flags: Vec<HashMap<String, u8>>,
-    pub feature_configs: Vec<FixtureFeatureConfig>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -80,6 +76,7 @@ impl Patch {
 
     pub fn is_address_range_unpatched(&self, address_range: Range<u16>, universe: u16) -> bool {
         todo!();
+        /*
         for fixture in self.fixtures.iter().filter(|f| f.universe == universe) {
             let fixture_type = self.fixture_types().get(&fixture.fixture_type).unwrap();
             let fixture_mode = fixture_type.modes.get(&fixture.fixture_mode).unwrap();
@@ -91,8 +88,8 @@ impl Patch {
                 return false;
             }
         }
-
         true
+        */
     }
 }
 

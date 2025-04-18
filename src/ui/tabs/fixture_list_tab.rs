@@ -1,8 +1,6 @@
 use egui::RichText;
 use itertools::Itertools;
 
-use crate::fixture::channel2::feature::feature_group::DefaultFeatureGroup;
-
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let fixture_handler = context.fixture_handler.read();
     let preset_handler = context.preset_handler.read();
@@ -95,27 +93,28 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // Intens
                         row.col(|ui| {
-                            if let Ok(intensity_states) = fixture.feature_group_display_state(
-                                DefaultFeatureGroup::Intensity.id(),
+                            if let Ok(intensity) = fixture.get_attribute_value(
+                                &fixture_handler,
+                                "Dimmer",
                                 &preset_handler,
                                 &updatable_handler,
                                 &timing_handler,
                             ) {
-                                for intensity_state in intensity_states {
-                                    ui.label(
-                                        RichText::from(intensity_state.to_string(&preset_handler))
-                                            .color(if intensity_state.is_home() {
-                                                egui::Color32::GRAY
-                                            } else {
-                                                egui::Color32::YELLOW
-                                            }),
-                                    );
-                                }
+                                ui.label(
+                                    RichText::from(intensity.to_string(&preset_handler)).color(
+                                        if intensity.is_home() {
+                                            egui::Color32::GRAY
+                                        } else {
+                                            egui::Color32::YELLOW
+                                        },
+                                    ),
+                                );
                             } else {
                                 ui.label("-");
                             }
                         });
 
+                        /*
                         // Color
                         row.col(|ui| {
                             if let Ok(color_states) = fixture.feature_group_display_state(
@@ -177,6 +176,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             }
                         });
 
+
                         // All channels
                         row.col(|ui| {
                             for channel_type in fixture.channel_types().iter().sorted() {
@@ -200,6 +200,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                 );
                             }
                         });
+
+                        */
                     });
                 }
             });

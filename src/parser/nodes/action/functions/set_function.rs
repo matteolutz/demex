@@ -2,9 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
-        presets::preset::FixturePresetId,
-        timing::TimingHandler,
+        channel3::feature::feature_type::FixtureChannel3FeatureType,
+        presets::preset::FixturePresetId, timing::TimingHandler,
     },
     parser::nodes::{
         action::{error::ActionRunError, result::ActionRunResult, ValueOrRange},
@@ -17,7 +16,7 @@ use super::FunctionArgs;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetFeatureValueArgs {
     pub fixture_selector: FixtureSelector,
-    pub feature_type: FixtureFeatureType,
+    pub feature_type: FixtureChannel3FeatureType,
     pub feature_value: ValueOrRange<f32>,
 }
 
@@ -52,20 +51,7 @@ impl FunctionArgs for SetFeatureValueArgs {
             };
 
             if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                match self.feature_type {
-                    FixtureFeatureType::SingleValue { channel_type } => fixture
-                        .set_feature_value(FixtureFeatureValue::SingleValue {
-                            channel_type,
-                            value: discrete_value,
-                        })
-                        .map_err(ActionRunError::FixtureError)?,
-                    unhandled_feature_type => {
-                        Err(ActionRunError::Todo(format!(
-                            "Handle set of feature type {:?}",
-                            unhandled_feature_type
-                        )))?;
-                    }
-                }
+                todo!();
             }
         }
 

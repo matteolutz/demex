@@ -1,7 +1,7 @@
 use crate::ui::{components::tab_viewer::TabViewer, context::DemexUiContext};
 
-pub mod fixture_types;
-pub mod new_fixtures;
+// pub mod fixture_types;
+// pub mod new_fixtures;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 pub enum PatchViewTab {
@@ -24,9 +24,11 @@ impl PatchViewTab {
     pub fn ui(&self, ui: &mut egui::Ui, context: &mut DemexUiContext) {
         match self {
             Self::PatchNewFixtures => {
-                new_fixtures::PatchNewFixturesComponent::new(context).show(ui)
+                // new_fixtures::PatchNewFixturesComponent::new(context).show(ui)
             }
-            Self::FixtureTypes => fixture_types::ui(ui, context),
+            Self::FixtureTypes => {
+                // fixture_types::ui(ui, context)
+            }
             _ => {
                 ui.centered_and_justified(|ui| {
                     ui.label(self.to_string());

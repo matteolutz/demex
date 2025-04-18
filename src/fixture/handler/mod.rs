@@ -6,7 +6,7 @@ use self::error::FixtureHandlerError;
 
 use super::{
     error::FixtureError, gdtf::GdtfFixture, patch::Patch, presets::PresetHandler,
-    timing::TimingHandler, updatables::UpdatableHandler, Fixture,
+    timing::TimingHandler, updatables::UpdatableHandler,
 };
 
 pub mod error;
@@ -118,6 +118,10 @@ impl FixtureHandler {
 
     pub fn fixtures(&self) -> &Vec<GdtfFixture> {
         &self.fixtures
+    }
+
+    pub fn fixtures_mut(&mut self) -> &mut Vec<GdtfFixture> {
+        &mut self.fixtures
     }
 
     pub fn has_fixture(&self, id: u32) -> bool {

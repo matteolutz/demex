@@ -13,9 +13,7 @@ pub mod utils;
 use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
-use fixture::{
-    channel2::feature::feature_group::FeatureGroup, gdtf::GdtfFixture, handler::FixtureHandler,
-};
+use fixture::{gdtf::GdtfFixture, handler::FixtureHandler};
 use gdtf::GdtfFile;
 use input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler};
 use itertools::Itertools;
@@ -128,7 +126,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .join(", ")
     );
 
-    let mut gdtf_fixture = GdtfFixture::new(
+    let gdtf_fixture = GdtfFixture::new(
         1,
         "Test Fixture".to_owned(),
         &fixture_files[1].description.fixture_types[0],
@@ -148,17 +146,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     .unwrap();*/
     log::info!("programmer values: {:?}", gdtf_fixture.programmer_values());
 
-    let mut show: DemexShow = args
+    let show: DemexShow = args
         .show
         .inspect(|show_path| log::info!("Loading show file: {:?}", show_path))
         .map(|show_path| serde_json::from_reader(std::fs::File::open(show_path).unwrap()).unwrap())
         .unwrap_or(DemexShow::default());
 
-    *show.preset_handler.feature_groups_mut() = FeatureGroup::default_feature_groups();
-
     let fixture_handler = Arc::new(RwLock::new(
-        FixtureHandler::new(show.patch, fixture_files).unwrap(),
+        FixtureHandler::new(
+            show.patch,
+            fixture_files
+                .into_iter()
+                .flat_map(|file| file.description.fixture_types)
+                .collect(),
+        )
+        .unwrap(),
     ));
+    {
+        fixture_handler.write().fixtures_mut().push(gdtf_fixture);
+    }
 
     let preset_handler = Arc::new(RwLock::new(show.preset_handler));
     let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));

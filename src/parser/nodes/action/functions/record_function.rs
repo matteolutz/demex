@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel2::feature::feature_type::FixtureFeatureType,
+        channel3::feature::feature_type::FixtureChannel3FeatureType,
         error::FixtureError,
+        gdtf::GdtfFixture,
         handler::FixtureHandler,
         presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler},
         selection::FixtureSelection,
@@ -13,7 +14,6 @@ use crate::{
             error::UpdatableHandlerError, executor::config::ExecutorConfig,
             fader::config::DemexFaderConfig,
         },
-        Fixture,
     },
     lexer::token::Token,
     parser::{
@@ -34,34 +34,39 @@ use super::{
 pub enum RecordChannelTypeSelector {
     All,
     Active,
-    Features(Vec<FixtureFeatureType>),
+    Features(Vec<FixtureChannel3FeatureType>),
 }
 
 impl RecordChannelTypeSelector {
     pub fn get_channel_values(
         &self,
-        fixture: &Fixture,
+        fixture_handler: &FixtureHandler,
+        fixture: &GdtfFixture,
     ) -> Result<Vec<CueFixtureChannelValue>, FixtureError> {
         let mut values = Vec::new();
 
-        for channel_type in fixture.channel_types() {
+        let (_, dmx_mode) = fixture.fixture_type_and_dmx_mode(fixture_handler)?;
+
+        for dmx_channel in &dmx_mode.dmx_channels {
             match self {
                 Self::All => {
                     values.push(CueFixtureChannelValue::new(
-                        fixture.channel_value_programmer(*channel_type)?.clone(),
-                        *channel_type,
+                        fixture
+                            .get_programmer_value(dmx_channel.name().as_ref())?
+                            .clone(),
+                        dmx_channel.name().as_ref().to_owned(),
                         false,
                     ));
                 }
                 Self::Active => {
-                    let value = fixture.channel_value_programmer(*channel_type)?;
+                    let value = fixture.get_programmer_value(dmx_channel.name().as_ref())?;
                     if value.is_home() {
                         continue;
                     }
 
                     values.push(CueFixtureChannelValue::new(
                         value.clone(),
-                        *channel_type,
+                        dmx_channel.name().as_ref().to_owned(),
                         false,
                     ));
                 }

@@ -1,13 +1,7 @@
 use input::read_layout_view_input;
 use state::{LayoutViewDragState, LayoutViewState};
 
-use crate::{
-    fixture::channel2::{
-        channel_type::FixtureChannelType,
-        feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
-    },
-    ui::{graphics::layout_projection::draw_center_of_mass, DemexUiContext},
-};
+use crate::ui::{graphics::layout_projection::draw_center_of_mass, DemexUiContext};
 
 mod decoration;
 mod entry;
@@ -115,22 +109,17 @@ impl<'a> LayoutViewComponent<'a> {
                 .expect("todo: error handling");
 
             let intensity = fixture
-                .feature_value(
-                    FixtureFeatureType::SingleValue {
-                        channel_type: FixtureChannelType::Intensity,
-                    },
+                .get_attribute_display_value(
+                    &fixture_handler,
+                    "Dimmer",
                     &preset_handler,
                     &updatable_handler,
                     &timing_handler,
                 )
                 .ok()
-                .and_then(|val| match val {
-                    FixtureFeatureValue::SingleValue { value, .. } => Some(value),
-                    _ => None,
-                })
                 .unwrap();
 
-            let rect_color = if let Ok(color) =
+            /*let rect_color = if let Ok(color) =
                 fixture.display_color(&preset_handler, &updatable_handler, &timing_handler)
             {
                 egui::Color32::from_rgba_unmultiplied(
@@ -157,14 +146,19 @@ impl<'a> LayoutViewComponent<'a> {
                     FixtureFeatureValue::PositionPanTilt { pan, tilt, .. } => Some((pan, tilt)),
                     _ => None,
                 })
-                .map(Into::<egui::Vec2>::into);
+                .map(Into::<egui::Vec2>::into);*/
 
             fixture_layout_entry.draw(
                 &state.layout_projection,
                 &rect,
                 &painter,
-                rect_color,
-                position,
+                egui::Color32::BLACK.blend(egui::Color32::from_rgba_unmultiplied(
+                    255,
+                    255,
+                    255,
+                    (intensity * 255.0) as u8,
+                )),
+                None,
                 is_selected,
                 false,
                 fixture.name(),

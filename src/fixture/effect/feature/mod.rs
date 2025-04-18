@@ -4,16 +4,7 @@ use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 use sine::SineVariant;
 
-use crate::{
-    fixture::channel2::{
-        channel_type::FixtureChannelType,
-        feature::{
-            feature_group::DefaultFeatureGroup, feature_type::FixtureFeatureType,
-            feature_value::FixtureFeatureValue,
-        },
-    },
-    utils::color::hsl_to_rgb,
-};
+use crate::utils::color::hsl_to_rgb;
 
 use super::error::EffectError;
 
@@ -63,6 +54,7 @@ impl Default for FeatureEffect {
 }
 
 impl FeatureEffect {
+    /*
     pub fn default_for(feature_group: DefaultFeatureGroup) -> Option<Self> {
         match feature_group {
             DefaultFeatureGroup::Intensity => Some(Self::IntensitySine {
@@ -167,6 +159,7 @@ impl FeatureEffect {
             }
         }
     }
+    */
 }
 
 impl std::fmt::Display for FeatureEffect {

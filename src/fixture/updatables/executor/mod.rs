@@ -5,15 +5,14 @@ use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
-    channel2::{channel_type::FixtureChannelType, feature::feature_config::FixtureFeatureConfig},
     effect::feature::runtime::FeatureEffectRuntime,
+    gdtf::GdtfFixture,
     handler::FixtureHandler,
     presets::PresetHandler,
     selection::FixtureSelection,
     sequence::{runtime::SequenceRuntime, FadeFixtureChannelValue},
     timing::TimingHandler,
     value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
-    Fixture,
 };
 
 pub mod config;
@@ -139,9 +138,9 @@ impl Executor {
 
     pub fn channel_value(
         &self,
-        fixture: &Fixture,
-        fixture_feature_configs: &[FixtureFeatureConfig],
-        channel_type: FixtureChannelType,
+        fixture_handler: &FixtureHandler,
+        fixture: &GdtfFixture,
+        channel: &gdtf::dmx_mode::DmxChannel,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
     ) -> Option<FadeFixtureChannelValue> {
@@ -164,8 +163,9 @@ impl Executor {
                 } else {
                     runtime
                         .channel_value(
+                            fixture_handler,
                             fixture,
-                            channel_type,
+                            channel,
                             1.0,
                             1.0,
                             preset_handler,
@@ -176,12 +176,14 @@ impl Executor {
                 }
             }
             ExecutorConfig::FeatureEffect { runtime, selection } => {
+                todo!();
+                /*
                 if !selection.has_fixture(fixture.id()) {
                     None
                 } else {
                     runtime
                         .get_channel_value(
-                            channel_type,
+                            channel_name,
                             fixture_feature_configs,
                             selection.offset(fixture.id())?,
                             self.priority,
@@ -189,6 +191,7 @@ impl Executor {
                         )
                         .map(|val| val.multiply(fade))
                 }
+                */
             }
         }
     }

@@ -1,15 +1,5 @@
 use std::collections::{hash_map::Keys, HashMap};
 
-use channel2::{
-    channel_modifier::{FixtureChannelModifier, FixtureChannelModifierTrait},
-    channel_type::FixtureChannelType,
-    channel_value::FixtureChannelValue2,
-    color::color_gel::ColorGelTrait,
-    feature::{
-        feature_config::FixtureFeatureConfig, feature_state::FixtureFeatureDisplayState,
-        feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue, IntoFeatureType,
-    },
-};
 use patch::{FixturePatchType, FixturePatchTypeMode, FixtureTypeAndMode};
 use presets::PresetHandler;
 use serde::{Deserialize, Serialize};
@@ -19,7 +9,7 @@ use value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait};
 
 use self::error::FixtureError;
 
-pub mod channel2;
+// pub mod channel2;
 pub mod channel3;
 pub mod effect;
 pub mod error;
@@ -33,6 +23,7 @@ pub mod sequence;
 pub mod timing;
 pub mod updatables;
 pub mod value_source;
+/*
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerializableFixturePatch {
@@ -42,9 +33,6 @@ pub struct SerializableFixturePatch {
     // TODO: refactor this, to use FixtureTypeAndMode
     pub fixture_type: String,
     pub fixture_mode: u32,
-
-    #[serde(default)]
-    pub channel_modifiers: Vec<FixtureChannelModifier>,
 
     pub universe: u16,
     pub start_address: u16,
@@ -549,3 +537,4 @@ impl Fixture {
         )
     }
 }
+*/

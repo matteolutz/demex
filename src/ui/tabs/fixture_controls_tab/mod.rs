@@ -1,19 +1,12 @@
-use color::{color_macro_ui, color_rgb_controls_ui};
-use gobo::gobo_wheel_ui;
 use itertools::Itertools;
-use position::position_pan_tilt_controls_ui;
-use slider::feature_f32_slider;
-use toggle_flags::toggle_flags_controls_ui;
+use strum::IntoEnumIterator;
 
-use crate::fixture::channel2::feature::{
-    feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue,
+use crate::{
+    fixture::channel3::{
+        channel_value::FixtureChannelValue3, feature::feature_group::FixtureChannel3FeatureGroup,
+    },
+    utils::math::f32_to_coarse,
 };
-
-pub mod color;
-pub mod gobo;
-pub mod position;
-pub mod slider;
-pub mod toggle_flags;
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
@@ -31,20 +24,6 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
         .map(|selection| selection.fixtures())
         .unwrap_or_default();
 
-    let mut mutual_feature_types = fixture_handler
-        .fixture_immut(selected_fixtures[0])
-        .unwrap()
-        .feature_types();
-
-    for fixture_id in selected_fixtures.iter().skip(1) {
-        let fixture_feature_types = fixture_handler
-            .fixture_immut(*fixture_id)
-            .unwrap()
-            .feature_types();
-
-        mutual_feature_types.retain(|feature_type| fixture_feature_types.contains(feature_type));
-    }
-
     ui.style_mut().spacing.item_spacing = [0.0, 20.0].into();
 
     ui.heading(format!("Fixture Controls - {:?}", selected_fixtures));
@@ -52,129 +31,92 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     ui.vertical(|ui| {
         ui.style_mut().spacing.item_spacing = [20.0, 10.0].into();
 
-        for (_, feature_group) in preset_handler
-            .feature_groups()
-            .iter()
-            .sorted_by_key(|(id, _)| *id)
-        {
+        for feature_group in FixtureChannel3FeatureGroup::iter() {
             ui.vertical(|ui| {
                 ui.heading(feature_group.name());
 
                 ui.horizontal(|ui| {
                     ui.add_space(30.0);
 
-                    let feature_types = mutual_feature_types.iter().filter(|feature_type| {
-                        feature_group.feature_types().contains(feature_type)
-                    });
-
-                    let num_feature_types = feature_types.clone().count();
-
-                    for (idx, feature_type) in feature_types.enumerate() {
-                        let is_channel_home = fixture_handler
-                            .fixture(selected_fixtures[0])
-                            .unwrap()
-                            .feature_is_home_programmer(*feature_type)
-                            .unwrap_or(false);
-
+                    for channel_name in fixture_handler
+                        .fixture_immut(selected_fixtures[0])
+                        .unwrap()
+                        .get_channels_in_feature_group(&fixture_handler, feature_group)
+                        .unwrap()
+                    {
                         ui.vertical(|ui| {
-                            match feature_type {
-                                FixtureFeatureType::SingleValue { channel_type } => {
-                                    feature_f32_slider(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        FixtureFeatureType::SingleValue {
-                                            channel_type: *channel_type,
-                                        },
-                                        &mut fixture_handler,
-                                        &preset_handler,
-                                        &timing_handler,
-                                        |value| {
-                                            if let FixtureFeatureValue::SingleValue {
-                                                value, ..
-                                            } = value
-                                            {
-                                                Some(value)
+                            let programmer_value = fixture_handler
+                                .fixture_immut(selected_fixtures[0])
+                                .unwrap()
+                                .get_programmer_value(&channel_name)
+                                .unwrap()
+                                .clone();
+
+                            let is_channel_home = programmer_value.is_home();
+
+                            let (channel_function_idx, f_value) = programmer_value.get_as_discrete(
+                                fixture_handler.fixture_immut(selected_fixtures[0]).unwrap(),
+                                &channel_name,
+                                &preset_handler,
+                                &timing_handler,
+                            );
+
+                            ui.vertical(|ui| {
+                                ui.set_width(100.0);
+
+                                ui.vertical(|ui| {
+                                    ui.label(
+                                        egui::RichText::from(format!("{}", channel_name)).color(
+                                            if is_channel_home {
+                                                egui::Color32::PLACEHOLDER
                                             } else {
-                                                None
-                                            }
-                                        },
-                                        |value| FixtureFeatureValue::SingleValue {
-                                            value,
-                                            channel_type: *channel_type,
-                                        },
+                                                egui::Color32::YELLOW
+                                            },
+                                        ),
                                     );
-                                }
 
-                                FixtureFeatureType::ColorRGB => {
-                                    ui.set_width(100.0);
+                                    let mut slider_val = f_value;
 
-                                    color_rgb_controls_ui(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        &preset_handler,
-                                        &mut fixture_handler,
-                                        &timing_handler,
+                                    ui.add(
+                                        egui::Slider::new(&mut slider_val, 0.0..=1.0).vertical(),
                                     );
-                                }
-                                FixtureFeatureType::ColorWheel => {
-                                    ui.set_width(100.0);
 
-                                    color_macro_ui(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        &mut fixture_handler,
-                                    );
-                                }
-                                FixtureFeatureType::GoboWheel => {
-                                    ui.set_width(100.0);
+                                    if slider_val != f_value {
+                                        for fixture in selected_fixtures {
+                                            fixture_handler
+                                                .fixture(*fixture)
+                                                .unwrap()
+                                                .set_programmer_value(
+                                                    &channel_name,
+                                                    FixtureChannelValue3::Discrete {
+                                                        channel_function_idx,
+                                                        value: slider_val,
+                                                    },
+                                                )
+                                                .unwrap();
+                                        }
+                                    }
+                                });
+                            });
 
-                                    gobo_wheel_ui(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        &mut fixture_handler,
-                                    );
+                            ui.vertical(|ui| {
+                                let home_button = ui.button("Home");
+                                if home_button.clicked() {
+                                    for fixture_id in selected_fixtures.iter() {
+                                        fixture_handler
+                                            .fixture(*fixture_id)
+                                            .unwrap()
+                                            .set_programmer_value(
+                                                &channel_name,
+                                                FixtureChannelValue3::Home,
+                                            )
+                                            .expect("");
+                                    }
                                 }
-                                FixtureFeatureType::PositionPanTilt => {
-                                    position_pan_tilt_controls_ui(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        &preset_handler,
-                                        &mut fixture_handler,
-                                        &timing_handler,
-                                    );
-                                }
-                                FixtureFeatureType::ToggleFlags => {
-                                    toggle_flags_controls_ui(
-                                        ui,
-                                        is_channel_home,
-                                        selected_fixtures,
-                                        &preset_handler,
-                                        &mut fixture_handler,
-                                        &timing_handler,
-                                    );
-                                }
-                            }
-
-                            let home_button = ui.button("Home");
-                            if home_button.clicked() {
-                                for fixture_id in selected_fixtures.iter() {
-                                    fixture_handler
-                                        .fixture(*fixture_id)
-                                        .unwrap()
-                                        .home_feature(*feature_type)
-                                        .expect("");
-                                }
-                            }
+                            });
                         });
 
-                        if idx < num_feature_types - 1 {
-                            ui.separator();
-                        }
+                        ui.separator();
                     }
                 });
             });

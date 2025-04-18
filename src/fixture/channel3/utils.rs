@@ -27,3 +27,7 @@ pub fn multiply_dmx_value(
     let mult = mult.value() as f32 / max_value(mult.bytes()) as f32;
     multiply_dmx_value_f32(dmx_value, mult)
 }
+
+pub fn dmx_value_to_f32(dmx_value: gdtf::values::DmxValue) -> f32 {
+    dmx_value.value() as f32 / max_value(dmx_value.bytes()) as f32
+}

@@ -10,10 +10,7 @@ use tabs::DemexTabs;
 use window::{DemexWindow, DemexWindowHandler};
 
 #[allow(unused_imports)]
-use crate::{
-    fixture::{handler::FixtureHandler, Fixture},
-    lexer::Lexer,
-};
+use crate::{fixture::handler::FixtureHandler, lexer::Lexer};
 use crate::{
     fixture::{presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler},
     input::DemexInputDeviceHandler,

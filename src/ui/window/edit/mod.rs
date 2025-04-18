@@ -82,29 +82,12 @@ impl DemexEditWindow {
                     })
                     .collect::<Vec<_>>();
 
-                let feature_groups = preset_handler
-                    .feature_groups()
-                    .iter()
-                    .map(|(id, group)| DisplayEntry {
-                        id: *id,
-                        name: group.name().to_owned(),
-                    })
-                    .collect::<Vec<_>>();
-
                 let presets = preset_handler
                     .presets()
                     .iter()
                     .map(|(id, preset)| PresetDisplayEntry {
                         id: *id,
-                        name: format!(
-                            "{} - {}",
-                            feature_groups
-                                .iter()
-                                .find(|fg| fg.id == id.feature_group_id)
-                                .map(|fg| fg.name.as_str())
-                                .unwrap(),
-                            preset.name()
-                        ),
+                        name: format!("{} - {}", id.feature_group.name(), preset.name()),
                     })
                     .sorted_by_key(|e| e.id)
                     .collect::<Vec<_>>();

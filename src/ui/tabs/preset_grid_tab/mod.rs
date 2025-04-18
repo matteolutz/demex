@@ -2,11 +2,12 @@ use button::{
     preset_grid_button_ui, PresetGridButton, PresetGridButtonConfig, PresetGridButtonDecoration,
     PresetGridButtonQuickMenuActions,
 };
-use itertools::Itertools;
 use row::preset_grid_row_ui;
+use strum::IntoEnumIterator;
 
 use crate::{
     fixture::{
+        channel3::feature::feature_group::FixtureChannel3FeatureGroup,
         presets::preset::{FixturePresetData, FixturePresetId},
         updatables::executor::config::ExecutorConfig,
     },
@@ -103,21 +104,16 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         });
 
         // Feature Presets
-        for (feature_group_id, feature_group) in preset_handler
-            .feature_groups()
-            .clone()
-            .iter()
-            .sorted_by_key(|(id, _)| *id)
-        {
+        for feature_group in FixtureChannel3FeatureGroup::iter() {
             preset_grid_row_ui(
                 ui,
                 feature_group.name(),
-                Some(*feature_group_id),
+                Some(feature_group.into()),
                 egui::Color32::BLUE,
                 |ui| {
-                    for id in 0..=preset_handler.next_preset_id(*feature_group_id) {
+                    for id in 0..=preset_handler.next_preset_id(feature_group) {
                         let preset_id = FixturePresetId {
-                            feature_group_id: *feature_group_id,
+                            feature_group,
                             preset_id: id,
                         };
 
@@ -160,21 +156,21 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                 PresetGridButtonQuickMenuActions::Insert => {
                                     context.command.extend_from_slice(&[
                                         Token::KeywordPreset,
-                                        Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                        Token::FloatingPoint(0.0, (feature_group.into(), id)),
                                     ]);
                                 }
                                 PresetGridButtonQuickMenuActions::New => {
                                     context.command.extend_from_slice(&[
                                         Token::KeywordRecord,
                                         Token::KeywordPreset,
-                                        Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                        Token::FloatingPoint(0.0, (feature_group.into(), id)),
                                     ]);
                                 }
                                 PresetGridButtonQuickMenuActions::Custom("New (Create)") => {
                                     context.command.extend_from_slice(&[
                                         Token::KeywordCreate,
                                         Token::KeywordPreset,
-                                        Token::FloatingPoint(0.0, (*feature_group_id, id)),
+                                        Token::FloatingPoint(0.0, (feature_group.into(), id)),
                                     ]);
                                 }
                                 PresetGridButtonQuickMenuActions::Edit => {

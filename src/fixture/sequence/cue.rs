@@ -8,15 +8,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel2::{
-            channel_type::FixtureChannelType,
-            channel_value::{FixtureChannelValue2, FixtureChannelValue2PresetState},
-        },
+        channel3::channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
+        gdtf::GdtfFixture,
         handler::FixtureHandler,
         presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler},
         selection::FixtureSelection,
         timing::TimingHandler,
-        Fixture,
     },
     parser::nodes::action::functions::{
         record_function::RecordChannelTypeSelector, update_function::UpdateMode,
@@ -36,26 +33,26 @@ pub enum CueTrigger {
 
 #[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
 pub struct CueFixtureChannelValue {
-    value: FixtureChannelValue2,
-    channel_type: FixtureChannelType,
+    value: FixtureChannelValue3,
+    channel_name: String,
     snap: bool,
 }
 
 impl CueFixtureChannelValue {
-    pub fn new(value: FixtureChannelValue2, channel_type: FixtureChannelType, snap: bool) -> Self {
+    pub fn new(value: FixtureChannelValue3, channel_name: String, snap: bool) -> Self {
         Self {
             value,
-            channel_type,
+            channel_name,
             snap,
         }
     }
 
-    pub fn value(&self) -> &FixtureChannelValue2 {
+    pub fn value(&self) -> &FixtureChannelValue3 {
         &self.value
     }
 
-    pub fn channel_type(&self) -> FixtureChannelType {
-        self.channel_type
+    pub fn channel_name(&self) -> &str {
+        &self.channel_name
     }
 
     pub fn snap(&self) -> bool {
@@ -180,7 +177,7 @@ impl Cue {
         for fixture_id in fixture_selection.fixtures() {
             if let Some(fixture) = fixture_handler.fixture_immut(*fixture_id) {
                 let channel_values = channel_type_selector
-                    .get_channel_values(fixture)
+                    .get_channel_values(fixture_handler, fixture)
                     .map_err(PresetHandlerError::FixtureError)?;
 
                 if channel_values.is_empty() {
@@ -337,12 +334,12 @@ impl Cue {
 
     pub fn channel_value_for_fixture(
         &self,
-        fixture: &Fixture,
-        channel_type: FixtureChannelType,
+        fixture: &GdtfFixture,
+        channel_name: &str,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         cue_started: Option<time::Instant>,
-    ) -> Option<FixtureChannelValue2> {
+    ) -> Option<FixtureChannelValue3> {
         match &self.data {
             CueDataMode::Default(data) => data.get(&fixture.id()).and_then(|values| {
                 let preset_state = cue_started.map(|cue_started| {
@@ -354,7 +351,7 @@ impl Cue {
 
                 values
                     .iter()
-                    .find(|v| v.channel_type() == channel_type)
+                    .find(|v| v.channel_name() == channel_name)
                     .map(|v| v.value().clone().with_preset_state(preset_state))
             }),
             CueDataMode::Builder(entries) => {
@@ -380,16 +377,13 @@ impl Cue {
 
                         let preset = preset_handler.get_preset(entry.preset_id.unwrap());
                         if let Ok(preset) = preset {
-                            if let Some(value) = preset.value(
+                            return preset.value(
                                 fixture,
-                                channel_type,
+                                channel_name,
                                 preset_handler,
                                 timing_handler,
                                 preset_state.as_ref(),
-                            ) {
-                                // we found the value
-                                return Some(FixtureChannelValue2::Discrete(value));
-                            }
+                            );
                         }
                     }
                 }
@@ -436,7 +430,7 @@ impl Cue {
     pub fn should_snap_channel_value_for_fixture(
         &self,
         fixture_id: u32,
-        channel_type: FixtureChannelType,
+        channel_name: &str,
     ) -> bool {
         match &self.data {
             CueDataMode::Default(data) => data
@@ -444,7 +438,7 @@ impl Cue {
                 .and_then(|values| {
                     values
                         .iter()
-                        .find(|v| v.channel_type() == channel_type)
+                        .find(|v| v.channel_name() == channel_name)
                         .map(|v| v.snap())
                 })
                 .unwrap_or(false),
@@ -494,7 +488,7 @@ impl Cue {
                     if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
                         for value in data {
                             fixture
-                                .set_channel_value(value.channel_type(), value.value().clone())
+                                .set_programmer_value(value.channel_name(), value.value().clone())
                                 .unwrap();
                         }
                     }
