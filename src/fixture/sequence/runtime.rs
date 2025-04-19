@@ -8,7 +8,7 @@ use crate::fixture::{
         channel_value::FixtureChannelValue3, feature::feature_type::FixtureChannel3FeatureType,
     },
     gdtf::GdtfFixture,
-    handler::FixtureHandler,
+    handler::FixtureTypeList,
     presets::PresetHandler,
     timing::TimingHandler,
     value_source::FixtureChannelValuePriority,
@@ -89,7 +89,7 @@ impl SequenceRuntime {
 
     pub fn channel_value(
         &self,
-        fixture_handler: &FixtureHandler,
+        fixture_types: &FixtureTypeList,
         fixture: &GdtfFixture,
         channel: &gdtf::dmx_mode::DmxChannel,
         speed_multiplier: f32,
@@ -101,7 +101,7 @@ impl SequenceRuntime {
         if let Some((prev_cue_update, cue_update, cue_idx, is_first_cue)) =
             self.state.when_started()
         {
-            let (fixture_type, _) = fixture.fixture_type_and_dmx_mode(fixture_handler).ok()?;
+            let (fixture_type, _) = fixture.fixture_type_and_dmx_mode(fixture_types).ok()?;
             let channel_feature = channel.logical_channels[0]
                 .attribute(fixture_type)
                 .and_then(|attribute| attribute.feature(&fixture_type.attribute_definitions))
@@ -152,6 +152,7 @@ impl SequenceRuntime {
 
                 cue.channel_value_for_fixture(
                     fixture,
+                    fixture_types,
                     channel.name().as_ref(),
                     preset_handler,
                     timing_handler,
@@ -184,6 +185,7 @@ impl SequenceRuntime {
                 let current_cue_value = cue
                     .channel_value_for_fixture(
                         fixture,
+                        fixture_types,
                         channel.name().as_ref(),
                         preset_handler,
                         timing_handler,
@@ -196,6 +198,7 @@ impl SequenceRuntime {
                                     prev_cue
                                         .channel_value_for_fixture(
                                             fixture,
+                                            fixture_types,
                                             channel.name().as_ref(),
                                             preset_handler,
                                             timing_handler,
@@ -215,6 +218,7 @@ impl SequenceRuntime {
                     prev_cue
                         .channel_value_for_fixture(
                             fixture,
+                            fixture_types,
                             channel.name().as_ref(),
                             preset_handler,
                             timing_handler,

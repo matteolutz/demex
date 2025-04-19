@@ -5,6 +5,7 @@ use itertools::Itertools;
 use crate::{
     fixture::{
         handler::FixtureHandler,
+        patch::Patch,
         presets::{preset::FixturePresetId, PresetHandler},
         sequence::cue::CueIdx,
         updatables::UpdatableHandler,
@@ -54,9 +55,10 @@ impl DemexEditWindow {
     pub fn window_ui(
         &self,
         ui: &mut egui::Ui,
-        fixture_handler: &mut FixtureHandler,
+        _fixture_handler: &mut FixtureHandler,
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
+        patch: &mut Patch,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Self::EditSequence(sequence_id) => {
@@ -122,8 +124,6 @@ impl DemexEditWindow {
                         egui::Color32::YELLOW,
                         "A restart is required for output changes to take effect!",
                     );
-
-                    let patch = fixture_handler.patch_mut();
 
                     Probe::new(patch.output_configs_mut())
                         .with_header("Outputs")

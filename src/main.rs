@@ -13,7 +13,7 @@ pub mod utils;
 use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
-use fixture::{gdtf::GdtfFixture, handler::FixtureHandler};
+use fixture::handler::FixtureHandler;
 use gdtf::GdtfFile;
 use input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler};
 use itertools::Itertools;
@@ -107,44 +107,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect::<Vec<_>>();
 
     log::info!(
-        "Found {} valid fixtures file(s), with {} fixture type(s)",
+        "Found {} valid fixtures file(s), with {} fixture type(s) (at {})",
         fixture_files.len(),
         fixture_files
             .iter()
             .map(|f| f.description.fixture_types.len())
-            .sum::<usize>()
+            .sum::<usize>(),
+        storage::fixture_types(APP_ID).display()
     );
     log::debug!(
-        "Valid fixture type(s): {}",
+        "Valid fixture type(s):\n {}",
         fixture_files
             .iter()
             .flat_map(|f| &f.description.fixture_types)
             .map(|fixture_type| format!(
-                "{} (man.: {}, id: {})",
-                fixture_type.long_name, fixture_type.manufacturer, fixture_type.fixture_type_id
+                "{} (man.: {}, id: {}, modes: {:?})\n",
+                fixture_type.long_name,
+                fixture_type.manufacturer,
+                fixture_type.fixture_type_id,
+                fixture_type
+                    .dmx_modes
+                    .iter()
+                    .map(|mode| &mode.name)
+                    .collect::<Vec<_>>()
             ))
             .join(", ")
     );
-
-    let gdtf_fixture = GdtfFixture::new(
-        1,
-        "Test Fixture".to_owned(),
-        &fixture_files[1].description.fixture_types[0],
-        "24CH".to_owned(),
-        0,
-        1,
-    )
-    .unwrap();
-    /*gdtf_fixture
-    .set_programmer_value(
-        "Beam_Dimmer",
-        FixtureChannelValue3::Discrete {
-            channel_function_idx: 0,
-            value: 1.0,
-        },
-    )
-    .unwrap();*/
-    log::info!("programmer values: {:?}", gdtf_fixture.programmer_values());
 
     let show: DemexShow = args
         .show
@@ -152,19 +140,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|show_path| serde_json::from_reader(std::fs::File::open(show_path).unwrap()).unwrap())
         .unwrap_or(DemexShow::default());
 
-    let fixture_handler = Arc::new(RwLock::new(
-        FixtureHandler::new(
-            show.patch,
-            fixture_files
-                .into_iter()
-                .flat_map(|file| file.description.fixture_types)
-                .collect(),
-        )
-        .unwrap(),
-    ));
-    {
-        fixture_handler.write().fixtures_mut().push(gdtf_fixture);
-    }
+    let fixture_types = fixture_files
+        .into_iter()
+        .flat_map(|file| file.description.fixture_types)
+        .collect::<Vec<_>>();
+
+    let patch = Arc::new(RwLock::new(show.patch.into_patch(fixture_types)));
+    let (fixtures, outputs) = patch.read().into_fixures_and_outputs();
+
+    let fixture_handler = Arc::new(RwLock::new(FixtureHandler::new(fixtures, outputs).unwrap()));
 
     let preset_handler = Arc::new(RwLock::new(show.preset_handler));
     let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));
@@ -179,6 +163,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         preset_handler.clone(),
         updatable_handler.clone(),
         timing_handler.clone(),
+        patch.clone(),
         stats.clone(),
         show_file,
         |show: DemexShow, show_file: Option<&PathBuf>| {
@@ -222,9 +207,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let preset_handler = preset_handler_thread_a.read();
             let updatable_handler = updatable_handler_thread_a.read();
             let timing_handler = timing_handler_thread_a.read();
+            let patch = patch.read();
 
             if fixture_handler
                 .update(
+                    patch.fixture_types(),
                     &preset_handler,
                     &updatable_handler,
                     &timing_handler,

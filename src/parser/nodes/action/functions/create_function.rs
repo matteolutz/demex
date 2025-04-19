@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fixture::{presets::preset::FixturePresetId, timing::TimingHandler},
+    fixture::{patch::Patch, presets::preset::FixturePresetId, timing::TimingHandler},
     parser::nodes::{
         action::{error::ActionRunError, result::ActionRunResult, Action},
         fixture_selector::FixtureSelector,
@@ -25,6 +25,7 @@ impl FunctionArgs for CreateSequenceArgs {
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
+        _: &Patch,
     ) -> Result<
         crate::parser::nodes::action::result::ActionRunResult,
         crate::parser::nodes::action::error::ActionRunError,
@@ -63,6 +64,7 @@ impl FunctionArgs for CreateExecutorArgs {
         updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
+        _: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         let selection = self
             .fixture_selector
@@ -104,6 +106,7 @@ impl FunctionArgs for CreateFaderArgs {
         updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
+        _: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         updatable_handler
             .create_fader(
@@ -135,6 +138,7 @@ impl FunctionArgs for CreateMacroArgs {
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
+        _: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
             .create_macro(
@@ -163,6 +167,7 @@ impl FunctionArgs for CreateEffectPresetArgs {
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
+        _: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
             .create_effect_preset(self.id, self.name.clone())

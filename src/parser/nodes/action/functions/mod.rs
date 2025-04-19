@@ -1,6 +1,6 @@
 use crate::{
     fixture::{
-        handler::FixtureHandler, presets::PresetHandler, timing::TimingHandler,
+        handler::FixtureHandler, patch::Patch, presets::PresetHandler, timing::TimingHandler,
         updatables::UpdatableHandler,
     },
     input::DemexInputDeviceHandler,
@@ -27,5 +27,6 @@ pub trait FunctionArgs {
         updatable_handler: &mut UpdatableHandler,
         input_device_handler: &mut DemexInputDeviceHandler,
         timing_handler: &mut TimingHandler,
+        patch: &Patch,
     ) -> Result<ActionRunResult, ActionRunError>;
 }

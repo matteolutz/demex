@@ -1,7 +1,4 @@
-use super::{
-    channel3::feature::feature_type::FixtureChannel3FeatureType,
-    presets::error::PresetHandlerError, updatables::error::UpdatableHandlerError,
-};
+use super::{presets::error::PresetHandlerError, updatables::error::UpdatableHandlerError};
 
 #[derive(Debug)]
 pub enum FixtureError {
@@ -21,6 +18,7 @@ pub enum FixtureError {
     GdtfChannelNotFound(String),
     GdtfChannelValueNotFound(String),
     GdtfNoChannelForAttributeFound(String),
+    GdtfChannelHasNoAttribute(String),
 
     NoDisplayColor(u32),
     PresetHandlerError(Box<PresetHandlerError>),
@@ -76,6 +74,9 @@ impl std::fmt::Display for FixtureError {
             }
             Self::GdtfNoChannelForAttributeFound(attribute) => {
                 write!(f, "GDTF no channel for attribute {} found", attribute)
+            }
+            Self::GdtfChannelHasNoAttribute(channel) => {
+                write!(f, "GDTF channel {} has no attribute", channel)
             }
         }
     }

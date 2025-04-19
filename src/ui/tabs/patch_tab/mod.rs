@@ -21,7 +21,7 @@ impl std::fmt::Display for PatchViewTab {
 }
 
 impl PatchViewTab {
-    pub fn ui(&self, ui: &mut egui::Ui, context: &mut DemexUiContext) {
+    pub fn ui(&self, ui: &mut egui::Ui, _context: &mut DemexUiContext) {
         match self {
             Self::PatchNewFixtures => {
                 // new_fixtures::PatchNewFixturesComponent::new(context).show(ui)

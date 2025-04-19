@@ -3,7 +3,8 @@ use ui::DemexShowUiConfig;
 
 use crate::{
     fixture::{
-        patch::Patch, presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler,
+        patch::SerializablePatch, presets::PresetHandler, timing::TimingHandler,
+        updatables::UpdatableHandler,
     },
     input::device::DemexInputDeviceConfig,
 };
@@ -16,7 +17,7 @@ pub struct DemexShow {
     pub updatable_handler: UpdatableHandler,
     pub timing_handler: TimingHandler,
     pub input_device_configs: Vec<DemexInputDeviceConfig>,
-    pub patch: Patch,
+    pub patch: SerializablePatch,
 
     #[serde(default)]
     pub ui_config: DemexShowUiConfig,

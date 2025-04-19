@@ -4,10 +4,6 @@ use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 use sine::SineVariant;
 
-use crate::utils::color::hsl_to_rgb;
-
-use super::error::EffectError;
-
 pub mod runtime;
 pub mod sine;
 
@@ -160,6 +156,32 @@ impl FeatureEffect {
         }
     }
     */
+
+    pub fn get_attributes(&self) -> Vec<&str> {
+        match self {
+            Self::IntensitySine { .. } => vec!["Dimmer"],
+            _ => todo!(),
+        }
+    }
+
+    pub fn get_attribute_value(
+        &self,
+        attribute_name: &str,
+        t: f64,
+        phase_offset_deg: f32,
+        speed: f32,
+    ) -> Option<f32> {
+        match self {
+            Self::IntensitySine { sine_variant } => {
+                if attribute_name != "Dimmer" {
+                    None
+                } else {
+                    Some(sine_variant.apply(t as f32 * speed - phase_offset_deg.to_radians()))
+                }
+            }
+            _ => None,
+        }
+    }
 }
 
 impl std::fmt::Display for FeatureEffect {

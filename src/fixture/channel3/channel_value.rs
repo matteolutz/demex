@@ -5,13 +5,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
     gdtf::GdtfFixture,
-    handler::FixtureHandler,
+    handler::FixtureTypeList,
     presets::{preset::FixturePresetId, PresetHandler},
     selection::FixtureSelection,
     timing::TimingHandler,
 };
 
-use super::utils::{max_value, multiply_dmx_value};
+use super::utils::{
+    dmx_value_to_f32, max_value, mix_dmx_value, multiply_dmx_value, multiply_dmx_value_f32,
+};
 
 #[derive(Debug, Clone)]
 pub struct FixtureChannelValue2PresetState {
@@ -118,6 +120,7 @@ impl FixtureChannelValue3 {
     pub fn to_discrete(
         self,
         fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
         channel_name: &str,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
@@ -127,6 +130,7 @@ impl FixtureChannelValue3 {
                 .get_preset_value_for_fixture(
                     id,
                     fixture,
+                    fixture_types,
                     channel_name,
                     timing_handler,
                     state.as_ref(),
@@ -154,40 +158,84 @@ impl FixtureChannelValue3 {
     pub fn get_as_discrete(
         &self,
         fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
         channel_name: &str,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
     ) -> (usize, f32) {
         match self {
-            Self::Home => (0, 0.0),
+            Self::Home => {
+                if let Ok((dmx_channel, _)) = fixture.get_channel(fixture_types, channel_name) {
+                    let (logical_channel, function, default_dmx) = dmx_channel
+                        .initial_function()
+                        .map(|(logical_channel, function)| {
+                            (logical_channel, function, function.default)
+                        })
+                        .unwrap();
+
+                    let channel_function_idx = logical_channel
+                        .channel_functions
+                        .iter()
+                        .position(|ft| ft == function)
+                        .unwrap_or_default();
+
+                    (channel_function_idx, dmx_value_to_f32(default_dmx))
+                } else {
+                    (0, 0.0)
+                }
+            }
             Self::Discrete {
                 channel_function_idx,
                 value,
             } => (*channel_function_idx, *value),
             Self::Mix { a, b, mix } => {
                 if *mix == 0.0 {
-                    a.get_as_discrete(fixture, channel_name, preset_handler, timing_handler)
+                    a.get_as_discrete(
+                        fixture,
+                        fixture_types,
+                        channel_name,
+                        preset_handler,
+                        timing_handler,
+                    )
                 } else {
-                    b.get_as_discrete(fixture, channel_name, preset_handler, timing_handler)
+                    b.get_as_discrete(
+                        fixture,
+                        fixture_types,
+                        channel_name,
+                        preset_handler,
+                        timing_handler,
+                    )
                 }
             }
             Self::Preset { id, state } => preset_handler
                 .get_preset_value_for_fixture(
                     *id,
                     fixture,
+                    fixture_types,
                     channel_name,
                     timing_handler,
                     state.as_ref(),
                 )
                 .unwrap()
-                .get_as_discrete(fixture, channel_name, preset_handler, timing_handler),
+                .get_as_discrete(
+                    fixture,
+                    fixture_types,
+                    channel_name,
+                    preset_handler,
+                    timing_handler,
+                ),
         }
     }
 
     fn find_multiply_relation(
+        fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
         dmx_mode: &gdtf::dmx_mode::DmxMode,
         values: &HashMap<String, FixtureChannelValue3>,
         channel_function: &gdtf::dmx_mode::ChannelFunction,
+        grand_master: f32,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Option<gdtf::values::DmxValue> {
         let relation = dmx_mode.relations.iter().find(|rel| {
             rel.follower(dmx_mode)
@@ -198,7 +246,16 @@ impl FixtureChannelValue3 {
             let relation_master_value = values.get(relation_master.name().as_ref()).unwrap();
 
             relation_master_value
-                ._to_dmx(dmx_mode, relation_master, values)
+                ._to_dmx(
+                    fixture,
+                    fixture_types,
+                    dmx_mode,
+                    relation_master,
+                    values,
+                    grand_master,
+                    preset_handler,
+                    timing_handler,
+                )
                 .unwrap()
         })
     }
@@ -206,27 +263,53 @@ impl FixtureChannelValue3 {
     /// Converts the channel value to a DMX value (0.0..=1.0)
     pub fn to_dmx(
         &self,
-        fixture_handler: &FixtureHandler,
+        fixture_types: &FixtureTypeList,
         fixture: &GdtfFixture,
         dmx_channel: &gdtf::dmx_mode::DmxChannel,
+        grand_master: f32,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Option<gdtf::values::DmxValue> {
-        let (_, dmx_mode) = fixture.fixture_type_and_dmx_mode(fixture_handler).ok()?;
+        let (_, dmx_mode) = fixture.fixture_type_and_dmx_mode(fixture_types).ok()?;
         let values = fixture.programmer_values();
 
-        self._to_dmx(dmx_mode, dmx_channel, values)
+        self._to_dmx(
+            fixture,
+            fixture_types,
+            dmx_mode,
+            dmx_channel,
+            values,
+            grand_master,
+            preset_handler,
+            timing_handler,
+        )
     }
 
     fn _to_dmx(
         &self,
+        fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
         dmx_mode: &gdtf::dmx_mode::DmxMode,
         dmx_channel: &gdtf::dmx_mode::DmxChannel,
         values: &HashMap<String, FixtureChannelValue3>,
+        grand_master: f32,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) -> Option<gdtf::values::DmxValue> {
         let logical_channel = &dmx_channel.logical_channels[0];
 
-        match self {
+        let value = match self {
             Self::Home => dmx_channel.initial_function().map(|(_, f)| {
-                if let Some(relation_value) = Self::find_multiply_relation(dmx_mode, values, f) {
+                if let Some(relation_value) = Self::find_multiply_relation(
+                    fixture,
+                    fixture_types,
+                    dmx_mode,
+                    values,
+                    f,
+                    grand_master,
+                    preset_handler,
+                    timing_handler,
+                ) {
                     multiply_dmx_value(f.default, relation_value)
                 } else {
                     f.default
@@ -255,16 +338,98 @@ impl FixtureChannelValue3 {
 
                 let value = gdtf::values::DmxValue::new(dmx_value, n_bytes, false);
 
-                if let Some(relation_value) =
-                    Self::find_multiply_relation(dmx_mode, values, channel_function)
-                {
+                if let Some(relation_value) = Self::find_multiply_relation(
+                    fixture,
+                    fixture_types,
+                    dmx_mode,
+                    values,
+                    channel_function,
+                    grand_master,
+                    preset_handler,
+                    timing_handler,
+                ) {
                     value.map(|val| multiply_dmx_value(val, relation_value))
                 } else {
                     value
                 }
             }
-            Self::Preset { .. } => Some(gdtf::values::DmxValue::default()),
-            Self::Mix { .. } => Some(gdtf::values::DmxValue::default()),
+            Self::Preset { id, state } => preset_handler
+                .get_preset_value_for_fixture(
+                    *id,
+                    fixture,
+                    fixture_types,
+                    dmx_channel.name().as_ref(),
+                    timing_handler,
+                    state.as_ref(),
+                )
+                .and_then(|value| {
+                    value._to_dmx(
+                        fixture,
+                        fixture_types,
+                        dmx_mode,
+                        dmx_channel,
+                        values,
+                        grand_master,
+                        preset_handler,
+                        timing_handler,
+                    )
+                }),
+            Self::Mix { a, b, mix } => {
+                if logical_channel.snap {
+                    if *mix < 0.5 {
+                        a._to_dmx(
+                            fixture,
+                            fixture_types,
+                            dmx_mode,
+                            dmx_channel,
+                            values,
+                            grand_master,
+                            preset_handler,
+                            timing_handler,
+                        )
+                    } else {
+                        b._to_dmx(
+                            fixture,
+                            fixture_types,
+                            dmx_mode,
+                            dmx_channel,
+                            values,
+                            grand_master,
+                            preset_handler,
+                            timing_handler,
+                        )
+                    }
+                } else {
+                    let a = a._to_dmx(
+                        fixture,
+                        fixture_types,
+                        dmx_mode,
+                        dmx_channel,
+                        values,
+                        grand_master,
+                        preset_handler,
+                        timing_handler,
+                    )?;
+                    let b = b._to_dmx(
+                        fixture,
+                        fixture_types,
+                        dmx_mode,
+                        dmx_channel,
+                        values,
+                        grand_master,
+                        preset_handler,
+                        timing_handler,
+                    )?;
+
+                    Some(mix_dmx_value(a, b, *mix))
+                }
+            }
+        };
+
+        if logical_channel.master == gdtf::dmx_mode::LogicalChannelMaster::Grand {
+            value.map(|value| multiply_dmx_value_f32(value, grand_master))
+        } else {
+            value
         }
     }
 }

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::fixture::{
     effect::feature::runtime::FeatureEffectRuntime,
     gdtf::GdtfFixture,
-    handler::FixtureHandler,
+    handler::{FixtureHandler, FixtureTypeList},
     presets::PresetHandler,
     selection::FixtureSelection,
     sequence::{runtime::SequenceRuntime, FadeFixtureChannelValue},
@@ -138,7 +138,7 @@ impl Executor {
 
     pub fn channel_value(
         &self,
-        fixture_handler: &FixtureHandler,
+        fixture_types: &FixtureTypeList,
         fixture: &GdtfFixture,
         channel: &gdtf::dmx_mode::DmxChannel,
         preset_handler: &PresetHandler,
@@ -163,7 +163,7 @@ impl Executor {
                 } else {
                     runtime
                         .channel_value(
-                            fixture_handler,
+                            fixture_types,
                             fixture,
                             channel,
                             1.0,
@@ -176,22 +176,21 @@ impl Executor {
                 }
             }
             ExecutorConfig::FeatureEffect { runtime, selection } => {
-                todo!();
-                /*
                 if !selection.has_fixture(fixture.id()) {
                     None
                 } else {
                     runtime
                         .get_channel_value(
-                            channel_name,
-                            fixture_feature_configs,
+                            channel.name().as_ref(),
+                            fixture,
+                            fixture_types,
                             selection.offset(fixture.id())?,
                             self.priority,
                             timing_handler,
                         )
+                        .ok()
                         .map(|val| val.multiply(fade))
                 }
-                */
             }
         }
     }

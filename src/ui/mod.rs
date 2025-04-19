@@ -6,13 +6,15 @@ use dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use egui::IconData;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use tabs::DemexTabs;
+use tabs::{encoders_tab::EncodersTabState, DemexTabs};
 use window::{DemexWindow, DemexWindowHandler};
 
 #[allow(unused_imports)]
 use crate::{fixture::handler::FixtureHandler, lexer::Lexer};
 use crate::{
-    fixture::{presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler},
+    fixture::{
+        patch::Patch, presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler,
+    },
     input::DemexInputDeviceHandler,
     parser::{
         nodes::{action::Action, fixture_selector::FixtureSelectorContext},
@@ -74,6 +76,7 @@ impl DemexUiApp {
         preset_handler: Arc<RwLock<PresetHandler>>,
         updatable_handler: Arc<RwLock<UpdatableHandler>>,
         timing_handler: Arc<RwLock<TimingHandler>>,
+        patch: Arc<RwLock<Patch>>,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
         show_file: Option<PathBuf>,
         save_show: SaveShowFn,
@@ -94,6 +97,7 @@ impl DemexUiApp {
                 preset_handler,
                 updatable_handler,
                 timing_handler,
+                patch,
 
                 global_fixture_select: None,
 
@@ -120,6 +124,8 @@ impl DemexUiApp {
                 input_device_handler,
 
                 ui_config,
+
+                encoders_tab_state: EncodersTabState::default(),
             },
             tabs: DemexTabs::default(),
 
@@ -162,6 +168,7 @@ impl eframe::App for DemexUiApp {
             &mut self.context.preset_handler.write(),
             &mut self.context.updatable_handler.write(),
             &mut self.context.timing_handler.write(),
+            &self.context.patch.read(),
             FixtureSelectorContext::new(&self.context.global_fixture_select.clone()),
             &mut self.context.macro_execution_queue,
             &mut self.context.global_fixture_select,
@@ -179,6 +186,7 @@ impl eframe::App for DemexUiApp {
             &mut self.context.fixture_handler,
             &mut self.context.preset_handler,
             &mut self.context.updatable_handler,
+            &mut self.context.patch,
         );
 
         while !self.context.macro_execution_queue.is_empty() {

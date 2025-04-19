@@ -11,7 +11,7 @@ use crate::fixture::{
 use super::{
     channel3::channel_value::FixtureChannelValue3,
     gdtf::GdtfFixture,
-    handler::FixtureHandler,
+    handler::FixtureTypeList,
     timing::TimingHandler,
     updatables::{error::UpdatableHandlerError, StompSource},
 };
@@ -57,7 +57,7 @@ impl Ord for FixtureChannelValuePriority {
 pub trait FixtureChannelValueSourceTrait {
     fn get_channel_value(
         &self,
-        fixture_handler: &FixtureHandler,
+        fixture_types: &FixtureTypeList,
         fixture: &GdtfFixture,
         channel: &gdtf::dmx_mode::DmxChannel,
         updatable_handler: &UpdatableHandler,
@@ -116,7 +116,7 @@ impl FixtureChannelValueSource {
 impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
     fn get_channel_value(
         &self,
-        fixture_handler: &FixtureHandler,
+        fixture_types: &FixtureTypeList,
         fixture: &GdtfFixture,
         channel: &gdtf::dmx_mode::DmxChannel,
         updatable_handler: &UpdatableHandler,
@@ -147,7 +147,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                             if let Some(runtime) = runtime {
                                 runtime
                                     .channel_value(
-                                        fixture_handler,
+                                        fixture_types,
                                         fixture,
                                         channel,
                                         preset_handler,
@@ -167,7 +167,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
 
                             if let Ok(fader) = fader {
                                 fader.get_channel_value(
-                                    fixture_handler,
+                                    fixture_types,
                                     fixture,
                                     channel,
                                     preset_handler,

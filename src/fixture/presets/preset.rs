@@ -14,9 +14,10 @@ use crate::{
         },
         effect::feature::runtime::FeatureEffectRuntime,
         gdtf::GdtfFixture,
-        handler::FixtureHandler,
+        handler::{FixtureHandler, FixtureTypeList},
         selection::FixtureSelection,
         timing::TimingHandler,
+        value_source::FixtureChannelValuePriority,
     },
     parser::nodes::{
         action::{functions::update_function::UpdateMode, ValueOrRange},
@@ -152,6 +153,7 @@ pub struct FixturePreset {
 
 impl FixturePreset {
     pub fn generate_preset_data(
+        fixture_types: &FixtureTypeList,
         fixture_handler: &FixtureHandler,
         preset_handler: &mut PresetHandler,
         timing_handler: &TimingHandler,
@@ -172,46 +174,45 @@ impl FixturePreset {
                 let mut new_values = HashMap::new();
 
                 let (fixture_type, dmx_mode) =
-                    fixture.fixture_type_and_dmx_mode(fixture_handler).unwrap();
+                    fixture.fixture_type_and_dmx_mode(fixture_types).unwrap();
 
-                for feature_type in feature_group.features() {
-                    for dmx_channel in &dmx_mode.dmx_channels {
-                        // let channel = dmx_channel.logical_channels[0];
+                for dmx_channel in &dmx_mode.dmx_channels {
+                    // let channel = dmx_channel.logical_channels[0];
 
-                        // check, if the channel attribute belongs into the correct feature group
-                        if dmx_channel.logical_channels[0]
-                            .attribute(fixture_type)
-                            .and_then(|attribute| {
-                                attribute.feature(&fixture_type.attribute_definitions)
-                            })
-                            .and_then(|feature| {
-                                FixtureChannel3FeatureType::from_str(
-                                    feature.name.as_ref().unwrap().as_ref(),
-                                )
-                                .ok()
-                            })
-                            .is_none_or(|feature| feature.feature_group() != feature_group)
-                        {
+                    // check, if the channel attribute belongs into the correct feature group
+                    if dmx_channel.logical_channels[0]
+                        .attribute(fixture_type)
+                        .and_then(|attribute| {
+                            attribute.feature(&fixture_type.attribute_definitions)
+                        })
+                        .and_then(|feature| {
+                            FixtureChannel3FeatureType::from_str(
+                                feature.name.as_ref().unwrap().as_ref(),
+                            )
+                            .ok()
+                        })
+                        .is_none_or(|feature| feature.feature_group() != feature_group)
+                    {
+                        continue;
+                    }
+
+                    let value = fixture.get_programmer_value(dmx_channel.name().as_ref());
+
+                    if let Ok(value) = value {
+                        if value.is_home() {
                             continue;
                         }
 
-                        let value = fixture.get_programmer_value(dmx_channel.name().as_ref());
-
-                        if let Ok(value) = value {
-                            if value.is_home() {
-                                continue;
-                            }
-
-                            new_values.insert(
-                                dmx_channel.name().as_ref().to_owned(),
-                                value.clone().to_discrete(
-                                    fixture,
-                                    dmx_channel.name().as_ref(),
-                                    preset_handler,
-                                    timing_handler,
-                                ),
-                            );
-                        }
+                        new_values.insert(
+                            dmx_channel.name().as_ref().to_owned(),
+                            value.clone().to_discrete(
+                                fixture,
+                                fixture_types,
+                                dmx_channel.name().as_ref(),
+                                preset_handler,
+                                timing_handler,
+                            ),
+                        );
                     }
                 }
 
@@ -248,6 +249,7 @@ impl FixturePreset {
 
     pub fn apply(
         &mut self,
+        fixture_types: &FixtureTypeList,
         fixture: &mut GdtfFixture,
         new_selection: FixtureSelection,
     ) -> Result<(), PresetHandlerError> {
@@ -257,6 +259,7 @@ impl FixturePreset {
                     for (preset_chanel_type, _) in fixture_data.iter() {
                         fixture
                             .set_programmer_value(
+                                fixture_types,
                                 preset_chanel_type.as_str(),
                                 FixtureChannelValue3::Preset {
                                     id: self.id,
@@ -269,19 +272,16 @@ impl FixturePreset {
                     }
                 }
             }
-            FixturePresetData::FeatureEffect { .. } => {
-                todo!();
-                /*
-                for feature_type in own_feature_types {
+            FixturePresetData::FeatureEffect { runtime } => {
+                for attribute in runtime.effect().get_attributes() {
                     // if the fixture doesn't have this feature type, skip
-                    if let Ok(channel_types) =
-                        feature_type.get_channel_types(&fixture.feature_configs)
-                    {
-                        for channel_type in channel_types {
+                    if let Ok(channels) = fixture.channels_for_attribute(fixture_types, attribute) {
+                        for (dmx_channel, _) in channels {
                             fixture
-                                .set_channel_value(
-                                    channel_type,
-                                    FixtureChannelValue2::Preset {
+                                .set_programmer_value(
+                                    fixture_types,
+                                    dmx_channel.name().as_ref(),
+                                    FixtureChannelValue3::Preset {
                                         id: self.id,
                                         state: Some(FixtureChannelValue2PresetState::now(
                                             new_selection.clone(),
@@ -292,7 +292,6 @@ impl FixturePreset {
                         }
                     }
                 }
-                */
             }
         }
 
@@ -338,8 +337,9 @@ impl FixturePreset {
     pub fn value(
         &self,
         fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
         channel_name: &str,
-        preset_handler: &PresetHandler,
+        _preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         state: Option<&FixtureChannelValue2PresetState>,
     ) -> Option<FixtureChannelValue3> {
@@ -347,7 +347,7 @@ impl FixturePreset {
             .map(|state| state.started().elapsed().as_secs_f32())
             .unwrap_or(0.0);
 
-        let fade = if self.fade_up > 0.0 {
+        let _fade = if self.fade_up > 0.0 {
             (started_delta / self.fade_up).clamp(0.0, 1.0)
         } else {
             1.0
@@ -358,30 +358,21 @@ impl FixturePreset {
                 .get(&fixture.id())
                 .and_then(|values| values.get(channel_name).cloned()),
             FixturePresetData::FeatureEffect { runtime } => {
-                todo!();
-                /*
                 let fixture_offset = state
                     .and_then(|state| state.selection().offset(fixture.id()))
                     .unwrap_or_default();
 
                 let fade_val = runtime.get_channel_value_with_started(
-                    channel_type,
-                    &fixture.feature_configs,
+                    channel_name,
+                    fixture,
+                    fixture_types,
                     fixture_offset,
                     FixtureChannelValuePriority::default(),
                     timing_handler,
                     state.map(|state| state.started()),
                 );
 
-                if let Some(fade_val) = fade_val {
-                    fade_val
-                        .value()
-                        .to_discrete_value(fixture, channel_type, preset_handler, timing_handler)
-                        .ok()
-                } else {
-                    None
-                }
-                */
+                fade_val.ok().map(|value| value.value().clone())
             }
         };
 

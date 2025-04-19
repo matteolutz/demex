@@ -5,7 +5,7 @@ use profile::DemexInputDeviceProfileType;
 
 use crate::{
     fixture::{
-        handler::FixtureHandler, presets::PresetHandler, selection::FixtureSelection,
+        handler::FixtureHandler, patch::Patch, presets::PresetHandler, selection::FixtureSelection,
         timing::TimingHandler, updatables::UpdatableHandler,
     },
     lexer::token::Token,
@@ -66,6 +66,7 @@ impl DemexInputDeviceHandler {
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         timing_handler: &mut TimingHandler,
+        patch: &Patch,
         fixture_selector_context: FixtureSelectorContext,
         macro_exec_cue: &mut Vec<Action>,
         global_fixture_selection: &mut Option<FixtureSelection>,
@@ -90,6 +91,7 @@ impl DemexInputDeviceHandler {
                                 preset_handler,
                                 updatable_handler,
                                 timing_handler,
+                                patch,
                                 fixture_selector_context.clone(),
                                 macro_exec_cue,
                                 global_fixture_selection,

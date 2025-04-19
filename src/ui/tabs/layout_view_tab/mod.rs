@@ -34,8 +34,9 @@ impl<'a> LayoutViewComponent<'a> {
         let preset_handler = self.context.preset_handler.read();
         let updatable_handler = self.context.updatable_handler.read();
         let timing_handler = self.context.timing_handler.read();
+        let patch = self.context.patch.read();
 
-        let fixture_layout = fixture_handler.patch().layout();
+        let fixture_layout = patch.layout();
         ui.heading("Layout View");
 
         ui.with_layout(
@@ -110,7 +111,7 @@ impl<'a> LayoutViewComponent<'a> {
 
             let intensity = fixture
                 .get_attribute_display_value(
-                    &fixture_handler,
+                    patch.fixture_types(),
                     "Dimmer",
                     &preset_handler,
                     &updatable_handler,

@@ -50,7 +50,6 @@ impl UpdatableHandler {
                 DemexFaderConfig::SequenceRuntime { runtime, .. } => {
                     sequence_id == runtime.sequence_id()
                 }
-                _ => true,
             }))
     }
 
@@ -238,7 +237,7 @@ impl UpdatableHandler {
         creation_mode: &CreateFaderArgsCreationMode,
         name: Option<String>,
         preset_handler: &PresetHandler,
-        fixture_selector_context: FixtureSelectorContext,
+        _fixture_selector_context: FixtureSelectorContext,
     ) -> Result<(), UpdatableHandlerError> {
         if self.faders.contains_key(&id) {
             return Err(UpdatableHandlerError::UpdatableAlreadyExists(id));

@@ -1,46 +1,46 @@
-use std::{collections::HashMap, ops::Range};
+use std::ops::Range;
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    dmx::{DemexDmxOutput, DemexDmxOutputConfig},
-    utils::range::ranges_overlap,
-};
+use crate::dmx::{DemexDmxOutput, DemexDmxOutputConfig};
 
 use super::{
     gdtf::{GdtfFixture, GdtfFixturePatch},
+    handler::FixtureTypeList,
     layout::FixtureLayout,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct FixtureTypeAndMode {
-    pub name: String,
-    pub mode: u32,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FixturePatchTypeMode {
-    pub name: String,
-    pub toggle_flags: Vec<HashMap<String, u8>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FixturePatchType {
-    pub name: String,
-    pub modes: HashMap<u32, FixturePatchTypeMode>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FixtureFile {
-    pub id: String,
-    pub config: FixturePatchType,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SerializablePatch {
+    fixtures: Vec<GdtfFixturePatch>,
+    layout: FixtureLayout,
+    outputs: Vec<DemexDmxOutputConfig>,
+}
+
+impl SerializablePatch {
+    pub fn into_patch(self, fixture_types: Vec<gdtf::fixture_type::FixtureType>) -> Patch {
+        Patch {
+            fixtures: self.fixtures,
+            fixture_types,
+            layout: self.layout,
+            outputs: self.outputs,
+        }
+    }
+
+    pub fn from_patch(patch: &Patch) -> Self {
+        SerializablePatch {
+            fixtures: patch.fixtures.clone(),
+            layout: patch.layout.clone(),
+            outputs: patch.outputs.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct Patch {
     fixtures: Vec<GdtfFixturePatch>,
-    fixture_types: HashMap<String, FixturePatchType>,
+    fixture_types: Vec<gdtf::fixture_type::FixtureType>,
     layout: FixtureLayout,
     outputs: Vec<DemexDmxOutputConfig>,
 }
@@ -54,11 +54,11 @@ impl Patch {
         &mut self.fixtures
     }
 
-    pub fn fixture_types(&self) -> &HashMap<String, FixturePatchType> {
+    pub fn fixture_types(&self) -> &FixtureTypeList {
         &self.fixture_types
     }
 
-    pub fn fixture_types_mut(&mut self) -> &mut HashMap<String, FixturePatchType> {
+    pub fn fixture_types_mut(&mut self) -> &mut Vec<gdtf::fixture_type::FixtureType> {
         &mut self.fixture_types
     }
 
@@ -74,7 +74,7 @@ impl Patch {
         &mut self.outputs
     }
 
-    pub fn is_address_range_unpatched(&self, address_range: Range<u16>, universe: u16) -> bool {
+    pub fn is_address_range_unpatched(&self, _address_range: Range<u16>, _universe: u16) -> bool {
         todo!();
         /*
         for fixture in self.fixtures.iter().filter(|f| f.universe == universe) {
@@ -100,16 +100,14 @@ impl From<&Patch> for Vec<DemexDmxOutput> {
 }
 
 impl Patch {
-    pub fn into_fixures_and_outputs<'a>(
-        self,
-        fixture_types: &[gdtf::fixture_type::FixtureType],
-    ) -> (Vec<GdtfFixture>, Vec<DemexDmxOutput>) {
+    pub fn into_fixures_and_outputs(&self) -> (Vec<GdtfFixture>, Vec<DemexDmxOutput>) {
         (
             self.fixtures
+                .clone()
                 .into_iter()
-                .map(|f| f.into_fixture(fixture_types).unwrap())
+                .map(|f| f.into_fixture(&self.fixture_types).unwrap())
                 .collect(),
-            self.outputs.into_iter().map_into().collect(),
+            self.outputs.clone().into_iter().map_into().collect(),
         )
     }
 }

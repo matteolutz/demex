@@ -5,7 +5,8 @@ use crate::{
         channel3::feature::feature_type::FixtureChannel3FeatureType,
         error::FixtureError,
         gdtf::GdtfFixture,
-        handler::FixtureHandler,
+        handler::{FixtureHandler, FixtureTypeList},
+        patch::Patch,
         presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler},
         selection::FixtureSelection,
         sequence::cue::{CueFixtureChannelValue, CueIdx},
@@ -40,12 +41,12 @@ pub enum RecordChannelTypeSelector {
 impl RecordChannelTypeSelector {
     pub fn get_channel_values(
         &self,
-        fixture_handler: &FixtureHandler,
+        fixture_types: &FixtureTypeList,
         fixture: &GdtfFixture,
     ) -> Result<Vec<CueFixtureChannelValue>, FixtureError> {
         let mut values = Vec::new();
 
-        let (_, dmx_mode) = fixture.fixture_type_and_dmx_mode(fixture_handler)?;
+        let (_, dmx_mode) = fixture.fixture_type_and_dmx_mode(fixture_types)?;
 
         for dmx_channel in &dmx_mode.dmx_channels {
             match self {
@@ -96,6 +97,7 @@ impl FunctionArgs for RecordPresetArgs {
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         timing_handler: &mut TimingHandler,
+        patch: &Patch,
     ) -> Result<
         crate::parser::nodes::action::result::ActionRunResult,
         crate::parser::nodes::action::error::ActionRunError,
@@ -106,6 +108,7 @@ impl FunctionArgs for RecordPresetArgs {
                 fixture_selector_context,
                 self.id,
                 self.name.clone(),
+                patch.fixture_types(),
                 fixture_handler,
                 timing_handler,
             )
@@ -131,6 +134,7 @@ impl FunctionArgs for RecordGroupArgs {
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
+        _: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         let selection = self
             .fixture_selector
@@ -166,6 +170,7 @@ impl FunctionArgs for RecordSequenceCueArgs {
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
+        patch: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
             .record_sequence_cue(
@@ -175,6 +180,7 @@ impl FunctionArgs for RecordSequenceCueArgs {
                 fixture_selector_context,
                 self.cue_idx,
                 &self.channel_type_selector,
+                patch.fixture_types(),
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 
@@ -225,6 +231,7 @@ impl RecordSequenceCueShorthandArgs {
         fixture_handler: &mut FixtureHandler,
         preset_handler: &mut PresetHandler,
         fixture_selector_context: FixtureSelectorContext,
+        fixture_types: &FixtureTypeList,
     ) -> Result<u32, PresetHandlerError> {
         let sequence_id = preset_handler.next_sequence_id();
 
@@ -237,6 +244,7 @@ impl RecordSequenceCueShorthandArgs {
             fixture_selector_context,
             self.cue_idx,
             &self.channel_type_selector,
+            fixture_types,
         )?;
 
         Ok(sequence_id)
@@ -252,6 +260,7 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
         updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _timing_handler: &mut TimingHandler,
+        patch: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self.id {
             RecordSequenceCueShorthandArgsId::ExecutorId(executor_id) => {
@@ -266,6 +275,7 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                                     fixture_selector_context,
                                     self.cue_idx,
                                     &self.channel_type_selector,
+                                    patch.fixture_types(),
                                 )
                                 .map_err(ActionRunError::PresetHandlerError)?;
                         }
@@ -277,7 +287,12 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                     }
                 } else {
                     let sequence_id = self
-                        .create_sequence(fixture_handler, preset_handler, fixture_selector_context)
+                        .create_sequence(
+                            fixture_handler,
+                            preset_handler,
+                            fixture_selector_context,
+                            patch.fixture_types(),
+                        )
                         .map_err(ActionRunError::PresetHandlerError)?;
 
                     updatable_handler
@@ -302,13 +317,9 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                                     fixture_selector_context,
                                     self.cue_idx,
                                     &self.channel_type_selector,
+                                    patch.fixture_types(),
                                 )
                                 .map_err(ActionRunError::PresetHandlerError)?;
-                        }
-                        _ => {
-                            return Err(ActionRunError::UpdatableHandlerError(
-                                UpdatableHandlerError::FaderIsNotASequence(fader_id),
-                            ))
                         }
                     }
                 } else {
@@ -317,6 +328,7 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                             fixture_handler,
                             preset_handler,
                             fixture_selector_context.clone(),
+                            patch.fixture_types(),
                         )
                         .map_err(ActionRunError::PresetHandlerError)?;
 

@@ -10,6 +10,7 @@ pub struct TabViewer<Tab: Display + Eq + Copy> {
     id: egui::Id,
     tabs: Vec<Tab>,
     initial_selected_tab: usize,
+    bypass_state: bool,
 }
 
 impl<Tab: Display + Eq + Copy> TabViewer<Tab> {
@@ -22,13 +23,30 @@ impl<Tab: Display + Eq + Copy> TabViewer<Tab> {
             id: egui::Id::new(id_source),
             tabs,
             initial_selected_tab: selected_tab,
+            bypass_state: false,
+        }
+    }
+
+    pub fn new_without_state(id_source: impl Hash, tabs: Vec<Tab>, selected_tab: usize) -> Self {
+        if selected_tab >= tabs.len() {
+            panic!("Selected tab index out of bounds");
+        }
+
+        Self {
+            id: egui::Id::new(id_source),
+            tabs,
+            initial_selected_tab: selected_tab,
+            bypass_state: true,
         }
     }
 
     pub fn show(&self, ui: &mut egui::Ui) -> TabViewerResponse<Tab> {
-        let mut selected_tab = ui
-            .data(|reader| reader.get_temp::<usize>(self.id))
-            .unwrap_or(self.initial_selected_tab);
+        let mut selected_tab = if self.bypass_state {
+            self.initial_selected_tab
+        } else {
+            ui.data(|reader| reader.get_temp::<usize>(self.id))
+                .unwrap_or(self.initial_selected_tab)
+        };
 
         let available_rect = ui.available_rect_before_wrap();
         let cell_width = available_rect.width() / self.tabs.len() as f32;
@@ -84,7 +102,9 @@ impl<Tab: Display + Eq + Copy> TabViewer<Tab> {
             cell_rect.max.x += cell_width;
         }
 
-        ui.data_mut(|writer| writer.insert_temp(self.id, selected_tab));
+        if !self.bypass_state {
+            ui.data_mut(|writer| writer.insert_temp(self.id, selected_tab));
+        }
 
         TabViewerResponse {
             selected_tab: self.tabs[selected_tab],

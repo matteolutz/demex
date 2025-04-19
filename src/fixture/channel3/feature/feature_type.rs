@@ -4,8 +4,11 @@ use serde::{Deserialize, Serialize};
 
 use super::feature_group::FixtureChannel3FeatureGroup;
 
-#[derive(Debug, Copy, Clone, strum_macros::EnumIter, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+    Debug, Copy, Clone, strum_macros::EnumIter, PartialEq, Eq, Serialize, Deserialize, Default,
+)]
 pub enum FixtureChannel3FeatureType {
+    #[default]
     Dimmer,
 
     PanTilt,
@@ -121,5 +124,11 @@ impl FixtureChannel3FeatureType {
             Self::Shapers => "Shapers",
             Self::Video => "Video",
         }
+    }
+}
+
+impl std::fmt::Display for FixtureChannel3FeatureType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
     }
 }

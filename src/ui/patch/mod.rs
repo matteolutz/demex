@@ -1,5 +1,3 @@
-use crate::fixture::patch::FixtureTypeAndMode;
-
 pub mod template;
 
 pub struct PatchUiNewFixture {
@@ -8,5 +6,5 @@ pub struct PatchUiNewFixture {
     pub universe: u16,
     pub start_address: u16,
 
-    pub type_and_mode: FixtureTypeAndMode,
+    pub type_and_mode: u32,
 }

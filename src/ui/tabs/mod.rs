@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::DemexUiContext;
 
+pub mod encoders_tab;
 pub mod faders_tab;
 pub mod fixture_controls_tab;
 pub mod fixture_list_tab;
@@ -26,6 +27,7 @@ pub enum DemexTab {
     Faders,
     SequencesList,
     SequenceEditor,
+    Encoders,
     Patch,
     Timing,
     FixtureSelection,
@@ -43,6 +45,7 @@ impl std::fmt::Display for DemexTab {
             DemexTab::Faders => write!(f, "Faders"),
             DemexTab::SequencesList => write!(f, "Sequences List"),
             DemexTab::SequenceEditor => write!(f, "Sequence Editor"),
+            DemexTab::Encoders => write!(f, "Encoders"),
             DemexTab::Patch => write!(f, "Patch"),
             DemexTab::Timing => write!(f, "Timing"),
             DemexTab::FixtureSelection => write!(f, "Fixture Selection"),
@@ -64,6 +67,7 @@ impl DemexTab {
             DemexTab::SequenceEditor => {
                 sequence_editor_tab::SequenceEditorTab::new(context, "MainSequenceEditor").show(ui)
             }
+            DemexTab::Encoders => encoders_tab::ui(ui, context),
             DemexTab::Patch => {
                 let mut patch_view_component = patch_tab::PatchViewComponent::new(context);
                 patch_view_component.show(ui);
@@ -124,10 +128,15 @@ impl Default for DemexTabs {
         ]);
 
         let surface = dock_state.main_surface_mut();
-        let [old_node, new_node] = surface.split_left(
-            egui_dock::NodeIndex::root(),
+
+        let [old_node, _] =
+            surface.split_below(egui_dock::NodeIndex::root(), 0.8, vec![DemexTab::Encoders]);
+
+        let [old_node, _] = surface.split_left(
+            old_node,
             0.65,
             vec![
+                DemexTab::LayoutView,
                 DemexTab::FixtureControls,
                 DemexTab::FixtureSelection,
                 DemexTab::SequenceEditor,
@@ -135,7 +144,6 @@ impl Default for DemexTabs {
             ],
         );
 
-        surface.split_below(new_node, 0.5, vec![DemexTab::LayoutView]);
         surface.split_above(
             old_node,
             0.5,

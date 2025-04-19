@@ -3,7 +3,7 @@ use super::{
     feature::feature_type::FixtureChannel3FeatureType,
 };
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, strum_macros::EnumIter)]
 pub enum FixtureChannel3Attribute {
     Dimmer,
     Pan,
@@ -287,18 +287,17 @@ pub enum FixtureChannel3Attribute {
 }
 
 impl FixtureChannel3Attribute {
-    pub fn feature_type(&self) -> FixtureChannel3FeatureType {
+    pub fn feature_type(&self) -> Option<FixtureChannel3FeatureType> {
         match self {
-            Self::Dimmer => FixtureChannel3FeatureType::Dimmer,
+            Self::Dimmer => Some(FixtureChannel3FeatureType::Dimmer),
 
-            Self::Pan | Self::Tilt => FixtureChannel3FeatureType::PanTilt,
+            Self::Pan | Self::Tilt => Some(FixtureChannel3FeatureType::PanTilt),
 
-            Self::ColorAddR | Self::ColorAddG | Self::ColorAddB => FixtureChannel3FeatureType::Rgb,
+            Self::ColorAddR | Self::ColorAddG | Self::ColorAddB => {
+                Some(FixtureChannel3FeatureType::Rgb)
+            }
 
-            variant => todo!(
-                "impl feature_type() for FixtureChannel3Attribute variant {:?}",
-                variant
-            ),
+            _ => None,
         }
     }
 

@@ -4,7 +4,7 @@ use edit::DemexEditWindow;
 use parking_lot::RwLock;
 
 use crate::fixture::{
-    handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler,
+    handler::FixtureHandler, patch::Patch, presets::PresetHandler, updatables::UpdatableHandler,
 };
 
 use super::dlog::dialog::DemexGlobalDialogEntry;
@@ -50,9 +50,16 @@ impl DemexWindowHandler {
         fixture_handler: &mut Arc<RwLock<FixtureHandler>>,
         preset_handler: &mut Arc<RwLock<PresetHandler>>,
         updatable_handler: &mut Arc<RwLock<UpdatableHandler>>,
+        patch: &mut Arc<RwLock<Patch>>,
     ) {
         for i in 0..self.windows.len() {
-            if self.windows[i].ui(ctx, fixture_handler, preset_handler, updatable_handler) {
+            if self.windows[i].ui(
+                ctx,
+                fixture_handler,
+                preset_handler,
+                updatable_handler,
+                patch,
+            ) {
                 self.windows.remove(i);
             }
         }
@@ -114,6 +121,7 @@ impl DemexWindow {
         fixture_handler: &mut Arc<RwLock<FixtureHandler>>,
         preset_handler: &mut Arc<RwLock<PresetHandler>>,
         updatable_handler: &mut Arc<RwLock<UpdatableHandler>>,
+        patch: &mut Arc<RwLock<Patch>>,
     ) -> bool {
         egui::Window::new(self.title())
             .resizable(false)
@@ -138,12 +146,14 @@ impl DemexWindow {
                         let mut fixture_handler = fixture_handler.write();
                         let mut preset_handler = preset_handler.write();
                         let mut updatable_handler = updatable_handler.write();
+                        let mut patch = patch.write();
 
                         if let Err(err) = edit_window.window_ui(
                             ui,
                             &mut fixture_handler,
                             &mut preset_handler,
                             &mut updatable_handler,
+                            &mut patch,
                         ) {
                             ui.vertical(|ui| {
                                 ui.colored_label(egui::Color32::LIGHT_RED, "Something went wrong.");

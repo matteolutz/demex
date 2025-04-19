@@ -20,11 +20,11 @@ pub fn render_new_fixture_patch_name(
             ),
             (
                 "type",
-                interpolator::Formattable::display(&new_fixture.type_and_mode.name),
+                interpolator::Formattable::display(&new_fixture.type_and_mode),
             ),
             (
                 "mode",
-                interpolator::Formattable::display(&new_fixture.type_and_mode.mode),
+                interpolator::Formattable::display(&new_fixture.type_and_mode),
             ),
         ]
         .into_iter()
@@ -35,8 +35,6 @@ pub fn render_new_fixture_patch_name(
 
 #[cfg(test)]
 mod tests {
-    use crate::fixture::patch::FixtureTypeAndMode;
-
     use super::*;
 
     #[test]
@@ -47,10 +45,7 @@ mod tests {
                     id: 1,
                     universe: 42,
                     start_address: 11,
-                    type_and_mode: FixtureTypeAndMode {
-                        name: "Generic Wash Light".to_owned(),
-                        mode: 2
-                    }
+                    type_and_mode: 0,
                 },
                 "{type} {id} ({universe}.{address})"
             ),

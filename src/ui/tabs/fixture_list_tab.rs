@@ -6,6 +6,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let preset_handler = context.preset_handler.read();
     let updatable_handler = context.updatable_handler.read();
     let timing_handler = context.timing_handler.read();
+    let patch = context.patch.read();
 
     egui::ScrollArea::horizontal().show(ui, |ui| {
         let selected_fixtures = context
@@ -94,7 +95,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                         // Intens
                         row.col(|ui| {
                             if let Ok(intensity) = fixture.get_attribute_value(
-                                &fixture_handler,
+                                patch.fixture_types(),
                                 "Dimmer",
                                 &preset_handler,
                                 &updatable_handler,

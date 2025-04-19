@@ -7,7 +7,7 @@ pub mod config;
 use crate::fixture::{
     error::FixtureError,
     gdtf::GdtfFixture,
-    handler::FixtureHandler,
+    handler::{FixtureHandler, FixtureTypeList},
     presets::PresetHandler,
     sequence::FadeFixtureChannelValue,
     timing::TimingHandler,
@@ -103,7 +103,6 @@ impl DemexFader {
 
                 Ok(())
             }
-            _ => Err(UpdatableHandlerError::FaderIsNotASequence(self.id)),
         }
     }
 
@@ -173,7 +172,7 @@ impl DemexFader {
 
     pub fn get_channel_value(
         &self,
-        fixture_handler: &FixtureHandler,
+        fixture_types: &FixtureTypeList,
         fixture: &GdtfFixture,
         channel: &gdtf::dmx_mode::DmxChannel,
         preset_handler: &PresetHandler,
@@ -210,7 +209,7 @@ impl DemexFader {
 
                 runtime
                     .channel_value(
-                        fixture_handler,
+                        fixture_types,
                         fixture,
                         channel,
                         speed_multiplier,

@@ -22,7 +22,7 @@ use super::{
     },
     effect::feature::{runtime::FeatureEffectRuntime, FeatureEffect},
     gdtf::GdtfFixture,
-    handler::{error::FixtureHandlerError, FixtureHandler},
+    handler::{error::FixtureHandlerError, FixtureHandler, FixtureTypeList},
     selection::FixtureSelection,
     sequence::{
         cue::{Cue, CueIdx, CueTiming, CueTrigger},
@@ -122,6 +122,7 @@ impl PresetHandler {
         fixture_selector_context: FixtureSelectorContext,
         id: FixturePresetId,
         name: Option<String>,
+        fixture_types: &FixtureTypeList,
         fixture_handler: &FixtureHandler,
         timing_handler: &TimingHandler,
     ) -> Result<(), PresetHandlerError> {
@@ -130,6 +131,7 @@ impl PresetHandler {
         }
 
         let data = FixturePreset::generate_preset_data(
+            fixture_types,
             fixture_handler,
             self,
             timing_handler,
@@ -176,6 +178,7 @@ impl PresetHandler {
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         id: FixturePresetId,
+        fixture_types: &FixtureTypeList,
         fixture_handler: &FixtureHandler,
         timing_handler: &TimingHandler,
         update_mode: UpdateMode,
@@ -183,6 +186,7 @@ impl PresetHandler {
         let preset = self.get_preset(id)?;
 
         let new_data = FixturePreset::generate_preset_data(
+            fixture_types,
             fixture_handler,
             self,
             timing_handler,
@@ -283,6 +287,7 @@ impl PresetHandler {
         &self,
         preset_id: FixturePresetId,
         fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
         channel_name: &str,
         timing_handler: &TimingHandler,
         state: Option<&FixtureChannelValue2PresetState>,
@@ -290,7 +295,14 @@ impl PresetHandler {
         let preset = self.get_preset(preset_id);
 
         if let Ok(preset) = preset {
-            preset.value(fixture, channel_name, self, timing_handler, state)
+            preset.value(
+                fixture,
+                fixture_types,
+                channel_name,
+                self,
+                timing_handler,
+                state,
+            )
         } else {
             None
         }
@@ -300,12 +312,14 @@ impl PresetHandler {
         &mut self,
         preset_id: FixturePresetId,
         fixture_handler: &mut FixtureHandler,
+        fixture_types: &FixtureTypeList,
         selection: FixtureSelection,
     ) -> Result<(), PresetHandlerError> {
         let preset = self.get_preset_mut(preset_id)?;
 
         for fixture_id in selection.fixtures() {
             preset.apply(
+                fixture_types,
                 fixture_handler.fixture(*fixture_id).ok_or(
                     PresetHandlerError::FixtureHandlerError(FixtureHandlerError::FixtureNotFound(
                         *fixture_id,
@@ -467,6 +481,7 @@ impl PresetHandler {
         fixture_handler: &FixtureHandler,
         channel_type_selector: &RecordChannelTypeSelector,
         update_mode: UpdateMode,
+        fixture_types: &FixtureTypeList,
     ) -> Result<usize, PresetHandlerError> {
         let selection = fixture_selector
             .get_selection(self, fixture_selector_context)
@@ -483,7 +498,12 @@ impl PresetHandler {
             .find(|c| c.cue_idx() == cue_idx)
             .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_idx))?;
 
-        let cue_data = Cue::generate_cue_data(fixture_handler, &selection, channel_type_selector)?;
+        let cue_data = Cue::generate_cue_data(
+            fixture_types,
+            fixture_handler,
+            &selection,
+            channel_type_selector,
+        )?;
 
         let values_updated = cue.update(sequence_id, cue_data, &selection, update_mode)?;
 
@@ -498,6 +518,7 @@ impl PresetHandler {
         fixture_selector_context: FixtureSelectorContext,
         cue_idx: Option<CueIdx>,
         channel_type_selector: &RecordChannelTypeSelector,
+        fixture_types: &FixtureTypeList,
     ) -> Result<(), PresetHandlerError> {
         // does this cue already exist?
         if let Some(cue_idx) = cue_idx {
@@ -528,7 +549,12 @@ impl PresetHandler {
             .get_selection(self, fixture_selector_context)
             .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?;
 
-        let cue_data = Cue::generate_cue_data(fixture_handler, &selection, channel_type_selector)?;
+        let cue_data = Cue::generate_cue_data(
+            fixture_types,
+            fixture_handler,
+            &selection,
+            channel_type_selector,
+        )?;
 
         let cue = Cue::new(
             discrete_cue_idx,

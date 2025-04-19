@@ -27,6 +27,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
     let mut preset_handler = context.preset_handler.write();
     let mut updatable_handler = context.updatable_handler.write();
+    let patch = context.patch.read();
 
     let _selected_fixtures = context
         .global_fixture_select
@@ -195,6 +196,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                     .apply_preset(
                                         preset_id,
                                         &mut fixture_handler,
+                                        patch.fixture_types(),
                                         selection.clone(),
                                     )
                                     .unwrap();

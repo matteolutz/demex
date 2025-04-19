@@ -1,17 +1,14 @@
-use itertools::Itertools;
 use strum::IntoEnumIterator;
 
-use crate::{
-    fixture::channel3::{
-        channel_value::FixtureChannelValue3, feature::feature_group::FixtureChannel3FeatureGroup,
-    },
-    utils::math::f32_to_coarse,
+use crate::fixture::channel3::{
+    channel_value::FixtureChannelValue3, feature::feature_group::FixtureChannel3FeatureGroup,
 };
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
     let preset_handler = context.preset_handler.read();
     let timing_handler = context.timing_handler.read();
+    let patch = context.patch.read();
 
     if context.global_fixture_select.is_none() {
         ui.centered_and_justified(|ui| ui.label("No fixtures selected"));
@@ -41,7 +38,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     for channel_name in fixture_handler
                         .fixture_immut(selected_fixtures[0])
                         .unwrap()
-                        .get_channels_in_feature_group(&fixture_handler, feature_group)
+                        .get_channels_in_feature_group(patch.fixture_types(), feature_group)
                         .unwrap()
                     {
                         ui.vertical(|ui| {
@@ -56,6 +53,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                             let (channel_function_idx, f_value) = programmer_value.get_as_discrete(
                                 fixture_handler.fixture_immut(selected_fixtures[0]).unwrap(),
+                                patch.fixture_types(),
                                 &channel_name,
                                 &preset_handler,
                                 &timing_handler,
@@ -87,6 +85,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                                 .fixture(*fixture)
                                                 .unwrap()
                                                 .set_programmer_value(
+                                                    patch.fixture_types(),
                                                     &channel_name,
                                                     FixtureChannelValue3::Discrete {
                                                         channel_function_idx,
@@ -107,6 +106,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                             .fixture(*fixture_id)
                                             .unwrap()
                                             .set_programmer_value(
+                                                patch.fixture_types(),
                                                 &channel_name,
                                                 FixtureChannelValue3::Home,
                                             )

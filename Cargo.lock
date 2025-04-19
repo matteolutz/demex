@@ -1183,7 +1183,7 @@ checksum = "da692b8d1080ea3045efaab14434d40468c3d8657e42abddfffca87b428f4c1b"
 
 [[package]]
 name = "demex"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "artnet_protocol",
  "catppuccin-egui",

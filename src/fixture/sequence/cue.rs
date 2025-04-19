@@ -10,7 +10,7 @@ use crate::{
     fixture::{
         channel3::channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
         gdtf::GdtfFixture,
-        handler::FixtureHandler,
+        handler::{FixtureHandler, FixtureTypeList},
         presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler},
         selection::FixtureSelection,
         timing::TimingHandler,
@@ -168,6 +168,7 @@ pub struct Cue {
 
 impl Cue {
     pub fn generate_cue_data(
+        fixture_types: &FixtureTypeList,
         fixture_handler: &FixtureHandler,
         fixture_selection: &FixtureSelection,
         channel_type_selector: &RecordChannelTypeSelector,
@@ -177,7 +178,7 @@ impl Cue {
         for fixture_id in fixture_selection.fixtures() {
             if let Some(fixture) = fixture_handler.fixture_immut(*fixture_id) {
                 let channel_values = channel_type_selector
-                    .get_channel_values(fixture_handler, fixture)
+                    .get_channel_values(fixture_types, fixture)
                     .map_err(PresetHandlerError::FixtureError)?;
 
                 if channel_values.is_empty() {
@@ -335,6 +336,7 @@ impl Cue {
     pub fn channel_value_for_fixture(
         &self,
         fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
         channel_name: &str,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
@@ -379,6 +381,7 @@ impl Cue {
                         if let Ok(preset) = preset {
                             return preset.value(
                                 fixture,
+                                fixture_types,
                                 channel_name,
                                 preset_handler,
                                 timing_handler,
@@ -481,14 +484,18 @@ impl Cue {
             .collect()
     }
 
-    pub fn recall(&self, fixture_handler: &mut FixtureHandler) {
+    pub fn recall(&self, fixture_types: &FixtureTypeList, fixture_handler: &mut FixtureHandler) {
         match self.data {
             CueDataMode::Default(ref data) => {
                 for (fixture_id, data) in data {
                     if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
                         for value in data {
                             fixture
-                                .set_programmer_value(value.channel_name(), value.value().clone())
+                                .set_programmer_value(
+                                    fixture_types,
+                                    value.channel_name(),
+                                    value.value().clone(),
+                                )
                                 .unwrap();
                         }
                     }

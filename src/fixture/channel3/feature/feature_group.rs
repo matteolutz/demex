@@ -106,4 +106,24 @@ impl FixtureChannel3FeatureGroup {
             Self::Video => "Video",
         }
     }
+
+    pub fn default_feature(&self) -> FixtureChannel3FeatureType {
+        match self {
+            Self::Dimmer => FixtureChannel3FeatureType::Dimmer,
+            Self::Position => FixtureChannel3FeatureType::PanTilt,
+            Self::Gobo => FixtureChannel3FeatureType::Gobo,
+            Self::Color => FixtureChannel3FeatureType::Rgb,
+            Self::Beam => FixtureChannel3FeatureType::Beam,
+            Self::Focus => FixtureChannel3FeatureType::Focus,
+            Self::Control => FixtureChannel3FeatureType::Control,
+            Self::Shapers => FixtureChannel3FeatureType::Shapers,
+            Self::Video => FixtureChannel3FeatureType::Video,
+        }
+    }
+}
+
+impl std::fmt::Display for FixtureChannel3FeatureGroup {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
