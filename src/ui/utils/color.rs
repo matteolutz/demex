@@ -15,12 +15,12 @@ pub fn rgbw_to_rgb(mut rgbw: [f32; 4]) -> [f32; 3] {
 
     if white > 0.0 && max_rgb > 0.0 {
         for i in 0..3 {
-            rgbw[i] = rgbw[i] * (1.0 - white * RGB_RATIOS[i]);
+            rgbw[i] *= 1.0 - white * RGB_RATIOS[i];
         }
     }
 
     for i in 0..3 {
-        rgbw[i] = rgbw[i] + (white * RGB_RATIOS[i]);
+        rgbw[i] += white * RGB_RATIOS[i];
     }
 
     [

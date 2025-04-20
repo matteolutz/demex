@@ -38,9 +38,7 @@ impl GdtfFixturePatch {
         let fixture_type = fixture_types
             .iter()
             .find(|ft| ft.fixture_type_id == self.fixture_type_id)
-            .ok_or(FixtureError::GdtfFixtureTypeNotFound(
-                self.fixture_type_id.clone(),
-            ))?;
+            .ok_or(FixtureError::GdtfFixtureTypeNotFound(self.fixture_type_id))?;
 
         GdtfFixture::new(
             self.id,
@@ -99,7 +97,7 @@ impl GdtfFixture {
             .dmx_channels
             .iter()
             .flat_map(|dmx_channel| &dmx_channel.offset)
-            .flat_map(|offsets| offsets)
+            .flatten()
             .max()
             .copied()
             .ok_or(FixtureError::GdtfMaxDmxOffsetNotFound)?) as u16;
@@ -314,35 +312,30 @@ impl GdtfFixture {
         &self,
         fixture_types: &FixtureTypeList,
         preset_handler: &PresetHandler,
-        updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
     ) -> Result<[f32; 3], FixtureError> {
         let red = self.get_attribute_display_value(
             fixture_types,
             "ColorAdd_R",
             preset_handler,
-            updatable_handler,
             timing_handler,
         )?;
         let green = self.get_attribute_display_value(
             fixture_types,
             "ColorAdd_G",
             preset_handler,
-            updatable_handler,
             timing_handler,
         )?;
         let blue = self.get_attribute_display_value(
             fixture_types,
             "ColorAdd_B",
             preset_handler,
-            updatable_handler,
             timing_handler,
         )?;
         let white = self.get_attribute_display_value(
             fixture_types,
             "ColorAdd_W",
             preset_handler,
-            updatable_handler,
             timing_handler,
         )?;
 
@@ -354,7 +347,6 @@ impl GdtfFixture {
         fixture_types: &FixtureTypeList,
         attribute: &str,
         preset_handler: &PresetHandler,
-        updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
     ) -> Result<f32, FixtureError> {
         let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
@@ -379,13 +371,7 @@ impl GdtfFixture {
             })
             .ok_or_else(|| FixtureError::GdtfNoChannelForAttributeFound(attribute.to_owned()))?;
 
-        let value = self._get_value(
-            fixture_types,
-            channel,
-            preset_handler,
-            updatable_handler,
-            timing_handler,
-        )?;
+        let value = self._get_value(channel)?;
 
         let (value_channel_function_idx, value_f) = value.get_as_discrete(
             self,
@@ -409,9 +395,6 @@ impl GdtfFixture {
         &self,
         fixture_types: &FixtureTypeList,
         attribute: &str,
-        preset_handler: &PresetHandler,
-        updatable_handler: &UpdatableHandler,
-        timing_handler: &TimingHandler,
     ) -> Result<FixtureChannelValue3, FixtureError> {
         let (fixture_type, _) = self.fixture_type_and_dmx_mode(fixture_types)?;
 
@@ -426,41 +409,22 @@ impl GdtfFixture {
             })
             .ok_or_else(|| FixtureError::GdtfNoChannelForAttributeFound(attribute.to_owned()))?;
 
-        self._get_value(
-            fixture_types,
-            channel,
-            preset_handler,
-            updatable_handler,
-            timing_handler,
-        )
+        self._get_value(channel)
     }
 
     pub fn get_value(
         &self,
         fixture_types: &FixtureTypeList,
         channel: &str,
-        preset_handler: &PresetHandler,
-        updatable_handler: &UpdatableHandler,
-        timing_handler: &TimingHandler,
     ) -> Result<FixtureChannelValue3, FixtureError> {
         let (channel, _) = self.get_channel(fixture_types, channel)?;
 
-        self._get_value(
-            fixture_types,
-            channel,
-            preset_handler,
-            updatable_handler,
-            timing_handler,
-        )
+        self._get_value(channel)
     }
 
     fn _get_value(
         &self,
-        fixture_types: &FixtureTypeList,
         channel: &gdtf::dmx_mode::DmxChannel,
-        preset_handler: &PresetHandler,
-        updatable_handler: &UpdatableHandler,
-        timing_handler: &TimingHandler,
     ) -> Result<FixtureChannelValue3, FixtureError> {
         /*self.sources.get_channel_value(
             fixture_types,
@@ -476,7 +440,7 @@ impl GdtfFixture {
             .ok_or_else(|| {
                 FixtureError::GdtfChannelValueNotFound(channel.name().as_ref().to_owned())
             })
-            .map(|value| value.clone())
+            .cloned()
     }
 
     pub fn get_programmer_value(

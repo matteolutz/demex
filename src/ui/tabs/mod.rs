@@ -6,7 +6,6 @@ use super::DemexUiContext;
 
 pub mod encoders_tab;
 pub mod faders_tab;
-pub mod fixture_controls_tab;
 pub mod fixture_list_tab;
 pub mod fixture_selection_tab;
 pub mod layout_view_tab;
@@ -23,7 +22,6 @@ pub enum DemexTab {
     LayoutView,
     FixtureList,
     PresetGrid,
-    FixtureControls,
     Faders,
     SequencesList,
     SequenceEditor,
@@ -41,7 +39,6 @@ impl std::fmt::Display for DemexTab {
             DemexTab::LayoutView => write!(f, "Layout View"),
             DemexTab::FixtureList => write!(f, "Fixture List"),
             DemexTab::PresetGrid => write!(f, "Preset Grid"),
-            DemexTab::FixtureControls => write!(f, "Fixture Controls"),
             DemexTab::Faders => write!(f, "Faders"),
             DemexTab::SequencesList => write!(f, "Sequences List"),
             DemexTab::SequenceEditor => write!(f, "Sequence Editor"),
@@ -61,7 +58,6 @@ impl DemexTab {
             DemexTab::LayoutView => layout_view_tab::LayoutViewComponent::new(context).show(ui),
             DemexTab::FixtureList => fixture_list_tab::ui(ui, context),
             DemexTab::PresetGrid => preset_grid_tab::ui(ui, context),
-            DemexTab::FixtureControls => fixture_controls_tab::ui(ui, context),
             DemexTab::Faders => faders_tab::ui(ui, context),
             DemexTab::SequencesList => sequences_list_tab::ui(ui, context),
             DemexTab::SequenceEditor => {
@@ -86,7 +82,7 @@ pub struct DemexTabViewer<'a> {
     egui_ctx: &'a eframe::egui::Context,
 }
 
-impl<'a> TabViewer for DemexTabViewer<'a> {
+impl TabViewer for DemexTabViewer<'_> {
     type Tab = DemexTab;
 
     fn title(&mut self, tab: &mut Self::Tab) -> WidgetText {
@@ -137,7 +133,6 @@ impl Default for DemexTabs {
             0.65,
             vec![
                 DemexTab::LayoutView,
-                DemexTab::FixtureControls,
                 DemexTab::FixtureSelection,
                 DemexTab::SequenceEditor,
                 DemexTab::Patch,

@@ -32,7 +32,6 @@ impl<'a> LayoutViewComponent<'a> {
 
         let fixture_handler = self.context.fixture_handler.read();
         let preset_handler = self.context.preset_handler.read();
-        let updatable_handler = self.context.updatable_handler.read();
         let timing_handler = self.context.timing_handler.read();
         let patch = self.context.patch.read();
 
@@ -114,18 +113,14 @@ impl<'a> LayoutViewComponent<'a> {
                     patch.fixture_types(),
                     "Dimmer",
                     &preset_handler,
-                    &updatable_handler,
                     &timing_handler,
                 )
                 .ok()
                 .unwrap();
 
-            let rect_color = if let Ok(color) = fixture.display_color(
-                patch.fixture_types(),
-                &preset_handler,
-                &updatable_handler,
-                &timing_handler,
-            ) {
+            let rect_color = if let Ok(color) =
+                fixture.display_color(patch.fixture_types(), &preset_handler, &timing_handler)
+            {
                 egui::Color32::from_rgba_unmultiplied(
                     (color[0] * 255.0) as u8,
                     (color[1] * 255.0) as u8,
