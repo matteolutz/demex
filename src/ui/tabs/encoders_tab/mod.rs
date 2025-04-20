@@ -77,40 +77,29 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
 
             if let Some(fixture_select) = context.global_fixture_select.as_ref() {
                 for attribute in context.encoders_tab_state.attributes() {
-                    let fixtures = fixture_handler.selected_fixtures_mut(fixture_select);
+                    let mut fixtures = fixture_handler.selected_fixtures_mut(fixture_select);
 
-                    let channels = fixtures
-                        .iter()
-                        .flat_map(|fixture| {
-                            fixture
-                                .channels_for_attribute_matches(
-                                    patch.fixture_types(),
-                                    |fixture_attribute_name| {
-                                        FixtureChannel3Attribute::attribute_matches(
-                                            fixture_attribute_name,
-                                            attribute,
-                                        )
-                                    },
+                    let channels = fixtures[0]
+                        .channels_for_attribute_matches(
+                            patch.fixture_types(),
+                            |fixture_attribute_name| {
+                                FixtureChannel3Attribute::attribute_matches(
+                                    fixture_attribute_name,
+                                    attribute,
                                 )
-                                .unwrap()
-                        })
-                        .map(|(dmx_channel, _, attribute_name, channel_function_idx)| {
-                            (
-                                dmx_channel.name().as_ref().to_owned(),
-                                attribute_name.to_owned(),
-                                channel_function_idx,
-                            )
+                            },
+                        )
+                        .unwrap()
+                        .into_iter()
+                        .map(|(dmx_channel, _, channel_functions)| {
+                            (dmx_channel.name().as_ref().to_owned(), channel_functions)
                         })
                         .collect::<Vec<_>>();
 
                     if !channels.is_empty() {
-                        let (
-                            master_channel_name,
-                            master_channel_attribute_name,
-                            master_channel_function_idx,
-                        ) = &channels[0];
+                        let (master_channel_name, master_channel_functions) = &channels[0];
 
-                        let is_active = channels.iter().any(|(channel_name, _, _)| {
+                        let is_active = channels.iter().any(|(channel_name, _)| {
                             fixtures[0]
                                 .get_programmer_value(channel_name.as_str())
                                 .is_ok_and(|val| !val.is_home())
@@ -120,7 +109,7 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                             ui.set_width(encoder_size.x);
                             ui.set_height(encoder_size.y);
 
-                            ui.label(RichText::new(master_channel_attribute_name).color(
+                            ui.label(RichText::new(master_channel_functions[0].1).color(
                                 if !is_active {
                                     egui::Color32::PLACEHOLDER
                                 } else {
@@ -139,36 +128,67 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                                         &timing_handler,
                                     )
                                 })
-                                .ok()
-                                .and_then(|val| {
-                                    if val.0 != *master_channel_function_idx {
-                                        None
-                                    } else {
-                                        Some(val)
-                                    }
-                                })
                                 .unwrap_or_default();
 
                             let mut slider_val = fixture_val;
 
                             ui.add(egui::Slider::new(&mut slider_val, 0.0..=1.0));
 
-                            if ui.button("Home").clicked() || slider_val != fixture_val {
-                                for fixture in fixtures {
-                                    for (channel_name, _, channel_function_idx) in &channels {
-                                        let _ = fixture.set_programmer_value(
-                                            patch.fixture_types(),
-                                            channel_name,
-                                            if slider_val != fixture_val {
-                                                FixtureChannelValue3::Discrete {
-                                                    channel_function_idx: *channel_function_idx,
-                                                    value: slider_val,
-                                                }
-                                            } else {
-                                                FixtureChannelValue3::Home
-                                            },
-                                        );
+                            let (should_home, selected_channel_function) = ui
+                                .horizontal(|ui| {
+                                    let should_home = ui.button("Home").clicked();
+
+                                    let mut selected_channel_function = fixture_val_function_idx;
+
+                                    for (channel_function_idx, channel_function_attribute) in
+                                        master_channel_functions
+                                    {
+                                        if ui
+                                            .button(
+                                                RichText::new(
+                                                    channel_function_attribute.to_owned(),
+                                                )
+                                                .color(
+                                                    if *channel_function_idx
+                                                        == selected_channel_function
+                                                    {
+                                                        egui::Color32::GREEN
+                                                    } else {
+                                                        egui::Color32::WHITE
+                                                    },
+                                                ),
+                                            )
+                                            .clicked()
+                                        {
+                                            selected_channel_function = *channel_function_idx;
+                                        }
                                     }
+
+                                    (should_home, selected_channel_function)
+                                })
+                                .inner;
+
+                            if selected_channel_function != fixture_val_function_idx {
+                                slider_val = 0.0;
+                            }
+
+                            if should_home
+                                || selected_channel_function != fixture_val_function_idx
+                                || slider_val != fixture_val
+                            {
+                                for (channel_name, _) in &channels {
+                                    let _ = fixtures[0].set_programmer_value(
+                                        patch.fixture_types(),
+                                        channel_name,
+                                        if !should_home {
+                                            FixtureChannelValue3::Discrete {
+                                                channel_function_idx: selected_channel_function,
+                                                value: slider_val,
+                                            }
+                                        } else {
+                                            FixtureChannelValue3::Home
+                                        },
+                                    );
                                 }
                             }
                         });

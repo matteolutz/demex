@@ -1,9 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+use crate::ui::utils::color::rgbw_to_rgb;
+
 use super::{
     channel3::{
-        channel_value::FixtureChannelValue3, feature::feature_group::FixtureChannel3FeatureGroup,
-        utils::dmx_value_to_f32,
+        attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3,
+        feature::feature_group::FixtureChannel3FeatureGroup,
     },
     error::FixtureError,
     handler::FixtureTypeList,
@@ -63,7 +65,8 @@ pub struct GdtfFixture {
     start_address: u16,
     address_footprint: u16,
 
-    values: HashMap<String, FixtureChannelValue3>,
+    programmer_values: HashMap<String, FixtureChannelValue3>,
+    outputs_values: HashMap<String, FixtureChannelValue3>,
 
     sources: Vec<FixtureChannelValueSource>,
 }
@@ -109,7 +112,8 @@ impl GdtfFixture {
             universe,
             start_address,
             address_footprint,
-            values,
+            programmer_values: values.clone(),
+            outputs_values: values,
             sources: vec![FixtureChannelValueSource::Programmer],
         })
     }
@@ -139,7 +143,7 @@ impl GdtfFixture {
     }
 
     pub fn programmer_values(&self) -> &HashMap<String, FixtureChannelValue3> {
-        &self.values
+        &self.programmer_values
     }
 
     pub fn sources(&self) -> &[FixtureChannelValueSource] {
@@ -177,7 +181,7 @@ impl GdtfFixture {
             self.sources.push(FixtureChannelValueSource::Programmer);
         }
 
-        for value in self.values.values_mut() {
+        for value in self.programmer_values.values_mut() {
             *value = FixtureChannelValue3::Home;
         }
 
@@ -260,8 +264,7 @@ impl GdtfFixture {
         Vec<(
             &'a gdtf::dmx_mode::DmxChannel,
             &'a gdtf::dmx_mode::LogicalChannel,
-            &'a str,
-            usize,
+            Vec<(usize, &'a str)>,
         )>,
         FixtureError,
     > {
@@ -272,15 +275,19 @@ impl GdtfFixture {
             .iter()
             .map(|dmx_channel| (dmx_channel, &dmx_channel.logical_channels[0]))
             .filter_map(|(dmx_channel, logical_channel)| {
-                for (idx, function) in logical_channel.channel_functions.iter().enumerate() {
-                    if filter(function.attribute.first().unwrap().as_ref()) {
-                        return Some((
-                            dmx_channel,
-                            logical_channel,
-                            function.attribute.first().unwrap().as_ref(),
-                            idx,
-                        ));
-                    }
+                if filter(logical_channel.attribute.first().unwrap().as_ref()) {
+                    return Some((
+                        dmx_channel,
+                        logical_channel,
+                        logical_channel
+                            .channel_functions
+                            .iter()
+                            .enumerate()
+                            .map(|(idx, function)| {
+                                (idx, function.attribute.first().unwrap().as_ref())
+                            })
+                            .collect::<Vec<_>>(),
+                    ));
                 }
 
                 None
@@ -296,12 +303,50 @@ impl GdtfFixture {
         Vec<(
             &'a gdtf::dmx_mode::DmxChannel,
             &'a gdtf::dmx_mode::LogicalChannel,
-            &'a str,
-            usize,
+            Vec<(usize, &'a str)>,
         )>,
         FixtureError,
     > {
         self.channels_for_attribute_matches(fixture_types, |attr| attr == attribute)
+    }
+
+    pub fn display_color(
+        &self,
+        fixture_types: &FixtureTypeList,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
+    ) -> Result<[f32; 3], FixtureError> {
+        let red = self.get_attribute_display_value(
+            fixture_types,
+            "ColorAdd_R",
+            preset_handler,
+            updatable_handler,
+            timing_handler,
+        )?;
+        let green = self.get_attribute_display_value(
+            fixture_types,
+            "ColorAdd_G",
+            preset_handler,
+            updatable_handler,
+            timing_handler,
+        )?;
+        let blue = self.get_attribute_display_value(
+            fixture_types,
+            "ColorAdd_B",
+            preset_handler,
+            updatable_handler,
+            timing_handler,
+        )?;
+        let white = self.get_attribute_display_value(
+            fixture_types,
+            "ColorAdd_W",
+            preset_handler,
+            updatable_handler,
+            timing_handler,
+        )?;
+
+        Ok(rgbw_to_rgb([red, green, blue, white]))
     }
 
     pub fn get_attribute_display_value(
@@ -312,17 +357,25 @@ impl GdtfFixture {
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
     ) -> Result<f32, FixtureError> {
-        let (fixture_type, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
+        let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
 
-        let channel = dmx_mode
+        let (channel, channel_function_idx) = dmx_mode
             .dmx_channels
             .iter()
-            .find(|dmx_channel| {
-                dmx_channel.logical_channels[0]
-                    .attribute(fixture_type)
-                    .is_some_and(|fixture_attribute| {
-                        fixture_attribute.name.as_ref().unwrap().as_ref() == attribute
-                    })
+            .find_map(|dmx_channel| {
+                for (idx, channel_function) in dmx_channel.logical_channels[0]
+                    .channel_functions
+                    .iter()
+                    .enumerate()
+                {
+                    if FixtureChannel3Attribute::attribute_matches(
+                        channel_function.attribute.first().unwrap().as_ref(),
+                        attribute,
+                    ) {
+                        return Some((dmx_channel, idx));
+                    }
+                }
+                None
             })
             .ok_or_else(|| FixtureError::GdtfNoChannelForAttributeFound(attribute.to_owned()))?;
 
@@ -334,18 +387,22 @@ impl GdtfFixture {
             timing_handler,
         )?;
 
-        let dmx_value = value
-            .to_dmx(
-                fixture_types,
-                self,
-                channel,
-                1.0,
-                preset_handler,
-                timing_handler,
-            )
-            .ok_or_else(|| FixtureError::GdtfNoChannelForAttributeFound(attribute.to_owned()))?;
+        let (value_channel_function_idx, value_f) = value.get_as_discrete(
+            self,
+            fixture_types,
+            channel.name().as_ref(),
+            preset_handler,
+            timing_handler,
+        );
 
-        Ok(dmx_value_to_f32(dmx_value))
+        if value_channel_function_idx != channel_function_idx {
+            return Err(FixtureError::GdtfChannelFunctionMismatch(
+                channel_function_idx,
+                value_channel_function_idx,
+            ));
+        }
+
+        Ok(value_f)
     }
 
     pub fn get_attribute_value(
@@ -405,21 +462,28 @@ impl GdtfFixture {
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
     ) -> Result<FixtureChannelValue3, FixtureError> {
-        self.sources.get_channel_value(
+        /*self.sources.get_channel_value(
             fixture_types,
             self,
             channel,
             updatable_handler,
             preset_handler,
             timing_handler,
-        )
+        )*/
+
+        self.outputs_values
+            .get(channel.name().as_ref())
+            .ok_or_else(|| {
+                FixtureError::GdtfChannelValueNotFound(channel.name().as_ref().to_owned())
+            })
+            .map(|value| value.clone())
     }
 
     pub fn get_programmer_value(
         &self,
         channel: &str,
     ) -> Result<&FixtureChannelValue3, FixtureError> {
-        self.values
+        self.programmer_values
             .get(channel)
             .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel.to_owned()))
     }
@@ -438,7 +502,7 @@ impl GdtfFixture {
             .ok_or_else(|| FixtureError::GdtfChannelHasNoAttribute(channel.to_owned()))?;
 
         let programmer_value = self
-            .values
+            .programmer_values
             .get_mut(channel)
             .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel.to_owned()))?;
         *programmer_value = value.clone();
@@ -469,7 +533,10 @@ impl GdtfFixture {
                                 })
                     })
             {
-                let channel_value = self.values.get_mut(dmx_channel.name().as_ref()).unwrap();
+                let channel_value = self
+                    .programmer_values
+                    .get_mut(dmx_channel.name().as_ref())
+                    .unwrap();
                 if channel_value.is_home() != linked_value.is_home() {
                     *channel_value = linked_value.clone();
                 }
@@ -479,14 +546,49 @@ impl GdtfFixture {
         Ok(())
     }
 
+    pub fn update_output_values(
+        &mut self,
+        fixture_types: &FixtureTypeList,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
+    ) -> Result<(), FixtureError> {
+        let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
+
+        for dmx_channel in &dmx_mode.dmx_channels {
+            let new_output_value = self.sources.get_channel_value(
+                fixture_types,
+                self,
+                dmx_channel,
+                updatable_handler,
+                preset_handler,
+                timing_handler,
+            )?;
+            let output_value = self
+                .outputs_values
+                .get_mut(dmx_channel.name().as_ref())
+                .unwrap();
+            *output_value = new_output_value;
+        }
+
+        Ok(())
+    }
+
     pub fn generate_data_packet(
-        &self,
+        &mut self,
         fixture_types: &FixtureTypeList,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
         grand_master: f32,
     ) -> Result<Vec<u8>, FixtureError> {
+        self.update_output_values(
+            fixture_types,
+            preset_handler,
+            updatable_handler,
+            timing_handler,
+        )?;
+
         let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
 
         let mut data = vec![0u8; self.address_footprint as usize];
@@ -498,14 +600,18 @@ impl GdtfFixture {
                 None => continue,
             };
 
-            let value = self.sources.get_channel_value(
+            /*let value = self.sources.get_channel_value(
                 fixture_types,
                 self,
                 dmx_channel,
                 updatable_handler,
                 preset_handler,
                 timing_handler,
-            )?;
+            )?;*/
+            let value = self
+                .outputs_values
+                .get(dmx_channel.name().as_ref())
+                .unwrap();
 
             let dmx_value = value
                 .to_dmx(

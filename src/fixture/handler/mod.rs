@@ -152,7 +152,7 @@ impl FixtureHandler {
     ) -> Result<usize, FixtureHandlerError> {
         let mut dirty_universes: BTreeSet<u16> = BTreeSet::new();
 
-        for f in &self.fixtures {
+        for f in &mut self.fixtures {
             let fixture_universe_offset = f.start_address() - 1;
 
             let data_packet = f

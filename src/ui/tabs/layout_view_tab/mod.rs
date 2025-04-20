@@ -120,9 +120,12 @@ impl<'a> LayoutViewComponent<'a> {
                 .ok()
                 .unwrap();
 
-            /*let rect_color = if let Ok(color) =
-                fixture.display_color(&preset_handler, &updatable_handler, &timing_handler)
-            {
+            let rect_color = if let Ok(color) = fixture.display_color(
+                patch.fixture_types(),
+                &preset_handler,
+                &updatable_handler,
+                &timing_handler,
+            ) {
                 egui::Color32::from_rgba_unmultiplied(
                     (color[0] * 255.0) as u8,
                     (color[1] * 255.0) as u8,
@@ -134,6 +137,8 @@ impl<'a> LayoutViewComponent<'a> {
             };
 
             let rect_color = egui::Color32::BLACK.blend(rect_color);
+
+            /*
 
             let position: Option<egui::Vec2> = fixture
                 .feature_value(
@@ -153,12 +158,7 @@ impl<'a> LayoutViewComponent<'a> {
                 &state.layout_projection,
                 &rect,
                 &painter,
-                egui::Color32::BLACK.blend(egui::Color32::from_rgba_unmultiplied(
-                    255,
-                    255,
-                    255,
-                    (intensity * 255.0) as u8,
-                )),
+                rect_color,
                 None,
                 is_selected,
                 false,

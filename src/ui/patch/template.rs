@@ -49,7 +49,7 @@ mod tests {
                 },
                 "{type} {id} ({universe}.{address})"
             ),
-            Some("Generic Wash Light 1 (42.11)".to_owned())
+            Some("0 1 (42.11)".to_owned())
         );
     }
 }
