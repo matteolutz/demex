@@ -26,10 +26,8 @@ impl EncodersTabState {
         self.feature.feature_group()
     }
 
-    pub fn attributes(&self) -> Vec<FixtureChannel3Attribute> {
-        FixtureChannel3Attribute::iter()
-            .filter(|attr| attr.feature_type() == Some(self.feature))
-            .collect()
+    pub fn attributes(&self) -> &[&str] {
+        self.feature.attributes()
     }
 }
 
@@ -79,25 +77,40 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
 
             if let Some(fixture_select) = context.global_fixture_select.as_ref() {
                 for attribute in context.encoders_tab_state.attributes() {
-                    let attribute_name = attribute.to_string();
-
                     let fixtures = fixture_handler.selected_fixtures_mut(fixture_select);
 
                     let channels = fixtures
                         .iter()
                         .flat_map(|fixture| {
                             fixture
-                                .channels_for_attribute(
+                                .channels_for_attribute_matches(
                                     patch.fixture_types(),
-                                    attribute_name.as_str(),
+                                    |fixture_attribute_name| {
+                                        FixtureChannel3Attribute::attribute_matches(
+                                            fixture_attribute_name,
+                                            attribute,
+                                        )
+                                    },
                                 )
                                 .unwrap()
                         })
-                        .map(|(dmx_channel, _)| dmx_channel.name().as_ref().to_owned())
+                        .map(|(dmx_channel, _, attribute_name, channel_function_idx)| {
+                            (
+                                dmx_channel.name().as_ref().to_owned(),
+                                attribute_name.to_owned(),
+                                channel_function_idx,
+                            )
+                        })
                         .collect::<Vec<_>>();
 
                     if !channels.is_empty() {
-                        let is_active = channels.iter().any(|channel_name| {
+                        let (
+                            master_channel_name,
+                            master_channel_attribute_name,
+                            master_channel_function_idx,
+                        ) = &channels[0];
+
+                        let is_active = channels.iter().any(|(channel_name, _, _)| {
                             fixtures[0]
                                 .get_programmer_value(channel_name.as_str())
                                 .is_ok_and(|val| !val.is_home())
@@ -107,22 +120,32 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                             ui.set_width(encoder_size.x);
                             ui.set_height(encoder_size.y);
 
-                            ui.label(RichText::new(attribute_name.as_str()).color(if !is_active {
-                                egui::Color32::PLACEHOLDER
-                            } else {
-                                egui::Color32::YELLOW
-                            }));
+                            ui.label(RichText::new(master_channel_attribute_name).color(
+                                if !is_active {
+                                    egui::Color32::PLACEHOLDER
+                                } else {
+                                    egui::Color32::YELLOW
+                                },
+                            ));
 
                             let (fixture_val_function_idx, fixture_val) = fixtures[0]
-                                .get_programmer_value(channels[0].as_str())
+                                .get_programmer_value(master_channel_name)
                                 .map(|val| {
                                     val.get_as_discrete(
                                         fixtures[0],
                                         patch.fixture_types(),
-                                        channels[0].as_str(),
+                                        master_channel_name,
                                         &preset_handler,
                                         &timing_handler,
                                     )
+                                })
+                                .ok()
+                                .and_then(|val| {
+                                    if val.0 != *master_channel_function_idx {
+                                        None
+                                    } else {
+                                        Some(val)
+                                    }
                                 })
                                 .unwrap_or_default();
 
@@ -132,13 +155,13 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
 
                             if ui.button("Home").clicked() || slider_val != fixture_val {
                                 for fixture in fixtures {
-                                    for channel_name in &channels {
+                                    for (channel_name, _, channel_function_idx) in &channels {
                                         let _ = fixture.set_programmer_value(
                                             patch.fixture_types(),
                                             channel_name,
                                             if slider_val != fixture_val {
                                                 FixtureChannelValue3::Discrete {
-                                                    channel_function_idx: fixture_val_function_idx,
+                                                    channel_function_idx: *channel_function_idx,
                                                     value: slider_val,
                                                 }
                                             } else {

@@ -19,6 +19,14 @@ pub enum FixtureChannel3ActivationGroup {
     Shaper,
 }
 
+impl FixtureChannel3ActivationGroup {
+    pub fn attributes(&self) -> &[&str] {
+        match self {
+            _ => &[],
+        }
+    }
+}
+
 impl ToString for FixtureChannel3ActivationGroup {
     fn to_string(&self) -> String {
         match self {

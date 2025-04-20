@@ -252,14 +252,16 @@ impl GdtfFixture {
             .map(|dmx_channel| (dmx_channel, &dmx_channel.logical_channels[0])))
     }
 
-    pub fn channels_for_attribute<'a>(
+    pub fn channels_for_attribute_matches<'a>(
         &self,
         fixture_types: &'a FixtureTypeList,
-        attribute: &str,
+        filter: impl Fn(&str) -> bool,
     ) -> Result<
         Vec<(
             &'a gdtf::dmx_mode::DmxChannel,
             &'a gdtf::dmx_mode::LogicalChannel,
+            &'a str,
+            usize,
         )>,
         FixtureError,
     > {
@@ -269,13 +271,37 @@ impl GdtfFixture {
             .dmx_channels
             .iter()
             .map(|dmx_channel| (dmx_channel, &dmx_channel.logical_channels[0]))
-            .filter(|(_, logical_channel)| {
-                logical_channel
-                    .channel_functions
-                    .iter()
-                    .any(|function| function.attribute.first().unwrap().as_ref() == attribute)
+            .filter_map(|(dmx_channel, logical_channel)| {
+                for (idx, function) in logical_channel.channel_functions.iter().enumerate() {
+                    if filter(function.attribute.first().unwrap().as_ref()) {
+                        return Some((
+                            dmx_channel,
+                            logical_channel,
+                            function.attribute.first().unwrap().as_ref(),
+                            idx,
+                        ));
+                    }
+                }
+
+                None
             })
             .collect())
+    }
+
+    pub fn channels_for_attribute<'a>(
+        &self,
+        fixture_types: &'a FixtureTypeList,
+        attribute: &str,
+    ) -> Result<
+        Vec<(
+            &'a gdtf::dmx_mode::DmxChannel,
+            &'a gdtf::dmx_mode::LogicalChannel,
+            &'a str,
+            usize,
+        )>,
+        FixtureError,
+    > {
+        self.channels_for_attribute_matches(fixture_types, |attr| attr == attribute)
     }
 
     pub fn get_attribute_display_value(

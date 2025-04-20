@@ -276,7 +276,7 @@ impl FixturePreset {
                 for attribute in runtime.effect().get_attributes() {
                     // if the fixture doesn't have this feature type, skip
                     if let Ok(channels) = fixture.channels_for_attribute(fixture_types, attribute) {
-                        for (dmx_channel, _) in channels {
+                        for (dmx_channel, _, _, _) in channels {
                             fixture
                                 .set_programmer_value(
                                     fixture_types,

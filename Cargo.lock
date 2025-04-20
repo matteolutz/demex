@@ -1199,6 +1199,7 @@ dependencies = [
  "image",
  "interpolator",
  "itertools 0.13.0",
+ "lazy_static",
  "log",
  "midir",
  "open",
@@ -1206,6 +1207,7 @@ dependencies = [
  "parking_lot",
  "rand 0.8.5",
  "ref-map",
+ "regex",
  "rfd",
  "serde",
  "serde_json",
@@ -2511,6 +2513,12 @@ checksum = "bd85a5776cd9500c2e2059c8c76c3b01528566b7fcbaf8098b55a33fc298849b"
 dependencies = [
  "arrayvec",
 ]
+
+[[package]]
+name = "lazy_static"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "lebe"
