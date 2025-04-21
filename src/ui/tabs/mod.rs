@@ -119,14 +119,16 @@ impl Default for DemexTabs {
         let mut dock_state = DockState::new(vec![
             DemexTab::FixtureList,
             DemexTab::SequencesList,
-            DemexTab::Logs,
             DemexTab::Performance,
         ]);
 
         let surface = dock_state.main_surface_mut();
 
-        let [old_node, _] =
-            surface.split_below(egui_dock::NodeIndex::root(), 0.8, vec![DemexTab::Encoders]);
+        let [old_node, _] = surface.split_below(
+            egui_dock::NodeIndex::root(),
+            0.8,
+            vec![DemexTab::Encoders, DemexTab::Logs],
+        );
 
         let [old_node, _] = surface.split_left(
             old_node,

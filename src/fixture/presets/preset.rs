@@ -248,12 +248,12 @@ impl FixturePreset {
     }
 
     pub fn apply(
-        &mut self,
+        &self,
         fixture_types: &FixtureTypeList,
         fixture: &mut GdtfFixture,
         new_selection: FixtureSelection,
     ) -> Result<(), PresetHandlerError> {
-        match &mut self.data {
+        match &self.data {
             FixturePresetData::Default { data } => {
                 if let Some(fixture_data) = data.get(&fixture.id()) {
                     for (preset_chanel_type, _) in fixture_data.iter() {

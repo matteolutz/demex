@@ -25,7 +25,7 @@ mod row;
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
-    let mut preset_handler = context.preset_handler.write();
+    let preset_handler = context.preset_handler.read();
     let mut updatable_handler = context.updatable_handler.write();
     let patch = context.patch.read();
 

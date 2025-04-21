@@ -332,12 +332,14 @@ impl GdtfFixture {
             preset_handler,
             timing_handler,
         )?;
-        let white = self.get_attribute_display_value(
-            fixture_types,
-            "ColorAdd_W",
-            preset_handler,
-            timing_handler,
-        )?;
+        let white = self
+            .get_attribute_display_value(
+                fixture_types,
+                "ColorAdd_W",
+                preset_handler,
+                timing_handler,
+            )
+            .unwrap_or(0.0);
 
         Ok(rgbw_to_rgb([red, green, blue, white]))
     }
@@ -542,16 +544,15 @@ impl GdtfFixture {
         &mut self,
         fixture_types: &FixtureTypeList,
         preset_handler: &PresetHandler,
-        updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
         grand_master: f32,
     ) -> Result<Vec<u8>, FixtureError> {
-        self.update_output_values(
+        /*self.update_output_values(
             fixture_types,
             preset_handler,
             updatable_handler,
             timing_handler,
-        )?;
+        )?;*/
 
         let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
 

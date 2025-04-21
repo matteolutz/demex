@@ -141,11 +141,30 @@ impl FixtureHandler {
         &mut self.grand_master
     }
 
-    pub fn update(
+    pub fn update_output_values(
         &mut self,
         fixture_types: &FixtureTypeList,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
+    ) -> Result<(), FixtureHandlerError> {
+        for f in self.fixtures.iter_mut() {
+            f.update_output_values(
+                fixture_types,
+                preset_handler,
+                updatable_handler,
+                timing_handler,
+            )
+            .map_err(FixtureHandlerError::FixtureError)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn generate_output_data(
+        &mut self,
+        fixture_types: &FixtureTypeList,
+        preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         _delta_time: f64,
         force: bool,
@@ -159,7 +178,6 @@ impl FixtureHandler {
                 .generate_data_packet(
                     fixture_types,
                     preset_handler,
-                    updatable_handler,
                     timing_handler,
                     self.grand_master as f32 / 255.0,
                 )

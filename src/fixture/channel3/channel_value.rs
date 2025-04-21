@@ -63,6 +63,11 @@ pub enum FixtureChannelValue3 {
         value: f32,
     },
 
+    DiscreteSet {
+        channel_function_idx: usize,
+        channel_set: String,
+    },
+
     Mix {
         a: Box<Self>,
         b: Box<Self>,
@@ -104,7 +109,7 @@ impl FixtureChannelValue3 {
 
     pub fn with_preset_state(self, preset_state: Option<FixtureChannelValue2PresetState>) -> Self {
         match self {
-            Self::Discrete { .. } | Self::Home => self,
+            Self::Discrete { .. } | Self::DiscreteSet { .. } | Self::Home => self,
             Self::Preset { id, state: _ } => Self::Preset {
                 id,
                 state: preset_state,
@@ -188,6 +193,26 @@ impl FixtureChannelValue3 {
                 channel_function_idx,
                 value,
             } => (*channel_function_idx, *value),
+            Self::DiscreteSet {
+                channel_function_idx,
+                channel_set,
+            } => {
+                if let Ok((dmx_channel, _)) = fixture.get_channel(fixture_types, channel_name) {
+                    let logical_channel = &dmx_channel.logical_channels[0];
+
+                    let channel_function =
+                        &logical_channel.channel_functions[*channel_function_idx];
+
+                    let channel_set_value = channel_function
+                        .channel_set(channel_set)
+                        .map(|channel_set| dmx_value_to_f32(channel_set.dmx_from))
+                        .unwrap_or(0.0);
+
+                    (*channel_function_idx, channel_set_value)
+                } else {
+                    (0, 0.0)
+                }
+            }
             Self::Mix { a, b, mix } => {
                 if *mix == 0.0 {
                     a.get_as_discrete(
@@ -216,7 +241,7 @@ impl FixtureChannelValue3 {
                     timing_handler,
                     state.as_ref(),
                 )
-                .unwrap()
+                .unwrap_or_default()
                 .get_as_discrete(
                     fixture,
                     fixture_types,
@@ -315,6 +340,31 @@ impl FixtureChannelValue3 {
                     f.default
                 }
             }),
+            Self::DiscreteSet {
+                channel_function_idx,
+                channel_set,
+            } => {
+                let channel_function = &logical_channel.channel_functions[*channel_function_idx];
+
+                let value = channel_function
+                    .channel_set(channel_set)
+                    .map(|channel_set| channel_set.dmx_from);
+
+                if let Some(relation_value) = Self::find_multiply_relation(
+                    fixture,
+                    fixture_types,
+                    dmx_mode,
+                    values,
+                    channel_function,
+                    grand_master,
+                    preset_handler,
+                    timing_handler,
+                ) {
+                    value.map(|val| multiply_dmx_value(val, relation_value))
+                } else {
+                    value
+                }
+            }
             Self::Discrete {
                 channel_function_idx,
                 value,
@@ -444,6 +494,12 @@ impl FixtureChannelValue3 {
                 } else {
                     format!("Preset {} (deleted)", preset_id)
                 }
+            }
+            Self::DiscreteSet {
+                channel_function_idx,
+                channel_set,
+            } => {
+                format!("\"{}\" ({})", channel_set, channel_function_idx)
             }
             Self::Discrete {
                 value,

@@ -309,13 +309,13 @@ impl PresetHandler {
     }
 
     pub fn apply_preset(
-        &mut self,
+        &self,
         preset_id: FixturePresetId,
         fixture_handler: &mut FixtureHandler,
         fixture_types: &FixtureTypeList,
         selection: FixtureSelection,
     ) -> Result<(), PresetHandlerError> {
-        let preset = self.get_preset_mut(preset_id)?;
+        let preset = self.get_preset(preset_id)?;
 
         for fixture_id in selection.fixtures() {
             preset.apply(
