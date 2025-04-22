@@ -547,13 +547,6 @@ impl GdtfFixture {
         timing_handler: &TimingHandler,
         grand_master: f32,
     ) -> Result<Vec<u8>, FixtureError> {
-        /*self.update_output_values(
-            fixture_types,
-            preset_handler,
-            updatable_handler,
-            timing_handler,
-        )?;*/
-
         let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
 
         let mut data = vec![0u8; self.address_footprint as usize];
