@@ -31,6 +31,13 @@ pub enum MidiMessage {
         data_length: u16,
         data: Vec<u8>,
     },
+    Timecode {
+        rate: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        frame: u8,
+    },
 }
 
 impl MidiMessage {
@@ -87,12 +94,51 @@ impl MidiMessage {
 
                 b
             }
+            Self::Timecode {
+                rate,
+                hour,
+                minute,
+                second,
+                frame,
+            } => vec![
+                0xF0, // SysEx start
+                0x7F, // Manufacturer ID
+                0x7F, // Device ID
+                0x01, // Model ID
+                0x01, // Message Type
+                rate << 5 | hour,
+                minute,
+                second,
+                frame,
+                0xF7, // SysEx end //
+            ],
         }
     }
 
     fn sysex_from_bytes(bytes: &[u8]) -> Option<Self> {
         if bytes.len() < 5 {
             return None;
+        }
+
+        // not very clean, but it works for now
+        // this is a timecode message
+        if bytes[1] == 0x7F && bytes[2] == 0x7F && bytes[3] == 0x01 && bytes[4] == 0x01 {
+            let rate_and_hour = bytes[5];
+
+            let rate = rate_and_hour >> 5;
+            let hour = rate_and_hour & 0x1F;
+
+            let minute = bytes[6];
+            let second = bytes[7];
+            let frame = bytes[8];
+
+            return Some(Self::Timecode {
+                rate,
+                hour,
+                minute,
+                second,
+                frame,
+            });
         }
 
         let manufacturer_id = bytes[1];

@@ -19,6 +19,7 @@ pub mod fader;
 pub mod message;
 pub mod midi;
 pub mod profile;
+pub mod timecode;
 
 pub trait DemexInputDeviceProfile: std::fmt::Debug {
     fn update_out(
@@ -145,6 +146,9 @@ impl DemexInputDeviceHandler {
                                 timing_handler,
                             )?;
                         }
+                    }
+                    DemexInputDeviceMessage::Timecode(timecode_packet) => {
+                        timing_handler.update_running_timecodes(timecode_packet)
                     }
                 }
             }

@@ -1,6 +1,7 @@
 #[derive(Debug)]
 pub enum TimingHandlerError {
     SpeedMasterValueNotFound(u32),
+    TimecodeNotFound(u32),
 }
 
 impl std::fmt::Display for TimingHandlerError {
@@ -8,6 +9,9 @@ impl std::fmt::Display for TimingHandlerError {
         match self {
             Self::SpeedMasterValueNotFound(id) => {
                 write!(f, "SpeedMasterValue with id {} not found", id)
+            }
+            Self::TimecodeNotFound(id) => {
+                write!(f, "Timecode with id {} not found", id)
             }
         }
     }

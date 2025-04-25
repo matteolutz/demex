@@ -3,14 +3,20 @@ use std::{collections::HashMap, time};
 use error::TimingHandlerError;
 use serde::{Deserialize, Serialize};
 use speed_master::SpeedMasterValue;
+use timecode::Timecode;
+
+use crate::input::timecode::packet::TimecodePacket;
 
 pub mod error;
 pub mod speed_master;
 pub mod tap;
+pub mod timecode;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct TimingHandler {
     speed_master_values: HashMap<u32, SpeedMasterValue>,
+
+    timecodes: HashMap<u32, Timecode>,
 }
 
 impl Default for TimingHandler {
@@ -19,6 +25,7 @@ impl Default for TimingHandler {
             speed_master_values: HashMap::from_iter(
                 (0u32..10u32).map(|id| (id, SpeedMasterValue::default())),
             ),
+            timecodes: HashMap::new(),
         }
     }
 }
@@ -55,5 +62,30 @@ impl TimingHandler {
         let speed_master_value = self.get_speed_master_value_mut(id)?;
         speed_master_value.tap(interval);
         Ok(())
+    }
+}
+
+impl TimingHandler {
+    pub fn timecodes(&self) -> &HashMap<u32, Timecode> {
+        &self.timecodes
+    }
+
+    pub fn timecodes_mut(&mut self) -> &mut HashMap<u32, Timecode> {
+        &mut self.timecodes
+    }
+
+    pub fn get_timecode(&self, id: u32) -> Result<&Timecode, TimingHandlerError> {
+        self.timecodes
+            .get(&id)
+            .ok_or(TimingHandlerError::TimecodeNotFound(id))
+    }
+
+    pub fn update_running_timecodes(&mut self, timecode_packet: TimecodePacket) {
+        let new_frame = timecode_packet.frame();
+
+        self.timecodes
+            .iter_mut()
+            .filter(|(_, timecode)| timecode.state().is_running())
+            .for_each(|(_, timecode)| timecode.update(new_frame));
     }
 }
