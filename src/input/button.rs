@@ -101,7 +101,7 @@ impl DemexInputButton {
                         .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
                 } else {
                     updatable_handler
-                        .start_or_next_executor(*executor_id, fixture_handler, preset_handler)
+                        .start_or_next_executor(*executor_id, fixture_handler, preset_handler, 0.0)
                         .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
                 }
             }

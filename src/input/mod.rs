@@ -147,9 +147,20 @@ impl DemexInputDeviceHandler {
                             )?;
                         }
                     }
-                    DemexInputDeviceMessage::Timecode(timecode_packet) => {
-                        timing_handler.update_running_timecodes(timecode_packet)
-                    }
+                    DemexInputDeviceMessage::Timecode(timecode_packet) => timing_handler
+                        .update_timecode(
+                            timecode_packet,
+                            fixture_handler,
+                            preset_handler,
+                            updatable_handler,
+                        ),
+                    DemexInputDeviceMessage::TimecodeQuarterFrame { piece } => timing_handler
+                        .update_timecode_quarter_frame(
+                            piece,
+                            fixture_handler,
+                            preset_handler,
+                            updatable_handler,
+                        ),
                 }
             }
         }

@@ -9,7 +9,7 @@ pub enum TimecodeState {
 
     Running {
         current_trigger_idx: usize,
-        current_frame: u64,
+        current_millis: u64,
         timecode_values: HashMap<u32, HashMap<String, FixtureChannelValue3>>,
     },
 }

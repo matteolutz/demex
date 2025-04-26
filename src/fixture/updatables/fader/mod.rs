@@ -98,7 +98,7 @@ impl DemexFader {
         match &mut self.config {
             DemexFaderConfig::SequenceRuntime { runtime, .. } => {
                 if is_active {
-                    runtime.next_cue(preset_handler);
+                    runtime.next_cue(preset_handler, 0.0);
                 }
 
                 Ok(())
@@ -157,7 +157,7 @@ impl DemexFader {
                 let sequence = preset_handler.get_sequence(runtime.sequence_id()).unwrap();
 
                 if !runtime.is_started() {
-                    runtime.start();
+                    runtime.start(0.0);
                 }
 
                 for fixture_id in sequence.affected_fixtures(preset_handler) {

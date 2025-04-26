@@ -5,7 +5,9 @@ use serde::{Deserialize, Serialize};
 use speed_master::SpeedMasterValue;
 use timecode::Timecode;
 
-use crate::input::timecode::packet::TimecodePacket;
+use crate::input::{midi::MidiQuarterTimecodePiece, timecode::packet::TimecodePacket};
+
+use super::{handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler};
 
 pub mod error;
 pub mod speed_master;
@@ -17,6 +19,9 @@ pub struct TimingHandler {
     speed_master_values: HashMap<u32, SpeedMasterValue>,
 
     timecodes: HashMap<u32, Timecode>,
+
+    #[serde(default, skip_serializing, skip_deserializing)]
+    current_timecode_packet: TimecodePacket,
 }
 
 impl Default for TimingHandler {
@@ -26,6 +31,7 @@ impl Default for TimingHandler {
                 (0u32..10u32).map(|id| (id, SpeedMasterValue::default())),
             ),
             timecodes: HashMap::new(),
+            current_timecode_packet: TimecodePacket::default(),
         }
     }
 }
@@ -80,12 +86,47 @@ impl TimingHandler {
             .ok_or(TimingHandlerError::TimecodeNotFound(id))
     }
 
-    pub fn update_running_timecodes(&mut self, timecode_packet: TimecodePacket) {
-        let new_frame = timecode_packet.frame();
+    fn update_running_timecodes(
+        &mut self,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+        updatable_handler: &mut UpdatableHandler,
+    ) {
+        self.timecodes.values_mut().for_each(|timecode| {
+            timecode.update(
+                self.current_timecode_packet.millis(),
+                fixture_handler,
+                preset_handler,
+                updatable_handler,
+            )
+        });
+    }
 
-        self.timecodes
-            .iter_mut()
-            .filter(|(_, timecode)| timecode.state().is_running())
-            .for_each(|(_, timecode)| timecode.update(new_frame));
+    pub fn update_timecode(
+        &mut self,
+        timecode_packet: TimecodePacket,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+        updatable_handler: &mut UpdatableHandler,
+    ) {
+        self.current_timecode_packet = timecode_packet;
+
+        self.update_running_timecodes(fixture_handler, preset_handler, updatable_handler);
+    }
+
+    pub fn update_timecode_quarter_frame(
+        &mut self,
+        piece: MidiQuarterTimecodePiece,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+        updatable_handler: &mut UpdatableHandler,
+    ) {
+        self.current_timecode_packet.update_from(piece);
+
+        self.update_running_timecodes(fixture_handler, preset_handler, updatable_handler);
+    }
+
+    pub fn current_timecode_packet(&self) -> &TimecodePacket {
+        &self.current_timecode_packet
     }
 }

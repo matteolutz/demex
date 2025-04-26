@@ -229,7 +229,6 @@ pub fn preset_grid_button_ui(
         ui.allocate_painter(PRESET_GRID_ELEMENT_SIZE.into(), egui::Sense::click());
 
     if response.hovered() {
-        log::debug!("hovering");
         ui.ctx()
             .output_mut(|out| out.cursor_icon = egui::CursorIcon::PointingHand);
     }

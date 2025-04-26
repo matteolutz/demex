@@ -358,7 +358,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 {
                     if executor_exists {
                         updatable_handler
-                            .start_or_next_executor(id, &mut fixture_handler, &preset_handler)
+                            .start_or_next_executor(id, &mut fixture_handler, &preset_handler, 0.0)
                             .unwrap();
                     } else {
                         context.command.extend_from_slice(&[

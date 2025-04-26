@@ -263,7 +263,7 @@ impl SequenceRuntime {
                 // is the next cue, a follow cue?
                 if let Some(next_cue_idx) = next_cue_idx {
                     if *sequence.cue(next_cue_idx).trigger() == CueTrigger::Follow {
-                        self.next_cue(preset_handler);
+                        self.next_cue(preset_handler, 0.0);
                     }
                     // it's the last cue, so we should wait for the out time of the last cue
                     // and then stop the sequence, if the sequence is set to auto stop
@@ -281,8 +281,10 @@ impl SequenceRuntime {
         }
     }
 
-    pub fn start(&mut self) {
-        self.state = SequenceRuntimeState::FirstCue(time::Instant::now());
+    pub fn start(&mut self, time_offset: f32) {
+        self.state = SequenceRuntimeState::FirstCue(
+            time::Instant::now() - time::Duration::from_secs_f32(time_offset),
+        );
     }
 
     pub fn stop(&mut self) {
@@ -299,7 +301,7 @@ impl SequenceRuntime {
             .unwrap_or(false)
     }
 
-    pub fn next_cue(&mut self, preset_handler: &PresetHandler) -> bool {
+    pub fn next_cue(&mut self, preset_handler: &PresetHandler, time_offset: f32) -> bool {
         if let Some((_, cue_update, cue_idx, _)) = self.state.when_started() {
             let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
@@ -314,7 +316,11 @@ impl SequenceRuntime {
             }
 
             let cue_idx = (cue_idx + 1) % sequence.cues().len();
-            self.state = SequenceRuntimeState::Cue(cue_update, time::Instant::now(), cue_idx);
+            self.state = SequenceRuntimeState::Cue(
+                cue_update,
+                time::Instant::now() - time::Duration::from_secs_f32(time_offset),
+                cue_idx,
+            );
         }
 
         false

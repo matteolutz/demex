@@ -214,22 +214,27 @@ impl FixtureChannelValue3 {
                 }
             }
             Self::Mix { a, b, mix } => {
-                if *mix == 0.0 {
-                    a.get_as_discrete(
-                        fixture,
-                        fixture_types,
-                        channel_name,
-                        preset_handler,
-                        timing_handler,
-                    )
+                let (a_idx, a_val) = a.get_as_discrete(
+                    fixture,
+                    fixture_types,
+                    channel_name,
+                    preset_handler,
+                    timing_handler,
+                );
+                let (b_idx, b_val) = b.get_as_discrete(
+                    fixture,
+                    fixture_types,
+                    channel_name,
+                    preset_handler,
+                    timing_handler,
+                );
+
+                if a_idx == b_idx {
+                    (a_idx, (a_val * (1.0 - mix)) + (b_val * mix))
+                } else if *mix < 0.5 {
+                    (a_idx, a_val)
                 } else {
-                    b.get_as_discrete(
-                        fixture,
-                        fixture_types,
-                        channel_name,
-                        preset_handler,
-                        timing_handler,
-                    )
+                    (b_idx, b_val)
                 }
             }
             Self::Preset { id, state } => preset_handler

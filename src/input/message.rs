@@ -1,4 +1,4 @@
-use super::timecode::packet::TimecodePacket;
+use super::{midi::MidiQuarterTimecodePiece, timecode::packet::TimecodePacket};
 
 pub enum DemexInputDeviceMessage {
     ButtonPressed(u32),
@@ -8,4 +8,5 @@ pub enum DemexInputDeviceMessage {
     FaderValuesChanged(Vec<(u32, f32)>),
 
     Timecode(TimecodePacket),
+    TimecodeQuarterFrame { piece: MidiQuarterTimecodePiece },
 }

@@ -7,6 +7,18 @@ pub(crate) const NOTE_ON_OP: u8 = 0x9;
 pub(crate) const CC_OP: u8 = 0xb;
 
 #[derive(Debug, Clone)]
+pub enum MidiQuarterTimecodePiece {
+    FrameLs(u8),
+    FrameMs(u8),
+    SecondLs(u8),
+    SecondMs(u8),
+    MinuteLs(u8),
+    MinuteMs(u8),
+    HourLs(u8),
+    RateHourMs(u8),
+}
+
+#[derive(Debug, Clone)]
 pub enum MidiMessage {
     NoteOn {
         channel: u8,
@@ -37,6 +49,9 @@ pub enum MidiMessage {
         minute: u8,
         second: u8,
         frame: u8,
+    },
+    TimecodeQuarterFrame {
+        piece: MidiQuarterTimecodePiece,
     },
 }
 
@@ -106,12 +121,13 @@ impl MidiMessage {
                 0x7F, // Device ID
                 0x01, // Model ID
                 0x01, // Message Type
-                rate << 5 | hour,
+                (rate << 5) | hour,
                 minute,
                 second,
                 frame,
                 0xF7, // SysEx end //
             ],
+            Self::TimecodeQuarterFrame { .. } => todo!(),
         }
     }
 
@@ -165,6 +181,29 @@ impl MidiMessage {
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.is_empty() {
+            return None;
+        }
+
+        // quarter timecode
+        if bytes[0] == 0xF1 {
+            let piece_type = (bytes[1] & 0xF0) >> 4;
+            let piece_value = bytes[1] & 0x0F;
+            let piece = match piece_type {
+                0 => MidiQuarterTimecodePiece::FrameLs(piece_value),
+                1 => MidiQuarterTimecodePiece::FrameMs(piece_value & 0x1),
+                2 => MidiQuarterTimecodePiece::SecondLs(piece_value),
+                3 => MidiQuarterTimecodePiece::SecondMs(piece_value & 0x3),
+                4 => MidiQuarterTimecodePiece::MinuteLs(piece_value),
+                5 => MidiQuarterTimecodePiece::MinuteMs(piece_value & 0x3),
+                6 => MidiQuarterTimecodePiece::HourLs(piece_value),
+                7 => MidiQuarterTimecodePiece::RateHourMs(piece_value & 0x7),
+                _ => unreachable!(),
+            };
+
+            return Some(Self::TimecodeQuarterFrame { piece });
+        }
+
         if bytes.len() < 3 {
             return None;
         }

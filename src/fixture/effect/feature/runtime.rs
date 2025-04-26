@@ -53,8 +53,9 @@ impl FeatureEffectRuntime {
         self.effect_started.is_some()
     }
 
-    pub fn start(&mut self) {
-        self.effect_started = Some(time::Instant::now());
+    pub fn start(&mut self, time_offset: f32) {
+        self.effect_started =
+            Some(time::Instant::now() - time::Duration::from_secs_f32(time_offset));
     }
 
     pub fn stop(&mut self) {

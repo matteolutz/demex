@@ -15,6 +15,7 @@ pub mod performance_tab;
 pub mod preset_grid_tab;
 pub mod sequence_editor_tab;
 pub mod sequences_list_tab;
+pub mod timecode_clock_tab;
 pub mod timing_tab;
 
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, Serialize, Deserialize)]
@@ -26,6 +27,7 @@ pub enum DemexTab {
     SequencesList,
     SequenceEditor,
     Encoders,
+    TimecodeClock,
     Patch,
     Timing,
     FixtureSelection,
@@ -43,6 +45,7 @@ impl std::fmt::Display for DemexTab {
             DemexTab::SequencesList => write!(f, "Sequences List"),
             DemexTab::SequenceEditor => write!(f, "Sequence Editor"),
             DemexTab::Encoders => write!(f, "Encoders"),
+            DemexTab::TimecodeClock => write!(f, "Timecode Clock"),
             DemexTab::Patch => write!(f, "Patch"),
             DemexTab::Timing => write!(f, "Timing"),
             DemexTab::FixtureSelection => write!(f, "Fixture Selection"),
@@ -64,6 +67,7 @@ impl DemexTab {
                 sequence_editor_tab::SequenceEditorTab::new(context, "MainSequenceEditor").show(ui)
             }
             DemexTab::Encoders => encoders_tab::ui(ui, context),
+            DemexTab::TimecodeClock => timecode_clock_tab::ui(ui, context),
             DemexTab::Patch => {
                 let mut patch_view_component = patch_tab::PatchViewComponent::new(context);
                 patch_view_component.show(ui);
@@ -144,7 +148,12 @@ impl Default for DemexTabs {
         surface.split_above(
             old_node,
             0.5,
-            vec![DemexTab::PresetGrid, DemexTab::Faders, DemexTab::Timing],
+            vec![
+                DemexTab::PresetGrid,
+                DemexTab::Faders,
+                DemexTab::Timing,
+                DemexTab::TimecodeClock,
+            ],
         );
 
         Self { dock_state }

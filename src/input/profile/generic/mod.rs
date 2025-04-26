@@ -25,8 +25,7 @@ impl GenericMidiProfile {
 
         let in_ports = midi_in.ports();
         let in_port = in_ports
-            .iter()
-            .next()
+            .first()
             .ok_or(DemexInputDeviceError::InputDeviceNotFound(
                 "GenericMidiDevice".to_owned(),
             ))?;
@@ -94,6 +93,9 @@ impl DemexInputDeviceProfile for GenericMidiProfile {
                     frame,
                     rate: rate.into(),
                 })),
+                MidiMessage::TimecodeQuarterFrame { piece } => {
+                    Some(DemexInputDeviceMessage::TimecodeQuarterFrame { piece })
+                }
                 _ => None,
             })
             .collect::<Vec<_>>();

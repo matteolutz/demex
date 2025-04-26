@@ -1,11 +1,25 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum TimecodeRate {
     Frames24,
+
+    #[default]
     Frames25,
+
     Frames2997,
     Frames30,
+}
+
+impl std::fmt::Display for TimecodeRate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TimecodeRate::Frames24 => write!(f, "24"),
+            TimecodeRate::Frames25 => write!(f, "25"),
+            TimecodeRate::Frames2997 => write!(f, "29.97"),
+            TimecodeRate::Frames30 => write!(f, "30"),
+        }
+    }
 }
 
 impl TimecodeRate {

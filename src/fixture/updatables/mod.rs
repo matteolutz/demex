@@ -104,13 +104,14 @@ impl UpdatableHandler {
         id: u32,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
+        time_offset: f32,
     ) -> Result<(), UpdatableHandlerError> {
         let executor = self
             .executor_mut(id)
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
 
         if executor.is_started() {
-            executor.next_cue(fixture_handler, preset_handler);
+            executor.next_cue(fixture_handler, preset_handler, time_offset);
             return Ok(());
         }
 
@@ -124,7 +125,7 @@ impl UpdatableHandler {
             .executor_mut(id)
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
 
-        executor.start(fixture_handler, preset_handler);
+        executor.start(fixture_handler, preset_handler, time_offset);
         Ok(())
     }
 
@@ -164,7 +165,7 @@ impl UpdatableHandler {
             .executor_mut(id)
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
 
-        executor.start(fixture_handler, preset_handler);
+        executor.start(fixture_handler, preset_handler, 0.0);
         Ok(())
     }
 
