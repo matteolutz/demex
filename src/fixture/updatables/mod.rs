@@ -213,12 +213,11 @@ impl UpdatableHandler {
 
     pub fn update_executors(
         &mut self,
-        delta_time: f64,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
     ) {
         for (_, runtime) in self.executors.iter_mut() {
-            runtime.update(delta_time, fixture_handler, preset_handler);
+            runtime.update(fixture_handler, preset_handler);
         }
     }
 
@@ -298,9 +297,9 @@ impl UpdatableHandler {
         self.faders.keys().cloned().collect()
     }
 
-    pub fn update_faders(&mut self, delta_time: f64, preset_handler: &PresetHandler) {
+    pub fn update_faders(&mut self, preset_handler: &PresetHandler) {
         for (_, fader) in self.faders.iter_mut() {
-            fader.update(delta_time, preset_handler);
+            fader.update(preset_handler);
         }
     }
 

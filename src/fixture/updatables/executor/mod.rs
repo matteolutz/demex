@@ -195,12 +195,7 @@ impl Executor {
         }
     }
 
-    pub fn update(
-        &mut self,
-        _delta_time: f64,
-        fixture_handler: &mut FixtureHandler,
-        preset_handler: &PresetHandler,
-    ) {
+    pub fn update(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
         match &mut self.config {
             ExecutorConfig::Sequence { runtime, .. } => {
                 if runtime.update(1.0, preset_handler) {

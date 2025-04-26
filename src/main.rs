@@ -39,6 +39,10 @@ struct Args {
     /// Run an additional thread to periodically check for RwLock deadlocks
     #[arg(long)]
     deadlock_test: bool,
+
+    /// Run the application in single-threaded mode
+    #[arg(long)]
+    single_thread: bool,
 }
 
 const TEST_MAX_FUPS: f64 = 60.0;
@@ -202,62 +206,64 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .collect::<Vec<_>>(),
         ),
         show.ui_config,
+        args.single_thread,
     );
 
-    let fixture_handler_thread_a = fixture_handler.clone();
-    let preset_handler_thread_a = preset_handler.clone();
-    let timing_handler_thread_a = timing_handler.clone();
-    let patch_thread_a = patch.clone();
+    if !args.single_thread {
+        let fixture_handler_thread_a = fixture_handler.clone();
+        let preset_handler_thread_a = preset_handler.clone();
+        let timing_handler_thread_a = timing_handler.clone();
+        let patch_thread_a = patch.clone();
 
-    demex_update_thread(
-        "demex-dmx-output".to_owned(),
-        stats.clone(),
-        TEST_MAX_DMX_FPS,
-        move |delta_time, last_user_update| {
-            let mut fixture_handler = fixture_handler_thread_a.write();
-            let preset_handler = preset_handler_thread_a.read();
-            let timing_handler = timing_handler_thread_a.read();
-            let patch = patch_thread_a.read();
+        demex_update_thread(
+            "demex-dmx-output".to_owned(),
+            stats.clone(),
+            TEST_MAX_DMX_FPS,
+            move |_, last_user_update| {
+                let mut fixture_handler = fixture_handler_thread_a.write();
+                let preset_handler = preset_handler_thread_a.read();
+                let timing_handler = timing_handler_thread_a.read();
+                let patch = patch_thread_a.read();
 
-            if fixture_handler
-                .generate_output_data(
-                    patch.fixture_types(),
-                    &preset_handler,
-                    &timing_handler,
-                    delta_time,
-                    last_user_update.elapsed().as_secs_f64() > 1.0,
-                )
-                .inspect_err(|err| log::error!("Failed to generate output data: {}", err))
-                .is_ok_and(|res| res > 0)
-            {
-                *last_user_update = time::Instant::now();
-            }
-        },
-    );
+                if fixture_handler
+                    .generate_output_data(
+                        patch.fixture_types(),
+                        &preset_handler,
+                        &timing_handler,
+                        last_user_update.elapsed().as_secs_f64() > 1.0,
+                    )
+                    .inspect_err(|err| log::error!("Failed to generate output data: {}", err))
+                    .is_ok_and(|res| res > 0)
+                {
+                    *last_user_update = time::Instant::now();
+                }
+            },
+        );
 
-    demex_update_thread(
-        "demex-update".to_owned(),
-        stats.clone(),
-        TEST_MAX_FUPS,
-        move |delta_time, _| {
-            let mut fixture_handler = fixture_handler.write();
-            let preset_handler = preset_handler.read();
-            let mut updatable_handler = updatable_handler.write();
-            let timing_handler = timing_handler.read();
-            let patch = patch.read();
+        demex_update_thread(
+            "demex-update".to_owned(),
+            stats.clone(),
+            TEST_MAX_FUPS,
+            move |_, _| {
+                let mut fixture_handler = fixture_handler.write();
+                let preset_handler = preset_handler.read();
+                let mut updatable_handler = updatable_handler.write();
+                let timing_handler = timing_handler.read();
+                let patch = patch.read();
 
-            let _ = fixture_handler
-                .update_output_values(
-                    patch.fixture_types(),
-                    &preset_handler,
-                    &updatable_handler,
-                    &timing_handler,
-                )
-                .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
-            updatable_handler.update_faders(delta_time, &preset_handler);
-            updatable_handler.update_executors(delta_time, &mut fixture_handler, &preset_handler);
-        },
-    );
+                let _ = fixture_handler
+                    .update_output_values(
+                        patch.fixture_types(),
+                        &preset_handler,
+                        &updatable_handler,
+                        &timing_handler,
+                    )
+                    .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
+                updatable_handler.update_faders(&preset_handler);
+                updatable_handler.update_executors(&mut fixture_handler, &preset_handler);
+            },
+        );
+    }
 
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()

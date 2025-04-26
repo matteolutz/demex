@@ -166,7 +166,6 @@ impl FixtureHandler {
         fixture_types: &FixtureTypeList,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
-        _delta_time: f64,
         force: bool,
     ) -> Result<usize, FixtureHandlerError> {
         let mut dirty_universes: BTreeSet<u16> = BTreeSet::new();

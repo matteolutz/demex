@@ -225,7 +225,7 @@ impl DemexFader {
         }
     }
 
-    pub fn update(&mut self, _delta_time: f64, preset_handler: &PresetHandler) {
+    pub fn update(&mut self, preset_handler: &PresetHandler) {
         match &mut self.config {
             DemexFaderConfig::SequenceRuntime {
                 runtime, function, ..
