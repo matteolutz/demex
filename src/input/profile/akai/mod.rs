@@ -466,6 +466,7 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         None
                     }
                 }
+                _ => None,
             })
             .collect::<Vec<_>>();
 

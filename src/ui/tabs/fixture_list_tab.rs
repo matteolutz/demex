@@ -1,13 +1,10 @@
 use egui::RichText;
 use itertools::Itertools;
 
-use crate::fixture::channel2::feature::feature_group::DefaultFeatureGroup;
-
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let fixture_handler = context.fixture_handler.read();
     let preset_handler = context.preset_handler.read();
-    let updatable_handler = context.updatable_handler.read();
-    let timing_handler = context.timing_handler.read();
+    let patch = context.patch.read();
 
     egui::ScrollArea::horizontal().show(ui, |ui| {
         let selected_fixtures = context
@@ -17,7 +14,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
             .unwrap_or_default();
 
         egui_extras::TableBuilder::new(ui)
-            .columns(egui_extras::Column::auto(), 7)
+            .columns(egui_extras::Column::auto(), 5)
             .column(egui_extras::Column::remainder())
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
             .striped(true)
@@ -40,14 +37,6 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                 header.col(|ui| {
                     ui.heading("Int");
-                });
-
-                header.col(|ui| {
-                    ui.heading("Color");
-                });
-
-                header.col(|ui| {
-                    ui.heading("Pos");
                 });
 
                 header.col(|ui| {
@@ -95,83 +84,18 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // Intens
                         row.col(|ui| {
-                            if let Ok(intensity_states) = fixture.feature_group_display_state(
-                                DefaultFeatureGroup::Intensity.id(),
-                                &preset_handler,
-                                &updatable_handler,
-                                &timing_handler,
-                            ) {
-                                for intensity_state in intensity_states {
-                                    ui.label(
-                                        RichText::from(intensity_state.to_string(&preset_handler))
-                                            .color(if intensity_state.is_home() {
-                                                egui::Color32::GRAY
-                                            } else {
-                                                egui::Color32::YELLOW
-                                            }),
-                                    );
-                                }
-                            } else {
-                                ui.label("-");
-                            }
-                        });
-
-                        // Color
-                        row.col(|ui| {
-                            if let Ok(color_states) = fixture.feature_group_display_state(
-                                DefaultFeatureGroup::Color.id(),
-                                &preset_handler,
-                                &updatable_handler,
-                                &timing_handler,
-                            ) {
-                                for color_state in color_states {
-                                    ui.label(
-                                        RichText::from(color_state.to_string(&preset_handler))
-                                            .color(if color_state.is_home() {
-                                                egui::Color32::GRAY
-                                            } else {
-                                                egui::Color32::YELLOW
-                                            }),
-                                    );
-                                }
-                            } else {
-                                ui.label("-");
-                            }
-
-                            if let Ok(color) = fixture.display_color(
-                                &preset_handler,
-                                &updatable_handler,
-                                &timing_handler,
-                            ) {
-                                let color_value = egui::Color32::from_rgb(
-                                    (color[0] * 255.0) as u8,
-                                    (color[1] * 255.0) as u8,
-                                    (color[2] * 255.0) as u8,
+                            if let Ok(intensity) =
+                                fixture.get_attribute_value(patch.fixture_types(), "Dimmer")
+                            {
+                                ui.label(
+                                    RichText::from(intensity.to_string(&preset_handler)).color(
+                                        if intensity.is_home() {
+                                            egui::Color32::GRAY
+                                        } else {
+                                            egui::Color32::YELLOW
+                                        },
+                                    ),
                                 );
-
-                                ui.label(RichText::from("     ").background_color(color_value));
-                            }
-                        });
-
-                        // Position
-                        row.col(|ui| {
-                            if let Ok(pos_states) = fixture.feature_group_display_state(
-                                DefaultFeatureGroup::Position.id(),
-                                &preset_handler,
-                                &updatable_handler,
-                                &timing_handler,
-                            ) {
-                                for pos_state in pos_states {
-                                    ui.label(
-                                        RichText::from(pos_state.to_string(&preset_handler)).color(
-                                            if pos_state.is_home() {
-                                                egui::Color32::GRAY
-                                            } else {
-                                                egui::Color32::YELLOW
-                                            },
-                                        ),
-                                    );
-                                }
                             } else {
                                 ui.label("-");
                             }
@@ -179,23 +103,18 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         // All channels
                         row.col(|ui| {
-                            for channel_type in fixture.channel_types().iter().sorted() {
-                                let channel_value = fixture.channel_value(
-                                    **channel_type,
-                                    &updatable_handler,
-                                    &preset_handler,
-                                    &timing_handler,
-                                );
-                                if channel_value.is_err() {
-                                    continue;
-                                }
+                            for (dmx_channel, _) in fixture.channels(patch.fixture_types()).unwrap()
+                            {
+                                let channel_value = fixture
+                                    .get_value(patch.fixture_types(), dmx_channel.name().as_ref())
+                                    .unwrap();
 
-                                if channel_value.as_ref().unwrap().is_home() {
+                                if channel_value.is_home() {
                                     continue;
                                 }
 
                                 ui.label(
-                                    RichText::from(channel_type.short_name().to_string())
+                                    RichText::from(dmx_channel.name().as_ref())
                                         .color(egui::Color32::YELLOW),
                                 );
                             }

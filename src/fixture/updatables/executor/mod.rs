@@ -5,15 +5,14 @@ use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
-    channel2::{channel_type::FixtureChannelType, feature::feature_config::FixtureFeatureConfig},
     effect::feature::runtime::FeatureEffectRuntime,
-    handler::FixtureHandler,
+    gdtf::GdtfFixture,
+    handler::{FixtureHandler, FixtureTypeList},
     presets::PresetHandler,
     selection::FixtureSelection,
     sequence::{runtime::SequenceRuntime, FadeFixtureChannelValue},
     timing::TimingHandler,
     value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
-    Fixture,
 };
 
 pub mod config;
@@ -139,9 +138,9 @@ impl Executor {
 
     pub fn channel_value(
         &self,
-        fixture: &Fixture,
-        fixture_feature_configs: &[FixtureFeatureConfig],
-        channel_type: FixtureChannelType,
+        fixture_types: &FixtureTypeList,
+        fixture: &GdtfFixture,
+        channel: &gdtf::dmx_mode::DmxChannel,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
     ) -> Option<FadeFixtureChannelValue> {
@@ -164,8 +163,9 @@ impl Executor {
                 } else {
                     runtime
                         .channel_value(
+                            fixture_types,
                             fixture,
-                            channel_type,
+                            channel,
                             1.0,
                             1.0,
                             preset_handler,
@@ -181,24 +181,21 @@ impl Executor {
                 } else {
                     runtime
                         .get_channel_value(
-                            channel_type,
-                            fixture_feature_configs,
+                            channel.name().as_ref(),
+                            fixture,
+                            fixture_types,
                             selection.offset(fixture.id())?,
                             self.priority,
                             timing_handler,
                         )
+                        .ok()
                         .map(|val| val.multiply(fade))
                 }
             }
         }
     }
 
-    pub fn update(
-        &mut self,
-        _delta_time: f64,
-        fixture_handler: &mut FixtureHandler,
-        preset_handler: &PresetHandler,
-    ) {
+    pub fn update(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
         match &mut self.config {
             ExecutorConfig::Sequence { runtime, .. } => {
                 if runtime.update(1.0, preset_handler) {
@@ -209,17 +206,23 @@ impl Executor {
         }
     }
 
-    fn child_start(&mut self) {
+    fn child_start(&mut self, time_offset: f32) {
         match &mut self.config {
-            ExecutorConfig::Sequence { runtime, .. } => runtime.start(),
-            ExecutorConfig::FeatureEffect { runtime, .. } => runtime.start(),
+            ExecutorConfig::Sequence { runtime, .. } => runtime.start(time_offset),
+            ExecutorConfig::FeatureEffect { runtime, .. } => runtime.start(time_offset),
         }
     }
 
-    pub fn start(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
-        self.child_start();
+    pub fn start(
+        &mut self,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+        time_offset: f32,
+    ) {
+        self.child_start(time_offset);
 
-        self.started_at = Some(time::Instant::now());
+        self.started_at = Some(time::Instant::now() - time::Duration::from_secs_f32(time_offset));
+
         for fixture_id in self.fixtures(preset_handler) {
             if let Some(fixture) = fixture_handler.fixture(fixture_id) {
                 fixture.push_value_source(FixtureChannelValueSource::Executor {
@@ -252,9 +255,10 @@ impl Executor {
         &mut self,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
+        time_offset: f32,
     ) {
         if let ExecutorConfig::Sequence { runtime, .. } = &mut self.config {
-            if runtime.next_cue(preset_handler) {
+            if runtime.next_cue(preset_handler, time_offset) {
                 self.stop(fixture_handler, preset_handler);
             }
         }

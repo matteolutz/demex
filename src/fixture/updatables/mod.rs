@@ -50,7 +50,6 @@ impl UpdatableHandler {
                 DemexFaderConfig::SequenceRuntime { runtime, .. } => {
                     sequence_id == runtime.sequence_id()
                 }
-                _ => true,
             }))
     }
 
@@ -105,13 +104,14 @@ impl UpdatableHandler {
         id: u32,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
+        time_offset: f32,
     ) -> Result<(), UpdatableHandlerError> {
         let executor = self
             .executor_mut(id)
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
 
         if executor.is_started() {
-            executor.next_cue(fixture_handler, preset_handler);
+            executor.next_cue(fixture_handler, preset_handler, time_offset);
             return Ok(());
         }
 
@@ -125,7 +125,7 @@ impl UpdatableHandler {
             .executor_mut(id)
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
 
-        executor.start(fixture_handler, preset_handler);
+        executor.start(fixture_handler, preset_handler, time_offset);
         Ok(())
     }
 
@@ -165,7 +165,7 @@ impl UpdatableHandler {
             .executor_mut(id)
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
 
-        executor.start(fixture_handler, preset_handler);
+        executor.start(fixture_handler, preset_handler, 0.0);
         Ok(())
     }
 
@@ -213,12 +213,11 @@ impl UpdatableHandler {
 
     pub fn update_executors(
         &mut self,
-        delta_time: f64,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
     ) {
         for (_, runtime) in self.executors.iter_mut() {
-            runtime.update(delta_time, fixture_handler, preset_handler);
+            runtime.update(fixture_handler, preset_handler);
         }
     }
 
@@ -238,20 +237,13 @@ impl UpdatableHandler {
         creation_mode: &CreateFaderArgsCreationMode,
         name: Option<String>,
         preset_handler: &PresetHandler,
-        fixture_selector_context: FixtureSelectorContext,
+        _fixture_selector_context: FixtureSelectorContext,
     ) -> Result<(), UpdatableHandlerError> {
         if self.faders.contains_key(&id) {
             return Err(UpdatableHandlerError::UpdatableAlreadyExists(id));
         }
 
         let fader_config = match creation_mode {
-            CreateFaderArgsCreationMode::Submaster(fixture_selector) => {
-                DemexFaderConfig::Submaster {
-                    selection: fixture_selector
-                        .get_selection(preset_handler, fixture_selector_context)
-                        .map_err(UpdatableHandlerError::FixtureSelectorError)?,
-                }
-            }
             CreateFaderArgsCreationMode::Sequence(sequence_id) => {
                 preset_handler
                     .get_sequence(*sequence_id)
@@ -305,9 +297,9 @@ impl UpdatableHandler {
         self.faders.keys().cloned().collect()
     }
 
-    pub fn update_faders(&mut self, delta_time: f64, preset_handler: &PresetHandler) {
+    pub fn update_faders(&mut self, preset_handler: &PresetHandler) {
         for (_, fader) in self.faders.iter_mut() {
-            fader.update(delta_time, preset_handler);
+            fader.update(preset_handler);
         }
     }
 

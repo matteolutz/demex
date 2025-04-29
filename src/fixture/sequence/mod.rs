@@ -5,7 +5,7 @@ use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    channel2::channel_value::FixtureChannelValue2, presets::PresetHandler,
+    channel3::channel_value::FixtureChannelValue3, presets::PresetHandler,
     value_source::FixtureChannelValuePriority,
 };
 
@@ -14,14 +14,14 @@ pub mod runtime;
 
 #[derive(Debug, Clone)]
 pub struct FadeFixtureChannelValue {
-    value: FixtureChannelValue2,
+    value: FixtureChannelValue3,
     alpha: f32,
     priority: FixtureChannelValuePriority,
 }
 
 impl FadeFixtureChannelValue {
     pub fn new(
-        value: FixtureChannelValue2,
+        value: FixtureChannelValue3,
         alpha: f32,
         priority: FixtureChannelValuePriority,
     ) -> Self {
@@ -34,13 +34,13 @@ impl FadeFixtureChannelValue {
 
     pub fn home_ltp() -> FadeFixtureChannelValue {
         FadeFixtureChannelValue::new(
-            FixtureChannelValue2::Home,
+            FixtureChannelValue3::Home,
             1.0,
             FixtureChannelValuePriority::Ltp,
         )
     }
 
-    pub fn value(&self) -> &FixtureChannelValue2 {
+    pub fn value(&self) -> &FixtureChannelValue3 {
         &self.value
     }
 

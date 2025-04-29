@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fixture::timing::TimingHandler,
+    fixture::{patch::Patch, timing::TimingHandler},
     parser::nodes::{
         action::{error::ActionRunError, result::ActionRunResult},
         object::{HomeableObject, Object},
@@ -25,6 +25,7 @@ impl FunctionArgs for RenameObjectArgs {
         updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
+        _: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         match &self.object {
             Object::Preset(preset_id) => preset_handler

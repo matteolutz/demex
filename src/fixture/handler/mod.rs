@@ -5,11 +5,13 @@ use crate::dmx::{DemexDmxOutput, DemexDmxOutputTrait};
 use self::error::FixtureHandlerError;
 
 use super::{
-    patch::Patch, presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler,
-    Fixture,
+    gdtf::GdtfFixture, presets::PresetHandler, selection::FixtureSelection, timing::TimingHandler,
+    updatables::UpdatableHandler,
 };
 
 pub mod error;
+
+pub type FixtureTypeList = [gdtf::fixture_type::FixtureType];
 
 fn compare_universe_output_data(
     previous_data_option: Option<&[u8; 512]>,
@@ -43,9 +45,8 @@ fn write_universe_data(
 
 #[derive(Debug)]
 pub struct FixtureHandler {
-    fixtures: Vec<Fixture>,
+    fixtures: Vec<GdtfFixture>,
     outputs: Vec<DemexDmxOutput>,
-    patch: Patch,
     universe_output_data: HashMap<u16, [u8; 512]>,
     grand_master: u8,
 }
@@ -55,16 +56,17 @@ impl FixtureHandler {
         255
     }
 
-    pub fn new(patch: Patch) -> Result<Self, FixtureHandlerError> {
+    pub fn new(
+        fixtures: Vec<GdtfFixture>,
+        outputs: Vec<DemexDmxOutput>,
+    ) -> Result<Self, FixtureHandlerError> {
         // check if the fixtures overlap
-
-        let (fixtures, outputs) = patch.clone().into();
 
         let mut fixture_addresses: HashMap<u16, BTreeSet<u16>> = HashMap::new();
 
         for f in &fixtures {
             let start_address = f.start_address();
-            let end_address = start_address + f.channels().len() as u16 - 1;
+            let end_address = start_address + f.address_footprint() - 1;
             let address_set = fixture_addresses.entry(f.universe()).or_default();
 
             for i in start_address..=end_address {
@@ -84,25 +86,34 @@ impl FixtureHandler {
             universe_output_data: HashMap::with_capacity(fixtures.len()),
             fixtures,
             outputs,
-            patch,
             grand_master: Self::default_grandmaster_value(),
         })
     }
 
-    pub fn reload_patch(&mut self) {
-        self.fixtures = self.patch.clone().into();
-    }
-
-    pub fn fixture_immut(&self, fixture_id: u32) -> Option<&Fixture> {
+    pub fn fixture_immut(&self, fixture_id: u32) -> Option<&GdtfFixture> {
         self.fixtures.iter().find(|f| f.id() == fixture_id)
     }
 
-    pub fn fixture(&mut self, fixture_id: u32) -> Option<&mut Fixture> {
+    pub fn fixture(&mut self, fixture_id: u32) -> Option<&mut GdtfFixture> {
         self.fixtures.iter_mut().find(|f| f.id() == fixture_id)
     }
 
-    pub fn fixtures(&self) -> &Vec<Fixture> {
+    pub fn selected_fixtures_mut(
+        &mut self,
+        fixture_selection: &FixtureSelection,
+    ) -> Vec<&mut GdtfFixture> {
+        self.fixtures
+            .iter_mut()
+            .filter(|fixture| fixture_selection.has_fixture(fixture.id()))
+            .collect::<Vec<_>>()
+    }
+
+    pub fn fixtures(&self) -> &Vec<GdtfFixture> {
         &self.fixtures
+    }
+
+    pub fn fixtures_mut(&mut self) -> &mut Vec<GdtfFixture> {
+        &mut self.fixtures
     }
 
     pub fn has_fixture(&self, id: u32) -> bool {
@@ -130,31 +141,42 @@ impl FixtureHandler {
         &mut self.grand_master
     }
 
-    pub fn patch(&self) -> &Patch {
-        &self.patch
-    }
-
-    pub fn patch_mut(&mut self) -> &mut Patch {
-        &mut self.patch
-    }
-
-    pub fn update(
+    pub fn update_output_values(
         &mut self,
+        fixture_types: &FixtureTypeList,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
-        _delta_time: f64,
+    ) -> Result<(), FixtureHandlerError> {
+        for f in self.fixtures.iter_mut() {
+            f.update_output_values(
+                fixture_types,
+                preset_handler,
+                updatable_handler,
+                timing_handler,
+            )
+            .map_err(FixtureHandlerError::FixtureError)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn generate_output_data(
+        &mut self,
+        fixture_types: &FixtureTypeList,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
         force: bool,
     ) -> Result<usize, FixtureHandlerError> {
         let mut dirty_universes: BTreeSet<u16> = BTreeSet::new();
 
-        for f in &self.fixtures {
+        for f in &mut self.fixtures {
             let fixture_universe_offset = f.start_address() - 1;
 
             let data_packet = f
                 .generate_data_packet(
+                    fixture_types,
                     preset_handler,
-                    updatable_handler,
                     timing_handler,
                     self.grand_master as f32 / 255.0,
                 )

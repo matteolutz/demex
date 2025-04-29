@@ -6,14 +6,17 @@ pub mod input;
 pub mod lexer;
 pub mod parser;
 pub mod show;
+pub mod storage;
 pub mod ui;
 pub mod utils;
 
 use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
-use fixture::{channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler};
+use fixture::handler::FixtureHandler;
+use gdtf::GdtfFile;
 use input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler};
+use itertools::Itertools;
 use parking_lot::RwLock;
 use rfd::FileDialog;
 use show::DemexShow;
@@ -36,6 +39,10 @@ struct Args {
     /// Run an additional thread to periodically check for RwLock deadlocks
     #[arg(long)]
     deadlock_test: bool,
+
+    /// Run the application in single-threaded mode
+    #[arg(long)]
+    single_thread: bool,
 }
 
 const TEST_MAX_FUPS: f64 = 60.0;
@@ -44,6 +51,8 @@ const TEST_UI_FPS: f64 = 60.0;
 
 const TEST_UI_THEME: DemexUiTheme = DemexUiTheme::Default;
 const TEST_TOUCHSCREEN_FRIENDLY: bool = false;
+
+const APP_ID: &str = "demex";
 
 fn load_fonts() -> egui::FontDefinitions {
     let mut fonts = egui::FontDefinitions::default();
@@ -60,6 +69,12 @@ fn load_fonts() -> egui::FontDefinitions {
             "../assets/fonts/JetBrainsMono-Regular.ttf"
         ))),
     );
+    fonts.font_data.insert(
+        "timecode".to_string(),
+        Arc::new(egui::FontData::from_static(include_bytes!(
+            "../assets/fonts/Timecode.ttf"
+        ))),
+    );
 
     fonts
         .families
@@ -72,6 +87,11 @@ fn load_fonts() -> egui::FontDefinitions {
         .get_mut(&egui::FontFamily::Monospace)
         .unwrap()
         .insert(0, "jetbrains-mono".to_string());
+
+    fonts.families.insert(
+        egui::FontFamily::Name("Timecode".into()),
+        vec!["timecode".to_string()],
+    );
 
     fonts
 }
@@ -92,15 +112,58 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let show_file = args.show.clone();
 
-    let mut show: DemexShow = args
+    let fixture_files = std::fs::read_dir(storage::fixture_types(APP_ID))
+        .unwrap()
+        .flat_map(|file| {
+            file.ok()
+                .and_then(|f| std::fs::File::open(f.path()).ok())
+                .and_then(|f| GdtfFile::new(f).ok())
+        })
+        .collect::<Vec<_>>();
+
+    log::info!(
+        "Found {} valid fixtures file(s), with {} fixture type(s) (at {})",
+        fixture_files.len(),
+        fixture_files
+            .iter()
+            .map(|f| f.description.fixture_types.len())
+            .sum::<usize>(),
+        storage::fixture_types(APP_ID).display()
+    );
+    log::debug!(
+        "Valid fixture type(s):\n {}",
+        fixture_files
+            .iter()
+            .flat_map(|f| &f.description.fixture_types)
+            .map(|fixture_type| format!(
+                "{} (man.: {}, id: {}, modes: {:?})\n",
+                fixture_type.long_name,
+                fixture_type.manufacturer,
+                fixture_type.fixture_type_id,
+                fixture_type
+                    .dmx_modes
+                    .iter()
+                    .map(|mode| &mode.name)
+                    .collect::<Vec<_>>()
+            ))
+            .join(", ")
+    );
+
+    let show: DemexShow = args
         .show
         .inspect(|show_path| log::info!("Loading show file: {:?}", show_path))
         .map(|show_path| serde_json::from_reader(std::fs::File::open(show_path).unwrap()).unwrap())
         .unwrap_or(DemexShow::default());
 
-    *show.preset_handler.feature_groups_mut() = FeatureGroup::default_feature_groups();
+    let fixture_types = fixture_files
+        .into_iter()
+        .flat_map(|file| file.description.fixture_types)
+        .collect::<Vec<_>>();
 
-    let fixture_handler = Arc::new(RwLock::new(FixtureHandler::new(show.patch).unwrap()));
+    let patch = Arc::new(RwLock::new(show.patch.into_patch(fixture_types)));
+    let (fixtures, outputs) = patch.read().into_fixures_and_outputs();
+
+    let fixture_handler = Arc::new(RwLock::new(FixtureHandler::new(fixtures, outputs).unwrap()));
 
     let preset_handler = Arc::new(RwLock::new(show.preset_handler));
     let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));
@@ -115,6 +178,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         preset_handler.clone(),
         updatable_handler.clone(),
         timing_handler.clone(),
+        patch.clone(),
         stats.clone(),
         show_file,
         |show: DemexShow, show_file: Option<&PathBuf>| {
@@ -142,52 +206,64 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .collect::<Vec<_>>(),
         ),
         show.ui_config,
+        args.single_thread,
     );
 
-    let fixture_handler_thread_a = fixture_handler.clone();
-    let preset_handler_thread_a = preset_handler.clone();
-    let updatable_handler_thread_a = updatable_handler.clone();
-    let timing_handler_thread_a = timing_handler.clone();
+    if !args.single_thread {
+        let fixture_handler_thread_a = fixture_handler.clone();
+        let preset_handler_thread_a = preset_handler.clone();
+        let timing_handler_thread_a = timing_handler.clone();
+        let patch_thread_a = patch.clone();
 
-    demex_update_thread(
-        "demex-dmx-output".to_owned(),
-        stats.clone(),
-        TEST_MAX_DMX_FPS,
-        move |delta_time, last_user_update| {
-            let mut fixture_handler = fixture_handler_thread_a.write();
-            let preset_handler = preset_handler_thread_a.read();
-            let updatable_handler = updatable_handler_thread_a.read();
-            let timing_handler = timing_handler_thread_a.read();
+        demex_update_thread(
+            "demex-dmx-output".to_owned(),
+            stats.clone(),
+            TEST_MAX_DMX_FPS,
+            move |_, last_user_update| {
+                let mut fixture_handler = fixture_handler_thread_a.write();
+                let preset_handler = preset_handler_thread_a.read();
+                let timing_handler = timing_handler_thread_a.read();
+                let patch = patch_thread_a.read();
 
-            if fixture_handler
-                .update(
-                    &preset_handler,
-                    &updatable_handler,
-                    &timing_handler,
-                    delta_time,
-                    last_user_update.elapsed().as_secs_f64() > 1.0,
-                )
-                .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err))
-                .is_ok_and(|res| res > 0)
-            {
-                *last_user_update = time::Instant::now();
-            }
-        },
-    );
+                if fixture_handler
+                    .generate_output_data(
+                        patch.fixture_types(),
+                        &preset_handler,
+                        &timing_handler,
+                        last_user_update.elapsed().as_secs_f64() > 1.0,
+                    )
+                    .inspect_err(|err| log::error!("Failed to generate output data: {}", err))
+                    .is_ok_and(|res| res > 0)
+                {
+                    *last_user_update = time::Instant::now();
+                }
+            },
+        );
 
-    demex_update_thread(
-        "demex-update".to_owned(),
-        stats.clone(),
-        TEST_MAX_FUPS,
-        move |delta_time, _| {
-            let mut fixture_handler = fixture_handler.write();
-            let preset_handler = preset_handler.read();
-            let mut updatable_handler = updatable_handler.write();
+        demex_update_thread(
+            "demex-update".to_owned(),
+            stats.clone(),
+            TEST_MAX_FUPS,
+            move |_, _| {
+                let mut fixture_handler = fixture_handler.write();
+                let preset_handler = preset_handler.read();
+                let mut updatable_handler = updatable_handler.write();
+                let timing_handler = timing_handler.read();
+                let patch = patch.read();
 
-            updatable_handler.update_faders(delta_time, &preset_handler);
-            updatable_handler.update_executors(delta_time, &mut fixture_handler, &preset_handler);
-        },
-    );
+                let _ = fixture_handler
+                    .update_output_values(
+                        patch.fixture_types(),
+                        &preset_handler,
+                        &updatable_handler,
+                        &timing_handler,
+                    )
+                    .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
+                updatable_handler.update_faders(&preset_handler);
+                updatable_handler.update_executors(&mut fixture_handler, &preset_handler);
+            },
+        );
+    }
 
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
@@ -197,7 +273,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     eframe::run_native(
-        "demex",
+        APP_ID,
         options,
         Box::new(|creation_context| {
             egui_extras::install_image_loaders(&creation_context.egui_ctx);

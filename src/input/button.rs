@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     fixture::{
         handler::FixtureHandler,
+        patch::Patch,
         presets::{preset::FixturePresetId, PresetHandler},
         selection::FixtureSelection,
         timing::TimingHandler,
@@ -69,6 +70,7 @@ impl DemexInputButton {
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         timing_handler: &mut TimingHandler,
+        patch: &Patch,
         fixture_selector_context: FixtureSelectorContext,
         macro_exec_cue: &mut Vec<Action>,
         global_fixture_selection: &mut Option<FixtureSelection>,
@@ -99,7 +101,7 @@ impl DemexInputButton {
                         .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
                 } else {
                     updatable_handler
-                        .start_or_next_executor(*executor_id, fixture_handler, preset_handler)
+                        .start_or_next_executor(*executor_id, fixture_handler, preset_handler, 0.0)
                         .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
                 }
             }
@@ -128,7 +130,12 @@ impl DemexInputButton {
                 ))?;
 
                 preset_handler
-                    .apply_preset(*preset_id, fixture_handler, selection.clone())
+                    .apply_preset(
+                        *preset_id,
+                        fixture_handler,
+                        patch.fixture_types(),
+                        selection.clone(),
+                    )
                     .map_err(DemexInputDeviceError::PresetHandlerError)?;
             }
             Self::Macro { action } => {

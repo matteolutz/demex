@@ -5,6 +5,7 @@ use itertools::Itertools;
 use crate::{
     fixture::{
         handler::FixtureHandler,
+        patch::Patch,
         presets::{preset::FixturePresetId, PresetHandler},
         sequence::cue::CueIdx,
         updatables::UpdatableHandler,
@@ -54,9 +55,10 @@ impl DemexEditWindow {
     pub fn window_ui(
         &self,
         ui: &mut egui::Ui,
-        fixture_handler: &mut FixtureHandler,
+        _fixture_handler: &mut FixtureHandler,
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
+        patch: &mut Patch,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Self::EditSequence(sequence_id) => {
@@ -82,29 +84,12 @@ impl DemexEditWindow {
                     })
                     .collect::<Vec<_>>();
 
-                let feature_groups = preset_handler
-                    .feature_groups()
-                    .iter()
-                    .map(|(id, group)| DisplayEntry {
-                        id: *id,
-                        name: group.name().to_owned(),
-                    })
-                    .collect::<Vec<_>>();
-
                 let presets = preset_handler
                     .presets()
                     .iter()
                     .map(|(id, preset)| PresetDisplayEntry {
                         id: *id,
-                        name: format!(
-                            "{} - {}",
-                            feature_groups
-                                .iter()
-                                .find(|fg| fg.id == id.feature_group_id)
-                                .map(|fg| fg.name.as_str())
-                                .unwrap(),
-                            preset.name()
-                        ),
+                        name: format!("{} - {}", id.feature_group.name(), preset.name()),
                     })
                     .sorted_by_key(|e| e.id)
                     .collect::<Vec<_>>();
@@ -139,8 +124,6 @@ impl DemexEditWindow {
                         egui::Color32::YELLOW,
                         "A restart is required for output changes to take effect!",
                     );
-
-                    let patch = fixture_handler.patch_mut();
 
                     Probe::new(patch.output_configs_mut())
                         .with_header("Outputs")

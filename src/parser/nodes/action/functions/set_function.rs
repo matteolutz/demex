@@ -2,9 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel2::feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
-        presets::preset::FixturePresetId,
-        timing::TimingHandler,
+        channel3::feature::feature_type::FixtureChannel3FeatureType, patch::Patch,
+        presets::preset::FixturePresetId, timing::TimingHandler,
     },
     parser::nodes::{
         action::{error::ActionRunError, result::ActionRunResult, ValueOrRange},
@@ -17,7 +16,7 @@ use super::FunctionArgs;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetFeatureValueArgs {
     pub fixture_selector: FixtureSelector,
-    pub feature_type: FixtureFeatureType,
+    pub feature_type: FixtureChannel3FeatureType,
     pub feature_value: ValueOrRange<f32>,
 }
 
@@ -30,6 +29,7 @@ impl FunctionArgs for SetFeatureValueArgs {
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
+        _: &Patch,
     ) -> Result<
         crate::parser::nodes::action::result::ActionRunResult,
         crate::parser::nodes::action::error::ActionRunError,
@@ -42,7 +42,7 @@ impl FunctionArgs for SetFeatureValueArgs {
         for fixture_id in selection.fixtures() {
             let fixture_idx = selection.offset_idx(*fixture_id).unwrap();
 
-            let discrete_value = match self.feature_value {
+            let _discrete_value = match self.feature_value {
                 ValueOrRange::Single(value) => value,
                 ValueOrRange::Thru(start, end) => {
                     let range = end - start;
@@ -51,21 +51,8 @@ impl FunctionArgs for SetFeatureValueArgs {
                 }
             };
 
-            if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
-                match self.feature_type {
-                    FixtureFeatureType::SingleValue { channel_type } => fixture
-                        .set_feature_value(FixtureFeatureValue::SingleValue {
-                            channel_type,
-                            value: discrete_value,
-                        })
-                        .map_err(ActionRunError::FixtureError)?,
-                    unhandled_feature_type => {
-                        Err(ActionRunError::Todo(format!(
-                            "Handle set of feature type {:?}",
-                            unhandled_feature_type
-                        )))?;
-                    }
-                }
+            if let Some(_fixture) = fixture_handler.fixture(*fixture_id) {
+                todo!();
             }
         }
 
@@ -88,6 +75,7 @@ impl FunctionArgs for SetFixturePresetArgs {
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
+        patch: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         let selection = self
             .fixture_selector
@@ -97,7 +85,7 @@ impl FunctionArgs for SetFixturePresetArgs {
         match self.preset_id {
             ValueOrRange::Single(preset_id) => {
                 preset_handler
-                    .apply_preset(preset_id, fixture_handler, selection)
+                    .apply_preset(preset_id, fixture_handler, patch.fixture_types(), selection)
                     .map_err(ActionRunError::PresetHandlerError)?;
             }
             ValueOrRange::Thru(_, _) => {

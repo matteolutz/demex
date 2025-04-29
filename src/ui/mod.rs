@@ -6,16 +6,15 @@ use dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use egui::IconData;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use tabs::DemexTabs;
+use tabs::{encoders_tab::EncodersTabState, DemexTabs};
 use window::{DemexWindow, DemexWindowHandler};
 
 #[allow(unused_imports)]
+use crate::{fixture::handler::FixtureHandler, lexer::Lexer};
 use crate::{
-    fixture::{handler::FixtureHandler, Fixture},
-    lexer::Lexer,
-};
-use crate::{
-    fixture::{presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler},
+    fixture::{
+        patch::Patch, presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler,
+    },
     input::DemexInputDeviceHandler,
     parser::{
         nodes::{action::Action, fixture_selector::FixtureSelectorContext},
@@ -69,6 +68,9 @@ pub struct DemexUiApp {
     desired_fps: f64,
 
     icon: Arc<IconData>,
+
+    is_single_threaded: bool,
+    last_single_threaded_update: std::time::Instant,
 }
 
 impl DemexUiApp {
@@ -77,6 +79,7 @@ impl DemexUiApp {
         preset_handler: Arc<RwLock<PresetHandler>>,
         updatable_handler: Arc<RwLock<UpdatableHandler>>,
         timing_handler: Arc<RwLock<TimingHandler>>,
+        patch: Arc<RwLock<Patch>>,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
         show_file: Option<PathBuf>,
         save_show: SaveShowFn,
@@ -84,6 +87,7 @@ impl DemexUiApp {
         icon: Arc<IconData>,
         input_device_handler: DemexInputDeviceHandler,
         ui_config: DemexShowUiConfig,
+        is_single_threaded: bool,
     ) -> Self {
         stats
             .write()
@@ -97,6 +101,7 @@ impl DemexUiApp {
                 preset_handler,
                 updatable_handler,
                 timing_handler,
+                patch,
 
                 global_fixture_select: None,
 
@@ -123,6 +128,8 @@ impl DemexUiApp {
                 input_device_handler,
 
                 ui_config,
+
+                encoders_tab_state: EncodersTabState::default(),
             },
             tabs: DemexTabs::default(),
 
@@ -132,6 +139,9 @@ impl DemexUiApp {
             desired_fps,
 
             icon,
+
+            is_single_threaded,
+            last_single_threaded_update: time::Instant::now(),
         }
     }
 }
@@ -156,15 +166,52 @@ impl DemexUiApp {
 
         self.context.run_and_handle_action(&action)
     }
+
+    pub fn update_single_threaded(&mut self) {
+        let mut fixture_handler = self.context.fixture_handler.write();
+        let preset_handler = self.context.preset_handler.read();
+        let mut updatable_handler = self.context.updatable_handler.write();
+        let timing_handler = self.context.timing_handler.read();
+        let patch = self.context.patch.read();
+
+        let _ = fixture_handler
+            .update_output_values(
+                patch.fixture_types(),
+                &preset_handler,
+                &updatable_handler,
+                &timing_handler,
+            )
+            .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
+        updatable_handler.update_faders(&preset_handler);
+        updatable_handler.update_executors(&mut fixture_handler, &preset_handler);
+
+        if fixture_handler
+            .generate_output_data(
+                patch.fixture_types(),
+                &preset_handler,
+                &timing_handler,
+                self.last_single_threaded_update.elapsed().as_secs_f64() > 1.0,
+            )
+            .inspect_err(|err| log::error!("Failed to generate output data: {}", err))
+            .is_ok_and(|res| res > 0)
+        {
+            self.last_single_threaded_update = time::Instant::now();
+        }
+    }
 }
 
 impl eframe::App for DemexUiApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+        if self.is_single_threaded {
+            self.update_single_threaded();
+        }
+
         if let Err(input_error) = self.context.input_device_handler.update(
             &mut self.context.fixture_handler.write(),
             &mut self.context.preset_handler.write(),
             &mut self.context.updatable_handler.write(),
             &mut self.context.timing_handler.write(),
+            &self.context.patch.read(),
             FixtureSelectorContext::new(&self.context.global_fixture_select.clone()),
             &mut self.context.macro_execution_queue,
             &mut self.context.global_fixture_select,
@@ -182,6 +229,7 @@ impl eframe::App for DemexUiApp {
             &mut self.context.fixture_handler,
             &mut self.context.preset_handler,
             &mut self.context.updatable_handler,
+            &mut self.context.patch,
         );
 
         while !self.context.macro_execution_queue.is_empty() {

@@ -16,19 +16,19 @@ use crate::parser::nodes::{
 };
 
 use super::{
-    channel2::{
-        channel_type::FixtureChannelType, channel_value::FixtureChannelValue2PresetState,
-        feature::feature_group::FeatureGroup,
+    channel3::{
+        channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
+        feature::feature_group::FixtureChannel3FeatureGroup,
     },
     effect::feature::{runtime::FeatureEffectRuntime, FeatureEffect},
-    handler::{error::FixtureHandlerError, FixtureHandler},
+    gdtf::GdtfFixture,
+    handler::{error::FixtureHandlerError, FixtureHandler, FixtureTypeList},
     selection::FixtureSelection,
     sequence::{
         cue::{Cue, CueIdx, CueTiming, CueTrigger},
         Sequence,
     },
     timing::TimingHandler,
-    Fixture,
 };
 
 pub mod command_slice;
@@ -47,14 +47,11 @@ pub struct PresetHandler {
     sequences: HashMap<u32, Sequence>,
 
     presets: HashMap<FixturePresetId, FixturePreset>,
-
-    feature_groups: HashMap<u32, FeatureGroup>,
 }
 
 impl Default for PresetHandler {
     fn default() -> Self {
         Self {
-            feature_groups: FeatureGroup::default_feature_groups(),
             groups: HashMap::new(),
             macros: HashMap::new(),
             command_slices: HashMap::new(),
@@ -125,6 +122,7 @@ impl PresetHandler {
         fixture_selector_context: FixtureSelectorContext,
         id: FixturePresetId,
         name: Option<String>,
+        fixture_types: &FixtureTypeList,
         fixture_handler: &FixtureHandler,
         timing_handler: &TimingHandler,
     ) -> Result<(), PresetHandlerError> {
@@ -132,24 +130,20 @@ impl PresetHandler {
             return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));
         }
 
-        let feature_types = self
-            .get_feature_group(id.feature_group_id)?
-            .feature_types()
-            .to_vec();
-
         let data = FixturePreset::generate_preset_data(
+            fixture_types,
             fixture_handler,
             self,
             timing_handler,
             fixture_selector,
             fixture_selector_context,
-            feature_types,
+            id.feature_group,
         )?;
 
         let preset = FixturePreset::new(
             id,
             name,
-            self.get_feature_group(id.feature_group_id)?,
+            id.feature_group,
             FixturePresetData::Default { data },
         )?;
 
@@ -166,19 +160,12 @@ impl PresetHandler {
             return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));
         }
 
-        let feature_group = self.get_feature_group(id.feature_group_id)?;
-
         let preset = FixturePreset::new(
             id,
             name,
-            feature_group,
+            id.feature_group,
             FixturePresetData::FeatureEffect {
-                runtime: FeatureEffectRuntime::new(
-                    feature_group
-                        .default_feature_group()
-                        .and_then(FeatureEffect::default_for)
-                        .unwrap_or_default(),
-                ),
+                runtime: FeatureEffectRuntime::new(FeatureEffect::default()),
             },
         )?;
 
@@ -191,23 +178,21 @@ impl PresetHandler {
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         id: FixturePresetId,
+        fixture_types: &FixtureTypeList,
         fixture_handler: &FixtureHandler,
         timing_handler: &TimingHandler,
         update_mode: UpdateMode,
     ) -> Result<usize, PresetHandlerError> {
         let preset = self.get_preset(id)?;
-        let feature_types = self
-            .get_feature_group(preset.id().feature_group_id)?
-            .feature_types()
-            .to_vec();
 
         let new_data = FixturePreset::generate_preset_data(
+            fixture_types,
             fixture_handler,
             self,
             timing_handler,
             fixture_selector,
             fixture_selector_context,
-            feature_types,
+            preset.id().feature_group,
         )?;
 
         let preset = self.get_preset_mut(id)?;
@@ -225,17 +210,20 @@ impl PresetHandler {
         &self.presets
     }
 
-    pub fn presets_for_feature_group(&self, feature_group_id: u32) -> Vec<&FixturePreset> {
+    pub fn presets_for_feature_group(
+        &self,
+        feature_group_id: FixtureChannel3FeatureGroup,
+    ) -> Vec<&FixturePreset> {
         self.presets
             .values()
-            .filter(|p| p.id().feature_group_id == feature_group_id)
+            .filter(|p| p.id().feature_group == feature_group_id)
             .collect()
     }
 
-    pub fn next_preset_id(&self, feature_group_id: u32) -> u32 {
+    pub fn next_preset_id(&self, feature_group_id: FixtureChannel3FeatureGroup) -> u32 {
         self.presets
             .keys()
-            .filter(|k| k.feature_group_id == feature_group_id)
+            .filter(|k| k.feature_group == feature_group_id)
             .map(|k| k.preset_id)
             .max()
             .unwrap_or(0)
@@ -259,16 +247,16 @@ impl PresetHandler {
     ) -> Result<Vec<&FixturePreset>, PresetHandlerError> {
         let mut presets = Vec::new();
 
-        if preset_id_from.feature_group_id != preset_id_to.feature_group_id {
+        if preset_id_from.feature_group != preset_id_to.feature_group {
             return Err(PresetHandlerError::FeatureGroupMismatch(
-                preset_id_from.feature_group_id,
-                preset_id_to.feature_group_id,
+                preset_id_from.feature_group,
+                preset_id_to.feature_group,
             ));
         }
 
         for i in preset_id_from.preset_id..=preset_id_to.preset_id {
             let preset = self.get_preset(FixturePresetId {
-                feature_group_id: preset_id_from.feature_group_id,
+                feature_group: preset_id_from.feature_group,
                 preset_id: i,
             })?;
             presets.push(preset);
@@ -298,40 +286,45 @@ impl PresetHandler {
     pub fn get_preset_value_for_fixture(
         &self,
         preset_id: FixturePresetId,
-        fixture: &Fixture,
-        channel_type: FixtureChannelType,
+        fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
+        channel_name: &str,
         timing_handler: &TimingHandler,
         state: Option<&FixtureChannelValue2PresetState>,
-    ) -> Option<u8> {
+    ) -> Option<FixtureChannelValue3> {
         let preset = self.get_preset(preset_id);
 
         if let Ok(preset) = preset {
-            preset.value(fixture, channel_type, self, timing_handler, state)
+            preset.value(
+                fixture,
+                fixture_types,
+                channel_name,
+                self,
+                timing_handler,
+                state,
+            )
         } else {
             None
         }
     }
 
     pub fn apply_preset(
-        &mut self,
+        &self,
         preset_id: FixturePresetId,
         fixture_handler: &mut FixtureHandler,
+        fixture_types: &FixtureTypeList,
         selection: FixtureSelection,
     ) -> Result<(), PresetHandlerError> {
-        let feature_types = self
-            .get_feature_group(preset_id.feature_group_id)?
-            .feature_types()
-            .to_vec();
-        let preset = self.get_preset_mut(preset_id)?;
+        let preset = self.get_preset(preset_id)?;
 
         for fixture_id in selection.fixtures() {
             preset.apply(
+                fixture_types,
                 fixture_handler.fixture(*fixture_id).ok_or(
                     PresetHandlerError::FixtureHandlerError(FixtureHandlerError::FixtureNotFound(
                         *fixture_id,
                     )),
                 )?,
-                &feature_types,
                 selection.clone(),
             )?;
         }
@@ -351,17 +344,17 @@ impl PresetHandler {
         preset_id_from: FixturePresetId,
         preset_id_to: FixturePresetId,
     ) -> Result<usize, PresetHandlerError> {
-        if preset_id_from.feature_group_id != preset_id_to.feature_group_id {
+        if preset_id_from.feature_group != preset_id_to.feature_group {
             return Err(PresetHandlerError::FeatureGroupMismatch(
-                preset_id_from.feature_group_id,
-                preset_id_to.feature_group_id,
+                preset_id_from.feature_group,
+                preset_id_to.feature_group,
             ));
         }
 
         let mut count = 0;
         for id in preset_id_from.preset_id..=preset_id_to.preset_id {
             self.delete_preset(FixturePresetId {
-                feature_group_id: preset_id_from.feature_group_id,
+                feature_group: preset_id_from.feature_group,
                 preset_id: id,
             })?;
             count += 1;
@@ -488,6 +481,7 @@ impl PresetHandler {
         fixture_handler: &FixtureHandler,
         channel_type_selector: &RecordChannelTypeSelector,
         update_mode: UpdateMode,
+        fixture_types: &FixtureTypeList,
     ) -> Result<usize, PresetHandlerError> {
         let selection = fixture_selector
             .get_selection(self, fixture_selector_context)
@@ -504,7 +498,12 @@ impl PresetHandler {
             .find(|c| c.cue_idx() == cue_idx)
             .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_idx))?;
 
-        let cue_data = Cue::generate_cue_data(fixture_handler, &selection, channel_type_selector)?;
+        let cue_data = Cue::generate_cue_data(
+            fixture_types,
+            fixture_handler,
+            &selection,
+            channel_type_selector,
+        )?;
 
         let values_updated = cue.update(sequence_id, cue_data, &selection, update_mode)?;
 
@@ -519,6 +518,7 @@ impl PresetHandler {
         fixture_selector_context: FixtureSelectorContext,
         cue_idx: Option<CueIdx>,
         channel_type_selector: &RecordChannelTypeSelector,
+        fixture_types: &FixtureTypeList,
     ) -> Result<(), PresetHandlerError> {
         // does this cue already exist?
         if let Some(cue_idx) = cue_idx {
@@ -549,7 +549,12 @@ impl PresetHandler {
             .get_selection(self, fixture_selector_context)
             .map_err(|err| PresetHandlerError::FixtureSelectorError(Box::new(err)))?;
 
-        let cue_data = Cue::generate_cue_data(fixture_handler, &selection, channel_type_selector)?;
+        let cue_data = Cue::generate_cue_data(
+            fixture_types,
+            fixture_handler,
+            &selection,
+            channel_type_selector,
+        )?;
 
         let cue = Cue::new(
             discrete_cue_idx,
@@ -633,45 +638,6 @@ impl PresetHandler {
         self.sequences
             .remove(&id)
             .ok_or(PresetHandlerError::PresetNotFound(id))?;
-        Ok(())
-    }
-}
-
-// Feature groupus
-impl PresetHandler {
-    pub fn feature_groups(&self) -> &HashMap<u32, FeatureGroup> {
-        &self.feature_groups
-    }
-
-    pub fn feature_groups_mut(&mut self) -> &mut HashMap<u32, FeatureGroup> {
-        &mut self.feature_groups
-    }
-
-    pub fn get_feature_group(&self, id: u32) -> Result<&FeatureGroup, PresetHandlerError> {
-        self.feature_groups
-            .get(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))
-    }
-
-    pub fn get_feature_group_mut(
-        &mut self,
-        id: u32,
-    ) -> Result<&mut FeatureGroup, PresetHandlerError> {
-        self.feature_groups
-            .get_mut(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))
-    }
-
-    pub fn rename_feature_group(
-        &mut self,
-        id: u32,
-        new_name: String,
-    ) -> Result<(), PresetHandlerError> {
-        let group = self
-            .feature_groups
-            .get_mut(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))?;
-        *group.name_mut() = new_name;
         Ok(())
     }
 }

@@ -4,8 +4,11 @@ use parking_lot::RwLock;
 
 use crate::{
     fixture::{
-        channel2::feature::feature_group::FeatureGroup, handler::FixtureHandler,
-        presets::PresetHandler, selection::FixtureSelection, timing::TimingHandler,
+        handler::FixtureHandler,
+        patch::{Patch, SerializablePatch},
+        presets::PresetHandler,
+        selection::FixtureSelection,
+        timing::TimingHandler,
         updatables::UpdatableHandler,
     },
     input::DemexInputDeviceHandler,
@@ -24,6 +27,7 @@ use crate::{
 
 use super::{
     dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
+    tabs::encoders_tab::EncodersTabState,
     window::{DemexWindow, DemexWindowHandler},
 };
 
@@ -38,6 +42,7 @@ pub struct DemexUiContext {
     pub preset_handler: Arc<RwLock<PresetHandler>>,
     pub updatable_handler: Arc<RwLock<UpdatableHandler>>,
     pub timing_handler: Arc<RwLock<TimingHandler>>,
+    pub patch: Arc<RwLock<Patch>>,
 
     pub global_fixture_select: Option<FixtureSelection>,
     pub command: Vec<Token>,
@@ -59,6 +64,8 @@ pub struct DemexUiContext {
     pub window_handler: DemexWindowHandler,
 
     pub ui_config: DemexShowUiConfig,
+
+    pub encoders_tab_state: EncodersTabState,
 }
 
 impl DemexUiContext {
@@ -110,11 +117,10 @@ impl DemexUiContext {
             }
             Action::Save => {
                 let fixture_handler_lock = self.fixture_handler.read();
-                let mut preset_handler_lock = self.preset_handler.write();
+                let preset_handler_lock = self.preset_handler.read();
                 let updatable_handler_lock = self.updatable_handler.read();
                 let timing_handler_lock = self.timing_handler.read();
-
-                *preset_handler_lock.feature_groups_mut() = FeatureGroup::default_feature_groups();
+                let patch_lock = self.patch.read();
 
                 let show = DemexShow {
                     preset_handler: preset_handler_lock.clone(),
@@ -126,7 +132,7 @@ impl DemexUiContext {
                         .iter()
                         .map(|d| d.config().clone())
                         .collect::<Vec<_>>(),
-                    patch: fixture_handler_lock.patch().clone(),
+                    patch: SerializablePatch::from_patch(&patch_lock),
                     ui_config: self.ui_config.clone(),
                 };
 
@@ -136,6 +142,7 @@ impl DemexUiContext {
                 drop(updatable_handler_lock);
                 drop(preset_handler_lock);
                 drop(timing_handler_lock);
+                drop(patch_lock);
 
                 if let Err(e) = save_result {
                     self.add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));
@@ -164,6 +171,7 @@ impl DemexUiContext {
                 &mut self.updatable_handler.write(),
                 &mut self.input_device_handler,
                 &mut self.timing_handler.write(),
+                &self.patch.read(),
             )
             .inspect(|result| {
                 self.logs

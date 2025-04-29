@@ -5,11 +5,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
     error::FixtureError, presets::PresetHandler, sequence::FadeFixtureChannelValue,
-    updatables::UpdatableHandler, Fixture,
+    updatables::UpdatableHandler,
 };
 
 use super::{
-    channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
+    channel3::channel_value::FixtureChannelValue3,
+    gdtf::GdtfFixture,
+    handler::FixtureTypeList,
     timing::TimingHandler,
     updatables::{error::UpdatableHandlerError, StompSource},
 };
@@ -55,12 +57,13 @@ impl Ord for FixtureChannelValuePriority {
 pub trait FixtureChannelValueSourceTrait {
     fn get_channel_value(
         &self,
-        fixture: &Fixture,
-        channel_type: FixtureChannelType,
+        fixture_types: &FixtureTypeList,
+        fixture: &GdtfFixture,
+        channel: &gdtf::dmx_mode::DmxChannel,
         updatable_handler: &UpdatableHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
-    ) -> Result<FixtureChannelValue2, FixtureError>;
+    ) -> Result<FixtureChannelValue3, FixtureError>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -113,12 +116,13 @@ impl FixtureChannelValueSource {
 impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
     fn get_channel_value(
         &self,
-        fixture: &Fixture,
-        channel_type: FixtureChannelType,
+        fixture_types: &FixtureTypeList,
+        fixture: &GdtfFixture,
+        channel: &gdtf::dmx_mode::DmxChannel,
         updatable_handler: &UpdatableHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
-    ) -> Result<FixtureChannelValue2, FixtureError> {
+    ) -> Result<FixtureChannelValue3, FixtureError> {
         let last_stomp_source = updatable_handler.last_stomp_source();
 
         let mut values = self
@@ -128,30 +132,34 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                     Ok(FadeFixtureChannelValue::home_ltp())
                 } else {
                     match source {
-                        FixtureChannelValueSource::Programmer => {
-                            fixture.channel_value_programmer(channel_type).map(|v| {
+                        FixtureChannelValueSource::Programmer => fixture
+                            .get_programmer_value(channel.name().as_ref())
+                            .map(|v| {
                                 FadeFixtureChannelValue::new(
                                     v.clone(),
                                     1.0,
                                     FixtureChannelValuePriority::programmer(),
                                 )
-                            })
-                        }
+                            }),
                         FixtureChannelValueSource::Executor { executor_id } => {
                             let runtime = updatable_handler.executor(*executor_id);
 
                             if let Some(runtime) = runtime {
                                 runtime
                                     .channel_value(
+                                        fixture_types,
                                         fixture,
-                                        fixture.feature_configs(),
-                                        channel_type,
+                                        channel,
                                         preset_handler,
                                         timing_handler,
                                     )
-                                    .ok_or(FixtureError::ChannelValueNotFound(channel_type))
+                                    .ok_or(FixtureError::GdtfChannelValueNotFound(
+                                        channel.name().as_ref().to_owned(),
+                                    ))
                             } else {
-                                Err(FixtureError::ChannelValueNotFound(channel_type))
+                                Err(FixtureError::GdtfChannelValueNotFound(
+                                    channel.name().as_ref().to_owned(),
+                                ))
                             }
                         }
                         FixtureChannelValueSource::Fader { fader_id } => {
@@ -159,13 +167,16 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
 
                             if let Ok(fader) = fader {
                                 fader.get_channel_value(
+                                    fixture_types,
                                     fixture,
-                                    channel_type,
+                                    channel,
                                     preset_handler,
                                     timing_handler,
                                 )
                             } else {
-                                Err(FixtureError::ChannelValueNotFound(channel_type))
+                                Err(FixtureError::GdtfChannelValueNotFound(
+                                    channel.name().as_ref().to_owned(),
+                                ))
                             }
                         }
                     }
@@ -175,12 +186,14 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
             .collect::<Vec<_>>();
 
         if values.is_empty() {
-            return Err(FixtureError::ChannelValueNotFound(channel_type));
+            return Err(FixtureError::GdtfChannelValueNotFound(
+                channel.name().as_ref().to_owned(),
+            ));
         }
 
         values.sort_by_key(|v| v.priority());
 
-        let mut value = FixtureChannelValue2::Home;
+        let mut value = FixtureChannelValue3::Home;
 
         for v in values {
             if v.value().is_home() {
@@ -189,12 +202,12 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
 
             if !v.priority().is_htp() {
                 if v.alpha() == 0.0 {
-                    value = FixtureChannelValue2::Home;
+                    value = FixtureChannelValue3::Home;
                 } else if v.alpha() == 1.0 {
                     value = v.value().clone()
                 } else {
-                    value = FixtureChannelValue2::Mix {
-                        a: Box::new(FixtureChannelValue2::Home),
+                    value = FixtureChannelValue3::Mix {
+                        a: Box::new(FixtureChannelValue3::Home),
                         b: Box::new(v.value().clone()),
                         mix: v.alpha(),
                     };
@@ -212,7 +225,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                 continue;
             }
 
-            value = FixtureChannelValue2::Mix {
+            value = FixtureChannelValue3::Mix {
                 a: Box::new(value),
                 b: Box::new(v.value().clone()),
                 mix: v.alpha(),

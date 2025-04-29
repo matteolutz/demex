@@ -5,7 +5,7 @@ use profile::DemexInputDeviceProfileType;
 
 use crate::{
     fixture::{
-        handler::FixtureHandler, presets::PresetHandler, selection::FixtureSelection,
+        handler::FixtureHandler, patch::Patch, presets::PresetHandler, selection::FixtureSelection,
         timing::TimingHandler, updatables::UpdatableHandler,
     },
     lexer::token::Token,
@@ -19,6 +19,7 @@ pub mod fader;
 pub mod message;
 pub mod midi;
 pub mod profile;
+pub mod timecode;
 
 pub trait DemexInputDeviceProfile: std::fmt::Debug {
     fn update_out(
@@ -66,6 +67,7 @@ impl DemexInputDeviceHandler {
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         timing_handler: &mut TimingHandler,
+        patch: &Patch,
         fixture_selector_context: FixtureSelectorContext,
         macro_exec_cue: &mut Vec<Action>,
         global_fixture_selection: &mut Option<FixtureSelection>,
@@ -90,6 +92,7 @@ impl DemexInputDeviceHandler {
                                 preset_handler,
                                 updatable_handler,
                                 timing_handler,
+                                patch,
                                 fixture_selector_context.clone(),
                                 macro_exec_cue,
                                 global_fixture_selection,
@@ -144,6 +147,20 @@ impl DemexInputDeviceHandler {
                             )?;
                         }
                     }
+                    DemexInputDeviceMessage::Timecode(timecode_packet) => timing_handler
+                        .update_timecode(
+                            timecode_packet,
+                            fixture_handler,
+                            preset_handler,
+                            updatable_handler,
+                        ),
+                    DemexInputDeviceMessage::TimecodeQuarterFrame { piece } => timing_handler
+                        .update_timecode_quarter_frame(
+                            piece,
+                            fixture_handler,
+                            preset_handler,
+                            updatable_handler,
+                        ),
                 }
             }
         }

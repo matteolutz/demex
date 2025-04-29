@@ -4,20 +4,17 @@ use serde::{Deserialize, Serialize};
 
 pub mod config;
 
-use crate::{
-    fixture::{
-        channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
-        error::FixtureError,
-        handler::FixtureHandler,
-        sequence::FadeFixtureChannelValue,
-        timing::TimingHandler,
-        value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
-        Fixture,
-    },
-    utils::math::f32_to_coarse_fine,
+use crate::fixture::{
+    error::FixtureError,
+    gdtf::GdtfFixture,
+    handler::{FixtureHandler, FixtureTypeList},
+    presets::PresetHandler,
+    sequence::FadeFixtureChannelValue,
+    timing::TimingHandler,
+    value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
 };
 
-use super::{error::UpdatableHandlerError, PresetHandler};
+use super::error::UpdatableHandlerError;
 
 #[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
 pub struct DemexFader {
@@ -68,7 +65,6 @@ impl DemexFader {
 
     pub fn display_name(&self, preset_handler: &PresetHandler) -> String {
         match &self.config {
-            DemexFaderConfig::Submaster { .. } => self.name().to_owned(),
             DemexFaderConfig::SequenceRuntime { runtime, .. } => {
                 let sequence_name = preset_handler
                     .get_sequence(runtime.sequence_id())
@@ -102,12 +98,11 @@ impl DemexFader {
         match &mut self.config {
             DemexFaderConfig::SequenceRuntime { runtime, .. } => {
                 if is_active {
-                    runtime.next_cue(preset_handler);
+                    runtime.next_cue(preset_handler, 0.0);
                 }
 
                 Ok(())
             }
-            _ => Err(UpdatableHandlerError::FaderIsNotASequence(self.id)),
         }
     }
 
@@ -147,45 +142,22 @@ impl DemexFader {
                         });
                 }
             }
-            DemexFaderConfig::Submaster {
-                selection: fixtures,
-            } => {
-                for fixture_id in fixtures.fixtures() {
-                    fixture_handler
-                        .fixture(*fixture_id)
-                        .unwrap()
-                        .remove_value_source(FixtureChannelValueSource::Fader {
-                            fader_id: self.id,
-                        });
-                }
-            }
         }
     }
 
     pub fn is_active(&self) -> bool {
         match &self.config {
-            DemexFaderConfig::Submaster { selection: _ } => self.value != 0.0,
             DemexFaderConfig::SequenceRuntime { runtime, .. } => runtime.is_started(),
         }
     }
 
     fn activate(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
         match &mut self.config {
-            DemexFaderConfig::Submaster {
-                selection: fixtures,
-            } => {
-                for fixture_id in fixtures.fixtures() {
-                    fixture_handler
-                        .fixture(*fixture_id)
-                        .unwrap()
-                        .push_value_source(FixtureChannelValueSource::Fader { fader_id: self.id });
-                }
-            }
             DemexFaderConfig::SequenceRuntime { runtime, .. } => {
                 let sequence = preset_handler.get_sequence(runtime.sequence_id()).unwrap();
 
                 if !runtime.is_started() {
-                    runtime.start();
+                    runtime.start(0.0);
                 }
 
                 for fixture_id in sequence.affected_fixtures(preset_handler) {
@@ -200,46 +172,27 @@ impl DemexFader {
 
     pub fn get_channel_value(
         &self,
-        fixture: &Fixture,
-        channel_type: FixtureChannelType,
+        fixture_types: &FixtureTypeList,
+        fixture: &GdtfFixture,
+        channel: &gdtf::dmx_mode::DmxChannel,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
     ) -> Result<FadeFixtureChannelValue, FixtureError> {
         if !self.is_active() {
-            return Err(FixtureError::ChannelValueNotFound(channel_type));
+            return Err(FixtureError::GdtfChannelValueNotFound(
+                channel.name().as_ref().to_owned(),
+            ));
         }
 
         match &self.config {
-            DemexFaderConfig::Submaster {
-                selection: fixtures,
-            } => {
-                if !fixtures.has_fixture(fixture.id())
-                    || (channel_type != FixtureChannelType::Intensity
-                        && channel_type != FixtureChannelType::IntensityFine)
-                {
-                    return Err(FixtureError::ChannelValueNotFound(channel_type));
-                }
-
-                let (coarse, fine) = f32_to_coarse_fine(self.value);
-
-                let value = match channel_type {
-                    FixtureChannelType::Intensity => coarse,
-                    FixtureChannelType::IntensityFine => fine,
-                    _ => unreachable!(),
-                };
-
-                Ok(FadeFixtureChannelValue::new(
-                    FixtureChannelValue2::Discrete(value),
-                    1.0,
-                    self.priority,
-                ))
-            }
             DemexFaderConfig::SequenceRuntime { runtime, function } => {
                 let sequence = preset_handler.get_sequence(runtime.sequence_id()).unwrap();
                 let fixtures = sequence.affected_fixtures(preset_handler);
 
                 if !fixtures.contains(&fixture.id()) {
-                    return Err(FixtureError::ChannelValueNotFound(channel_type));
+                    return Err(FixtureError::GdtfChannelValueNotFound(
+                        channel.name().as_ref().to_owned(),
+                    ));
                 }
 
                 let speed_multiplier = if *function == DemexFaderRuntimeFunction::Speed {
@@ -256,20 +209,23 @@ impl DemexFader {
 
                 runtime
                     .channel_value(
+                        fixture_types,
                         fixture,
-                        channel_type,
+                        channel,
                         speed_multiplier,
                         intensity_multiplier,
                         preset_handler,
                         timing_handler,
                         self.priority,
                     )
-                    .ok_or(FixtureError::ChannelValueNotFound(channel_type))
+                    .ok_or(FixtureError::GdtfChannelValueNotFound(
+                        channel.name().as_ref().to_owned(),
+                    ))
             }
         }
     }
 
-    pub fn update(&mut self, _delta_time: f64, preset_handler: &PresetHandler) {
+    pub fn update(&mut self, preset_handler: &PresetHandler) {
         match &mut self.config {
             DemexFaderConfig::SequenceRuntime {
                 runtime, function, ..
@@ -283,7 +239,6 @@ impl DemexFader {
                     preset_handler,
                 );
             }
-            _ => {}
         }
     }
 }

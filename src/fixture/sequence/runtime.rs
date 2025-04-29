@@ -1,14 +1,17 @@
-use std::time;
+use std::{str::FromStr, time};
 
 use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
-    channel2::{channel_type::FixtureChannelType, channel_value::FixtureChannelValue2},
+    channel3::{
+        channel_value::FixtureChannelValue3, feature::feature_type::FixtureChannel3FeatureType,
+    },
+    gdtf::GdtfFixture,
+    handler::FixtureTypeList,
     presets::PresetHandler,
     timing::TimingHandler,
     value_source::FixtureChannelValuePriority,
-    Fixture,
 };
 
 use super::{cue::CueTrigger, FadeFixtureChannelValue, SequenceStopBehavior};
@@ -86,8 +89,9 @@ impl SequenceRuntime {
 
     pub fn channel_value(
         &self,
-        fixture: &Fixture,
-        channel_type: FixtureChannelType,
+        fixture_types: &FixtureTypeList,
+        fixture: &GdtfFixture,
+        channel: &gdtf::dmx_mode::DmxChannel,
         speed_multiplier: f32,
         intensity_multiplier: f32,
         preset_handler: &PresetHandler,
@@ -97,6 +101,15 @@ impl SequenceRuntime {
         if let Some((prev_cue_update, cue_update, cue_idx, is_first_cue)) =
             self.state.when_started()
         {
+            let (fixture_type, _) = fixture.fixture_type_and_dmx_mode(fixture_types).ok()?;
+            let channel_feature = channel.logical_channels[0]
+                .attribute(fixture_type)
+                .and_then(|attribute| attribute.feature(&fixture_type.attribute_definitions))
+                .and_then(|feature| {
+                    FixtureChannel3FeatureType::from_str(feature.name.as_ref().unwrap().as_ref())
+                        .ok()
+                })?;
+
             let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
             if sequence.cues().is_empty() {
@@ -117,7 +130,8 @@ impl SequenceRuntime {
                 0.0,
             );
 
-            let should_snap = cue.should_snap_channel_value_for_fixture(fixture.id(), channel_type);
+            let should_snap =
+                cue.should_snap_channel_value_for_fixture(fixture.id(), channel.name().as_ref());
 
             // its the first cue, so we want to fade in from black
             // TODO: this wont work like this
@@ -128,9 +142,7 @@ impl SequenceRuntime {
                     ((delta - cue.in_delay()) / cue.in_fade()).min(1.0)
                 };
 
-                if channel_type == FixtureChannelType::Intensity
-                    || channel_type == FixtureChannelType::IntensityFine
-                {
+                if channel_feature == FixtureChannel3FeatureType::Dimmer {
                     fade *= intensity_multiplier;
                 }
 
@@ -140,7 +152,8 @@ impl SequenceRuntime {
 
                 cue.channel_value_for_fixture(
                     fixture,
-                    channel_type,
+                    fixture_types,
+                    channel.name().as_ref(),
                     preset_handler,
                     timing_handler,
                     Some(cue_update),
@@ -163,9 +176,7 @@ impl SequenceRuntime {
                     mix = if mix >= cue.snap_percent() { 1.0 } else { 0.0 };
                 }
 
-                let fade = if channel_type == FixtureChannelType::Intensity
-                    || channel_type == FixtureChannelType::IntensityFine
-                {
+                let fade = if channel_feature == FixtureChannel3FeatureType::Dimmer {
                     intensity_multiplier
                 } else {
                     1.0
@@ -174,24 +185,26 @@ impl SequenceRuntime {
                 let current_cue_value = cue
                     .channel_value_for_fixture(
                         fixture,
-                        channel_type,
+                        fixture_types,
+                        channel.name().as_ref(),
                         preset_handler,
                         timing_handler,
                         Some(cue_update),
                     )
                     .map(|v| {
                         FadeFixtureChannelValue::new(
-                            FixtureChannelValue2::Mix {
+                            FixtureChannelValue3::Mix {
                                 a: Box::new(
                                     prev_cue
                                         .channel_value_for_fixture(
                                             fixture,
-                                            channel_type,
+                                            fixture_types,
+                                            channel.name().as_ref(),
                                             preset_handler,
                                             timing_handler,
                                             prev_cue_update,
                                         )
-                                        .unwrap_or(FixtureChannelValue2::Home),
+                                        .unwrap_or(FixtureChannelValue3::Home),
                                 ),
                                 b: Box::new(v),
                                 mix,
@@ -205,7 +218,8 @@ impl SequenceRuntime {
                     prev_cue
                         .channel_value_for_fixture(
                             fixture,
-                            channel_type,
+                            fixture_types,
+                            channel.name().as_ref(),
                             preset_handler,
                             timing_handler,
                             Some(cue_update),
@@ -249,7 +263,7 @@ impl SequenceRuntime {
                 // is the next cue, a follow cue?
                 if let Some(next_cue_idx) = next_cue_idx {
                     if *sequence.cue(next_cue_idx).trigger() == CueTrigger::Follow {
-                        self.next_cue(preset_handler);
+                        self.next_cue(preset_handler, 0.0);
                     }
                     // it's the last cue, so we should wait for the out time of the last cue
                     // and then stop the sequence, if the sequence is set to auto stop
@@ -267,8 +281,10 @@ impl SequenceRuntime {
         }
     }
 
-    pub fn start(&mut self) {
-        self.state = SequenceRuntimeState::FirstCue(time::Instant::now());
+    pub fn start(&mut self, time_offset: f32) {
+        self.state = SequenceRuntimeState::FirstCue(
+            time::Instant::now() - time::Duration::from_secs_f32(time_offset),
+        );
     }
 
     pub fn stop(&mut self) {
@@ -285,7 +301,7 @@ impl SequenceRuntime {
             .unwrap_or(false)
     }
 
-    pub fn next_cue(&mut self, preset_handler: &PresetHandler) -> bool {
+    pub fn next_cue(&mut self, preset_handler: &PresetHandler, time_offset: f32) -> bool {
         if let Some((_, cue_update, cue_idx, _)) = self.state.when_started() {
             let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
@@ -300,7 +316,11 @@ impl SequenceRuntime {
             }
 
             let cue_idx = (cue_idx + 1) % sequence.cues().len();
-            self.state = SequenceRuntimeState::Cue(cue_update, time::Instant::now(), cue_idx);
+            self.state = SequenceRuntimeState::Cue(
+                cue_update,
+                time::Instant::now() - time::Duration::from_secs_f32(time_offset),
+                cue_idx,
+            );
         }
 
         false

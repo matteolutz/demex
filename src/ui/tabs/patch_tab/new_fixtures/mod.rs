@@ -1,5 +1,5 @@
 use crate::{
-    fixture::{patch::FixtureTypeAndMode, SerializableFixturePatch},
+    fixture::patch::FixtureTypeAndMode,
     ui::{
         context::DemexUiContext,
         dlog::dialog::DemexGlobalDialogEntry,
@@ -195,6 +195,8 @@ impl<'a> PatchNewFixturesComponent<'a> {
                         "Invalid patch configuration!".to_owned(),
                     ));
             } else {
+                todo!();
+                /*
                 let fixture_type_id = state.fixture_type.clone().unwrap();
                 let fixture_type = patch.fixture_types().get(&fixture_type_id).unwrap();
 
@@ -235,6 +237,7 @@ impl<'a> PatchNewFixturesComponent<'a> {
                         )
                         .unwrap();
 
+
                         patch.fixtures_mut().push(SerializableFixturePatch {
                             id: fixture_id,
                             name: fixture_name,
@@ -254,7 +257,11 @@ impl<'a> PatchNewFixturesComponent<'a> {
                     self.context.add_dialog_entry(DemexGlobalDialogEntry::info(
                         format!("Patched {} fixtures", state.num_fixutres).as_str(),
                     ));
+
+
                 }
+
+                */
             }
         }
 

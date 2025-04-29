@@ -1,13 +1,7 @@
 use input::read_layout_view_input;
 use state::{LayoutViewDragState, LayoutViewState};
 
-use crate::{
-    fixture::channel2::{
-        channel_type::FixtureChannelType,
-        feature::{feature_type::FixtureFeatureType, feature_value::FixtureFeatureValue},
-    },
-    ui::{graphics::layout_projection::draw_center_of_mass, DemexUiContext},
-};
+use crate::ui::{graphics::layout_projection::draw_center_of_mass, DemexUiContext};
 
 mod decoration;
 mod entry;
@@ -33,15 +27,15 @@ impl<'a> LayoutViewComponent<'a> {
         let id = ui.make_persistent_id(self.id_source);
         let mut state = ui
             .ctx()
-            .data_mut(|d| d.get_persisted::<LayoutViewState>(id))
+            .data_mut(|d| d.get_temp::<LayoutViewState>(id))
             .unwrap_or_default();
 
         let fixture_handler = self.context.fixture_handler.read();
         let preset_handler = self.context.preset_handler.read();
-        let updatable_handler = self.context.updatable_handler.read();
         let timing_handler = self.context.timing_handler.read();
+        let patch = self.context.patch.read();
 
-        let fixture_layout = fixture_handler.patch().layout();
+        let fixture_layout = patch.layout();
         ui.heading("Layout View");
 
         ui.with_layout(
@@ -115,23 +109,17 @@ impl<'a> LayoutViewComponent<'a> {
                 .expect("todo: error handling");
 
             let intensity = fixture
-                .feature_value(
-                    FixtureFeatureType::SingleValue {
-                        channel_type: FixtureChannelType::Intensity,
-                    },
+                .get_attribute_display_value(
+                    patch.fixture_types(),
+                    "Dimmer",
                     &preset_handler,
-                    &updatable_handler,
                     &timing_handler,
                 )
                 .ok()
-                .and_then(|val| match val {
-                    FixtureFeatureValue::SingleValue { value, .. } => Some(value),
-                    _ => None,
-                })
                 .unwrap();
 
             let rect_color = if let Ok(color) =
-                fixture.display_color(&preset_handler, &updatable_handler, &timing_handler)
+                fixture.display_color(patch.fixture_types(), &preset_handler, &timing_handler)
             {
                 egui::Color32::from_rgba_unmultiplied(
                     (color[0] * 255.0) as u8,
@@ -145,6 +133,8 @@ impl<'a> LayoutViewComponent<'a> {
 
             let rect_color = egui::Color32::BLACK.blend(rect_color);
 
+            /*
+
             let position: Option<egui::Vec2> = fixture
                 .feature_value(
                     FixtureFeatureType::PositionPanTilt,
@@ -157,14 +147,14 @@ impl<'a> LayoutViewComponent<'a> {
                     FixtureFeatureValue::PositionPanTilt { pan, tilt, .. } => Some((pan, tilt)),
                     _ => None,
                 })
-                .map(Into::<egui::Vec2>::into);
+                .map(Into::<egui::Vec2>::into);*/
 
             fixture_layout_entry.draw(
                 &state.layout_projection,
                 &rect,
                 &painter,
                 rect_color,
-                position,
+                None,
                 is_selected,
                 false,
                 fixture.name(),
@@ -247,6 +237,6 @@ impl<'a> LayoutViewComponent<'a> {
             }
         }
 
-        ui.ctx().data_mut(|d| d.insert_persisted(id, state));
+        ui.ctx().data_mut(|d| d.insert_temp(id, state));
     }
 }

@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use super::DemexUiContext;
 
+pub mod encoders_tab;
 pub mod faders_tab;
-pub mod fixture_controls_tab;
 pub mod fixture_list_tab;
 pub mod fixture_selection_tab;
 pub mod layout_view_tab;
@@ -15,6 +15,7 @@ pub mod performance_tab;
 pub mod preset_grid_tab;
 pub mod sequence_editor_tab;
 pub mod sequences_list_tab;
+pub mod timecode_clock_tab;
 pub mod timing_tab;
 
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, Serialize, Deserialize)]
@@ -22,10 +23,11 @@ pub enum DemexTab {
     LayoutView,
     FixtureList,
     PresetGrid,
-    FixtureControls,
     Faders,
     SequencesList,
     SequenceEditor,
+    Encoders,
+    TimecodeClock,
     Patch,
     Timing,
     FixtureSelection,
@@ -39,10 +41,11 @@ impl std::fmt::Display for DemexTab {
             DemexTab::LayoutView => write!(f, "Layout View"),
             DemexTab::FixtureList => write!(f, "Fixture List"),
             DemexTab::PresetGrid => write!(f, "Preset Grid"),
-            DemexTab::FixtureControls => write!(f, "Fixture Controls"),
             DemexTab::Faders => write!(f, "Faders"),
             DemexTab::SequencesList => write!(f, "Sequences List"),
             DemexTab::SequenceEditor => write!(f, "Sequence Editor"),
+            DemexTab::Encoders => write!(f, "Encoders"),
+            DemexTab::TimecodeClock => write!(f, "Timecode Clock"),
             DemexTab::Patch => write!(f, "Patch"),
             DemexTab::Timing => write!(f, "Timing"),
             DemexTab::FixtureSelection => write!(f, "Fixture Selection"),
@@ -58,14 +61,16 @@ impl DemexTab {
             DemexTab::LayoutView => layout_view_tab::LayoutViewComponent::new(context).show(ui),
             DemexTab::FixtureList => fixture_list_tab::ui(ui, context),
             DemexTab::PresetGrid => preset_grid_tab::ui(ui, context),
-            DemexTab::FixtureControls => fixture_controls_tab::ui(ui, context),
             DemexTab::Faders => faders_tab::ui(ui, context),
             DemexTab::SequencesList => sequences_list_tab::ui(ui, context),
             DemexTab::SequenceEditor => {
                 sequence_editor_tab::SequenceEditorTab::new(context, "MainSequenceEditor").show(ui)
             }
+            DemexTab::Encoders => encoders_tab::ui(ui, context),
+            DemexTab::TimecodeClock => timecode_clock_tab::ui(ui, context),
             DemexTab::Patch => {
-                patch_tab::PatchViewComponent::new(context).show(ui);
+                let mut patch_view_component = patch_tab::PatchViewComponent::new(context);
+                patch_view_component.show(ui);
             }
             DemexTab::Timing => timing_tab::ui(ui, context),
             DemexTab::FixtureSelection => fixture_selection_tab::ui(ui, context),
@@ -118,27 +123,37 @@ impl Default for DemexTabs {
         let mut dock_state = DockState::new(vec![
             DemexTab::FixtureList,
             DemexTab::SequencesList,
-            DemexTab::Logs,
             DemexTab::Performance,
         ]);
 
         let surface = dock_state.main_surface_mut();
-        let [old_node, new_node] = surface.split_left(
+
+        let [old_node, _] = surface.split_below(
             egui_dock::NodeIndex::root(),
+            0.8,
+            vec![DemexTab::Encoders, DemexTab::Logs],
+        );
+
+        let [old_node, _] = surface.split_left(
+            old_node,
             0.65,
             vec![
-                DemexTab::FixtureControls,
+                DemexTab::LayoutView,
                 DemexTab::FixtureSelection,
                 DemexTab::SequenceEditor,
                 DemexTab::Patch,
             ],
         );
 
-        surface.split_below(new_node, 0.5, vec![DemexTab::LayoutView]);
         surface.split_above(
             old_node,
             0.5,
-            vec![DemexTab::PresetGrid, DemexTab::Faders, DemexTab::Timing],
+            vec![
+                DemexTab::PresetGrid,
+                DemexTab::Faders,
+                DemexTab::Timing,
+                DemexTab::TimecodeClock,
+            ],
         );
 
         Self { dock_state }

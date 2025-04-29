@@ -23,9 +23,8 @@ use nodes::{
 
 use crate::{
     fixture::{
-        channel2::{channel_type::FixtureChannelType, feature::feature_type::FixtureFeatureType},
-        presets::preset::FixturePresetId,
-        sequence::cue::CueIdx,
+        channel3::feature::feature_type::FixtureChannel3FeatureType,
+        presets::preset::FixturePresetId, sequence::cue::CueIdx,
     },
     lexer::token::Token,
 };
@@ -314,13 +313,11 @@ impl<'a> Parser2<'a> {
         }
     }
 
-    fn parse_discrete_feature_type(&mut self) -> Result<FixtureFeatureType, ParseError> {
+    fn parse_discrete_feature_type(&mut self) -> Result<FixtureChannel3FeatureType, ParseError> {
         match self.current_token()? {
             &Token::KeywordIntens => {
                 self.advance();
-                Ok(FixtureFeatureType::SingleValue {
-                    channel_type: FixtureChannelType::Intensity,
-                })
+                Ok(FixtureChannel3FeatureType::Dimmer)
             }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
@@ -329,11 +326,11 @@ impl<'a> Parser2<'a> {
         }
     }
 
-    fn parse_feature_type(&mut self) -> Result<FixtureFeatureType, ParseError> {
+    fn parse_feature_type(&mut self) -> Result<FixtureChannel3FeatureType, ParseError> {
         self.parse_discrete_feature_type()
     }
 
-    fn parse_feature_type_list(&mut self) -> Result<Vec<FixtureFeatureType>, ParseError> {
+    fn parse_feature_type_list(&mut self) -> Result<Vec<FixtureChannel3FeatureType>, ParseError> {
         expect_and_consume_token!(self, Token::ParenOpen, "(");
 
         let mut channel_types = Vec::new();
@@ -561,7 +558,9 @@ impl<'a> Parser2<'a> {
             &Token::FloatingPoint(_, (feature_group_id, preset_id)) => {
                 self.advance();
                 Ok(FixturePresetId {
-                    feature_group_id,
+                    feature_group: feature_group_id.try_into().map_err(|_| {
+                        ParseError::UnexpectedArgs("Expected feature group id".to_owned())
+                    })?,
                     preset_id,
                 })
             }
@@ -746,11 +745,10 @@ impl<'a> Parser2<'a> {
 
                 Ok(CreateFaderArgsCreationMode::Sequence(sequence_id))
             }
-            _ => {
-                let fixture_selector = self.parse_fixture_selector()?;
-
-                Ok(CreateFaderArgsCreationMode::Submaster(fixture_selector))
-            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec!["\"sequence\""],
+            )),
         }
     }
 
@@ -845,7 +843,9 @@ impl<'a> Parser2<'a> {
 
                 Ok(Action::CreateEffectPreset(CreateEffectPresetArgs {
                     id: FixturePresetId {
-                        feature_group_id,
+                        feature_group: feature_group_id.try_into().map_err(|_| {
+                            ParseError::UnexpectedArgs("Expected feature group id".to_owned())
+                        })?,
                         preset_id,
                     },
                     name,
