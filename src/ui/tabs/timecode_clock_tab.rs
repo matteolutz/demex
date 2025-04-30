@@ -18,7 +18,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     .extra_letter_spacing(2.0)
                     .color(egui::Color32::LIGHT_GREEN)
                     .background_color(egui::Color32::BLACK)
-                    .family(egui::FontFamily::Name("Timecode".into()))
+                    .monospace()
                     .size(80.0),
                 ),
             );

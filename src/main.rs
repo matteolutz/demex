@@ -69,12 +69,6 @@ fn load_fonts() -> egui::FontDefinitions {
             "../assets/fonts/JetBrainsMono-Regular.ttf"
         ))),
     );
-    fonts.font_data.insert(
-        "timecode".to_string(),
-        Arc::new(egui::FontData::from_static(include_bytes!(
-            "../assets/fonts/Timecode.ttf"
-        ))),
-    );
 
     fonts
         .families

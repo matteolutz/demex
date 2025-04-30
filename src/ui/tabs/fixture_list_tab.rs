@@ -43,84 +43,81 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     ui.heading("All Channels");
                 });
             })
-            .body(|mut body| {
-                for fixture in fixture_handler
+            .body(|body| {
+                let mut fixture_iter = fixture_handler
                     .fixtures()
                     .iter()
-                    .sorted_by(|a, b| a.id().cmp(&b.id()))
-                {
-                    body.row(50.0, |mut row| {
-                        row.col(|ui| {
-                            ui.label(fixture.id().to_string());
-                        });
+                    .sorted_by(|a, b| a.id().cmp(&b.id()));
 
-                        row.col(|ui| {
-                            ui.label(format!(
-                                "U{}.{}",
-                                fixture.universe(),
-                                fixture.start_address()
-                            ));
-                        });
+                body.rows(50.0, fixture_handler.fixtures().len(), |mut row| {
+                    let fixture = fixture_iter.next().unwrap();
 
-                        row.col(|ui| {
-                            ui.label(RichText::from(fixture.name()).strong().background_color(
-                                if selected_fixtures.contains(&fixture.id()) {
-                                    egui::Color32::DARK_GREEN
+                    row.col(|ui| {
+                        ui.label(fixture.id().to_string());
+                    });
+
+                    row.col(|ui| {
+                        ui.label(format!(
+                            "U{}.{}",
+                            fixture.universe(),
+                            fixture.start_address()
+                        ));
+                    });
+
+                    row.col(|ui| {
+                        ui.label(RichText::from(fixture.name()).strong().background_color(
+                            if selected_fixtures.contains(&fixture.id()) {
+                                egui::Color32::DARK_GREEN
+                            } else {
+                                egui::Color32::TRANSPARENT
+                            },
+                        ));
+                    });
+
+                    // Value Sources
+                    row.col(|ui| {
+                        for source in fixture.sources() {
+                            ui.label(
+                                RichText::from(source.to_short_string()).color(source.get_color()),
+                            );
+                        }
+                    });
+
+                    // Intens
+                    row.col(|ui| {
+                        if let Ok(intensity) =
+                            fixture.get_attribute_value(patch.fixture_types(), "Dimmer")
+                        {
+                            ui.label(RichText::from(intensity.to_string(&preset_handler)).color(
+                                if intensity.is_home() {
+                                    egui::Color32::GRAY
                                 } else {
-                                    egui::Color32::TRANSPARENT
+                                    egui::Color32::YELLOW
                                 },
                             ));
-                        });
-
-                        // Value Sources
-                        row.col(|ui| {
-                            for source in fixture.sources() {
-                                ui.label(
-                                    RichText::from(source.to_short_string())
-                                        .color(source.get_color()),
-                                );
-                            }
-                        });
-
-                        // Intens
-                        row.col(|ui| {
-                            if let Ok(intensity) =
-                                fixture.get_attribute_value(patch.fixture_types(), "Dimmer")
-                            {
-                                ui.label(
-                                    RichText::from(intensity.to_string(&preset_handler)).color(
-                                        if intensity.is_home() {
-                                            egui::Color32::GRAY
-                                        } else {
-                                            egui::Color32::YELLOW
-                                        },
-                                    ),
-                                );
-                            } else {
-                                ui.label("-");
-                            }
-                        });
-
-                        // All channels
-                        row.col(|ui| {
-                            for (dmx_channel, _) in fixture.channels(patch.fixture_types()).unwrap()
-                            {
-                                let channel_value = fixture
-                                    .get_value(patch.fixture_types(), dmx_channel.name().as_ref())
-                                    .unwrap();
-
-                                if channel_value.is_home() {
-                                    continue;
-                                }
-
-                                ui.label(
-                                    RichText::from(dmx_channel.name().as_ref())
-                                        .color(egui::Color32::YELLOW),
-                                );
-                            }
-                        });
+                        } else {
+                            ui.label("-");
+                        }
                     });
-                }
+
+                    // All channels
+                    row.col(|ui| {
+                        for (dmx_channel, _) in fixture.channels(patch.fixture_types()).unwrap() {
+                            let channel_value = fixture
+                                .get_value(patch.fixture_types(), dmx_channel.name().as_ref())
+                                .unwrap();
+
+                            if channel_value.is_home() {
+                                continue;
+                            }
+
+                            ui.label(
+                                RichText::from(dmx_channel.name().as_ref())
+                                    .color(egui::Color32::YELLOW),
+                            );
+                        }
+                    });
+                });
             });
     });
 }

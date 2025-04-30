@@ -428,15 +428,6 @@ impl GdtfFixture {
         &self,
         channel: &gdtf::dmx_mode::DmxChannel,
     ) -> Result<FixtureChannelValue3, FixtureError> {
-        /*self.sources.get_channel_value(
-            fixture_types,
-            self,
-            channel,
-            updatable_handler,
-            preset_handler,
-            timing_handler,
-        )*/
-
         self.outputs_values
             .get(channel.name().as_ref())
             .ok_or_else(|| {
@@ -558,14 +549,6 @@ impl GdtfFixture {
                 None => continue,
             };
 
-            /*let value = self.sources.get_channel_value(
-                fixture_types,
-                self,
-                dmx_channel,
-                updatable_handler,
-                preset_handler,
-                timing_handler,
-            )?;*/
             let value = self
                 .outputs_values
                 .get(dmx_channel.name().as_ref())
