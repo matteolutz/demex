@@ -81,17 +81,21 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                     for attribute in context.encoders_tab_state.attributes() {
                         let mut fixtures = fixture_handler.selected_fixtures_mut(fixture_select);
 
-                        let channels = fixtures[0]
-                            .channels_for_attribute_matches(
-                                patch.fixture_types(),
-                                |fixture_attribute_name| {
-                                    FixtureChannel3Attribute::attribute_matches(
-                                        fixture_attribute_name,
-                                        attribute,
+                        let channels = fixtures
+                            .iter()
+                            .flat_map(|fixture| {
+                                fixture
+                                    .channels_for_attribute_matches(
+                                        patch.fixture_types(),
+                                        |fixture_attribute_name| {
+                                            FixtureChannel3Attribute::attribute_matches(
+                                                fixture_attribute_name,
+                                                attribute,
+                                            )
+                                        },
                                     )
-                                },
-                            )
-                            .unwrap()
+                                    .unwrap()
+                            })
                             .into_iter()
                             .map(|(dmx_channel, _, channel_functions)| {
                                 (dmx_channel.name().as_ref().to_owned(), channel_functions)
@@ -119,8 +123,11 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                                     },
                                 ));
 
-                                let (fixture_val_function_idx, fixture_val) = fixtures[0]
-                                    .get_programmer_value(master_channel_name)
+                                let (fixture_val_function_idx, fixture_val) = fixtures
+                                    .iter()
+                                    .find_map(|fixture| {
+                                        fixture.get_programmer_value(master_channel_name).ok()
+                                    }) // find first fixture, that has a value for the master_channel
                                     .map(|val| {
                                         val.get_as_discrete(
                                             fixtures[0],
@@ -180,18 +187,34 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                                     || slider_val != fixture_val
                                 {
                                     for (channel_name, _) in &channels {
-                                        let _ = fixtures[0].set_programmer_value(
-                                            patch.fixture_types(),
-                                            channel_name,
-                                            if !should_home {
+                                        println!("channel name: {}", channel_name);
+
+                                        if should_home {
+                                            for fixture in &mut fixtures {
+                                                let _ = fixture.set_programmer_value(
+                                                    patch.fixture_types(),
+                                                    channel_name,
+                                                    FixtureChannelValue3::Home,
+                                                );
+                                            }
+                                        } else {
+                                            let _ = fixtures[0].set_programmer_value(
+                                                patch.fixture_types(),
+                                                channel_name,
                                                 FixtureChannelValue3::Discrete {
                                                     channel_function_idx: selected_channel_function,
                                                     value: slider_val,
-                                                }
-                                            } else {
-                                                FixtureChannelValue3::Home
-                                            },
-                                        );
+                                                },
+                                            );
+
+                                            for fixture in fixtures.iter_mut().skip(1) {
+                                                let _ = fixture.update_programmer_value(
+                                                    patch.fixture_types(),
+                                                    channel_name,
+                                                    slider_val,
+                                                );
+                                            }
+                                        }
                                     }
                                 }
                             });

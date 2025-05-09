@@ -214,6 +214,26 @@ impl GdtfFixture {
             .collect())
     }
 
+    pub fn get_channel_initial_function_idx(
+        &self,
+        fixture_types: &FixtureTypeList,
+        channel_name: &str,
+    ) -> Result<usize, FixtureError> {
+        let (dmx_channel, logical_channel) = self.get_channel(fixture_types, channel_name)?;
+
+        Ok(
+            if let Some((_, initial_channel_function)) = dmx_channel.initial_function() {
+                logical_channel
+                    .channel_functions
+                    .iter()
+                    .position(|cf| cf == initial_channel_function)
+                    .unwrap()
+            } else {
+                0
+            },
+        )
+    }
+
     pub fn get_channel<'a>(
         &self,
         fixture_types: &'a FixtureTypeList,
@@ -443,6 +463,34 @@ impl GdtfFixture {
         self.programmer_values
             .get(channel)
             .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel.to_owned()))
+    }
+
+    pub fn update_programmer_value(
+        &mut self,
+        fixture_types: &FixtureTypeList,
+        channel: &str,
+        slider_val: f32,
+    ) -> Result<(), FixtureError> {
+        let programmer_value = self.get_programmer_value(channel)?;
+
+        self.set_programmer_value(
+            fixture_types,
+            channel,
+            match programmer_value {
+                FixtureChannelValue3::Discrete {
+                    channel_function_idx,
+                    value: _,
+                } => FixtureChannelValue3::Discrete {
+                    channel_function_idx: *channel_function_idx,
+                    value: slider_val,
+                },
+                _ => FixtureChannelValue3::Discrete {
+                    channel_function_idx: self
+                        .get_channel_initial_function_idx(fixture_types, channel)?,
+                    value: slider_val,
+                },
+            },
+        )
     }
 
     pub fn set_programmer_value(
