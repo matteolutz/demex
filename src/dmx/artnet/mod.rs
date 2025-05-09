@@ -43,8 +43,12 @@ pub fn start_broadcast_artnet_output_thread(
             .set_read_timeout(Some(time::Duration::from_secs(3)))
             .unwrap();
 
-        let broacast_addr =
-            net::SocketAddr::new(net::IpAddr::V4(net::Ipv4Addr::BROADCAST), ARTNET_PORT);
+        let broadcast_addresses = config
+            .broadcast_addresses
+            .iter()
+            .map(|addr| net::SocketAddr::new(net::IpAddr::V4(addr.parse().unwrap()), ARTNET_PORT))
+            .collect::<Vec<_>>();
+
         socket.set_broadcast(true).unwrap();
 
         loop {
@@ -58,7 +62,9 @@ pub fn start_broadcast_artnet_output_thread(
                 });
 
                 let command_bytes = output_command.write_to_buffer().unwrap();
-                socket.send_to(&command_bytes, broacast_addr).unwrap();
+                for addr in &broadcast_addresses {
+                    socket.send_to(&command_bytes, addr).unwrap();
+                }
             } else if recv_result.err().unwrap() == TryRecvError::Disconnected {
                 break;
             }

@@ -616,7 +616,7 @@ impl GdtfFixture {
                 ))?;
             let mut real_dmx_value = dmx_value.to(offsets.len() as u8);
 
-            for offset in offsets {
+            for offset in offsets.iter().rev() {
                 data[*offset as usize - 1] = (real_dmx_value & 0xFF) as u8;
                 real_dmx_value >>= 8;
             }

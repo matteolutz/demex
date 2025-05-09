@@ -187,8 +187,6 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                                     || slider_val != fixture_val
                                 {
                                     for (channel_name, _) in &channels {
-                                        println!("channel name: {}", channel_name);
-
                                         if should_home {
                                             for fixture in &mut fixtures {
                                                 let _ = fixture.set_programmer_value(

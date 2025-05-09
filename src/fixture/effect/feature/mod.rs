@@ -160,6 +160,7 @@ impl FeatureEffect {
     pub fn get_attributes(&self) -> Vec<&str> {
         match self {
             Self::IntensitySine { .. } => vec!["Dimmer"],
+            Self::PositionPanTiltFigureEight { .. } => vec!["Pan", "Tilt"],
             _ => todo!(),
         }
     }
@@ -179,6 +180,24 @@ impl FeatureEffect {
                     Some(sine_variant.apply(t as f32 * speed - phase_offset_deg.to_radians()))
                 }
             }
+            Self::PositionPanTiltFigureEight {
+                pan_size,
+                tilt_size,
+                pan_center,
+                tilt_center,
+            } => match attribute_name {
+                "Pan" => Some(
+                    (f32::sin(t as f32 * speed * 2.0 - phase_offset_deg.to_radians()))
+                        * (pan_size / 2.0)
+                        + pan_center,
+                ),
+                "Tilt" => Some(
+                    (f32::sin(t as f32 * speed - phase_offset_deg.to_radians()))
+                        * (tilt_size / 2.0)
+                        + tilt_center,
+                ),
+                _ => None,
+            },
             _ => None,
         }
     }

@@ -476,7 +476,9 @@ impl FixtureChannelValue3 {
                         timing_handler,
                     )?;
 
-                    Some(mix_dmx_value(a, b, *mix))
+                    let mixed = mix_dmx_value(a, b, *mix);
+
+                    Some(mixed)
                 }
             }
         };
