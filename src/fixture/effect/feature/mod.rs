@@ -208,17 +208,16 @@ impl FeatureEffect {
                 sine_variant,
             } => match attribute_name {
                 "Pan" => Some(
-                    sine_variant.apply(t as f32 * speed - phase_offset_deg.to_radians())
+                    (sine_variant.apply(t as f32 * speed - phase_offset_deg.to_radians()) - 0.5)
                         * (pan_size / 2.0)
-                        + pan_center
-                        - (pan_size / 2.0),
+                        + pan_center,
                 ),
                 "Tilt" => Some(
-                    sine_variant
+                    (sine_variant
                         .apply(t as f32 * speed - phase_offset_deg.to_radians() - f32::consts::PI)
+                        - 0.5)
                         * (tilt_size / 2.0)
-                        + tilt_center
-                        - (tilt_size / 2.0),
+                        + tilt_center,
                 ),
                 _ => None,
             },
