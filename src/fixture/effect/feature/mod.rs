@@ -210,13 +210,15 @@ impl FeatureEffect {
                 "Pan" => Some(
                     sine_variant.apply(t as f32 * speed - phase_offset_deg.to_radians())
                         * (pan_size / 2.0)
-                        + pan_center,
+                        + pan_center
+                        - (pan_size / 2.0),
                 ),
                 "Tilt" => Some(
                     sine_variant
                         .apply(t as f32 * speed - phase_offset_deg.to_radians() - f32::consts::PI)
                         * (tilt_size / 2.0)
-                        + tilt_center,
+                        + tilt_center
+                        - (tilt_size / 2.0),
                 ),
                 _ => None,
             },
