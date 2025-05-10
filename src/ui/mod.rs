@@ -320,6 +320,7 @@ impl eframe::App for DemexUiApp {
                         ui.separator();
 
                         if ui.button("Save").clicked() {
+                            ui.close_menu();
                             self.context.save_show();
                         }
                     },
