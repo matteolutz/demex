@@ -24,6 +24,11 @@ impl GenericMidiProfile {
             .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
 
         let in_ports = midi_in.ports();
+
+        for in_port in &in_ports {
+            log::debug!("Found MIDI in port: {:?}", midi_in.port_name(in_port));
+        }
+
         let in_port = in_ports
             .first()
             .ok_or(DemexInputDeviceError::InputDeviceNotFound(

@@ -13,14 +13,11 @@ pub mod utils;
 use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
-use fixture::handler::FixtureHandler;
 use gdtf::GdtfFile;
-use input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler};
 use itertools::Itertools;
 use parking_lot::RwLock;
-use rfd::FileDialog;
 use show::DemexShow;
-use ui::{error::DemexUiError, theme::DemexUiTheme, utils::icon::load_icon, DemexUiApp};
+use ui::{context::DemexUiContext, theme::DemexUiTheme, utils::icon::load_icon, DemexUiApp};
 use utils::{
     deadlock::start_deadlock_checking_thread,
     thread::{demex_update_thread, DemexThreadStatsHandler},
@@ -104,8 +101,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         start_deadlock_checking_thread();
     }
 
-    let show_file = args.show.clone();
-
     let fixture_files = std::fs::read_dir(storage::fixture_types(APP_ID))
         .unwrap()
         .flat_map(|file| {
@@ -145,6 +140,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let show: DemexShow = args
         .show
+        .as_ref()
         .inspect(|show_path| log::info!("Loading show file: {:?}", show_path))
         .map(|show_path| serde_json::from_reader(std::fs::File::open(show_path).unwrap()).unwrap())
         .unwrap_or(DemexShow::default());
@@ -154,60 +150,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .flat_map(|file| file.description.fixture_types)
         .collect::<Vec<_>>();
 
-    let patch = Arc::new(RwLock::new(show.patch.into_patch(fixture_types)));
-    let (fixtures, outputs) = patch.read().into_fixures_and_outputs();
-
-    let fixture_handler = Arc::new(RwLock::new(FixtureHandler::new(fixtures, outputs).unwrap()));
-
-    let preset_handler = Arc::new(RwLock::new(show.preset_handler));
-    let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));
-    let timing_handler = Arc::new(RwLock::new(show.timing_handler));
-
     let stats = Arc::new(RwLock::new(DemexThreadStatsHandler::default()));
-
-    let icon = Arc::new(load_icon());
-
-    let ui_app_state = DemexUiApp::new(
-        fixture_handler.clone(),
-        preset_handler.clone(),
-        updatable_handler.clone(),
-        timing_handler.clone(),
-        patch.clone(),
-        stats.clone(),
-        show_file,
-        |show: DemexShow, show_file: Option<&PathBuf>| {
-            let save_file = if let Some(show_file) = show_file {
-                show_file.clone()
-            } else if let Some(save_file) = FileDialog::new()
-                .add_filter("demex Show-File", &["json"])
-                .save_file()
-            {
-                save_file
-            } else {
-                return Err(DemexUiError::RuntimeError("No save file selected".to_owned()).into());
-            };
-
-            serde_json::to_writer(std::fs::File::create(&save_file).unwrap(), &show)?;
-
-            Ok(save_file)
-        },
-        TEST_UI_FPS,
-        icon.clone(),
-        DemexInputDeviceHandler::new(
-            show.input_device_configs
-                .into_iter()
-                .map(DemexInputDeviceConfig::into)
-                .collect::<Vec<_>>(),
-        ),
-        show.ui_config,
-        args.single_thread,
-    );
+    let context = DemexUiContext::load_show(show, args.show, fixture_types, stats.clone()).unwrap();
 
     if !args.single_thread {
-        let fixture_handler_thread_a = fixture_handler.clone();
-        let preset_handler_thread_a = preset_handler.clone();
-        let timing_handler_thread_a = timing_handler.clone();
-        let patch_thread_a = patch.clone();
+        let fixture_handler_thread_a = context.fixture_handler.clone();
+        let preset_handler_thread_a = context.preset_handler.clone();
+        let timing_handler_thread_a = context.timing_handler.clone();
+        let patch_thread_a = context.patch.clone();
 
         demex_update_thread(
             "demex-dmx-output".to_owned(),
@@ -234,16 +184,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
         );
 
+        let fixture_handler_thread_b = context.fixture_handler.clone();
+        let preset_handler_thread_b = context.preset_handler.clone();
+        let updatable_handler_thread_b = context.updatable_handler.clone();
+        let timing_handler_thread_b = context.timing_handler.clone();
+        let patch_thread_b = context.patch.clone();
+
         demex_update_thread(
             "demex-update".to_owned(),
             stats.clone(),
             TEST_MAX_FUPS,
             move |_, _| {
-                let mut fixture_handler = fixture_handler.write();
-                let preset_handler = preset_handler.read();
-                let mut updatable_handler = updatable_handler.write();
-                let timing_handler = timing_handler.read();
-                let patch = patch.read();
+                let mut fixture_handler = fixture_handler_thread_b.write();
+                let preset_handler = preset_handler_thread_b.read();
+                let mut updatable_handler = updatable_handler_thread_b.write();
+                let timing_handler = timing_handler_thread_b.read();
+                let patch = patch_thread_b.read();
 
                 let _ = fixture_handler
                     .update_output_values(
@@ -258,6 +214,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
         );
     }
+
+    let icon = Arc::new(load_icon());
+
+    let ui_app_state = DemexUiApp::new(context, TEST_UI_FPS, icon.clone(), args.single_thread);
 
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()

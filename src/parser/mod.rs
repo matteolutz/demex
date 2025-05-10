@@ -993,9 +993,13 @@ impl<'a> Parser2<'a> {
                 self.advance();
                 Ok(Action::Config(ConfigTypeActionData::Output))
             }
+            Token::KeywordPatch => {
+                self.advance();
+                Ok(Action::Config(ConfigTypeActionData::Patch))
+            }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
-                vec!["\"output\""],
+                vec!["\"output\"", "\"patch\""],
             )),
         }
     }

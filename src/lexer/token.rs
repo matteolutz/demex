@@ -71,6 +71,7 @@ pub enum Token {
     KeywordNext,
     KeywordConfig,
     KeywordOutput,
+    KeywordPatch,
     KeywordFeature,
     KeywordAssign,
     KeywordUnassign,
@@ -118,6 +119,7 @@ impl Token {
             Token::KeywordFull => TokenType::ValueKeyword,
             Token::KeywordHalf => TokenType::ValueKeyword,
             Token::KeywordOut => TokenType::ValueKeyword,
+            Token::KeywordPatch => TokenType::ValueKeyword,
 
             Token::KeywordHome => TokenType::ActionKeyword,
             Token::KeywordManSet => TokenType::ActionKeyword,
@@ -233,6 +235,7 @@ impl std::fmt::Display for Token {
             Token::KeywordNext => write!(f, "next"),
             Token::KeywordConfig => write!(f, "config"),
             Token::KeywordOutput => write!(f, "output"),
+            Token::KeywordPatch => write!(f, "patch"),
             Token::KeywordControl => write!(f, "control"),
             Token::KeywordBeam => write!(f, "beam"),
             Token::KeywordFocus => write!(f, "focus"),

@@ -264,6 +264,7 @@ impl FixtureChannel3FeatureType {
                 "LampPowerMode",
                 "Fans",
             ],
+            Self::Gobo => &["Gobo(n)"],
             _ => &[],
         }
     }

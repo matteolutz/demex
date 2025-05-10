@@ -94,6 +94,7 @@ impl DemexGlobalDialogEntry {
             ui.label(
                 egui::RichText::from(self.to_string())
                     .strong()
+                    .size(20.0)
                     .color(self.color()),
             );
 

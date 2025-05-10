@@ -1,5 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
+use itertools::Itertools;
 use parking_lot::RwLock;
 
 use crate::{
@@ -22,7 +23,7 @@ use crate::{
     },
     show::{ui::DemexShowUiConfig, DemexShow},
     ui::error::DemexUiError,
-    utils::thread::DemexThreadStatsHandler,
+    utils::{thread::DemexThreadStatsHandler, version::VERSION_STR},
 };
 
 use super::{
@@ -54,13 +55,11 @@ pub struct DemexUiContext {
     pub macro_execution_queue: Vec<Action>,
 
     pub show_file: Option<PathBuf>,
-    pub save_show: SaveShowFn,
 
     pub gm_slider_val: u8,
 
     pub input_device_handler: DemexInputDeviceHandler,
 
-    // pub windows: Vec<DemexWindow>,
     pub window_handler: DemexWindowHandler,
 
     pub ui_config: DemexShowUiConfig,
@@ -96,6 +95,127 @@ impl DemexUiContext {
         self.run_and_handle_action(&action)
     }
 
+    pub fn load_show_file(
+        show_file_path: PathBuf,
+        fixture_types: Vec<gdtf::fixture_type::FixtureType>,
+        stats: Arc<RwLock<DemexThreadStatsHandler>>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let show: DemexShow =
+            serde_json::from_reader(std::fs::File::open(show_file_path.clone()).unwrap())?;
+        Self::load_show(show, Some(show_file_path), fixture_types, stats)
+    }
+
+    pub fn load_show(
+        show: DemexShow,
+        show_file: Option<PathBuf>,
+        fixture_types: Vec<gdtf::fixture_type::FixtureType>,
+        stats: Arc<RwLock<DemexThreadStatsHandler>>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let patch = Arc::new(RwLock::new(show.patch.into_patch(fixture_types)));
+        let (fixtures, outputs) = patch.read().into_fixures_and_outputs();
+
+        let fixture_handler =
+            Arc::new(RwLock::new(FixtureHandler::new(fixtures, outputs).unwrap()));
+
+        let preset_handler = Arc::new(RwLock::new(show.preset_handler));
+        let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));
+        let timing_handler = Arc::new(RwLock::new(show.timing_handler));
+
+        let input_device_handler = DemexInputDeviceHandler::new(
+            show.input_device_configs
+                .into_iter()
+                .map_into()
+                .collect::<Vec<_>>(),
+        );
+
+        Ok(Self {
+            gm_slider_val: FixtureHandler::default_grandmaster_value(),
+            logs: vec![
+                DemexLogEntry::new(DemexLogEntryType::Info(format!(
+                    "demex v{} (by @matteolutz), Welcome!",
+                    VERSION_STR
+                ))),
+                DemexLogEntry::new(DemexLogEntryType::Info(
+                    "Check out https://demex.matteolutz.de to get started.".to_owned(),
+                )),
+            ],
+
+            is_command_input_empty: true,
+            command: Vec::new(),
+            command_input: String::new(),
+            macro_execution_queue: Vec::new(),
+
+            encoders_tab_state: EncodersTabState::default(),
+            window_handler: DemexWindowHandler::default(),
+            global_fixture_select: None,
+
+            ui_config: show.ui_config,
+
+            show_file,
+
+            fixture_handler,
+            preset_handler,
+            updatable_handler,
+            timing_handler,
+            patch,
+
+            input_device_handler,
+
+            stats,
+        })
+    }
+
+    pub fn save_show(&mut self) {
+        let save_result = {
+            let preset_handler_lock = self.preset_handler.read();
+            let updatable_handler_lock = self.updatable_handler.read();
+            let timing_handler_lock = self.timing_handler.read();
+            let patch_lock = self.patch.read();
+
+            let show = DemexShow {
+                preset_handler: preset_handler_lock.clone(),
+                updatable_handler: updatable_handler_lock.clone(),
+                timing_handler: timing_handler_lock.clone(),
+                input_device_configs: self
+                    .input_device_handler
+                    .devices()
+                    .iter()
+                    .map(|d| d.config().clone())
+                    .collect::<Vec<_>>(),
+                patch: SerializablePatch::from_patch(&patch_lock),
+                ui_config: self.ui_config.clone(),
+            };
+
+            let save_file = if let Some(show_file) = self.show_file.as_ref() {
+                Ok(show_file.clone())
+            } else if let Some(save_file) = rfd::FileDialog::new()
+                .add_filter("demex Show-File", &["json"])
+                .save_file()
+            {
+                Ok(save_file)
+            } else {
+                Err(DemexUiError::RuntimeError(
+                    "No save file selected".to_owned(),
+                ))
+            };
+
+            save_file.and_then(|save_file| {
+                serde_json::to_writer(std::fs::File::create(&save_file).unwrap(), &show)
+                    .map_err(DemexUiError::SerdeJsonError)?;
+                Ok(save_file)
+            })
+        };
+
+        if let Err(e) = save_result {
+            self.add_dialog_entry(DemexGlobalDialogEntry::error(&e));
+        } else if let Ok(save_file) = save_result {
+            self.add_dialog_entry(DemexGlobalDialogEntry::info(
+                format!("Show saved to {}", save_file.display()).as_str(),
+            ));
+            self.show_file = Some(save_file);
+        }
+    }
+
     pub fn run_and_handle_action(
         &mut self,
         action: &Action,
@@ -116,42 +236,7 @@ impl DemexUiContext {
                     .faders_home_all(&mut fixture_handler_lock, &preset_handler_lock);
             }
             Action::Save => {
-                let fixture_handler_lock = self.fixture_handler.read();
-                let preset_handler_lock = self.preset_handler.read();
-                let updatable_handler_lock = self.updatable_handler.read();
-                let timing_handler_lock = self.timing_handler.read();
-                let patch_lock = self.patch.read();
-
-                let show = DemexShow {
-                    preset_handler: preset_handler_lock.clone(),
-                    updatable_handler: updatable_handler_lock.clone(),
-                    timing_handler: timing_handler_lock.clone(),
-                    input_device_configs: self
-                        .input_device_handler
-                        .devices()
-                        .iter()
-                        .map(|d| d.config().clone())
-                        .collect::<Vec<_>>(),
-                    patch: SerializablePatch::from_patch(&patch_lock),
-                    ui_config: self.ui_config.clone(),
-                };
-
-                let save_result = (self.save_show)(show, self.show_file.as_ref());
-
-                drop(fixture_handler_lock);
-                drop(updatable_handler_lock);
-                drop(preset_handler_lock);
-                drop(timing_handler_lock);
-                drop(patch_lock);
-
-                if let Err(e) = save_result {
-                    self.add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));
-                } else if let Ok(save_file) = save_result {
-                    self.add_dialog_entry(DemexGlobalDialogEntry::info(
-                        format!("Show saved to {}", save_file.display()).as_str(),
-                    ));
-                    self.show_file = Some(save_file);
-                }
+                self.save_show();
             }
             Action::Test(cmd) => match cmd.as_str() {
                 _ => self.add_dialog_entry(DemexGlobalDialogEntry::error(

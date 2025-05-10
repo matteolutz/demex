@@ -27,6 +27,7 @@ pub enum DemexEditWindow {
 
     EditBuilderCue(u32, CueIdx),
 
+    ConfigOverview,
     Config(ConfigTypeActionData),
 }
 
@@ -48,7 +49,16 @@ impl DemexEditWindow {
                 format!("Preset {}", preset_id)
             }
             Self::EditGroup(group_id) => format!("Group {}", group_id),
+            Self::ConfigOverview => "Config".to_owned(),
             Self::Config(config_type) => format!("Config {:?}", config_type),
+        }
+    }
+
+    pub fn should_fullscreen(&self) -> bool {
+        match self {
+            Self::EditBuilderCue(_, _) => true,
+            Self::Config(_) => true,
+            _ => false,
         }
     }
 
@@ -118,6 +128,9 @@ impl DemexEditWindow {
             Self::EditGroup(group_id) => {
                 Probe::new(preset_handler.get_group_mut(*group_id)?).show(ui);
             }
+            Self::ConfigOverview => {
+                ui.heading("Config overview");
+            }
             Self::Config(config_type) => match config_type {
                 ConfigTypeActionData::Output => {
                     ui.colored_label(
@@ -128,6 +141,9 @@ impl DemexEditWindow {
                     Probe::new(patch.output_configs_mut())
                         .with_header("Outputs")
                         .show(ui);
+                }
+                ConfigTypeActionData::Patch => {
+                    ui.heading("Patch");
                 }
             },
         };

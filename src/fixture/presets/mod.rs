@@ -140,12 +140,7 @@ impl PresetHandler {
             id.feature_group,
         )?;
 
-        let preset = FixturePreset::new(
-            id,
-            name,
-            id.feature_group,
-            FixturePresetData::Default { data },
-        )?;
+        let preset = FixturePreset::new(id, name, FixturePresetData::Default { data })?;
 
         self.presets.insert(id, preset);
         Ok(())
@@ -163,7 +158,6 @@ impl PresetHandler {
         let preset = FixturePreset::new(
             id,
             name,
-            id.feature_group,
             FixturePresetData::FeatureEffect {
                 runtime: FeatureEffectRuntime::new(FeatureEffect::default()),
             },

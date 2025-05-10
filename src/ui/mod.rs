@@ -1,27 +1,25 @@
-use std::{path::PathBuf, sync::Arc, thread, time};
+use std::{sync::Arc, thread, time};
 
 use command::ui_command_input;
-use context::{DemexUiContext, SaveShowFn};
+use context::DemexUiContext;
 use dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use egui::IconData;
-use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use tabs::{encoders_tab::EncodersTabState, DemexTabs};
-use window::{DemexWindow, DemexWindowHandler};
+use strum::IntoEnumIterator;
+use tabs::DemexTabs;
+use window::DemexWindow;
 
 #[allow(unused_imports)]
 use crate::{fixture::handler::FixtureHandler, lexer::Lexer};
 use crate::{
-    fixture::{
-        patch::Patch, presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler,
-    },
-    input::DemexInputDeviceHandler,
     parser::{
-        nodes::{action::Action, fixture_selector::FixtureSelectorContext},
+        nodes::{
+            action::{Action, ConfigTypeActionData},
+            fixture_selector::FixtureSelectorContext,
+        },
         Parser2,
     },
-    show::ui::DemexShowUiConfig,
-    utils::{thread::DemexThreadStatsHandler, version::VERSION_STR},
+    utils::version::VERSION_STR,
 };
 
 pub mod command;
@@ -75,62 +73,18 @@ pub struct DemexUiApp {
 
 impl DemexUiApp {
     pub fn new(
-        fixture_handler: Arc<RwLock<FixtureHandler>>,
-        preset_handler: Arc<RwLock<PresetHandler>>,
-        updatable_handler: Arc<RwLock<UpdatableHandler>>,
-        timing_handler: Arc<RwLock<TimingHandler>>,
-        patch: Arc<RwLock<Patch>>,
-        stats: Arc<RwLock<DemexThreadStatsHandler>>,
-        show_file: Option<PathBuf>,
-        save_show: SaveShowFn,
+        context: DemexUiContext,
         desired_fps: f64,
         icon: Arc<IconData>,
-        input_device_handler: DemexInputDeviceHandler,
-        ui_config: DemexShowUiConfig,
         is_single_threaded: bool,
     ) -> Self {
-        stats
+        context
+            .stats
             .write()
             .register_thread(UI_THREAD_NAME.to_owned(), thread::current().id());
 
         Self {
-            context: DemexUiContext {
-                stats,
-                gm_slider_val: FixtureHandler::default_grandmaster_value(),
-                fixture_handler,
-                preset_handler,
-                updatable_handler,
-                timing_handler,
-                patch,
-
-                global_fixture_select: None,
-
-                command: Vec::new(),
-                macro_execution_queue: Vec::new(),
-
-                show_file,
-                save_show,
-
-                logs: vec![
-                    DemexLogEntry::new(DemexLogEntryType::Info(format!(
-                        "demex v{} (by @matteolutz), Welcome!",
-                        VERSION_STR
-                    ))),
-                    DemexLogEntry::new(DemexLogEntryType::Info(
-                        "Check out https://demex.matteolutz.de to get started.".to_owned(),
-                    )),
-                ],
-                window_handler: DemexWindowHandler::default(),
-
-                command_input: String::new(),
-                is_command_input_empty: true,
-
-                input_device_handler,
-
-                ui_config,
-
-                encoders_tab_state: EncodersTabState::default(),
-            },
+            context,
             tabs: DemexTabs::default(),
 
             command_auto_focus: false,
@@ -348,15 +302,66 @@ impl eframe::App for DemexUiApp {
 
                 ui.separator();
 
-                if let Some(show_file) = self.context.show_file.as_ref() {
-                    ui.label(show_file.display().to_string());
-                } else {
-                    ui.colored_label(egui::Color32::YELLOW, "Show not saved");
-                }
+                ui.menu_image_button(
+                    egui::Image::new(egui::include_image!("../../assets/icons/draft.png")).tint(
+                        if self.context.show_file.is_some() {
+                            egui::Color32::WHITE
+                        } else {
+                            egui::Color32::YELLOW
+                        },
+                    ),
+                    |ui| {
+                        if let Some(show_file) = self.context.show_file.as_ref() {
+                            ui.label(show_file.display().to_string());
+                        } else {
+                            ui.colored_label(egui::Color32::YELLOW, "Show not saved");
+                        }
 
-                ui.separator();
+                        ui.separator();
 
-                ui.checkbox(&mut self.command_auto_focus, "CMD AF");
+                        if ui.button("Save").clicked() {
+                            self.context.save_show();
+                        }
+                    },
+                );
+
+                ui.menu_image_button(
+                    egui::include_image!("../../assets/icons/settings.png"),
+                    |ui| {
+                        ui.menu_button("Config", |ui| {
+                            if ui.button("All").clicked() {
+                                ui.close_menu();
+
+                                self.context.window_handler.add_window(DemexWindow::Edit(
+                                    window::edit::DemexEditWindow::ConfigOverview,
+                                ));
+                            }
+
+                            ui.separator();
+
+                            for config_type in ConfigTypeActionData::iter() {
+                                if ui.button(format!("{:?}", config_type)).clicked() {
+                                    ui.close_menu();
+
+                                    self.context.window_handler.add_window(DemexWindow::Edit(
+                                        window::edit::DemexEditWindow::Config(config_type),
+                                    ));
+                                }
+                            }
+                        });
+
+                        ui.separator();
+
+                        ui.checkbox(&mut self.command_auto_focus, "CMD AF");
+
+                        ui.separator();
+
+                        if ui.button("TOP SECRET").clicked() {
+                            ui.close_menu();
+                            let _ = open::that("https://youtu.be/dQw4w9WgXcQ");
+                        }
+                    },
+                );
             });
         });
 

@@ -35,10 +35,15 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         .map(|selection| selection.fixtures().to_vec());
     let selected_fixtures = _selected_fixtures.as_ref();
 
+    let min_num_preset_buttons = ((ui.available_width() - PRESET_GRID_ELEMENT_SIZE[0])
+        / PRESET_GRID_ELEMENT_SIZE[0])
+        .ceil() as u32
+        + 1;
+
     ui.vertical(|ui| {
         // Groups
         preset_grid_row_ui(ui, "Groups", None, egui::Color32::DARK_RED, |ui| {
-            for id in 0..=preset_handler.next_group_id() {
+            for id in 0..=preset_handler.next_group_id().max(min_num_preset_buttons) {
                 let g = preset_handler.get_group(id);
 
                 let config = if let Ok(g) = g {
@@ -112,7 +117,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 Some(feature_group.into()),
                 egui::Color32::BLUE,
                 |ui| {
-                    for id in 0..=preset_handler.next_preset_id(feature_group) {
+                    for id in 0..=preset_handler
+                        .next_preset_id(feature_group)
+                        .max(min_num_preset_buttons)
+                    {
                         let preset_id = FixturePresetId {
                             feature_group,
                             preset_id: id,
@@ -209,7 +217,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
         // Macros
         preset_grid_row_ui(ui, "Maros", None, egui::Color32::BROWN, |ui| {
-            for id in 0..=preset_handler.next_macro_id() {
+            for id in 0..=preset_handler.next_macro_id().max(min_num_preset_buttons) {
                 let m = preset_handler.get_macro(id);
 
                 let config = if let Ok(m) = m {
@@ -274,7 +282,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
         // Command slices
         preset_grid_row_ui(ui, "Command Slices", None, egui::Color32::GOLD, |ui| {
-            for id in 0..=preset_handler.next_command_slice_id() {
+            for id in 0..=preset_handler
+                .next_command_slice_id()
+                .max(min_num_preset_buttons)
+            {
                 let cs = preset_handler.get_command_slice(id);
 
                 let config = if let Ok(cs) = cs {
@@ -301,7 +312,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
         // Executors
         preset_grid_row_ui(ui, "Executors", None, egui::Color32::DARK_GREEN, |ui| {
-            for id in 0..=updatable_handler.next_executor_id() {
+            for id in 0..=updatable_handler
+                .next_executor_id()
+                .max(min_num_preset_buttons)
+            {
                 let executor_exists = updatable_handler.executor(id).is_some();
 
                 let (config, decoration) = if executor_exists {

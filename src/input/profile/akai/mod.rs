@@ -46,6 +46,7 @@ impl ApcMiniMk2InputDeviceProfile {
         let out_ports = midi_out.ports();
         let out_port = out_ports
             .iter()
+            .inspect(|p| log::debug!("Found MIDI out port: {:?}", midi_out.port_name(p)))
             .find(|p| {
                 midi_out
                     .port_name(p)
@@ -69,6 +70,7 @@ impl ApcMiniMk2InputDeviceProfile {
         let in_ports = midi_in.ports();
         let in_port = in_ports
             .iter()
+            .inspect(|p| log::debug!("Found MIDI in port: {:?}", midi_in.port_name(p)))
             .find(|p| {
                 midi_in
                     .port_name(p)

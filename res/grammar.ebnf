@@ -14,7 +14,7 @@ function                    = fixture_selector set_function
                             | "clear"
                             | "nuzul" | "sueud"
                             | "save"
-                            | "config" ("output")
+                            | "config" ("output" | "patch")
                             | "test" string
                             | "assign" assign_command
                             | "unassign" unassign_command

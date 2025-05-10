@@ -96,6 +96,13 @@ impl DemexWindow {
             entries.push(entry);
         }
     }
+
+    pub fn should_fullscreen(&self) -> bool {
+        match self {
+            Self::Edit(edit_window) => edit_window.should_fullscreen(),
+            _ => false,
+        }
+    }
 }
 
 impl DemexWindow {
@@ -123,12 +130,25 @@ impl DemexWindow {
         updatable_handler: &mut Arc<RwLock<UpdatableHandler>>,
         patch: &mut Arc<RwLock<Patch>>,
     ) -> bool {
-        egui::Window::new(self.title())
-            .resizable(false)
-            .movable(true)
+        let mut window = egui::Window::new(self.title())
             .interactable(true)
             .collapsible(false)
-            .order(self.order())
+            .scroll(true)
+            .order(self.order());
+
+        window = if self.should_fullscreen() {
+            window.fixed_rect(ctx.screen_rect())
+        } else {
+            let screen_rect = ctx.screen_rect();
+            let shrunk_rect = screen_rect.shrink2(egui::vec2(
+                screen_rect.width() * 0.25,
+                screen_rect.height() * 0.25,
+            ));
+
+            window.fixed_rect(shrunk_rect)
+        };
+
+        window
             .show(ctx, |ui| {
                 match self {
                     Self::Dialog(dialog_entries) => {

@@ -229,10 +229,9 @@ impl FixturePreset {
     pub fn new(
         id: FixturePresetId,
         name: Option<String>,
-        feature_group: FixtureChannel3FeatureGroup,
         data: FixturePresetData,
     ) -> Result<Self, PresetHandlerError> {
-        let name = name.unwrap_or(format!("{} Preset {}", feature_group.name(), id));
+        let name = name.unwrap_or(format!("Preset {}", id));
 
         Ok(Self {
             id,

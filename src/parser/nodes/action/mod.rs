@@ -17,6 +17,7 @@ use functions::{
     FunctionArgs,
 };
 use serde::{Deserialize, Serialize};
+use strum::EnumIter;
 
 use crate::{
     fixture::{
@@ -62,9 +63,10 @@ impl<T: Copy> From<ValueOrRange<T>> for RangeInclusive<T> {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, EnumIter)]
 pub enum ConfigTypeActionData {
     Output,
+    Patch,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
