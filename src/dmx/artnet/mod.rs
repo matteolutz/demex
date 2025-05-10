@@ -42,6 +42,7 @@ pub fn start_broadcast_artnet_output_thread(
         socket
             .set_read_timeout(Some(time::Duration::from_secs(3)))
             .unwrap();
+        nix::sys::socket::setsockopt(&socket, nix::sys::socket::sockopt::ReuseAddr, &true).unwrap();
 
         let broadcast_addresses = config
             .broadcast_addresses
@@ -84,6 +85,7 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, config: ArtnetOut
         socket
             .set_read_timeout(Some(time::Duration::from_secs(3)))
             .unwrap();
+        nix::sys::socket::setsockopt(&socket, nix::sys::socket::sockopt::ReuseAddr, &true).unwrap();
 
         let broadcast_addresses = config
             .broadcast_addresses
