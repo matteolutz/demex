@@ -1,7 +1,6 @@
 use device::{DemexInputDevice, DemexInputDeviceConfig};
 use error::DemexInputDeviceError;
 use message::DemexInputDeviceMessage;
-use profile::DemexInputDeviceProfileType;
 
 use crate::{
     fixture::{
@@ -32,8 +31,6 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
     ) -> Result<(), DemexInputDeviceError>;
 
     fn poll(&self) -> Result<Vec<DemexInputDeviceMessage>, DemexInputDeviceError>;
-
-    fn profile_type(&self) -> DemexInputDeviceProfileType;
 
     fn is_enabled(&self) -> bool;
 }

@@ -6,6 +6,9 @@ use crate::input::{
 };
 
 pub struct GenericMidiProfile {
+    #[allow(dead_code)]
+    midi_in_device: String,
+
     rx: mpsc::Receiver<MidiMessage>,
     midi_in: Option<midir::MidiInputConnection<()>>,
 }
@@ -18,6 +21,7 @@ impl std::fmt::Debug for GenericMidiProfile {
 
 impl GenericMidiProfile {
     fn get_conn_in(
+        midi_in_device: &str,
         tx: mpsc::Sender<MidiMessage>,
     ) -> Result<midir::MidiInputConnection<()>, DemexInputDeviceError> {
         let midi_in = midir::MidiInput::new("demex-midi-input")
@@ -30,15 +34,21 @@ impl GenericMidiProfile {
         }
 
         let in_port = in_ports
-            .first()
+            .iter()
+            .inspect(|p| log::debug!("Found MIDI in port: {:?}", midi_in.port_name(p)))
+            .find(|p| {
+                midi_in
+                    .port_name(p)
+                    .is_ok_and(|port_name| port_name == midi_in_device)
+            })
             .ok_or(DemexInputDeviceError::InputDeviceNotFound(
-                "GenericMidiDevice".to_owned(),
+                midi_in_device.to_owned(),
             ))?;
 
         midi_in
             .connect(
                 in_port,
-                "GenericMidiDevice",
+                &midi_in_device,
                 move |_, msg, _| {
                     if let Some(midi_msg) = MidiMessage::from_bytes(msg) {
                         tx.send(midi_msg).unwrap();
@@ -51,12 +61,13 @@ impl GenericMidiProfile {
             .map_err(|err| DemexInputDeviceError::MidirError(err.into()))
     }
 
-    pub fn new() -> Self {
+    pub fn new(midi_in_device: String) -> Self {
         let (tx, rx) = mpsc::channel();
 
-        let conn_in = Self::get_conn_in(tx);
+        let conn_in = Self::get_conn_in(&midi_in_device, tx);
 
         Self {
+            midi_in_device,
             rx,
             midi_in: conn_in.ok(),
         }
@@ -106,10 +117,6 @@ impl DemexInputDeviceProfile for GenericMidiProfile {
             .collect::<Vec<_>>();
 
         Ok(values)
-    }
-
-    fn profile_type(&self) -> super::DemexInputDeviceProfileType {
-        super::DemexInputDeviceProfileType::GenericMidi
     }
 
     fn is_enabled(&self) -> bool {

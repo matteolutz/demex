@@ -17,16 +17,15 @@ use crate::{
     utils::version::demex_version,
 };
 
-use super::DemexInputDeviceProfileType;
-
 mod led;
 
 // **Ressources**
 // https://cdn.inmusicbrands.com/akai/attachments/APC%20mini%20mk2%20-%20Communication%20Protocol%20-%20v1.0.pdf
 
-const APC_MINI_MK_2_NAME: &str = "APC mini mk2 Control";
-
 pub struct ApcMiniMk2InputDeviceProfile {
+    #[allow(dead_code)]
+    apc_midi_name: String,
+
     rx: mpsc::Receiver<MidiMessage>,
     midi_out: Option<midir::MidiOutputConnection>,
     _midi_in: Option<midir::MidiInputConnection<()>>,
@@ -39,7 +38,9 @@ impl std::fmt::Debug for ApcMiniMk2InputDeviceProfile {
 }
 
 impl ApcMiniMk2InputDeviceProfile {
-    fn get_conn_out() -> Result<midir::MidiOutputConnection, DemexInputDeviceError> {
+    fn get_conn_out(
+        apc_midi_name: &str,
+    ) -> Result<midir::MidiOutputConnection, DemexInputDeviceError> {
         let midi_out = midir::MidiOutput::new("demex-midi-output")
             .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
 
@@ -50,18 +51,19 @@ impl ApcMiniMk2InputDeviceProfile {
             .find(|p| {
                 midi_out
                     .port_name(p)
-                    .is_ok_and(|port_name| port_name == APC_MINI_MK_2_NAME)
+                    .is_ok_and(|port_name| port_name == apc_midi_name)
             })
             .ok_or(DemexInputDeviceError::InputDeviceNotFound(
-                APC_MINI_MK_2_NAME.to_owned(),
+                apc_midi_name.to_owned(),
             ))?;
 
         midi_out
-            .connect(out_port, APC_MINI_MK_2_NAME)
+            .connect(out_port, apc_midi_name)
             .map_err(|err| DemexInputDeviceError::MidirError(err.into()))
     }
 
     fn get_conn_in(
+        apc_midi_name: &str,
         tx: mpsc::Sender<MidiMessage>,
     ) -> Result<midir::MidiInputConnection<()>, DemexInputDeviceError> {
         let midi_in = midir::MidiInput::new("demex-midi-input")
@@ -74,16 +76,16 @@ impl ApcMiniMk2InputDeviceProfile {
             .find(|p| {
                 midi_in
                     .port_name(p)
-                    .is_ok_and(|port_name| port_name == APC_MINI_MK_2_NAME)
+                    .is_ok_and(|port_name| port_name == apc_midi_name)
             })
             .ok_or(DemexInputDeviceError::InputDeviceNotFound(
-                APC_MINI_MK_2_NAME.to_owned(),
+                apc_midi_name.to_owned(),
             ))?;
 
         midi_in
             .connect(
                 in_port,
-                APC_MINI_MK_2_NAME,
+                apc_midi_name,
                 move |_, msg, _| {
                     if let Some(midi_msg) = MidiMessage::from_bytes(msg) {
                         tx.send(midi_msg).unwrap();
@@ -96,13 +98,14 @@ impl ApcMiniMk2InputDeviceProfile {
             .map_err(|err| DemexInputDeviceError::MidirError(err.into()))
     }
 
-    pub fn new() -> Self {
+    pub fn new(apc_midi_name: String) -> Self {
         let (tx, rx) = mpsc::channel();
 
-        let conn_out = Self::get_conn_out();
-        let conn_in = Self::get_conn_in(tx.clone());
+        let conn_out = Self::get_conn_out(&apc_midi_name);
+        let conn_in = Self::get_conn_in(&apc_midi_name, tx);
 
         let mut s = Self {
+            apc_midi_name,
             rx,
             midi_out: conn_out
                 .inspect_err(|err| {
@@ -473,9 +476,5 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
             .collect::<Vec<_>>();
 
         Ok(values)
-    }
-
-    fn profile_type(&self) -> super::DemexInputDeviceProfileType {
-        DemexInputDeviceProfileType::ApcMiniMk2
     }
 }

@@ -49,8 +49,8 @@ impl DemexInputDeviceConfig {
         &mut self.faders
     }
 
-    pub fn profile_type(&self) -> DemexInputDeviceProfileType {
-        self.profile_type
+    pub fn profile_type(&self) -> &DemexInputDeviceProfileType {
+        &self.profile_type
     }
 }
 
@@ -73,10 +73,12 @@ impl DemexInputDevice {
 impl From<DemexInputDeviceConfig> for DemexInputDevice {
     fn from(value: DemexInputDeviceConfig) -> Self {
         let profile: Box<dyn DemexInputDeviceProfile> = match value.profile_type {
-            DemexInputDeviceProfileType::ApcMiniMk2 => {
-                Box::new(ApcMiniMk2InputDeviceProfile::new())
+            DemexInputDeviceProfileType::ApcMiniMk2 { ref apc_midi } => {
+                Box::new(ApcMiniMk2InputDeviceProfile::new(apc_midi.clone()))
             }
-            DemexInputDeviceProfileType::GenericMidi => Box::new(GenericMidiProfile::new()),
+            DemexInputDeviceProfileType::GenericMidi { ref midi_in_device } => {
+                Box::new(GenericMidiProfile::new(midi_in_device.clone()))
+            }
         };
 
         DemexInputDevice {
