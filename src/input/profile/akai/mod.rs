@@ -90,7 +90,7 @@ impl ApcMiniMk2InputDeviceProfile {
                     if let Some(midi_msg) = MidiMessage::from_bytes(msg) {
                         tx.send(midi_msg).unwrap();
                     } else {
-                        log::warn!("failed to deserialize midi bytes: {:02X?}", msg);
+                        log::debug!("failed to deserialize midi bytes: {:02X?}", msg);
                     }
                 },
                 (),

@@ -7,7 +7,7 @@ use super::{
     button::DemexInputButton,
     fader::DemexInputFader,
     profile::{
-        akai::ApcMiniMk2InputDeviceProfile, generic::GenericMidiProfile,
+        akai::ApcMiniMk2InputDeviceProfile, midi_timecode::MidiTimecodeProfile,
         DemexInputDeviceProfileType,
     },
     DemexInputDeviceProfile,
@@ -76,8 +76,8 @@ impl From<DemexInputDeviceConfig> for DemexInputDevice {
             DemexInputDeviceProfileType::ApcMiniMk2 { ref apc_midi } => {
                 Box::new(ApcMiniMk2InputDeviceProfile::new(apc_midi.clone()))
             }
-            DemexInputDeviceProfileType::GenericMidi { ref midi_in_device } => {
-                Box::new(GenericMidiProfile::new(midi_in_device.clone()))
+            DemexInputDeviceProfileType::MidiTimecode { ref midi_in_device } => {
+                Box::new(MidiTimecodeProfile::new(midi_in_device.clone()))
             }
         };
 

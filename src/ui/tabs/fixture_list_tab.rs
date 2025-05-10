@@ -44,13 +44,14 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 });
             })
             .body(|body| {
-                let mut fixture_iter = fixture_handler
+                let sorted_fixtures = fixture_handler
                     .fixtures()
                     .iter()
-                    .sorted_by(|a, b| a.id().cmp(&b.id()));
+                    .sorted_by(|a, b| a.id().cmp(&b.id()))
+                    .collect::<Vec<_>>();
 
                 body.rows(50.0, fixture_handler.fixtures().len(), |mut row| {
-                    let fixture = fixture_iter.next().unwrap();
+                    let fixture = sorted_fixtures[row.index()];
 
                     row.col(|ui| {
                         ui.label(fixture.id().to_string());

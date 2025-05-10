@@ -3116,7 +3116,14 @@
         "0": { "Fader": { "fader_id": 1 } },
         "2": { "Fader": { "fader_id": 3 } }
       },
-      "profile_type": { "ApcMiniMk2": { "apc_midi": "" } }
+      "profile_type": { "ApcMiniMk2": { "apc_midi": "APC mini mk2 Control" } }
+    },
+    {
+      "buttons": {},
+      "faders": {},
+      "profile_type": {
+        "MidiTimecode": { "midi_in_device": "IAC Driver Bus 1" }
+      }
     }
   ],
   "patch": {

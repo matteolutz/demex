@@ -5,7 +5,7 @@ use crate::input::{
     timecode::packet::TimecodePacket, DemexInputDeviceProfile,
 };
 
-pub struct GenericMidiProfile {
+pub struct MidiTimecodeProfile {
     #[allow(dead_code)]
     midi_in_device: String,
 
@@ -13,13 +13,13 @@ pub struct GenericMidiProfile {
     midi_in: Option<midir::MidiInputConnection<()>>,
 }
 
-impl std::fmt::Debug for GenericMidiProfile {
+impl std::fmt::Debug for MidiTimecodeProfile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "GenericMidiProfile")
     }
 }
 
-impl GenericMidiProfile {
+impl MidiTimecodeProfile {
     fn get_conn_in(
         midi_in_device: &str,
         tx: mpsc::Sender<MidiMessage>,
@@ -53,7 +53,7 @@ impl GenericMidiProfile {
                     if let Some(midi_msg) = MidiMessage::from_bytes(msg) {
                         tx.send(midi_msg).unwrap();
                     } else {
-                        log::warn!("failed to deserialize midi bytes: {:02X?}", msg);
+                        log::debug!("failed to deserialize midi bytes: {:02X?}", msg);
                     }
                 },
                 (),
@@ -74,7 +74,7 @@ impl GenericMidiProfile {
     }
 }
 
-impl DemexInputDeviceProfile for GenericMidiProfile {
+impl DemexInputDeviceProfile for MidiTimecodeProfile {
     fn update_out(
         &mut self,
         _: &crate::input::device::DemexInputDeviceConfig,
