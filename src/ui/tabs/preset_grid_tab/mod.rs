@@ -185,7 +185,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                 PresetGridButtonQuickMenuActions::Edit => {
                                     if let Ok(p) = p {
                                         context.window_handler.add_window(DemexWindow::Edit(
-                                            DemexEditWindow::EditPreset(p.id()),
+                                            DemexEditWindow::EditPreset2(p.id()),
                                         ));
                                     }
                                 }

@@ -280,7 +280,7 @@ impl Executor {
                     .name()
             ),
             ExecutorConfig::FeatureEffect { runtime, .. } => {
-                format!("{}\nEffect\n{}", self.name(), runtime.effect())
+                format!("{}\nEffect\n{:?}", self.name(), runtime.effect())
             }
         }
     }

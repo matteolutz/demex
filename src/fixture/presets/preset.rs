@@ -246,6 +246,10 @@ impl FixturePreset {
         &self.data
     }
 
+    pub fn data_mut(&mut self) -> &mut FixturePresetData {
+        &mut self.data
+    }
+
     pub fn apply(
         &self,
         fixture_types: &FixtureTypeList,
@@ -272,7 +276,7 @@ impl FixturePreset {
                 }
             }
             FixturePresetData::FeatureEffect { runtime } => {
-                for attribute in runtime.effect().get_attributes() {
+                for attribute in runtime.effect().attributes() {
                     // if the fixture doesn't have this feature type, skip
                     if let Ok(channels) = fixture.channels_for_attribute(fixture_types, attribute) {
                         for (dmx_channel, _, _) in channels {

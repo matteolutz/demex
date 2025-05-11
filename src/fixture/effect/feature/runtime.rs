@@ -10,6 +10,7 @@ use crate::{
             error::EffectError,
             speed::{EffectSpeed, EffectSpeedSyncMode},
         },
+        effect2::effect::Effect2,
         gdtf::GdtfFixture,
         handler::FixtureTypeList,
         sequence::FadeFixtureChannelValue,
@@ -20,11 +21,10 @@ use crate::{
     utils::math::instant_diff_secs,
 };
 
-use super::FeatureEffect;
-
 #[derive(Debug, Serialize, Deserialize, Clone, Default, EguiProbe)]
 pub struct FeatureEffectRuntime {
-    effect: FeatureEffect,
+    // effect: FeatureEffect,
+    effect: Effect2,
 
     #[serde(default)]
     speed: EffectSpeed,
@@ -38,15 +38,19 @@ pub struct FeatureEffectRuntime {
 }
 
 impl FeatureEffectRuntime {
-    pub fn new(effect: FeatureEffect) -> Self {
+    pub fn new(effect: Effect2) -> Self {
         Self {
             effect,
             ..Default::default()
         }
     }
 
-    pub fn effect(&self) -> &FeatureEffect {
+    pub fn effect(&self) -> &Effect2 {
         &self.effect
+    }
+
+    pub fn effect_mut(&mut self) -> &mut Effect2 {
+        &mut self.effect
     }
 
     pub fn is_started(&self) -> bool {
@@ -134,7 +138,7 @@ impl FeatureEffectRuntime {
                 for (idx, channel_function) in logical_channel.channel_functions.iter().enumerate()
                 {
                     let function_attribute = channel_function.attribute.first().unwrap().as_ref();
-                    let attribute_value = self.effect.get_attribute_value(
+                    let attribute_value = self.effect.attribute_value(
                         function_attribute,
                         started_elapsed,
                         phase_offset,

@@ -20,7 +20,8 @@ use super::{
         channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
         feature::feature_group::FixtureChannel3FeatureGroup,
     },
-    effect::feature::{runtime::FeatureEffectRuntime, FeatureEffect},
+    effect::feature::runtime::FeatureEffectRuntime,
+    effect2::effect::Effect2,
     gdtf::GdtfFixture,
     handler::{error::FixtureHandlerError, FixtureHandler, FixtureTypeList},
     selection::FixtureSelection,
@@ -159,7 +160,7 @@ impl PresetHandler {
             id,
             name,
             FixturePresetData::FeatureEffect {
-                runtime: FeatureEffectRuntime::new(FeatureEffect::default()),
+                runtime: FeatureEffectRuntime::new(Effect2::default()),
             },
         )?;
 

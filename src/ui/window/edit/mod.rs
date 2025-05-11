@@ -1,6 +1,7 @@
 use builder_cue::{edit_builder_cue_ui, DisplayEntry, PresetDisplayEntry};
 use egui_probe::Probe;
 use itertools::Itertools;
+use preset::edit_preset_ui;
 
 use crate::{
     fixture::{
@@ -15,6 +16,7 @@ use crate::{
 };
 
 pub mod builder_cue;
+pub mod preset;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DemexEditWindow {
@@ -23,6 +25,9 @@ pub enum DemexEditWindow {
     EditExecutor(u32),
     EditFader(u32),
     EditPreset(FixturePresetId),
+
+    EditPreset2(FixturePresetId),
+
     EditGroup(u32),
 
     EditBuilderCue(u32, CueIdx),
@@ -45,7 +50,7 @@ impl DemexEditWindow {
 
             Self::EditExecutor(executor_id) => format!("Executor {}", executor_id),
             Self::EditFader(fader_id) => format!("Fader {}", fader_id),
-            Self::EditPreset(preset_id) => {
+            Self::EditPreset(preset_id) | Self::EditPreset2(preset_id) => {
                 format!("Preset {}", preset_id)
             }
             Self::EditGroup(group_id) => format!("Group {}", group_id),
@@ -58,6 +63,7 @@ impl DemexEditWindow {
         match self {
             Self::EditBuilderCue(_, _) => true,
             Self::Config(_) => true,
+            Self::EditPreset2(_) => true,
             _ => false,
         }
     }
@@ -83,6 +89,13 @@ impl DemexEditWindow {
                         .ok_or(DemexUiError::RuntimeError("cue not found".to_owned()))?,
                 )
                 .show(ui);
+            }
+            Self::EditPreset2(preset_id) => {
+                let preset = preset_handler
+                    .get_preset_mut(*preset_id)
+                    .map_err(|_| DemexUiError::RuntimeError("Preset not found".to_string()))?;
+
+                edit_preset_ui(ui, preset);
             }
             Self::EditBuilderCue(sequence_id, cue_idx) => {
                 let groups = preset_handler
