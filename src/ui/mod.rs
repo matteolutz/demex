@@ -1,6 +1,7 @@
 use std::{sync::Arc, thread, time};
 
 use command::ui_command_input;
+use components::button::icon::DemexIcon;
 use context::DemexUiContext;
 use dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
 use egui::IconData;
@@ -303,13 +304,13 @@ impl eframe::App for DemexUiApp {
                 ui.separator();
 
                 ui.menu_image_button(
-                    egui::Image::new(egui::include_image!("../../assets/icons/draft.png")).tint(
-                        if self.context.show_file.is_some() {
+                    DemexIcon::Draft
+                        .button_image()
+                        .tint(if self.context.show_file.is_some() {
                             egui::Color32::WHITE
                         } else {
                             egui::Color32::YELLOW
-                        },
-                    ),
+                        }),
                     |ui| {
                         if let Some(show_file) = self.context.show_file.as_ref() {
                             ui.label(show_file.display().to_string());
@@ -326,43 +327,40 @@ impl eframe::App for DemexUiApp {
                     },
                 );
 
-                ui.menu_image_button(
-                    egui::include_image!("../../assets/icons/settings.png"),
-                    |ui| {
-                        ui.menu_button("Config", |ui| {
-                            if ui.button("All").clicked() {
+                ui.menu_image_button(DemexIcon::Settings.button_image(), |ui| {
+                    ui.menu_button("Config", |ui| {
+                        if ui.button("All").clicked() {
+                            ui.close_menu();
+
+                            self.context.window_handler.add_window(DemexWindow::Edit(
+                                window::edit::DemexEditWindow::ConfigOverview,
+                            ));
+                        }
+
+                        ui.separator();
+
+                        for config_type in ConfigTypeActionData::iter() {
+                            if ui.button(format!("{:?}", config_type)).clicked() {
                                 ui.close_menu();
 
                                 self.context.window_handler.add_window(DemexWindow::Edit(
-                                    window::edit::DemexEditWindow::ConfigOverview,
+                                    window::edit::DemexEditWindow::Config(config_type),
                                 ));
                             }
-
-                            ui.separator();
-
-                            for config_type in ConfigTypeActionData::iter() {
-                                if ui.button(format!("{:?}", config_type)).clicked() {
-                                    ui.close_menu();
-
-                                    self.context.window_handler.add_window(DemexWindow::Edit(
-                                        window::edit::DemexEditWindow::Config(config_type),
-                                    ));
-                                }
-                            }
-                        });
-
-                        ui.separator();
-
-                        ui.checkbox(&mut self.command_auto_focus, "CMD AF");
-
-                        ui.separator();
-
-                        if ui.button("TOP SECRET").clicked() {
-                            ui.close_menu();
-                            let _ = open::that("https://youtu.be/dQw4w9WgXcQ");
                         }
-                    },
-                );
+                    });
+
+                    ui.separator();
+
+                    ui.checkbox(&mut self.command_auto_focus, "CMD AF");
+
+                    ui.separator();
+
+                    if ui.button("TOP SECRET").clicked() {
+                        ui.close_menu();
+                        let _ = open::that("https://youtu.be/dQw4w9WgXcQ");
+                    }
+                });
             });
         });
 

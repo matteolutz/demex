@@ -36,4 +36,8 @@ impl FixtureGroup {
     pub fn fixture_selection(&self) -> &FixtureSelection {
         &self.fixture_selection
     }
+
+    pub fn fixture_selection_mut(&mut self) -> &mut FixtureSelection {
+        &mut self.fixture_selection
+    }
 }

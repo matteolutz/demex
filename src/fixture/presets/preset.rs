@@ -337,6 +337,10 @@ impl FixturePreset {
         self.display_color
     }
 
+    pub fn display_color_mut(&mut self) -> &mut Option<egui::Color32> {
+        &mut self.display_color
+    }
+
     pub fn value(
         &self,
         fixture: &GdtfFixture,

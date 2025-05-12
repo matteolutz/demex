@@ -13,6 +13,16 @@ pub struct Effect2Wave {
 }
 
 impl Effect2Wave {
+    pub fn control_points(&self) -> &[Effect2WaveControlPoint] {
+        &self.control_points
+    }
+
+    pub fn control_points_mut(&mut self) -> &mut Vec<Effect2WaveControlPoint> {
+        &mut self.control_points
+    }
+}
+
+impl Effect2Wave {
     // TODO: optimize this
     pub fn value(&self, time: f32) -> f32 {
         // t is the actual, we have to convert it, to map 0-2pi to 0-1
@@ -37,7 +47,7 @@ impl Effect2Wave {
             let t = prev_point
                 .map(|prev_point| (t - prev_point.x()) / (point.x() - prev_point.x()))
                 .unwrap_or(1.0);
-            return point.value_to_prev_point(prev_point, t);
+            return point.value_from_prev_point(prev_point, t);
         }
 
         0.0

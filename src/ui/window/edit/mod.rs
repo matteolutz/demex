@@ -1,5 +1,6 @@
 use builder_cue::{edit_builder_cue_ui, DisplayEntry, PresetDisplayEntry};
 use egui_probe::Probe;
+use group::edit_group_ui;
 use itertools::Itertools;
 use preset::edit_preset_ui;
 
@@ -16,6 +17,7 @@ use crate::{
 };
 
 pub mod builder_cue;
+pub mod group;
 pub mod preset;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,6 +66,7 @@ impl DemexEditWindow {
             Self::EditBuilderCue(_, _) => true,
             Self::Config(_) => true,
             Self::EditPreset2(_) => true,
+            Self::EditGroup(_) => true,
             _ => false,
         }
     }
@@ -71,7 +74,7 @@ impl DemexEditWindow {
     pub fn window_ui(
         &self,
         ui: &mut egui::Ui,
-        _fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureHandler,
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         patch: &mut Patch,
@@ -139,7 +142,9 @@ impl DemexEditWindow {
                 Probe::new(preset_handler.get_preset_mut(*preset_id)?).show(ui);
             }
             Self::EditGroup(group_id) => {
-                Probe::new(preset_handler.get_group_mut(*group_id)?).show(ui);
+                let group = preset_handler.get_group_mut(*group_id)?;
+
+                edit_group_ui(ui, group, fixture_handler);
             }
             Self::ConfigOverview => {
                 ui.heading("Config overview");

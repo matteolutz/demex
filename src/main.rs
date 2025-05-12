@@ -40,6 +40,10 @@ struct Args {
     /// Run the application in single-threaded mode
     #[arg(long)]
     single_thread: bool,
+
+    /// Run the application in a mode that is more suitable for touchscreen devices (i.e. larger UI elements, ..)
+    #[arg(long)]
+    touschreen_mode: bool,
 }
 
 const TEST_MAX_FUPS: f64 = 60.0;
@@ -47,7 +51,6 @@ const TEST_MAX_DMX_FPS: f64 = 30.0;
 const TEST_UI_FPS: f64 = 60.0;
 
 const TEST_UI_THEME: DemexUiTheme = DemexUiTheme::Default;
-const TEST_TOUCHSCREEN_FRIENDLY: bool = false;
 
 const APP_ID: &str = "demex";
 
@@ -242,7 +245,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             TEST_UI_THEME.apply(&creation_context.egui_ctx);
 
-            if TEST_TOUCHSCREEN_FRIENDLY {
+            if args.touschreen_mode {
                 creation_context.egui_ctx.style_mut(|style| {
                     style.spacing.button_padding = egui::vec2(10.0, 10.0);
 

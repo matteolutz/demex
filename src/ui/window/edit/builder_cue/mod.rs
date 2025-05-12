@@ -1,6 +1,9 @@
-use crate::fixture::{
-    presets::preset::FixturePresetId,
-    sequence::cue::{Cue, CueBuilderEntry, CueDataMode},
+use crate::{
+    fixture::{
+        presets::preset::FixturePresetId,
+        sequence::cue::{Cue, CueBuilderEntry, CueDataMode},
+    },
+    ui::utils::vec::with_index_mut,
 };
 
 pub struct DisplayEntry {
@@ -46,8 +49,7 @@ pub fn edit_builder_cue_ui(
                 ui.col(|_| {});
             })
             .body(|mut ui| {
-                let mut idx = 0usize;
-                data.retain_mut(|entry| {
+                data.retain_mut(with_index_mut(|idx, entry: &mut CueBuilderEntry| {
                     let mut retain = true;
 
                     ui.row(20.0, |mut ui| {
@@ -120,9 +122,8 @@ pub fn edit_builder_cue_ui(
                         });
                     });
 
-                    idx += 1;
                     retain
-                });
+                }));
             });
 
         if ui.button("+").clicked() {

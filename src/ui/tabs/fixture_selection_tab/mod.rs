@@ -1,19 +1,10 @@
-use egui_probe::Probe;
-
-use crate::{
-    lexer::token::Token,
-    ui::{
-        components::splitter::{Splitter, SplitterAxis},
-        utils::painter::painter_layout_centered,
-    },
-};
-
-const ELEMENT_SIZE: f32 = 50.0;
+use crate::ui::components::fixture_selection_editor::fixture_selection_editor;
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     if let Some(fixture_selection) = context.global_fixture_select.as_mut() {
         let fixture_handler = context.fixture_handler.read();
 
+        /*
         Splitter::new("FixtureSelectionTabSplitter", SplitterAxis::Horizontal).show(
             ui,
             |left_ui, right_ui| {
@@ -179,6 +170,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 });
             },
         );
+        */
+        fixture_selection_editor(ui, fixture_selection, &fixture_handler);
     } else {
         ui.centered_and_justified(|ui| {
             ui.label("No fixtures selected");

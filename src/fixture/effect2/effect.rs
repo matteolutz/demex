@@ -25,6 +25,14 @@ impl Effect2Part {
     pub fn wave_mut(&mut self) -> &mut Effect2Wave {
         &mut self.wave
     }
+
+    pub fn attributes(&self) -> &[String] {
+        &self.attributes
+    }
+
+    pub fn attributes_mut(&mut self) -> &mut Vec<String> {
+        &mut self.attributes
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
