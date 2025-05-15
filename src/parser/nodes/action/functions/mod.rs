@@ -1,3 +1,5 @@
+use std::time;
+
 use crate::{
     fixture::{
         handler::FixtureHandler, patch::Patch, presets::PresetHandler, timing::TimingHandler,
@@ -21,6 +23,7 @@ pub mod update_function;
 pub trait FunctionArgs {
     fn run(
         &self,
+        issued_at: time::Instant,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &mut PresetHandler,
         fixture_selector_context: FixtureSelectorContext,

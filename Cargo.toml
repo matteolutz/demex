@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 artnet_protocol = { git = "https://github.com/matteolutz/artnet_protocol" }
+byteorder = "1.5.0"
 catppuccin-egui = { version = "5.5.0", default-features = false, features = [
     "egui31",
 ] }

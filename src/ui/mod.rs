@@ -13,12 +13,9 @@ use window::DemexWindow;
 #[allow(unused_imports)]
 use crate::{fixture::handler::FixtureHandler, lexer::Lexer};
 use crate::{
-    parser::{
-        nodes::{
-            action::{Action, ConfigTypeActionData},
-            fixture_selector::FixtureSelectorContext,
-        },
-        Parser2,
+    parser::nodes::{
+        action::{Action, ConfigTypeActionData},
+        fixture_selector::FixtureSelectorContext,
     },
     utils::version::VERSION_STR,
 };
@@ -102,26 +99,6 @@ impl DemexUiApp {
 }
 
 impl DemexUiApp {
-    pub fn run_cmd(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        self.context
-            .logs
-            .push(DemexLogEntry::new(DemexLogEntryType::CommandEntry(
-                self.context.command.clone(),
-            )));
-
-        let mut p = Parser2::new(&self.context.command);
-
-        let action = p.parse().inspect_err(|err| {
-            self.context
-                .logs
-                .push(DemexLogEntry::new(DemexLogEntryType::CommandFailedEntry(
-                    err.to_string(),
-                )))
-        })?;
-
-        self.context.run_and_handle_action(&action)
-    }
-
     pub fn update_single_threaded(&mut self) {
         let mut fixture_handler = self.context.fixture_handler.write();
         let preset_handler = self.context.preset_handler.read();
@@ -188,9 +165,12 @@ impl eframe::App for DemexUiApp {
         );
 
         while !self.context.macro_execution_queue.is_empty() {
-            let action = self.context.macro_execution_queue.remove(0);
+            let deferred_action = self.context.macro_execution_queue.remove(0);
 
-            if let Err(e) = self.context.run_and_handle_action(&action) {
+            if let Err(e) = self
+                .context
+                .run_and_handle_action(&deferred_action.action, deferred_action.issued_at)
+            {
                 log::warn!("{}", e);
 
                 self.context
@@ -290,7 +270,9 @@ impl eframe::App for DemexUiApp {
                 ui.separator();
 
                 if ui.link("Matteo Lutz").clicked() {
-                    let _ = self.context.run_and_handle_action(&Action::MatteoLutz);
+                    let _ = self
+                        .context
+                        .run_and_handle_action(&Action::MatteoLutz, time::Instant::now());
                 }
 
                 ui.separator();

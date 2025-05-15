@@ -1,3 +1,5 @@
+use std::time;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -39,6 +41,7 @@ pub struct UpdatePresetArgs {
 impl FunctionArgs for UpdatePresetArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -106,6 +109,7 @@ pub struct UpdateSequenceCueArgs {
 impl FunctionArgs for UpdateSequenceCueArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,

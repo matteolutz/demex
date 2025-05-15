@@ -1188,6 +1188,7 @@ name = "demex"
 version = "0.1.18"
 dependencies = [
  "artnet_protocol",
+ "byteorder",
  "catppuccin-egui",
  "chrono",
  "clap",

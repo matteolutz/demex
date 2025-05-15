@@ -1,3 +1,5 @@
+use std::time;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -19,6 +21,7 @@ pub struct CreateSequenceArgs {
 impl FunctionArgs for CreateSequenceArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -58,6 +61,7 @@ pub struct CreateExecutorArgs {
 impl FunctionArgs for CreateExecutorArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -100,6 +104,7 @@ pub struct CreateFaderArgs {
 impl FunctionArgs for CreateFaderArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -132,6 +137,7 @@ pub struct CreateMacroArgs {
 impl FunctionArgs for CreateMacroArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -161,6 +167,7 @@ pub struct CreateEffectPresetArgs {
 impl FunctionArgs for CreateEffectPresetArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,

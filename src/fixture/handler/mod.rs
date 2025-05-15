@@ -1,5 +1,7 @@
 use std::collections::{BTreeSet, HashMap};
 
+use itertools::Itertools;
+
 use crate::dmx::{DemexDmxOutput, DemexDmxOutputTrait};
 
 use self::error::FixtureHandlerError;
@@ -49,6 +51,7 @@ pub struct FixtureHandler {
     outputs: Vec<DemexDmxOutput>,
     universe_output_data: HashMap<u16, [u8; 512]>,
     grand_master: u8,
+    is_headless: bool,
 }
 
 impl FixtureHandler {
@@ -59,6 +62,7 @@ impl FixtureHandler {
     pub fn new(
         fixtures: Vec<GdtfFixture>,
         outputs: Vec<DemexDmxOutput>,
+        is_headless: bool,
     ) -> Result<Self, FixtureHandlerError> {
         // check if the fixtures overlap
 
@@ -82,10 +86,22 @@ impl FixtureHandler {
             }
         }
 
+        let mut universe_output_data = HashMap::new();
+        for universe in outputs
+            .iter()
+            .filter_map(|output| output.config().universes())
+            .flatten()
+            .dedup()
+        {
+            log::debug!("Outputting on universe {}", universe);
+            universe_output_data.insert(universe, [0; 512]);
+        }
+
         Ok(Self {
-            universe_output_data: HashMap::with_capacity(fixtures.len()),
+            universe_output_data,
             fixtures,
             outputs,
+            is_headless,
             grand_master: Self::default_grandmaster_value(),
         })
     }
@@ -148,15 +164,31 @@ impl FixtureHandler {
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
     ) -> Result<(), FixtureHandlerError> {
-        for f in self.fixtures.iter_mut() {
-            f.update_output_values(
-                fixture_types,
-                preset_handler,
-                updatable_handler,
-                timing_handler,
-            )
-            .map_err(FixtureHandlerError::FixtureError)?;
-        }
+        if self.is_headless {
+            for f in self
+                .fixtures
+                .iter_mut()
+                .filter(|fixture| self.universe_output_data.contains_key(&fixture.universe()))
+            {
+                f.update_output_values(
+                    fixture_types,
+                    preset_handler,
+                    updatable_handler,
+                    timing_handler,
+                )
+                .map_err(FixtureHandlerError::FixtureError)?;
+            }
+        } else {
+            for f in self.fixtures.iter_mut() {
+                f.update_output_values(
+                    fixture_types,
+                    preset_handler,
+                    updatable_handler,
+                    timing_handler,
+                )
+                .map_err(FixtureHandlerError::FixtureError)?;
+            }
+        };
 
         Ok(())
     }
@@ -192,14 +224,13 @@ impl FixtureHandler {
                 continue;
             }
 
-            let universe_data = self
-                .universe_output_data
-                .entry(f.universe())
-                .or_insert_with(|| [0; 512]);
+            // let universe_data = self.universe_output_data.entry(f.universe()).or_default();
+            let universe_data = self.universe_output_data.get_mut(&f.universe());
 
-            write_universe_data(universe_data, &data_packet, fixture_universe_offset);
-
-            dirty_universes.insert(f.universe());
+            if let Some(universe_data) = universe_data {
+                write_universe_data(universe_data, &data_packet, fixture_universe_offset);
+                dirty_universes.insert(f.universe());
+            }
         }
 
         for output in &mut self.outputs {

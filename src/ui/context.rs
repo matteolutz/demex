@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc, time};
 
 use itertools::Itertools;
 use parking_lot::RwLock;
@@ -16,7 +16,7 @@ use crate::{
     lexer::token::Token,
     parser::{
         nodes::{
-            action::{result::ActionRunResult, Action},
+            action::{result::ActionRunResult, Action, DeferredAction},
             fixture_selector::FixtureSelectorContext,
         },
         Parser2,
@@ -52,7 +52,7 @@ pub struct DemexUiContext {
 
     pub logs: Vec<DemexLogEntry>,
 
-    pub macro_execution_queue: Vec<Action>,
+    pub macro_execution_queue: Vec<DeferredAction>,
 
     pub show_file: Option<PathBuf>,
 
@@ -92,17 +92,24 @@ impl DemexUiContext {
                 )))
         })?;
 
-        self.run_and_handle_action(&action)
+        self.run_and_handle_action(&action, time::Instant::now())
     }
 
     pub fn load_show_file(
         show_file_path: PathBuf,
         fixture_types: Vec<gdtf::fixture_type::FixtureType>,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
+        is_headless: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let show: DemexShow =
             serde_json::from_reader(std::fs::File::open(show_file_path.clone()).unwrap())?;
-        Self::load_show(show, Some(show_file_path), fixture_types, stats)
+        Self::load_show(
+            show,
+            Some(show_file_path),
+            fixture_types,
+            stats,
+            is_headless,
+        )
     }
 
     pub fn load_show(
@@ -110,12 +117,14 @@ impl DemexUiContext {
         show_file: Option<PathBuf>,
         fixture_types: Vec<gdtf::fixture_type::FixtureType>,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
+        is_headless: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let patch = Arc::new(RwLock::new(show.patch.into_patch(fixture_types)));
         let (fixtures, outputs) = patch.read().into_fixures_and_outputs();
 
-        let fixture_handler =
-            Arc::new(RwLock::new(FixtureHandler::new(fixtures, outputs).unwrap()));
+        let fixture_handler = Arc::new(RwLock::new(
+            FixtureHandler::new(fixtures, outputs, is_headless).unwrap(),
+        ));
 
         let preset_handler = Arc::new(RwLock::new(show.preset_handler));
         let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));
@@ -219,6 +228,7 @@ impl DemexUiContext {
     pub fn run_and_handle_action(
         &mut self,
         action: &Action,
+        issued_at: time::Instant,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match &action {
             Action::ClearAll => {
@@ -257,6 +267,7 @@ impl DemexUiContext {
                 &mut self.input_device_handler,
                 &mut self.timing_handler.write(),
                 &self.patch.read(),
+                issued_at,
             )
             .inspect(|result| {
                 self.logs

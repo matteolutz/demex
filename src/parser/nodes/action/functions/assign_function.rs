@@ -1,3 +1,5 @@
+use std::time;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -141,6 +143,7 @@ pub struct AssignButtonArgs {
 impl FunctionArgs for AssignButtonArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -191,6 +194,7 @@ pub struct AssignFaderArgs {
 impl FunctionArgs for AssignFaderArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         _preset_handler: &mut crate::fixture::presets::PresetHandler,
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,

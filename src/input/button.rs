@@ -16,7 +16,7 @@ use crate::{
     },
     lexer::token::Token,
     parser::nodes::{
-        action::Action,
+        action::{Action, DeferredAction},
         fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
     },
 };
@@ -72,7 +72,7 @@ impl DemexInputButton {
         timing_handler: &mut TimingHandler,
         patch: &Patch,
         fixture_selector_context: FixtureSelectorContext,
-        macro_exec_cue: &mut Vec<Action>,
+        macro_exec_cue: &mut Vec<DeferredAction>,
         global_fixture_selection: &mut Option<FixtureSelection>,
         command_input: &mut Vec<Token>,
     ) -> Result<(), DemexInputDeviceError> {
@@ -139,7 +139,10 @@ impl DemexInputButton {
                     .map_err(DemexInputDeviceError::PresetHandlerError)?;
             }
             Self::Macro { action } => {
-                macro_exec_cue.push(action.clone());
+                macro_exec_cue.push(DeferredAction {
+                    action: action.clone(),
+                    issued_at: time::Instant::now(),
+                });
             }
             Self::FixtureSelector { fixture_selector } => {
                 *global_fixture_selection = Some(

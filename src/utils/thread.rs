@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     sync::Arc,
-    thread::{self, ThreadId},
+    thread::{self, JoinHandle, ThreadId},
     time,
 };
 
@@ -11,7 +11,7 @@ pub fn demex_simple_thread<F: Fn(Arc<RwLock<DemexThreadStatsHandler>>, &str) + S
     name: String,
     stats: Arc<RwLock<DemexThreadStatsHandler>>,
     f: F,
-) {
+) -> JoinHandle<()> {
     let stats_cloned = stats.clone();
     let name_cloned = name.to_owned();
 
@@ -22,6 +22,8 @@ pub fn demex_simple_thread<F: Fn(Arc<RwLock<DemexThreadStatsHandler>>, &str) + S
     stats_cloned
         .write()
         .register_thread(name_cloned, handle.thread().id());
+
+    handle
 }
 
 pub fn demex_update_thread<F: Fn(f64, &mut time::Instant) + Send + 'static>(
@@ -29,7 +31,7 @@ pub fn demex_update_thread<F: Fn(f64, &mut time::Instant) + Send + 'static>(
     stats: Arc<RwLock<DemexThreadStatsHandler>>,
     fps: f64,
     f: F,
-) {
+) -> JoinHandle<()> {
     let stats_cloned = stats.clone();
     let name_cloned = name.to_owned();
 
@@ -61,6 +63,8 @@ pub fn demex_update_thread<F: Fn(f64, &mut time::Instant) + Send + 'static>(
     stats_cloned
         .write()
         .register_thread(name_cloned, handle.thread().id());
+
+    handle
 }
 
 #[derive(Debug, Default)]

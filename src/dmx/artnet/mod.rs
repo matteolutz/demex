@@ -20,6 +20,9 @@ pub struct ArtnetOutputConfig {
     pub broadcast_addresses: Vec<String>,
 
     pub bind_ip: Option<String>,
+
+    #[serde(default)]
+    pub universes: Vec<u16>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]

@@ -48,7 +48,7 @@ impl MidiTimecodeProfile {
         midi_in
             .connect(
                 in_port,
-                &midi_in_device,
+                midi_in_device,
                 move |_, msg, _| {
                     if let Some(midi_msg) = MidiMessage::from_bytes(msg) {
                         tx.send(midi_msg).unwrap();

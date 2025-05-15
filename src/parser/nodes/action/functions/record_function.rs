@@ -1,3 +1,5 @@
+use std::time;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -91,6 +93,7 @@ pub struct RecordPresetArgs {
 impl FunctionArgs for RecordPresetArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -128,6 +131,7 @@ pub struct RecordGroupArgs {
 impl FunctionArgs for RecordGroupArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -164,6 +168,7 @@ pub struct RecordSequenceCueArgs {
 impl FunctionArgs for RecordSequenceCueArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -254,6 +259,7 @@ impl RecordSequenceCueShorthandArgs {
 impl FunctionArgs for RecordSequenceCueShorthandArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,

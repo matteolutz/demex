@@ -1,4 +1,4 @@
-use std::ops::RangeInclusive;
+use std::{ops::RangeInclusive, time};
 
 use functions::{
     assign_function::{AssignButtonArgs, AssignFaderArgs},
@@ -69,6 +69,12 @@ pub enum ConfigTypeActionData {
     Patch,
 }
 
+#[derive(Debug, Clone)]
+pub struct DeferredAction {
+    pub action: Action,
+    pub issued_at: time::Instant,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum Action {
     SetFeatureValue(SetFeatureValueArgs),
@@ -136,10 +142,12 @@ impl Action {
         input_device_handler: &mut DemexInputDeviceHandler,
         timing_handler: &mut TimingHandler,
         patch: &Patch,
+        issued_at: time::Instant,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
             // Set
             Self::SetFeatureValue(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -149,6 +157,7 @@ impl Action {
                 patch,
             ),
             Self::SetFixturePreset(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -170,6 +179,7 @@ impl Action {
 
             // Record
             Self::RecordPreset(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -179,6 +189,7 @@ impl Action {
                 patch,
             ),
             Self::RecordGroup2(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -188,6 +199,7 @@ impl Action {
                 patch,
             ),
             Self::RecordSequenceCue(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -197,6 +209,7 @@ impl Action {
                 patch,
             ),
             Self::RecordSequenceCueShorthand(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -208,6 +221,7 @@ impl Action {
 
             // Rename
             Self::Rename(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -219,6 +233,7 @@ impl Action {
 
             // Create
             Self::CreateSequence(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -228,6 +243,7 @@ impl Action {
                 patch,
             ),
             Self::CreateExecutor(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -237,6 +253,7 @@ impl Action {
                 patch,
             ),
             Self::CreateMacro(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -246,6 +263,7 @@ impl Action {
                 patch,
             ),
             Self::CreateFader(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -255,6 +273,7 @@ impl Action {
                 patch,
             ),
             Self::CreateEffectPreset(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -266,6 +285,7 @@ impl Action {
 
             // Update
             Self::UpdatePreset(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -275,6 +295,7 @@ impl Action {
                 patch,
             ),
             Self::UpdateSequenceCue(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -285,6 +306,7 @@ impl Action {
             ),
 
             Self::RecallSequenceCue(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -296,6 +318,7 @@ impl Action {
 
             // Delete
             Self::Delete(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -337,6 +360,7 @@ impl Action {
             )),
 
             Self::AssignFader(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -347,6 +371,7 @@ impl Action {
             ),
 
             Self::AssignButton(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,

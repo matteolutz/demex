@@ -1,3 +1,5 @@
+use std::time;
+
 use button::{
     preset_grid_button_ui, PresetGridButton, PresetGridButtonConfig, PresetGridButtonDecoration,
     PresetGridButtonQuickMenuActions,
@@ -12,6 +14,7 @@ use crate::{
         updatables::executor::config::ExecutorConfig,
     },
     lexer::token::Token,
+    parser::nodes::action::DeferredAction,
     ui::{
         window::{edit::DemexEditWindow, DemexWindow},
         DemexUiContext,
@@ -246,7 +249,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         .is_some_and(|action| action == PresetGridButtonQuickMenuActions::Default)
                 {
                     if let Ok(m) = m {
-                        context.macro_execution_queue.push(m.action().clone());
+                        context.macro_execution_queue.push(DeferredAction {
+                            action: m.action().clone(),
+                            issued_at: time::Instant::now(),
+                        });
                     } else {
                         context.command.extend_from_slice(&[
                             Token::KeywordCreate,

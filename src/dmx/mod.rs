@@ -29,6 +29,14 @@ pub enum DemexDmxOutputConfig {
 }
 
 impl DemexDmxOutputConfig {
+    pub fn universes(&self) -> Option<Vec<u16>> {
+        match self {
+            Self::Debug(_) => None,
+            Self::Artnet(config) => Some(config.universes.clone()),
+            Self::Serial(config) => Some(vec![config.universe]),
+        }
+    }
+
     pub fn num_threads(&self) -> usize {
         match self {
             Self::Debug(_) => 0,
