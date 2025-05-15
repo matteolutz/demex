@@ -9,6 +9,7 @@ use crate::{
     input::device::DemexInputDeviceConfig,
 };
 
+pub mod context;
 pub mod ui;
 
 #[derive(Serialize, Deserialize, Default, Clone)]

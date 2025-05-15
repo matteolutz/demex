@@ -12,7 +12,7 @@ use crate::{
         timing::TimingHandler,
         updatables::UpdatableHandler,
     },
-    input::DemexInputDeviceHandler,
+    input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler},
     lexer::token::Token,
     parser::{
         nodes::{
@@ -21,7 +21,7 @@ use crate::{
         },
         Parser2,
     },
-    show::{ui::DemexShowUiConfig, DemexShow},
+    show::{context::ShowContext, ui::DemexShowUiConfig, DemexShow},
     ui::error::DemexUiError,
     utils::{thread::DemexThreadStatsHandler, version::VERSION_STR},
 };
@@ -95,6 +95,7 @@ impl DemexUiContext {
         self.run_and_handle_action(&action, time::Instant::now())
     }
 
+    /*
     pub fn load_show_file(
         show_file_path: PathBuf,
         fixture_types: Vec<gdtf::fixture_type::FixtureType>,
@@ -110,34 +111,31 @@ impl DemexUiContext {
             stats,
             is_headless,
         )
-    }
+    }*/
 
     pub fn load_show(
-        show: DemexShow,
+        show_context: &ShowContext,
+        input_device_configs: Vec<DemexInputDeviceConfig>,
+        ui_config: DemexShowUiConfig,
         show_file: Option<PathBuf>,
-        fixture_types: Vec<gdtf::fixture_type::FixtureType>,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
-        is_headless: bool,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let patch = Arc::new(RwLock::new(show.patch.into_patch(fixture_types)));
-        let (fixtures, outputs) = patch.read().into_fixures_and_outputs();
+    ) -> Self {
+        let patch = show_context.patch.clone();
 
-        let fixture_handler = Arc::new(RwLock::new(
-            FixtureHandler::new(fixtures, outputs, is_headless).unwrap(),
-        ));
+        let fixture_handler = show_context.fixture_handler.clone();
 
-        let preset_handler = Arc::new(RwLock::new(show.preset_handler));
-        let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));
-        let timing_handler = Arc::new(RwLock::new(show.timing_handler));
+        let preset_handler = show_context.preset_handler.clone();
+        let updatable_handler = show_context.updatable_handler.clone();
+        let timing_handler = show_context.timing_handler.clone();
 
         let input_device_handler = DemexInputDeviceHandler::new(
-            show.input_device_configs
+            input_device_configs
                 .into_iter()
                 .map_into()
                 .collect::<Vec<_>>(),
         );
 
-        Ok(Self {
+        Self {
             gm_slider_val: FixtureHandler::default_grandmaster_value(),
             logs: vec![
                 DemexLogEntry::new(DemexLogEntryType::Info(format!(
@@ -158,7 +156,7 @@ impl DemexUiContext {
             window_handler: DemexWindowHandler::default(),
             global_fixture_select: None,
 
-            ui_config: show.ui_config,
+            ui_config,
 
             show_file,
 
@@ -171,7 +169,7 @@ impl DemexUiContext {
             input_device_handler,
 
             stats,
-        })
+        }
     }
 
     pub fn save_show(&mut self) {

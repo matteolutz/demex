@@ -8,7 +8,10 @@ pub mod lexer;
 pub mod parser;
 pub mod show;
 pub mod storage;
+
+#[cfg(feature = "ui")]
 pub mod ui;
+
 pub mod utils;
 
 use std::{path::PathBuf, sync::Arc, time};
@@ -18,8 +21,11 @@ use gdtf::GdtfFile;
 use headless::DemexHeadless;
 use itertools::Itertools;
 use parking_lot::RwLock;
-use show::DemexShow;
+use show::{context::ShowContext, DemexShow};
+
+#[cfg(feature = "ui")]
 use ui::{context::DemexUiContext, theme::DemexUiTheme, utils::icon::load_icon, DemexUiApp};
+
 use utils::{
     deadlock::start_deadlock_checking_thread,
     thread::{demex_update_thread, DemexThreadStatsHandler},
@@ -52,6 +58,7 @@ const TEST_MAX_FUPS: f64 = 60.0;
 const TEST_MAX_DMX_FPS: f64 = 30.0;
 const TEST_UI_FPS: f64 = 60.0;
 
+#[cfg(feature = "ui")]
 const TEST_UI_THEME: DemexUiTheme = DemexUiTheme::Default;
 
 const APP_ID: &str = "demex";
@@ -156,14 +163,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect::<Vec<_>>();
 
     let stats = Arc::new(RwLock::new(DemexThreadStatsHandler::default()));
-    let context = DemexUiContext::load_show(
-        show,
-        args.show,
+    let context = ShowContext::new(
         fixture_types,
-        stats.clone(),
+        show.patch,
+        show.preset_handler,
+        show.updatable_handler,
+        show.timing_handler,
         args.headless.is_some(),
-    )
-    .unwrap();
+    );
 
     let fixture_handler_thread_a = context.fixture_handler.clone();
     let preset_handler_thread_a = context.preset_handler.clone();
@@ -229,52 +236,72 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         log::info!("Running in headless mode, no UI will be shown");
         DemexHeadless::new().start_headless_in_current_thread(master_ip)?;
     } else {
-        let icon = Arc::new(load_icon());
+        #[cfg(feature = "ui")]
+        {
+            let icon = Arc::new(load_icon());
 
-        let ui_app_state = DemexUiApp::new(context, TEST_UI_FPS, icon.clone(), false);
+            let ui_app_state = DemexUiApp::new(
+                DemexUiContext::load_show(
+                    &context,
+                    show.input_device_configs,
+                    show.ui_config,
+                    args.show,
+                    stats,
+                ),
+                TEST_UI_FPS,
+                icon.clone(),
+                false,
+            );
 
-        let options = eframe::NativeOptions {
-            viewport: eframe::egui::ViewportBuilder::default()
-                .with_maximized(true)
-                .with_icon(icon),
-            ..Default::default()
-        };
+            let options = eframe::NativeOptions {
+                viewport: eframe::egui::ViewportBuilder::default()
+                    .with_maximized(true)
+                    .with_icon(icon),
+                ..Default::default()
+            };
 
-        eframe::run_native(
-            APP_ID,
-            options,
-            Box::new(|creation_context| {
-                egui_extras::install_image_loaders(&creation_context.egui_ctx);
+            eframe::run_native(
+                APP_ID,
+                options,
+                Box::new(|creation_context| {
+                    egui_extras::install_image_loaders(&creation_context.egui_ctx);
 
-                let style = Style {
-                    visuals: Visuals::dark(),
-                    ..Style::default()
-                };
+                    let style = Style {
+                        visuals: Visuals::dark(),
+                        ..Style::default()
+                    };
 
-                creation_context.egui_ctx.set_style(style);
-                creation_context.egui_ctx.set_fonts(load_fonts());
+                    creation_context.egui_ctx.set_style(style);
+                    creation_context.egui_ctx.set_fonts(load_fonts());
 
-                TEST_UI_THEME.apply(&creation_context.egui_ctx);
+                    TEST_UI_THEME.apply(&creation_context.egui_ctx);
 
-                if args.touchscreen_mode {
-                    creation_context.egui_ctx.style_mut(|style| {
-                        style.spacing.button_padding = egui::vec2(10.0, 10.0);
+                    if args.touchscreen_mode {
+                        creation_context.egui_ctx.style_mut(|style| {
+                            style.spacing.button_padding = egui::vec2(10.0, 10.0);
 
-                        style.spacing.indent = 18.0 * 2.0;
-                        style.spacing.icon_width = 14.0 * 2.0;
-                        style.spacing.icon_width_inner = 8.0 * 2.0;
+                            style.spacing.indent = 18.0 * 2.0;
+                            style.spacing.icon_width = 14.0 * 2.0;
+                            style.spacing.icon_width_inner = 8.0 * 2.0;
 
-                        // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
-                        //
-                        style.spacing.interact_size = egui::vec2(40.0, 18.0) * 1.5;
-                        style.spacing.slider_rail_height = 8.0 * 2.0;
-                        style.spacing.slider_width = 100.0 * 1.5;
-                    });
-                }
+                            // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
+                            //
+                            style.spacing.interact_size = egui::vec2(40.0, 18.0) * 1.5;
+                            style.spacing.slider_rail_height = 8.0 * 2.0;
+                            style.spacing.slider_width = 100.0 * 1.5;
+                        });
+                    }
 
-                Ok(Box::new(ui_app_state))
-            }),
-        )?;
+                    Ok(Box::new(ui_app_state))
+                }),
+            )?;
+        }
+
+        #[cfg(not(feature = "ui"))]
+        {
+            log::error!("UI feature is not enabled. Please enable the UI feature to run the application with a user interface or run in headless mode.");
+            std::process::exit(1);
+        }
     }
 
     Ok(())
