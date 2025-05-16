@@ -49,10 +49,11 @@ impl DemexHeadlessNode {
 
                 match packet {
                     DemexProtoControllerPacket::HeadlessInfoRequest => {
-                        let _ =
-                            proto.send_packet(&DemexProtoHeadlessNodePacket::HeadlessInfoResponse {
+                        let _ = proto.send_packet(
+                            &DemexProtoHeadlessNodePacket::HeadlessInfoResponse {
                                 version: VERSION_STR.to_owned(),
-                            });
+                            },
+                        );
                     }
                     DemexProtoControllerPacket::ShowFileUpdate => {
                         let _ = proto.send_packet(&DemexProtoHeadlessNodePacket::ShowFileRequest);
