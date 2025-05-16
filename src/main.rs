@@ -18,7 +18,7 @@ use std::{path::PathBuf, sync::Arc, time};
 
 use egui::{Style, Visuals};
 use gdtf::GdtfFile;
-use headless::DemexHeadless;
+use headless::{controller::DemexHeadlessConroller, node::DemexHeadlessNode};
 use itertools::Itertools;
 use parking_lot::RwLock;
 use show::{context::ShowContext, DemexShow};
@@ -234,8 +234,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(master_ip) = args.headless {
         log::info!("Running in headless mode, no UI will be shown");
-        DemexHeadless::new().start_headless_in_current_thread(master_ip)?;
+        DemexHeadlessNode::new().start_headless_in_current_thread(master_ip, context.clone())?;
     } else {
+        DemexHeadlessConroller::new().start_controller_thread(stats.clone(), context.clone());
+
         #[cfg(feature = "ui")]
         {
             let icon = Arc::new(load_icon());

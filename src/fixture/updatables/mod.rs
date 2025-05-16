@@ -25,13 +25,13 @@ pub mod executor;
 pub mod fader;
 pub mod runtime;
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub enum StompSource {
     Executor(u32),
     Fader(u32),
 }
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct UpdatableHandler {
     executors: HashMap<u32, Executor>,
     faders: HashMap<u32, DemexFader>,

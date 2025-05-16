@@ -12,6 +12,14 @@ use crate::{
 pub mod context;
 pub mod ui;
 
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+pub struct DemexNoUiShow {
+    pub preset_handler: PresetHandler,
+    pub updatable_handler: UpdatableHandler,
+    pub timing_handler: TimingHandler,
+    pub patch: SerializablePatch,
+}
+
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct DemexShow {
     pub preset_handler: PresetHandler,

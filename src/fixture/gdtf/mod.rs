@@ -17,6 +17,7 @@ use super::{
 use std::collections::HashMap;
 
 pub mod error;
+pub mod sync;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GdtfFixturePatch {

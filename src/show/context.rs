@@ -10,6 +10,9 @@ use crate::fixture::{
     updatables::UpdatableHandler,
 };
 
+use super::DemexNoUiShow;
+
+#[derive(Clone)]
 pub struct ShowContext {
     pub fixture_handler: Arc<RwLock<FixtureHandler>>,
     pub preset_handler: Arc<RwLock<PresetHandler>>,
@@ -19,6 +22,20 @@ pub struct ShowContext {
 }
 
 impl ShowContext {
+    pub fn update_from(&mut self, show: DemexNoUiShow, is_headless: bool) {
+        let patch = show
+            .patch
+            .into_patch(self.patch.read().fixture_types().to_vec());
+        let (fixtures, outputs) = patch.into_fixures_and_outputs();
+
+        *self.fixture_handler.write() =
+            FixtureHandler::new(fixtures, outputs, is_headless).unwrap();
+        *self.preset_handler.write() = show.preset_handler;
+        *self.updatable_handler.write() = show.updatable_handler;
+        *self.timing_handler.write() = show.timing_handler;
+        *self.patch.write() = patch;
+    }
+
     pub fn new(
         fixture_types: Vec<gdtf::fixture_type::FixtureType>,
         patch: SerializablePatch,

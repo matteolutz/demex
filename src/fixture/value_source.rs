@@ -66,7 +66,7 @@ pub trait FixtureChannelValueSourceTrait {
     ) -> Result<FixtureChannelValue3, FixtureError>;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FixtureChannelValueSource {
     Programmer,
     Executor { executor_id: u32 },

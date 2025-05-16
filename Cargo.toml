@@ -11,7 +11,7 @@ eframe = { features = [
     "default",
     "persistence",
 ], version = "0.31.1", optional = true }
-egui = { features = ["default", "serde"], version = "0.31.1", optional = true }
+egui = { features = ["default", "serde"], version = "0.31.1", optional = false }
 egui-probe = { version = "0.8.0", features = ["derive"], optional = true }
 egui_dock = { version = "0.16.0", optional = true }
 egui_extras = { features = [
@@ -50,7 +50,7 @@ default = ["ui"]
 ui = [
     "dep:catppuccin-egui",
     "dep:eframe",
-    "dep:egui",
+    # "dep:egui",
     "dep:egui-probe",
     "dep:egui_dock",
     "dep:egui_extras",

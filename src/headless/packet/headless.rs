@@ -7,16 +7,22 @@ use super::{
 use byteorder::{ReadBytesExt, WriteBytesExt};
 
 const HEADLESS_INFO_RESPONSE: u8 = 0x01;
+const SHOW_FILE_REQUEST: u8 = 0x02;
+const SYNC_REQUEST: u8 = 0x03;
 
 #[derive(Debug)]
 pub enum DemexProtoHeadlessPacket {
     HeadlessInfoResponse { version: String },
+    ShowFileRequest,
+    SyncRequest,
 }
 
 impl From<&DemexProtoHeadlessPacket> for u8 {
     fn from(value: &DemexProtoHeadlessPacket) -> Self {
         match value {
             DemexProtoHeadlessPacket::HeadlessInfoResponse { .. } => HEADLESS_INFO_RESPONSE,
+            DemexProtoHeadlessPacket::ShowFileRequest => SHOW_FILE_REQUEST,
+            DemexProtoHeadlessPacket::SyncRequest => SYNC_REQUEST,
         }
     }
 }
@@ -28,8 +34,10 @@ impl DemexProtoSerialize for DemexProtoHeadlessPacket {
 
         match self {
             Self::HeadlessInfoResponse { version } => {
-                bytes_written += demex_proto_write_string(buf, version)
+                bytes_written += demex_proto_write_string(buf, version)?
             }
+            Self::ShowFileRequest => {}
+            Self::SyncRequest => {}
         }
 
         Ok(bytes_written)
@@ -45,6 +53,8 @@ impl DemexProtoDeserialize for DemexProtoHeadlessPacket {
                 let version = demex_proto_read_string(buf)?;
                 Ok(DemexProtoHeadlessPacket::HeadlessInfoResponse { version })
             }
+            SHOW_FILE_REQUEST => Ok(DemexProtoHeadlessPacket::ShowFileRequest),
+            SYNC_REQUEST => Ok(DemexProtoHeadlessPacket::SyncRequest),
             _ => Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "Invalid DemexProtoControllerPacket type",

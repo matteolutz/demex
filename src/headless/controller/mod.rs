@@ -1,0 +1,128 @@
+use std::{net, sync::Arc, thread::JoinHandle};
+
+use parking_lot::RwLock;
+
+use crate::{
+    fixture::patch::SerializablePatch,
+    headless::sync::DemexProtoSync,
+    show::{context::ShowContext, DemexNoUiShow},
+    utils::{
+        thread::{self, DemexThreadStatsHandler},
+        version::VERSION_STR,
+    },
+};
+
+use super::{
+    packet::{controller::DemexProtoControllerPacket, headless::DemexProtoHeadlessPacket},
+    protocol::Protocol,
+    DEMEX_HEADLESS_TCP_PORT,
+};
+
+#[derive(Default, Debug, PartialEq, Eq)]
+enum DemexHeadlessNodeState {
+    #[default]
+    NotVerified,
+
+    Verified,
+}
+
+pub struct DemexHeadlessConroller {}
+
+impl DemexHeadlessConroller {
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn start_controller_thread(
+        &self,
+        stats: Arc<RwLock<DemexThreadStatsHandler>>,
+        show_context: ShowContext,
+    ) -> JoinHandle<()> {
+        thread::demex_simple_thread("demex-proto".to_string(), stats, move |_, _| {
+            let listener = net::TcpListener::bind(("0.0.0.0", DEMEX_HEADLESS_TCP_PORT)).unwrap();
+            log::debug!("Started listener");
+
+            for stream in listener.incoming() {
+                let show_context = show_context.clone();
+
+                std::thread::spawn(move || {
+                    let mut node_state = DemexHeadlessNodeState::default();
+
+                    let mut protocol = Protocol::with_stream(stream.unwrap()).unwrap();
+
+                    let _ = protocol.send_packet(&DemexProtoControllerPacket::HeadlessInfoRequest);
+
+                    loop {
+                        let packet = protocol.read_packet::<DemexProtoHeadlessPacket>();
+                        if let Ok(packet) = packet {
+                            log::debug!("Received demex proto packet: {:?}", packet);
+
+                            match packet {
+                                DemexProtoHeadlessPacket::HeadlessInfoResponse { version } => {
+                                    if version != VERSION_STR {
+                                        break;
+                                    }
+
+                                    let _ = protocol
+                                        .send_packet(&DemexProtoControllerPacket::ShowFileUpdate);
+                                    node_state = DemexHeadlessNodeState::Verified;
+                                }
+                                DemexProtoHeadlessPacket::ShowFileRequest => {
+                                    if node_state != DemexHeadlessNodeState::Verified {
+                                        break;
+                                    }
+
+                                    let show_file = DemexNoUiShow {
+                                        preset_handler: show_context.preset_handler.read().clone(),
+                                        updatable_handler: show_context
+                                            .updatable_handler
+                                            .read()
+                                            .clone(),
+                                        timing_handler: show_context.timing_handler.read().clone(),
+                                        patch: SerializablePatch::from_patch(
+                                            &show_context.patch.read(),
+                                        ),
+                                    };
+
+                                    let show_file_serialized =
+                                        serde_json::to_vec(&show_file).unwrap();
+
+                                    protocol
+                                        .send_packet(&DemexProtoControllerPacket::ShowFile {
+                                            show_file: show_file_serialized,
+                                        })
+                                        .unwrap();
+
+                                    protocol
+                                        .send_packet(&DemexProtoControllerPacket::Sync {
+                                            sync: serde_json::to_vec(&DemexProtoSync::get(
+                                                &show_context,
+                                            ))
+                                            .unwrap(),
+                                        })
+                                        .unwrap();
+                                }
+                                DemexProtoHeadlessPacket::SyncRequest => {
+                                    if node_state != DemexHeadlessNodeState::Verified {
+                                        break;
+                                    }
+
+                                    protocol
+                                        .send_packet(&DemexProtoControllerPacket::Sync {
+                                            sync: serde_json::to_vec(&DemexProtoSync::get(
+                                                &show_context,
+                                            ))
+                                            .unwrap(),
+                                        })
+                                        .unwrap();
+                                }
+                            }
+                        }
+                    }
+
+                    let _ = protocol.shutdown(net::Shutdown::Both);
+                });
+            }
+        })
+    }
+}

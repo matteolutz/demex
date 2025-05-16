@@ -12,6 +12,7 @@ use super::{
 };
 
 pub mod error;
+pub mod sync;
 
 pub type FixtureTypeList = [gdtf::fixture_type::FixtureType];
 

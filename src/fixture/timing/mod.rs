@@ -14,7 +14,7 @@ pub mod speed_master;
 pub mod tap;
 pub mod timecode;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TimingHandler {
     speed_master_values: HashMap<u32, SpeedMasterValue>,
 

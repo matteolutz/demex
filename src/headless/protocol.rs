@@ -1,6 +1,6 @@
 use std::{
     io::{self, Write},
-    net::{SocketAddr, TcpStream},
+    net::{Shutdown, SocketAddr, TcpStream},
 };
 
 use super::packet::{DemexProtoDeserialize, DemexProtoSerialize};
@@ -42,5 +42,9 @@ impl Protocol {
     ///       so only use when a message is expected to arrive
     pub fn read_packet<T: DemexProtoDeserialize>(&mut self) -> io::Result<T::Output> {
         T::deserialize(&mut self.reader)
+    }
+
+    pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
+        self.stream.shutdown(how)
     }
 }
