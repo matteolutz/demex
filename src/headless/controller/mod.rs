@@ -13,7 +13,7 @@ use crate::{
 };
 
 use super::{
-    packet::{controller::DemexProtoControllerPacket, headless::DemexProtoHeadlessPacket},
+    packet::{controller::DemexProtoControllerPacket, node::DemexProtoHeadlessNodePacket},
     protocol::Protocol,
     DEMEX_HEADLESS_TCP_PORT,
 };
@@ -53,12 +53,12 @@ impl DemexHeadlessConroller {
                     let _ = protocol.send_packet(&DemexProtoControllerPacket::HeadlessInfoRequest);
 
                     loop {
-                        let packet = protocol.read_packet::<DemexProtoHeadlessPacket>();
+                        let packet = protocol.read_packet::<DemexProtoHeadlessNodePacket>();
                         if let Ok(packet) = packet {
                             log::debug!("Received demex proto packet: {:?}", packet);
 
                             match packet {
-                                DemexProtoHeadlessPacket::HeadlessInfoResponse { version } => {
+                                DemexProtoHeadlessNodePacket::HeadlessInfoResponse { version } => {
                                     if version != VERSION_STR {
                                         break;
                                     }
@@ -67,7 +67,7 @@ impl DemexHeadlessConroller {
                                         .send_packet(&DemexProtoControllerPacket::ShowFileUpdate);
                                     node_state = DemexHeadlessNodeState::Verified;
                                 }
-                                DemexProtoHeadlessPacket::ShowFileRequest => {
+                                DemexProtoHeadlessNodePacket::ShowFileRequest => {
                                     if node_state != DemexHeadlessNodeState::Verified {
                                         break;
                                     }
@@ -102,7 +102,7 @@ impl DemexHeadlessConroller {
                                         })
                                         .unwrap();
                                 }
-                                DemexProtoHeadlessPacket::SyncRequest => {
+                                DemexProtoHeadlessNodePacket::SyncRequest => {
                                     if node_state != DemexHeadlessNodeState::Verified {
                                         break;
                                     }

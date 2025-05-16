@@ -2,7 +2,7 @@ use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{self, Read, Write};
 
 pub mod controller;
-pub mod headless;
+pub mod node;
 
 pub fn demex_proto_write_string(writer: &mut impl Write, str: &str) -> io::Result<usize> {
     let str_bytes = str.as_bytes();

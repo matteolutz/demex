@@ -2,7 +2,7 @@ use std::{net, time};
 
 use crate::{
     headless::{
-        packet::{controller::DemexProtoControllerPacket, headless::DemexProtoHeadlessPacket},
+        packet::{controller::DemexProtoControllerPacket, node::DemexProtoHeadlessNodePacket},
         protocol::Protocol,
         sync::DemexProtoSync,
         DEMEX_HEADLESS_TCP_PORT,
@@ -37,7 +37,7 @@ impl DemexHeadlessNode {
 
         loop {
             if last_sync.is_some_and(|last_sync| last_sync.elapsed().as_secs() > 5) {
-                let _ = proto.send_packet(&DemexProtoHeadlessPacket::SyncRequest);
+                let _ = proto.send_packet(&DemexProtoHeadlessNodePacket::SyncRequest);
                 // prevent request sync two times, if other packets are still to be read
                 last_sync = None;
             }
@@ -50,12 +50,12 @@ impl DemexHeadlessNode {
                 match packet {
                     DemexProtoControllerPacket::HeadlessInfoRequest => {
                         let _ =
-                            proto.send_packet(&DemexProtoHeadlessPacket::HeadlessInfoResponse {
+                            proto.send_packet(&DemexProtoHeadlessNodePacket::HeadlessInfoResponse {
                                 version: VERSION_STR.to_owned(),
                             });
                     }
                     DemexProtoControllerPacket::ShowFileUpdate => {
-                        let _ = proto.send_packet(&DemexProtoHeadlessPacket::ShowFileRequest);
+                        let _ = proto.send_packet(&DemexProtoHeadlessNodePacket::ShowFileRequest);
                     }
                     DemexProtoControllerPacket::ShowFile { show_file } => {
                         if let Ok(show) = serde_json::from_slice::<DemexNoUiShow>(&show_file) {
