@@ -21,9 +21,9 @@ const ACTION: u8 = 0x05;
 pub enum DemexProtoControllerPacket {
     HeadlessInfoRequest,
     ShowFileUpdate,
-    ShowFile { show_file: DemexNoUiShow },
-    Sync { sync: DemexProtoSync },
-    Action { action: DeferredAction },
+    ShowFile { show_file: Box<DemexNoUiShow> },
+    Sync { sync: Box<DemexProtoSync> },
+    Action { action: Box<DeferredAction> },
 }
 
 impl From<&DemexProtoControllerPacket> for u8 {

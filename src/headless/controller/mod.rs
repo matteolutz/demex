@@ -72,7 +72,7 @@ impl DemexHeadlessConroller {
                                         break;
                                     }
 
-                                    let show_file = DemexNoUiShow {
+                                    let show_file = Box::new(DemexNoUiShow {
                                         preset_handler: show_context.preset_handler.read().clone(),
                                         updatable_handler: show_context
                                             .updatable_handler
@@ -82,7 +82,7 @@ impl DemexHeadlessConroller {
                                         patch: SerializablePatch::from_patch(
                                             &show_context.patch.read(),
                                         ),
-                                    };
+                                    });
 
                                     protocol
                                         .send_packet(&DemexProtoControllerPacket::ShowFile {
@@ -92,7 +92,7 @@ impl DemexHeadlessConroller {
 
                                     protocol
                                         .send_packet(&DemexProtoControllerPacket::Sync {
-                                            sync: DemexProtoSync::get(&show_context),
+                                            sync: Box::new(DemexProtoSync::get(&show_context)),
                                         })
                                         .unwrap();
                                 }
@@ -103,7 +103,7 @@ impl DemexHeadlessConroller {
 
                                     protocol
                                         .send_packet(&DemexProtoControllerPacket::Sync {
-                                            sync: DemexProtoSync::get(&show_context),
+                                            sync: Box::new(DemexProtoSync::get(&show_context)),
                                         })
                                         .unwrap();
                                 }

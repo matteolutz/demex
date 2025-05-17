@@ -44,24 +44,25 @@ impl Effect2WaveControlPoint {
         self.y
     }
 
-    pub fn pos(&self) -> egui::Pos2 {
-        egui::pos2(self.x, self.y)
+    pub fn pos(&self) -> emath::Pos2 {
+        emath::pos2(self.x, self.y)
     }
 
-    pub fn vec(&self) -> egui::Vec2 {
-        egui::vec2(self.x, self.y)
+    pub fn vec(&self) -> emath::Vec2 {
+        emath::vec2(self.x, self.y)
     }
 
     pub fn wave_type(&self) -> &Effect2WaveControlPointWaveType {
         &self.wave_type
     }
 
+    #[cfg(feature = "ui")]
     pub fn draw_from_prev_point(
         &self,
         prev_point: &Effect2WaveControlPoint,
         painter: &egui::Painter,
         color: ecolor::Color32,
-        project_point: impl Fn(egui::Pos2) -> egui::Pos2,
+        project_point: impl Fn(emath::Pos2) -> emath::Pos2,
     ) {
         match self.wave_type {
             Effect2WaveControlPointWaveType::Linear => {

@@ -1,4 +1,4 @@
-use crate::{fixture::selection::FixtureSelection, ui::window::edit::DemexEditWindow};
+use crate::fixture::selection::FixtureSelection;
 
 #[derive(Debug, Clone, Default)]
 pub enum ActionRunResult {
@@ -8,7 +8,9 @@ pub enum ActionRunResult {
     Info(String),
     InfoWithLink(String, String),
     Warn(String),
-    EditWindow(DemexEditWindow),
+
+    #[cfg(feature = "ui")]
+    EditWindow(crate::ui::window::edit::DemexEditWindow),
 
     UpdateSelectedFixtures(Option<FixtureSelection>),
 }

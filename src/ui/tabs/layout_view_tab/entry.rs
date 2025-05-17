@@ -10,7 +10,7 @@ impl FixtureLayoutEntry {
         &self,
         projection: &LayoutProjection,
         rect: &egui::Rect,
-    ) -> (egui::Pos2, egui::Vec2) {
+    ) -> (emath::Pos2, emath::Vec2) {
         let size = projection.scale(self.size());
         let pos = projection.project(self.position(), rect);
 
@@ -23,7 +23,7 @@ impl FixtureLayoutEntry {
         screen: &egui::Rect,
         painter: &egui::Painter,
         fixture_color: ecolor::Color32,
-        fixture_direction: Option<egui::Vec2>,
+        fixture_direction: Option<emath::Vec2>,
         is_selected: bool,
         is_about_to_selected: bool,
         label: impl ToString,
@@ -53,8 +53,8 @@ impl FixtureLayoutEntry {
 
                 painter.rect_filled(
                     egui::Rect::from_min_size(
-                        top_left + egui::vec2(stroke_width, stroke_width),
-                        size - egui::vec2(2.0 * stroke_width, 2.0 * stroke_width),
+                        top_left + emath::vec2(stroke_width, stroke_width),
+                        size - emath::vec2(2.0 * stroke_width, 2.0 * stroke_width),
                     ),
                     0.0,
                     fixture_color,
@@ -95,9 +95,9 @@ impl FixtureLayoutEntry {
                 let side_length = triangle_height * (2.0 / f32::sqrt(3.0));
 
                 let points_outer = vec![
-                    pos + egui::vec2(-side_length / 2.0, triangle_height / 2.0),
-                    pos + egui::vec2(side_length / 2.0, triangle_height / 2.0),
-                    pos + egui::vec2(0.0, -triangle_height / 2.0),
+                    pos + emath::vec2(-side_length / 2.0, triangle_height / 2.0),
+                    pos + emath::vec2(side_length / 2.0, triangle_height / 2.0),
+                    pos + emath::vec2(0.0, -triangle_height / 2.0),
                 ];
 
                 painter.add(egui::epaint::PathShape::convex_polygon(
@@ -114,7 +114,7 @@ impl FixtureLayoutEntry {
         }
 
         painter.text(
-            pos + egui::vec2(0.0, size.y + 2.0),
+            pos + emath::vec2(0.0, size.y + 2.0),
             egui::Align2::CENTER_TOP,
             label,
             egui::FontId::proportional(2.0 * projection.zoom()),

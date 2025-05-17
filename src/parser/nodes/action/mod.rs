@@ -29,7 +29,6 @@ use crate::{
         timing::TimingHandler, updatables::UpdatableHandler,
     },
     input::{error::DemexInputDeviceError, DemexInputDeviceHandler},
-    ui::{constants::INFO_TEXT, window::edit::DemexEditWindow},
 };
 
 use self::{error::ActionRunError, result::ActionRunResult};
@@ -41,6 +40,7 @@ use super::{
 
 pub mod error;
 pub mod functions;
+pub mod queue;
 pub mod result;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -348,6 +348,7 @@ impl Action {
                 patch,
             ),
 
+            #[cfg(feature = "ui")]
             Self::Edit(object) => object
                 .clone()
                 .edit_window()
@@ -370,12 +371,14 @@ impl Action {
             Self::Nuzul => Ok(ActionRunResult::Info("Going down...".to_owned())),
             Self::Sueud => Ok(ActionRunResult::Info("Going up...".to_owned())),
 
-            Self::Config(config_type) => Ok(ActionRunResult::EditWindow(DemexEditWindow::Config(
-                *config_type,
-            ))),
+            #[cfg(feature = "ui")]
+            Self::Config(config_type) => Ok(ActionRunResult::EditWindow(
+                crate::ui::window::edit::DemexEditWindow::Config(*config_type),
+            )),
 
+            #[cfg(feature = "ui")]
             Self::MatteoLutz => Ok(ActionRunResult::InfoWithLink(
-                INFO_TEXT.to_owned(),
+                crate::ui::constants::INFO_TEXT.to_owned(),
                 "https://matteolutz.de".to_owned(),
             )),
 

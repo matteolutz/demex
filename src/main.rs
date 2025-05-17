@@ -62,42 +62,6 @@ const TEST_UI_THEME: DemexUiTheme = DemexUiTheme::Default;
 
 const APP_ID: &str = "demex";
 
-fn load_fonts() -> egui::FontDefinitions {
-    let mut fonts = egui::FontDefinitions::default();
-
-    fonts.font_data.insert(
-        "open-sans".to_string(),
-        Arc::new(egui::FontData::from_static(include_bytes!(
-            "../assets/fonts/OpenSans-Regular.ttf"
-        ))),
-    );
-    fonts.font_data.insert(
-        "jetbrains-mono".to_string(),
-        Arc::new(egui::FontData::from_static(include_bytes!(
-            "../assets/fonts/JetBrainsMono-Regular.ttf"
-        ))),
-    );
-
-    fonts
-        .families
-        .get_mut(&egui::FontFamily::Proportional)
-        .unwrap()
-        .insert(0, "open-sans".to_string());
-
-    fonts
-        .families
-        .get_mut(&egui::FontFamily::Monospace)
-        .unwrap()
-        .insert(0, "jetbrains-mono".to_string());
-
-    fonts.families.insert(
-        egui::FontFamily::Name("Timecode".into()),
-        vec!["timecode".to_string()],
-    );
-
-    fonts
-}
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::var("RUST_LOG").is_err() {
         std::env::set_var("RUST_LOG", "debug");
@@ -273,13 +237,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     };
 
                     creation_context.egui_ctx.set_style(style);
-                    creation_context.egui_ctx.set_fonts(load_fonts());
+                    creation_context
+                        .egui_ctx
+                        .set_fonts(ui::utils::fonts::load_fonts());
 
                     TEST_UI_THEME.apply(&creation_context.egui_ctx);
 
                     if args.touchscreen_mode {
                         creation_context.egui_ctx.style_mut(|style| {
-                            style.spacing.button_padding = egui::vec2(10.0, 10.0);
+                            style.spacing.button_padding = emath::vec2(10.0, 10.0);
 
                             style.spacing.indent = 18.0 * 2.0;
                             style.spacing.icon_width = 14.0 * 2.0;
@@ -287,7 +253,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                             // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
                             //
-                            style.spacing.interact_size = egui::vec2(40.0, 18.0) * 1.5;
+                            style.spacing.interact_size = emath::vec2(40.0, 18.0) * 1.5;
                             style.spacing.slider_rail_height = 8.0 * 2.0;
                             style.spacing.slider_width = 100.0 * 1.5;
                         });

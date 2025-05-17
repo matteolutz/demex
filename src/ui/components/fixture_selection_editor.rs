@@ -18,14 +18,14 @@ pub fn fixture_selection_editor(
         ui,
         |left_ui, right_ui| {
             egui::ScrollArea::both()
-                .auto_shrink(egui::Vec2b::FALSE)
+                .auto_shrink(emath::Vec2b::FALSE)
                 .show(left_ui, |ui| {
                     ui.horizontal(|ui| {
-                        ui.style_mut().spacing.item_spacing = egui::vec2(10.0, 10.0);
+                        ui.style_mut().spacing.item_spacing = emath::vec2(10.0, 10.0);
 
                         for offset_idx in 0..fixture_selection.num_offsets() {
                             ui.vertical(|ui| {
-                                ui.allocate_ui(egui::vec2(ELEMENT_SIZE, 10.0), |ui| {
+                                ui.allocate_ui(emath::vec2(ELEMENT_SIZE, 10.0), |ui| {
                                     ui.centered_and_justified(|ui| {
                                         ui.label(offset_idx.to_string());
                                     });
@@ -38,7 +38,7 @@ pub fn fixture_selection_editor(
 
                                     // let _ = ui.button(format!("{}", fixture_id));
                                     let (response, painter) = ui.allocate_painter(
-                                        egui::vec2(ELEMENT_SIZE, ELEMENT_SIZE),
+                                        emath::vec2(ELEMENT_SIZE, ELEMENT_SIZE),
                                         egui::Sense::hover(),
                                     );
 

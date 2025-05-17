@@ -11,7 +11,7 @@ pub fn preset_grid_row_ui<R>(
 ) -> egui::InnerResponse<egui::scroll_area::ScrollAreaOutput<R>> {
     ui.push_id(name, |ui| {
         ui.horizontal(|ui| {
-            ui.style_mut().spacing.item_spacing = egui::vec2(1.0, 0.0);
+            ui.style_mut().spacing.item_spacing = emath::vec2(1.0, 0.0);
 
             let (response, painter) =
                 ui.allocate_painter(PRESET_GRID_ELEMENT_SIZE.into(), egui::Sense::empty());

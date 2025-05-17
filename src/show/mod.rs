@@ -12,6 +12,8 @@ use crate::{
 };
 
 pub mod context;
+
+#[cfg(feature = "ui")]
 pub mod ui;
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]

@@ -87,7 +87,7 @@ impl<'a> LayoutViewComponent<'a> {
             &painter,
             state
                 .layout_projection
-                .project(&egui::Pos2::ZERO, &response.rect),
+                .project(&emath::Pos2::ZERO, &response.rect),
             2.0 * state.layout_projection.zoom(),
             ecolor::Color32::YELLOW,
             0.25 * state.layout_projection.zoom(),
@@ -140,7 +140,7 @@ impl<'a> LayoutViewComponent<'a> {
 
             /*
 
-            let position: Option<egui::Vec2> = fixture
+            let position: Option<emath::Vec2> = fixture
                 .feature_value(
                     FixtureFeatureType::PositionPanTilt,
                     &preset_handler,
@@ -152,7 +152,7 @@ impl<'a> LayoutViewComponent<'a> {
                     FixtureFeatureValue::PositionPanTilt { pan, tilt, .. } => Some((pan, tilt)),
                     _ => None,
                 })
-                .map(Into::<egui::Vec2>::into);*/
+                .map(Into::<emath::Vec2>::into);*/
 
             fixture_layout_entry.draw(
                 &state.layout_projection,
@@ -200,10 +200,10 @@ impl<'a> LayoutViewComponent<'a> {
                     let drag_end_world_point =
                         state.layout_projection.unproject(&current_mouse_pos, &rect);
 
-                    let drag_world_offset: egui::Vec2 =
+                    let drag_world_offset: emath::Vec2 =
                         drag_end_world_point - drag_start_world_point;
 
-                    let world_offset: egui::Vec2 =
+                    let world_offset: emath::Vec2 =
                         state.drag_context.as_ref().unwrap().projection_center + drag_world_offset;
 
                     *state.layout_projection.center_mut() = world_offset;

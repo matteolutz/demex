@@ -145,7 +145,7 @@ impl PresetGridButton {
                     painter.rect_filled(
                         egui::Rect::from_min_size(
                             response.rect.min,
-                            egui::vec2(response.rect.width(), 4.0),
+                            emath::vec2(response.rect.width(), 4.0),
                         ),
                         0.0,
                         top_bar_color,
@@ -163,8 +163,8 @@ impl PresetGridButton {
                 if let Some(display_color) = display_color {
                     painter.rect_filled(
                         egui::Rect::from_center_size(
-                            response.rect.center_bottom() - egui::vec2(0.0, 10.0),
-                            egui::vec2(response.rect.width() / 2.0, 10.0),
+                            response.rect.center_bottom() - emath::vec2(0.0, 10.0),
+                            emath::vec2(response.rect.width() / 2.0, 10.0),
                         ),
                         2.0,
                         display_color,
@@ -260,7 +260,7 @@ pub fn preset_grid_button_ui(
                 painter.rect_filled(
                     egui::Rect::from_min_size(
                         response.rect.min,
-                        egui::vec2(response.rect.width(), 4.0),
+                        emath::vec2(response.rect.width(), 4.0),
                     ),
                     0.0,
                     top_bar_color,
@@ -278,8 +278,8 @@ pub fn preset_grid_button_ui(
             if let Some(display_color) = display_color {
                 painter.rect_filled(
                     egui::Rect::from_center_size(
-                        response.rect.center_bottom() - egui::vec2(0.0, 10.0),
-                        egui::vec2(response.rect.width() / 2.0, 10.0),
+                        response.rect.center_bottom() - emath::vec2(0.0, 10.0),
+                        emath::vec2(response.rect.width() / 2.0, 10.0),
                     ),
                     2.0,
                     display_color,

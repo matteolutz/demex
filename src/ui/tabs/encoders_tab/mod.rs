@@ -66,7 +66,7 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
     ui.separator();
 
     egui::ScrollArea::horizontal()
-        .auto_shrink(egui::Vec2b::FALSE)
+        .auto_shrink(emath::Vec2b::FALSE)
         .show(ui, |ui| {
             ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                 let mut encoder_size = ui.available_size();

@@ -17,7 +17,7 @@ use crate::{
     parser::{
         error::ParseError,
         nodes::{
-            action::{result::ActionRunResult, Action, DeferredAction},
+            action::{queue::ActionQueue, result::ActionRunResult, Action, DeferredAction},
             fixture_selector::FixtureSelectorContext,
         },
         Parser2,
@@ -28,7 +28,6 @@ use crate::{
 };
 
 use super::{
-    action_queue::ActionQueue,
     dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
     tabs::encoders_tab::EncodersTabState,
     window::{DemexWindow, DemexWindowHandler},

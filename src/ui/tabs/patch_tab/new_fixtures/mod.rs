@@ -48,7 +48,7 @@ impl<'a> PatchNewFixturesComponent<'a> {
             .column(egui_extras::Column::remainder())
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
             .striped(true)
-            .auto_shrink(egui::Vec2b::new(false, true))
+            .auto_shrink(emath::Vec2b::new(false, true))
             .body(|mut ui| {
                 ui.row(70.0, |mut ui| {
                     ui.col(|ui| {

@@ -15,10 +15,9 @@ use crate::{
     },
     lexer::token::Token,
     parser::nodes::{
-        action::Action,
+        action::{queue::ActionQueue, Action},
         fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
     },
-    ui::action_queue::ActionQueue,
 };
 
 use super::error::DemexInputDeviceError;

@@ -59,7 +59,7 @@ impl DemexHeadlessNode {
                     }
                     DemexProtoControllerPacket::ShowFile { show_file } => {
                         log::debug!("Received show file, updating..");
-                        show_context.update_from(show_file, true);
+                        show_context.update_from(*show_file, true);
                     }
                     DemexProtoControllerPacket::Sync { sync } => {
                         log::debug!("Received sync, applying..");

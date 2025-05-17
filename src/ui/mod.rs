@@ -20,7 +20,6 @@ use crate::{
     utils::version::VERSION_STR,
 };
 
-pub mod action_queue;
 pub mod command;
 pub mod components;
 pub mod constants;
@@ -40,8 +39,8 @@ const UI_THREAD_NAME: &str = "demex-ui";
 
 #[derive(Default, Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct DetachedTabConfigPosSize {
-    pos: egui::Pos2,
-    size: egui::Vec2,
+    pos: emath::Pos2,
+    size: emath::Vec2,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]

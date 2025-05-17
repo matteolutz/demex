@@ -57,16 +57,16 @@ impl QuickMenuActionPosition {
         }
     }
 
-    pub fn offset(&self) -> egui::Vec2 {
+    pub fn offset(&self) -> emath::Vec2 {
         match self {
-            Self::TopLeft => egui::vec2(-1.0, -1.0),
-            Self::TopRight => egui::vec2(1.0, -1.0),
-            Self::BottomLeft => egui::vec2(-1.0, 1.0),
-            Self::BottomRight => egui::vec2(1.0, 1.0),
-            Self::TopCenter => egui::vec2(0.0, -1.0),
-            Self::BottomCenter => egui::vec2(0.0, 1.0),
-            Self::LeftCenter => egui::vec2(-1.0, 0.0),
-            Self::RightCenter => egui::vec2(1.0, 0.0),
+            Self::TopLeft => emath::vec2(-1.0, -1.0),
+            Self::TopRight => emath::vec2(1.0, -1.0),
+            Self::BottomLeft => emath::vec2(-1.0, 1.0),
+            Self::BottomRight => emath::vec2(1.0, 1.0),
+            Self::TopCenter => emath::vec2(0.0, -1.0),
+            Self::BottomCenter => emath::vec2(0.0, 1.0),
+            Self::LeftCenter => emath::vec2(-1.0, 0.0),
+            Self::RightCenter => emath::vec2(1.0, 0.0),
         }
     }
 
@@ -193,39 +193,39 @@ impl<T: Copy> QuickMenuActions<T> {
 pub type QuickMenuResponse<T> = Option<T>;
 
 pub struct QuickMenu<'a, T: Copy> {
-    pivot: egui::Pos2,
+    pivot: emath::Pos2,
     actions: &'a QuickMenuActions<T>,
 }
 
 impl<'a, T: Copy> QuickMenu<'a, T> {
-    pub fn new(pivot: egui::Pos2, actions: &'a QuickMenuActions<T>) -> Self {
+    pub fn new(pivot: emath::Pos2, actions: &'a QuickMenuActions<T>) -> Self {
         Self { pivot, actions }
     }
 
     fn action_rect(&self, position: QuickMenuActionPosition) -> egui::Rect {
         egui::Rect::from_center_size(
-            self.pivot + (position.offset() * egui::Vec2::from(CENTER_OFFSET)),
-            egui::vec2(ACTION_SIZE, ACTION_SIZE),
+            self.pivot + (position.offset() * emath::Vec2::from(CENTER_OFFSET)),
+            emath::vec2(ACTION_SIZE, ACTION_SIZE),
         )
     }
 
     #[allow(dead_code)]
     fn bounding_rect(&self, padding: f32) -> egui::Rect {
         let half_size = ACTION_SIZE / 2.0;
-        let padding = egui::vec2(padding, padding);
+        let padding = emath::vec2(padding, padding);
 
         let min = self.pivot
-            - egui::vec2(CENTER_OFFSET.0 + half_size, CENTER_OFFSET.1 + half_size)
+            - emath::vec2(CENTER_OFFSET.0 + half_size, CENTER_OFFSET.1 + half_size)
             - padding;
 
         let max = self.pivot
-            + egui::vec2(CENTER_OFFSET.0 + half_size, CENTER_OFFSET.1 + half_size)
+            + emath::vec2(CENTER_OFFSET.0 + half_size, CENTER_OFFSET.1 + half_size)
             + padding;
 
         egui::Rect::from_min_max(min, max)
     }
 
-    pub fn interact(&self, pos: egui::Pos2) -> QuickMenuResponse<T> {
+    pub fn interact(&self, pos: emath::Pos2) -> QuickMenuResponse<T> {
         QuickMenuActionPosition::iter()
             .find(|&position| self.action_rect(position).contains(pos))
             .and_then(|position| self.actions.action(position).map(|action| action.id))

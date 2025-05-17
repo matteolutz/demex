@@ -25,11 +25,11 @@ impl DemexIcon {
         }
     }
 
-    pub fn image(&self, size: egui::Vec2) -> egui::Image {
+    pub fn image(&self, size: emath::Vec2) -> egui::Image {
         egui::Image::new(self.image_source()).fit_to_exact_size(size)
     }
 
     pub fn button_image(&self) -> egui::Image {
-        self.image(egui::vec2(20.0, 20.0))
+        self.image(emath::vec2(20.0, 20.0))
     }
 }

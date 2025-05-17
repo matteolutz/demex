@@ -10,7 +10,7 @@ fn storage_dir(app_id: &str, path: &str) -> PathBuf {
     }
     #[cfg(not(feature = "ui"))]
     {
-        dir = std::env::current_dir().unwrap().join(path);
+        dir = std::env::current_dir().unwrap().join("demex").join(path);
     }
 
     if !dir.exists() {

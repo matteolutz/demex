@@ -53,7 +53,7 @@ impl<Tab: Display + Eq + Copy> TabViewer<Tab> {
         let cell_height = 40.0;
 
         let mut cell_rect =
-            egui::Rect::from_min_size(available_rect.min, egui::vec2(cell_width, cell_height));
+            egui::Rect::from_min_size(available_rect.min, emath::vec2(cell_width, cell_height));
 
         for (i, tab) in self.tabs.iter().enumerate() {
             let response = ui.allocate_rect(cell_rect, egui::Sense::click());

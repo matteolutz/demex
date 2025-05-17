@@ -32,7 +32,7 @@ impl<'a> WaveEditor<'a> {
             .unwrap_or_default();
 
         let (response, painter) =
-            ui.allocate_painter(egui::vec2(3.0, 1.0) * 300.0, egui::Sense::click_and_drag());
+            ui.allocate_painter(emath::vec2(3.0, 1.0) * 300.0, egui::Sense::click_and_drag());
 
         let grid_rect = response.rect.shrink(20.0);
 
@@ -47,8 +47,8 @@ impl<'a> WaveEditor<'a> {
         let horizontal_offset = grid_rect.height() / (num_horizontal_lines + 1) as f32;
 
         for i in 1..=num_horizontal_lines {
-            let from = grid_rect.left_top() + egui::vec2(0.0, i as f32 * horizontal_offset);
-            let to = from + egui::vec2(grid_rect.width(), 0.0);
+            let from = grid_rect.left_top() + emath::vec2(0.0, i as f32 * horizontal_offset);
+            let to = from + emath::vec2(grid_rect.width(), 0.0);
             painter.line(
                 vec![from, to],
                 egui::epaint::PathStroke::new(1.0, ecolor::Color32::WHITE.gamma_multiply(0.5)),
@@ -59,8 +59,8 @@ impl<'a> WaveEditor<'a> {
         let vertical_offset = grid_rect.width() / (num_vertical_lines + 1) as f32;
 
         for i in 1..=num_vertical_lines {
-            let from = grid_rect.left_top() + egui::vec2(i as f32 * vertical_offset, 0.0);
-            let to = from + egui::vec2(0.0, grid_rect.height());
+            let from = grid_rect.left_top() + emath::vec2(i as f32 * vertical_offset, 0.0);
+            let to = from + emath::vec2(0.0, grid_rect.height());
             painter.line(
                 vec![from, to],
                 egui::epaint::PathStroke::new(1.0, ecolor::Color32::WHITE.gamma_multiply(0.5)),
@@ -70,7 +70,7 @@ impl<'a> WaveEditor<'a> {
         for (idx, control_point) in self.wave.control_points().iter().enumerate() {
             painter.circle_filled(
                 grid_rect.left_bottom()
-                    + (control_point.vec() * egui::vec2(grid_rect.width(), -grid_rect.height())),
+                    + (control_point.vec() * emath::vec2(grid_rect.width(), -grid_rect.height())),
                 5.0,
                 ecolor::Color32::BLUE,
             );
@@ -82,7 +82,7 @@ impl<'a> WaveEditor<'a> {
                 painter.circle_stroke(
                     grid_rect.left_bottom()
                         + (control_point.vec()
-                            * egui::vec2(grid_rect.width(), -grid_rect.height())),
+                            * emath::vec2(grid_rect.width(), -grid_rect.height())),
                     8.0,
                     (2.0, ecolor::Color32::GREEN),
                 );
@@ -99,7 +99,7 @@ impl<'a> WaveEditor<'a> {
                 vec![
                     grid_rect.left_bottom(),
                     grid_rect.left_bottom()
-                        + (first.vec() * egui::vec2(grid_rect.width(), -grid_rect.height())),
+                        + (first.vec() * emath::vec2(grid_rect.width(), -grid_rect.height())),
                 ],
                 (2.0, ecolor::Color32::BLUE),
             );
@@ -114,7 +114,7 @@ impl<'a> WaveEditor<'a> {
             painter.line(
                 vec![
                     grid_rect.left_bottom()
-                        + (last.vec() * egui::vec2(grid_rect.width(), -grid_rect.height())),
+                        + (last.vec() * emath::vec2(grid_rect.width(), -grid_rect.height())),
                     grid_rect.right_bottom(),
                 ],
                 (2.0, ecolor::Color32::BLUE),
@@ -137,7 +137,7 @@ impl<'a> WaveEditor<'a> {
         {
             b.draw_from_prev_point(a, &painter, ecolor::Color32::BLUE, |point| {
                 grid_rect.left_bottom()
-                    + (point.to_vec2() * egui::vec2(grid_rect.width(), -grid_rect.height()))
+                    + (point.to_vec2() * emath::vec2(grid_rect.width(), -grid_rect.height()))
             });
         }
 
@@ -158,7 +158,7 @@ impl<'a> WaveEditor<'a> {
                     interact_pos,
                     20.0,
                     grid_rect.left_bottom()
-                        + (point.vec() * egui::vec2(grid_rect.width(), -grid_rect.height())),
+                        + (point.vec() * emath::vec2(grid_rect.width(), -grid_rect.height())),
                 )
             });
         }
@@ -180,7 +180,7 @@ impl<'a> WaveEditor<'a> {
                             20.0,
                             grid_rect.left_bottom()
                                 + (point.vec()
-                                    * egui::vec2(grid_rect.width(), -grid_rect.height())),
+                                    * emath::vec2(grid_rect.width(), -grid_rect.height())),
                         )
                     });
             }

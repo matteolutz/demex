@@ -48,7 +48,7 @@ pub fn edit_effect_ui(
                         .show(ui);
 
                         egui::ScrollArea::vertical()
-                            .auto_shrink(egui::Vec2b::new(false, true))
+                            .auto_shrink(emath::Vec2b::new(false, true))
                             .max_width(ui.available_width())
                             .max_height(300.0)
                             .show(ui, |ui| {

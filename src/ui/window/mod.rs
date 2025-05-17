@@ -146,7 +146,7 @@ impl DemexWindow {
             window.fixed_size(ctx.screen_rect().size())
         } else {
             let screen_rect = ctx.screen_rect();
-            let shrunk_rect = screen_rect.shrink2(egui::vec2(
+            let shrunk_rect = screen_rect.shrink2(emath::vec2(
                 screen_rect.width() * 0.25,
                 screen_rect.height() * 0.25,
             ));
