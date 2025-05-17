@@ -1,4 +1,3 @@
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
@@ -8,7 +7,8 @@ use crate::fixture::{
 
 use super::error::DemexInputDeviceError;
 
-#[derive(Debug, Serialize, Deserialize, EguiProbe, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum DemexInputFader {
     Fader {
         fader_id: u32,

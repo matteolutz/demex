@@ -8,7 +8,8 @@ use crate::{
         timing::TimingHandler, updatables::UpdatableHandler,
     },
     lexer::token::Token,
-    parser::nodes::{action::DeferredAction, fixture_selector::FixtureSelectorContext},
+    parser::nodes::fixture_selector::FixtureSelectorContext,
+    ui::action_queue::ActionQueue,
 };
 
 pub mod button;
@@ -66,7 +67,7 @@ impl DemexInputDeviceHandler {
         timing_handler: &mut TimingHandler,
         patch: &Patch,
         fixture_selector_context: FixtureSelectorContext,
-        macro_exec_cue: &mut Vec<DeferredAction>,
+        macro_exec_cue: &mut ActionQueue,
         global_fixture_selection: &mut Option<FixtureSelection>,
         command_input: &mut Vec<Token>,
     ) -> Result<(), DemexInputDeviceError> {

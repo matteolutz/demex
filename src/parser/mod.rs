@@ -13,7 +13,7 @@ use nodes::{
                 RecordSequenceCueArgs, RecordSequenceCueShorthandArgs,
             },
             rename_function::RenameObjectArgs,
-            set_function::{SetFeatureValueArgs, SetFixturePresetArgs},
+            set_function::{SelectionOrSelector, SetFeatureValueArgs, SetFixturePresetArgs},
             update_function::{UpdateMode, UpdatePresetArgs, UpdateSequenceCueArgs},
         },
         ConfigTypeActionData, ValueOrRange,
@@ -422,7 +422,7 @@ impl<'a> Parser2<'a> {
         let preset = self.try_parse(Self::parse_specific_preset_or_range);
         if let Ok(preset_id) = preset {
             return Ok(Action::SetFixturePreset(SetFixturePresetArgs {
-                fixture_selector,
+                selection_or_selector: SelectionOrSelector::Selector(fixture_selector),
                 preset_id,
             }));
         }

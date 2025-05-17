@@ -1,11 +1,9 @@
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::selection::FixtureSelection;
 
-#[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FixtureGroup {
-    #[egui_probe(skip)]
     id: u32,
 
     name: String,

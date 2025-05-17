@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "ui")]
 use ui::DemexShowUiConfig;
 
 use crate::{
@@ -29,5 +31,6 @@ pub struct DemexShow {
     pub patch: SerializablePatch,
 
     #[serde(default)]
+    #[cfg(feature = "ui")]
     pub ui_config: DemexShowUiConfig,
 }

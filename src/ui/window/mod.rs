@@ -194,7 +194,7 @@ impl DemexWindow {
                             ) {
                                 ui.vertical(|ui| {
                                     ui.colored_label(
-                                        egui::Color32::LIGHT_RED,
+                                        ecolor::Color32::LIGHT_RED,
                                         "Something went wrong.",
                                     );
                                     ui.label(err.to_string());

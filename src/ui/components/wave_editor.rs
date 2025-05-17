@@ -39,7 +39,7 @@ impl<'a> WaveEditor<'a> {
         painter.rect_stroke(
             grid_rect,
             egui::CornerRadius::same(5),
-            (1.0, egui::Color32::WHITE),
+            (1.0, ecolor::Color32::WHITE),
             egui::StrokeKind::Middle,
         );
 
@@ -51,7 +51,7 @@ impl<'a> WaveEditor<'a> {
             let to = from + egui::vec2(grid_rect.width(), 0.0);
             painter.line(
                 vec![from, to],
-                egui::epaint::PathStroke::new(1.0, egui::Color32::WHITE.gamma_multiply(0.5)),
+                egui::epaint::PathStroke::new(1.0, ecolor::Color32::WHITE.gamma_multiply(0.5)),
             );
         }
 
@@ -63,7 +63,7 @@ impl<'a> WaveEditor<'a> {
             let to = from + egui::vec2(0.0, grid_rect.height());
             painter.line(
                 vec![from, to],
-                egui::epaint::PathStroke::new(1.0, egui::Color32::WHITE.gamma_multiply(0.5)),
+                egui::epaint::PathStroke::new(1.0, ecolor::Color32::WHITE.gamma_multiply(0.5)),
             );
         }
 
@@ -72,7 +72,7 @@ impl<'a> WaveEditor<'a> {
                 grid_rect.left_bottom()
                     + (control_point.vec() * egui::vec2(grid_rect.width(), -grid_rect.height())),
                 5.0,
-                egui::Color32::BLUE,
+                ecolor::Color32::BLUE,
             );
 
             if state
@@ -84,7 +84,7 @@ impl<'a> WaveEditor<'a> {
                         + (control_point.vec()
                             * egui::vec2(grid_rect.width(), -grid_rect.height())),
                     8.0,
-                    (2.0, egui::Color32::GREEN),
+                    (2.0, ecolor::Color32::GREEN),
                 );
             }
         }
@@ -101,7 +101,7 @@ impl<'a> WaveEditor<'a> {
                     grid_rect.left_bottom()
                         + (first.vec() * egui::vec2(grid_rect.width(), -grid_rect.height())),
                 ],
-                (2.0, egui::Color32::BLUE),
+                (2.0, ecolor::Color32::BLUE),
             );
         }
 
@@ -117,14 +117,14 @@ impl<'a> WaveEditor<'a> {
                         + (last.vec() * egui::vec2(grid_rect.width(), -grid_rect.height())),
                     grid_rect.right_bottom(),
                 ],
-                (2.0, egui::Color32::BLUE),
+                (2.0, ecolor::Color32::BLUE),
             );
         }
 
         if self.wave.control_points().is_empty() {
             painter.line(
                 vec![grid_rect.left_bottom(), grid_rect.right_bottom()],
-                (2.0, egui::Color32::BLUE),
+                (2.0, ecolor::Color32::BLUE),
             );
         }
 
@@ -135,7 +135,7 @@ impl<'a> WaveEditor<'a> {
             .sorted_by(|a, b| a.x().partial_cmp(&b.x()).unwrap())
             .tuple_windows::<(_, _)>()
         {
-            b.draw_from_prev_point(a, &painter, egui::Color32::BLUE, |point| {
+            b.draw_from_prev_point(a, &painter, ecolor::Color32::BLUE, |point| {
                 grid_rect.left_bottom()
                     + (point.to_vec2() * egui::vec2(grid_rect.width(), -grid_rect.height()))
             });

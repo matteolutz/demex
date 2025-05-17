@@ -7,22 +7,26 @@ use functions::{
         CreateSequenceArgs,
     },
     delete_function::DeleteArgs,
+    go_function::ExecutorGoArgs,
     recall_function::RecallSequenceCueArgs,
     record_function::{
         RecordGroupArgs, RecordPresetArgs, RecordSequenceCueArgs, RecordSequenceCueShorthandArgs,
     },
     rename_function::RenameObjectArgs,
     set_function::{SetFeatureValueArgs, SetFixturePresetArgs},
+    stop_function::ExecutorStopArgs,
     update_function::{UpdatePresetArgs, UpdateSequenceCueArgs},
     FunctionArgs,
 };
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 
+use crate::utils::serde::approx_instant;
+
 use crate::{
     fixture::{
-        handler::FixtureHandler, patch::Patch, presets::PresetHandler, timing::TimingHandler,
-        updatables::UpdatableHandler,
+        handler::FixtureHandler, patch::Patch, presets::PresetHandler, selection::FixtureSelection,
+        timing::TimingHandler, updatables::UpdatableHandler,
     },
     input::{error::DemexInputDeviceError, DemexInputDeviceHandler},
     ui::{constants::INFO_TEXT, window::edit::DemexEditWindow},
@@ -69,40 +73,51 @@ pub enum ConfigTypeActionData {
     Patch,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeferredAction {
     pub action: Action,
+
+    #[serde(with = "approx_instant")]
     pub issued_at: time::Instant,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum Action {
+    // Set
     SetFeatureValue(SetFeatureValueArgs),
     SetFixturePreset(SetFixturePresetArgs),
 
+    // Home
     Home(HomeableObject),
     HomeAll,
 
+    // Record
     RecordPreset(RecordPresetArgs),
     RecordGroup2(RecordGroupArgs),
     RecordSequenceCue(RecordSequenceCueArgs),
     RecordSequenceCueShorthand(RecordSequenceCueShorthandArgs),
 
+    // Reanme
     Rename(RenameObjectArgs),
 
+    // Create
     CreateSequence(CreateSequenceArgs),
     CreateExecutor(CreateExecutorArgs),
     CreateFader(CreateFaderArgs),
     CreateMacro(CreateMacroArgs),
     CreateEffectPreset(CreateEffectPresetArgs),
 
+    // Update
     UpdatePreset(UpdatePresetArgs),
     UpdateSequenceCue(UpdateSequenceCueArgs),
 
+    // Recall
     RecallSequenceCue(RecallSequenceCueArgs),
 
+    // Delete
     Delete(DeleteArgs),
 
+    // Edit
     Edit(Object),
 
     // Assign
@@ -127,6 +142,11 @@ pub enum Action {
 
     Nuzul,
     Sueud,
+
+    // Internal
+    InternalSetFixtureSelection(Option<FixtureSelection>),
+    InternalExecutorGo(ExecutorGoArgs),
+    InternalExecutorStop(ExecutorStopArgs),
 
     #[default]
     MatteoLutz,
@@ -339,7 +359,7 @@ impl Action {
 
             Self::ClearAll => Ok(ActionRunResult::new()),
             Self::FixtureSelector(fixture_selector) => self.run_fixture_selector(
-                fixture_selector,
+                &fixture_selector,
                 fixture_selector_context,
                 preset_handler,
                 fixture_handler,
@@ -390,6 +410,30 @@ impl Action {
                 fader_id,
             } => self.run_unassign_input_fader(input_device_handler, *device_idx, *fader_id),
 
+            Self::InternalSetFixtureSelection(selection) => {
+                Ok(ActionRunResult::UpdateSelectedFixtures(selection.clone()))
+            }
+            Self::InternalExecutorGo(args) => args.run(
+                issued_at,
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+                patch,
+            ),
+            Self::InternalExecutorStop(args) => args.run(
+                issued_at,
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+                patch,
+            ),
+
             #[allow(unreachable_patterns)]
             unimplemented_action => Err(ActionRunError::UnimplementedAction(
                 unimplemented_action.clone(),
@@ -438,7 +482,7 @@ impl Action {
             ));
         }
 
-        Ok(ActionRunResult::UpdateSelectedFixtures(selection))
+        Ok(ActionRunResult::UpdateSelectedFixtures(Some(selection)))
     }
 
     pub fn run_delete_macro(

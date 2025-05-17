@@ -68,9 +68,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     row.col(|ui| {
                         ui.label(RichText::from(fixture.name()).strong().background_color(
                             if selected_fixtures.contains(&fixture.id()) {
-                                egui::Color32::DARK_GREEN
+                                ecolor::Color32::DARK_GREEN
                             } else {
-                                egui::Color32::TRANSPARENT
+                                ecolor::Color32::TRANSPARENT
                             },
                         ));
                     });
@@ -91,9 +91,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                         {
                             ui.label(RichText::from(intensity.to_string(&preset_handler)).color(
                                 if intensity.is_home() {
-                                    egui::Color32::GRAY
+                                    ecolor::Color32::GRAY
                                 } else {
-                                    egui::Color32::YELLOW
+                                    ecolor::Color32::YELLOW
                                 },
                             ));
                         } else {
@@ -114,7 +114,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                             ui.label(
                                 RichText::from(dmx_channel.name().as_ref())
-                                    .color(egui::Color32::YELLOW),
+                                    .color(ecolor::Color32::YELLOW),
                             );
                         }
                     });

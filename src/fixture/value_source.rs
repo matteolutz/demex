@@ -1,6 +1,5 @@
 use std::fmt;
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
@@ -16,7 +15,8 @@ use super::{
     updatables::{error::UpdatableHandlerError, StompSource},
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, EguiProbe, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum FixtureChannelValuePriority {
     #[default]
     Ltp,

@@ -49,9 +49,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                         if ui
                             .button(egui::RichText::from("   Tap   ").color(
                                 if speed_master_value.on_beat() {
-                                    egui::Color32::GREEN
+                                    ecolor::Color32::GREEN
                                 } else {
-                                    egui::Color32::PLACEHOLDER
+                                    ecolor::Color32::PLACEHOLDER
                                 },
                             ))
                             .clicked()

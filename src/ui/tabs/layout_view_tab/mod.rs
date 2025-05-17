@@ -1,14 +1,17 @@
 use input::read_layout_view_input;
 use state::{LayoutViewDragState, LayoutViewState};
 
-use crate::ui::{graphics::layout_projection::draw_center_of_mass, DemexUiContext};
+use crate::{
+    parser::nodes::action::Action,
+    ui::{graphics::layout_projection::draw_center_of_mass, DemexUiContext},
+};
 
 mod decoration;
 mod entry;
 mod input;
 mod state;
 
-const LAYOUT_VIEW_BACKGROUND_COLOR: egui::Color32 = egui::Color32::from_gray(50);
+const LAYOUT_VIEW_BACKGROUND_COLOR: ecolor::Color32 = ecolor::Color32::from_gray(50);
 
 pub struct LayoutViewComponent<'a> {
     context: &'a mut DemexUiContext,
@@ -73,7 +76,9 @@ impl<'a> LayoutViewComponent<'a> {
         }
 
         if response.double_clicked() {
-            self.context.global_fixture_select = None;
+            self.context
+                .action_queue
+                .enqueue_now(Action::InternalSetFixtureSelection(None));
         }
 
         painter.rect_filled(rect, 0.0, LAYOUT_VIEW_BACKGROUND_COLOR);
@@ -84,7 +89,7 @@ impl<'a> LayoutViewComponent<'a> {
                 .layout_projection
                 .project(&egui::Pos2::ZERO, &response.rect),
             2.0 * state.layout_projection.zoom(),
-            egui::Color32::YELLOW,
+            ecolor::Color32::YELLOW,
             0.25 * state.layout_projection.zoom(),
         );
 
@@ -121,17 +126,17 @@ impl<'a> LayoutViewComponent<'a> {
             let rect_color = if let Ok(color) =
                 fixture.display_color(patch.fixture_types(), &preset_handler, &timing_handler)
             {
-                egui::Color32::from_rgba_unmultiplied(
+                ecolor::Color32::from_rgba_unmultiplied(
                     (color[0] * 255.0) as u8,
                     (color[1] * 255.0) as u8,
                     (color[2] * 255.0) as u8,
                     (intensity * 255.0) as u8,
                 )
             } else {
-                egui::Color32::from_rgba_unmultiplied(255, 255, 255, (intensity * 255.0) as u8)
+                ecolor::Color32::from_rgba_unmultiplied(255, 255, 255, (intensity * 255.0) as u8)
             };
 
-            let rect_color = egui::Color32::BLACK.blend(rect_color);
+            let rect_color = ecolor::Color32::BLACK.blend(rect_color);
 
             /*
 
@@ -175,7 +180,7 @@ impl<'a> LayoutViewComponent<'a> {
                             current_mouse_pos,
                         ),
                         0.0,
-                        egui::Color32::from_rgba_unmultiplied(255, 255, 255, 50),
+                        ecolor::Color32::from_rgba_unmultiplied(255, 255, 255, 50),
                     );
 
                     painter.rect_stroke(
@@ -184,7 +189,7 @@ impl<'a> LayoutViewComponent<'a> {
                             current_mouse_pos,
                         ),
                         0.0,
-                        egui::Stroke::new(1.0, egui::Color32::WHITE),
+                        egui::Stroke::new(1.0, ecolor::Color32::WHITE),
                         egui::StrokeKind::Middle,
                     );
                 } else if response.dragged_by(egui::PointerButton::Middle) {
@@ -225,12 +230,21 @@ impl<'a> LayoutViewComponent<'a> {
                     .collect::<Vec<u32>>();
 
                 if !selected_fixture_ids.is_empty() {
-                    if let Some(global_fixture_select) = self.context.global_fixture_select.as_mut()
+                    let new_fixture_select = if let Some(global_fixture_select) =
+                        self.context.global_fixture_select.as_ref()
                     {
-                        global_fixture_select.add_fixtures(&selected_fixture_ids);
+                        global_fixture_select
+                            .clone()
+                            .add_fixtures(&selected_fixture_ids)
                     } else {
-                        self.context.global_fixture_select = Some(selected_fixture_ids.into());
-                    }
+                        selected_fixture_ids.into()
+                    };
+
+                    self.context
+                        .action_queue
+                        .enqueue_now(Action::InternalSetFixtureSelection(Some(
+                            new_fixture_select,
+                        )));
                 }
 
                 state.drag_context = None;

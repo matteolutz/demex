@@ -4,12 +4,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel3::feature::feature_type::FixtureChannel3FeatureType, patch::Patch,
-        presets::preset::FixturePresetId, timing::TimingHandler,
+        channel3::feature::feature_type::FixtureChannel3FeatureType,
+        patch::Patch,
+        presets::{preset::FixturePresetId, PresetHandler},
+        selection::FixtureSelection,
+        timing::TimingHandler,
     },
     parser::nodes::{
         action::{error::ActionRunError, result::ActionRunResult, ValueOrRange},
-        fixture_selector::FixtureSelector,
+        fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
 };
 
@@ -64,8 +67,29 @@ impl FunctionArgs for SetFeatureValueArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SelectionOrSelector {
+    Selection(FixtureSelection),
+    Selector(FixtureSelector),
+}
+
+impl SelectionOrSelector {
+    pub fn get_selection(
+        &self,
+        preset_handler: &PresetHandler,
+        fixture_selector_context: FixtureSelectorContext,
+    ) -> Result<FixtureSelection, ActionRunError> {
+        match self {
+            Self::Selection(selection) => Ok(selection.clone()),
+            Self::Selector(selector) => selector
+                .get_selection(preset_handler, fixture_selector_context)
+                .map_err(ActionRunError::FixtureSelectorError),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetFixturePresetArgs {
-    pub fixture_selector: FixtureSelector,
+    pub selection_or_selector: SelectionOrSelector,
     pub preset_id: ValueOrRange<FixturePresetId>,
 }
 
@@ -82,9 +106,8 @@ impl FunctionArgs for SetFixturePresetArgs {
         patch: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         let selection = self
-            .fixture_selector
-            .get_selection(preset_handler, fixture_selector_context)
-            .map_err(ActionRunError::FixtureSelectorError)?;
+            .selection_or_selector
+            .get_selection(preset_handler, fixture_selector_context)?;
 
         match self.preset_id {
             ValueOrRange::Single(preset_id) => {

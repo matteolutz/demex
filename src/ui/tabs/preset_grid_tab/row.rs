@@ -6,7 +6,7 @@ pub fn preset_grid_row_ui<R>(
     ui: &mut egui::Ui,
     name: &str,
     id: Option<u32>,
-    header_color: egui::Color32,
+    header_color: ecolor::Color32,
     add_contents: impl FnOnce(&mut egui::Ui) -> R,
 ) -> egui::InnerResponse<egui::scroll_area::ScrollAreaOutput<R>> {
     ui.push_id(name, |ui| {
@@ -32,7 +32,7 @@ pub fn preset_grid_row_ui<R>(
                     egui::Align2::LEFT_TOP,
                     id,
                     egui::FontId::proportional(12.0),
-                    egui::Color32::WHITE,
+                    ecolor::Color32::WHITE,
                 );
             }
 
@@ -42,9 +42,9 @@ pub fn preset_grid_row_ui<R>(
                 name.to_owned(),
                 egui::FontId::default(),
                 if color_to_luma(&header_color) > 0.5 {
-                    egui::Color32::BLACK
+                    ecolor::Color32::BLACK
                 } else {
-                    egui::Color32::WHITE
+                    ecolor::Color32::WHITE
                 },
                 response.rect,
             );

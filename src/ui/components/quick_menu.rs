@@ -240,7 +240,7 @@ impl<'a, T: Copy> QuickMenu<'a, T> {
         /*overlay_painter.rect_filled(
             self.bounding_rect(10.0),
             5.0,
-            egui::Color32::BLACK.gamma_multiply(0.5),
+            ecolor::Color32::BLACK.gamma_multiply(0.5),
         );*/
 
         for position in QuickMenuActionPosition::iter() {
@@ -254,14 +254,14 @@ impl<'a, T: Copy> QuickMenu<'a, T> {
                 overlay_painter.rect_filled(
                     rect,
                     position.rounding(),
-                    egui::Color32::from_gray(if is_hovered { 150 } else { 125 }),
+                    ecolor::Color32::from_gray(if is_hovered { 150 } else { 125 }),
                 );
 
                 painter_layout_centered(
                     &overlay_painter,
                     action.name.clone(),
                     egui::FontId::proportional(10.0),
-                    egui::Color32::WHITE,
+                    ecolor::Color32::WHITE,
                     rect,
                 );
             }

@@ -74,9 +74,9 @@ impl<Tab: Display + Eq + Copy> TabViewer<Tab> {
                 .bg_fill;
 
             let text_color = if is_selected {
-                egui::Color32::WHITE
+                ecolor::Color32::WHITE
             } else {
-                egui::Color32::GRAY
+                ecolor::Color32::GRAY
             };
 
             ui.painter().rect_filled(cell_rect, 0.0, rect_fill);

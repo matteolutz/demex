@@ -4,10 +4,9 @@ use crate::{
     headless::{
         packet::{controller::DemexProtoControllerPacket, node::DemexProtoHeadlessNodePacket},
         protocol::Protocol,
-        sync::DemexProtoSync,
         DEMEX_HEADLESS_TCP_PORT,
     },
-    show::{context::ShowContext, DemexNoUiShow},
+    show::context::ShowContext,
     utils::version::VERSION_STR,
 };
 
@@ -45,7 +44,7 @@ impl DemexHeadlessNode {
             let packet = proto.read_packet::<DemexProtoControllerPacket>();
 
             if let Ok(packet) = packet {
-                log::debug!("Received DemexProto packet: {:?}", packet);
+                log::debug!("Received DemexProto packet: {:#x}", u8::from(&packet));
 
                 match packet {
                     DemexProtoControllerPacket::HeadlessInfoRequest => {
@@ -59,17 +58,16 @@ impl DemexHeadlessNode {
                         let _ = proto.send_packet(&DemexProtoHeadlessNodePacket::ShowFileRequest);
                     }
                     DemexProtoControllerPacket::ShowFile { show_file } => {
-                        if let Ok(show) = serde_json::from_slice::<DemexNoUiShow>(&show_file) {
-                            log::debug!("Received show file, updating..");
-                            show_context.update_from(show, true);
-                        }
+                        log::debug!("Received show file, updating..");
+                        show_context.update_from(show_file, true);
                     }
                     DemexProtoControllerPacket::Sync { sync } => {
-                        if let Ok(sync) = serde_json::from_slice::<DemexProtoSync>(&sync) {
-                            log::debug!("Received sync, applying..");
-                            sync.apply(&show_context);
-                            last_sync = Some(time::Instant::now());
-                        }
+                        log::debug!("Received sync, applying..");
+                        sync.apply(&show_context);
+                        last_sync = Some(time::Instant::now());
+                    }
+                    DemexProtoControllerPacket::Action { action: _ } => {
+                        log::debug!("Received action, executing..");
                     }
                 }
             }

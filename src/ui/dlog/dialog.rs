@@ -16,11 +16,11 @@ impl DemexGlobalDialogEntryType {
         }
     }
 
-    pub fn color(&self) -> egui::Color32 {
+    pub fn color(&self) -> ecolor::Color32 {
         match self {
-            Self::Error => egui::Color32::LIGHT_RED,
-            Self::Warn => egui::Color32::YELLOW,
-            Self::Info => egui::Color32::LIGHT_BLUE,
+            Self::Error => ecolor::Color32::LIGHT_RED,
+            Self::Warn => ecolor::Color32::YELLOW,
+            Self::Info => ecolor::Color32::LIGHT_BLUE,
         }
     }
 }
@@ -47,7 +47,7 @@ impl DemexGlobalDialogEntry {
         }
     }
 
-    pub fn color(&self) -> egui::Color32 {
+    pub fn color(&self) -> ecolor::Color32 {
         self.entry_type.color()
     }
 

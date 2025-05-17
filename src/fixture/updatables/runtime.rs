@@ -1,7 +1,7 @@
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum RuntimePhase {
     // Phase in degrees
     Single(f32),

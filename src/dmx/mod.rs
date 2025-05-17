@@ -7,7 +7,6 @@ use artnet::{
     start_artnet_output_thread, start_broadcast_artnet_output_thread, ArtnetOutputConfig,
 };
 use debug::DebugOutputVerbosity;
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 use serial::SerialOutputConfig;
 
@@ -21,7 +20,8 @@ pub trait DemexDmxOutputTrait: fmt::Debug {
 
 pub type DmxData = (u16, [u8; 512]);
 
-#[derive(Debug, Clone, EguiProbe, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum DemexDmxOutputConfig {
     Debug(DebugOutputVerbosity),
     Serial(SerialOutputConfig),

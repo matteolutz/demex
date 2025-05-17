@@ -117,9 +117,9 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
 
                                 ui.label(RichText::new(master_channel_functions[0].1).color(
                                     if !is_active {
-                                        egui::Color32::PLACEHOLDER
+                                        ecolor::Color32::PLACEHOLDER
                                     } else {
-                                        egui::Color32::YELLOW
+                                        ecolor::Color32::YELLOW
                                     },
                                 ));
 
@@ -162,9 +162,9 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                                                         if *channel_function_idx
                                                             == selected_channel_function
                                                         {
-                                                            egui::Color32::GREEN
+                                                            ecolor::Color32::GREEN
                                                         } else {
-                                                            egui::Color32::WHITE
+                                                            ecolor::Color32::WHITE
                                                         },
                                                     ),
                                                 )

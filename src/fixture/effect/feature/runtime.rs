@@ -1,6 +1,5 @@
 use std::{f32, time};
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -21,7 +20,8 @@ use crate::{
     utils::math::instant_diff_secs,
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct FeatureEffectRuntime {
     // effect: FeatureEffect,
     effect: Effect2,
@@ -33,7 +33,7 @@ pub struct FeatureEffectRuntime {
     phase: RuntimePhase,
 
     #[serde(default, skip_serializing, skip_deserializing)]
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     effect_started: Option<time::Instant>,
 }
 

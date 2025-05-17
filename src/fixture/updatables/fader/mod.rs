@@ -1,5 +1,4 @@
 use config::{DemexFaderConfig, DemexFaderRuntimeFunction};
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 pub mod config;
@@ -16,9 +15,10 @@ use crate::fixture::{
 
 use super::error::UpdatableHandlerError;
 
-#[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct DemexFader {
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     id: u32,
 
     name: String,
@@ -29,7 +29,7 @@ pub struct DemexFader {
     stomp_protected: bool,
 
     #[serde(default, skip_serializing)]
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     value: f32,
 
     config: DemexFaderConfig,

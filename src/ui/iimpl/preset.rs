@@ -1,11 +1,11 @@
 use crate::fixture::presets::preset::FixturePresetTarget;
 
 impl FixturePresetTarget {
-    pub fn get_color(&self) -> egui::Color32 {
+    pub fn get_color(&self) -> ecolor::Color32 {
         match self {
-            Self::AllSelected => egui::Color32::LIGHT_GREEN,
-            Self::SomeSelected => egui::Color32::LIGHT_BLUE,
-            Self::None => egui::Color32::LIGHT_RED,
+            Self::AllSelected => ecolor::Color32::LIGHT_GREEN,
+            Self::SomeSelected => ecolor::Color32::LIGHT_BLUE,
+            Self::None => ecolor::Color32::LIGHT_RED,
         }
     }
 

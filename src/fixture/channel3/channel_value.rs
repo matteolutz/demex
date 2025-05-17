@@ -1,6 +1,5 @@
 use std::{collections::HashMap, time};
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
@@ -45,7 +44,8 @@ impl FixtureChannelValue2PresetState {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum FixtureChannelValue3 {
     #[default]
     Home,
@@ -54,7 +54,7 @@ pub enum FixtureChannelValue3 {
         id: FixturePresetId,
 
         #[serde(default, skip_serializing, skip_deserializing)]
-        #[egui_probe(skip)]
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
         state: Option<FixtureChannelValue2PresetState>,
     },
 

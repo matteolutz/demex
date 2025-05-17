@@ -11,8 +11,8 @@ pub enum PresetGridButtonConfig {
     Preset {
         id: u32,
         name: String,
-        top_bar_color: Option<egui::Color32>,
-        display_color: Option<egui::Color32>,
+        top_bar_color: Option<ecolor::Color32>,
+        display_color: Option<ecolor::Color32>,
     },
     Empty {
         id: u32,
@@ -124,14 +124,14 @@ impl PresetGridButton {
                 .output_mut(|out| out.cursor_icon = egui::CursorIcon::PointingHand);
         }
 
-        painter.rect_filled(response.rect, 0.0, egui::Color32::DARK_GRAY);
+        painter.rect_filled(response.rect, 0.0, ecolor::Color32::DARK_GRAY);
 
         painter.text(
             response.rect.left_top() + (2.0, 5.0).into(),
             egui::Align2::LEFT_TOP,
             self.config.id(),
             egui::FontId::proportional(12.0),
-            egui::Color32::WHITE,
+            ecolor::Color32::WHITE,
         );
 
         match self.config {
@@ -156,7 +156,7 @@ impl PresetGridButton {
                     &painter,
                     name,
                     egui::FontId::proportional(12.0),
-                    egui::Color32::WHITE,
+                    ecolor::Color32::WHITE,
                     response.rect,
                 );
 
@@ -172,7 +172,7 @@ impl PresetGridButton {
                 }
             }
             PresetGridButtonConfig::Empty { .. } => {
-                painter.rect_filled(response.rect, 0.0, egui::Color32::from_black_alpha(128));
+                painter.rect_filled(response.rect, 0.0, ecolor::Color32::from_black_alpha(128));
             }
         }
 
@@ -182,7 +182,7 @@ impl PresetGridButton {
                 egui::Align2::RIGHT_TOP,
                 right_top_text,
                 egui::FontId::monospace(9.0),
-                egui::Color32::LIGHT_GRAY,
+                ecolor::Color32::LIGHT_GRAY,
             );
         }
         if let Some(left_bottom_text) = self.decoration.left_bottom_text {
@@ -191,7 +191,7 @@ impl PresetGridButton {
                 egui::Align2::LEFT_BOTTOM,
                 left_bottom_text,
                 egui::FontId::monospace(9.0),
-                egui::Color32::LIGHT_GRAY,
+                ecolor::Color32::LIGHT_GRAY,
             );
         }
 
@@ -199,7 +199,7 @@ impl PresetGridButton {
             painter.rect_stroke(
                 response.rect,
                 0.0,
-                egui::Stroke::new(2.0, egui::Color32::WHITE),
+                egui::Stroke::new(2.0, ecolor::Color32::WHITE),
                 egui::StrokeKind::Middle,
             );
         }
@@ -212,7 +212,13 @@ impl PresetGridButton {
             .flatten()
             .and_then(|pos| quick_menu.interact(pos));
 
-        if response.dragged() {
+        if response.dragged()
+            && !ui.input(|reader| {
+                reader
+                    .multi_touch()
+                    .is_some_and(|touch| touch.num_touches == 2)
+            })
+        {
             quick_menu.show(ui);
         }
 
@@ -233,14 +239,14 @@ pub fn preset_grid_button_ui(
             .output_mut(|out| out.cursor_icon = egui::CursorIcon::PointingHand);
     }
 
-    painter.rect_filled(response.rect, 0.0, egui::Color32::DARK_GRAY);
+    painter.rect_filled(response.rect, 0.0, ecolor::Color32::DARK_GRAY);
 
     painter.text(
         response.rect.left_top() + (2.0, 5.0).into(),
         egui::Align2::LEFT_TOP,
         config.id(),
         egui::FontId::proportional(12.0),
-        egui::Color32::WHITE,
+        ecolor::Color32::WHITE,
     );
 
     match config {
@@ -265,7 +271,7 @@ pub fn preset_grid_button_ui(
                 &painter,
                 name,
                 egui::FontId::proportional(12.0),
-                egui::Color32::WHITE,
+                ecolor::Color32::WHITE,
                 response.rect,
             );
 
@@ -281,7 +287,7 @@ pub fn preset_grid_button_ui(
             }
         }
         PresetGridButtonConfig::Empty { .. } => {
-            painter.rect_filled(response.rect, 0.0, egui::Color32::from_black_alpha(128));
+            painter.rect_filled(response.rect, 0.0, ecolor::Color32::from_black_alpha(128));
         }
     }
 
@@ -291,7 +297,7 @@ pub fn preset_grid_button_ui(
             egui::Align2::RIGHT_TOP,
             right_top_text,
             egui::FontId::monospace(9.0),
-            egui::Color32::LIGHT_GRAY,
+            ecolor::Color32::LIGHT_GRAY,
         );
     }
     if let Some(left_bottom_text) = decoration.left_bottom_text {
@@ -300,7 +306,7 @@ pub fn preset_grid_button_ui(
             egui::Align2::LEFT_BOTTOM,
             left_bottom_text,
             egui::FontId::monospace(9.0),
-            egui::Color32::LIGHT_GRAY,
+            ecolor::Color32::LIGHT_GRAY,
         );
     }
 
@@ -308,7 +314,7 @@ pub fn preset_grid_button_ui(
         painter.rect_stroke(
             response.rect,
             0.0,
-            egui::Stroke::new(2.0, egui::Color32::WHITE),
+            egui::Stroke::new(2.0, ecolor::Color32::WHITE),
             egui::StrokeKind::Middle,
         );
     }

@@ -3,7 +3,7 @@ use std::{sync::Arc, thread, time};
 use command::ui_command_input;
 use components::button::icon::DemexIcon;
 use context::DemexUiContext;
-use dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType};
+use dlog::{DemexLogEntry, DemexLogEntryType};
 use egui::IconData;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
@@ -20,6 +20,7 @@ use crate::{
     utils::version::VERSION_STR,
 };
 
+pub mod action_queue;
 pub mod command;
 pub mod components;
 pub mod constants;
@@ -145,7 +146,7 @@ impl eframe::App for DemexUiApp {
             &mut self.context.timing_handler.write(),
             &self.context.patch.read(),
             FixtureSelectorContext::new(&self.context.global_fixture_select.clone()),
-            &mut self.context.macro_execution_queue,
+            &mut self.context.action_queue,
             &mut self.context.global_fixture_select,
             &mut self.context.command,
         ) {
@@ -156,6 +157,8 @@ impl eframe::App for DemexUiApp {
                 )));
         }
 
+        self.context.execute_action_queue();
+
         self.context.window_handler.show(
             ctx,
             &mut self.context.fixture_handler,
@@ -163,20 +166,6 @@ impl eframe::App for DemexUiApp {
             &mut self.context.updatable_handler,
             &mut self.context.patch,
         );
-
-        while !self.context.macro_execution_queue.is_empty() {
-            let deferred_action = self.context.macro_execution_queue.remove(0);
-
-            if let Err(e) = self
-                .context
-                .run_and_handle_action(&deferred_action.action, deferred_action.issued_at)
-            {
-                log::warn!("{}", e);
-
-                self.context
-                    .add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));
-            }
-        }
 
         for detached_tab in self.context.ui_config.detached_tabs.clone() {
             let tab_title = detached_tab.to_string();
@@ -270,9 +259,7 @@ impl eframe::App for DemexUiApp {
                 ui.separator();
 
                 if ui.link("Matteo Lutz").clicked() {
-                    let _ = self
-                        .context
-                        .run_and_handle_action(&Action::MatteoLutz, time::Instant::now());
+                    self.context.action_queue.enqueue_now(Action::MatteoLutz);
                 }
 
                 ui.separator();
@@ -289,15 +276,15 @@ impl eframe::App for DemexUiApp {
                     DemexIcon::Draft
                         .button_image()
                         .tint(if self.context.show_file.is_some() {
-                            egui::Color32::WHITE
+                            ecolor::Color32::WHITE
                         } else {
-                            egui::Color32::YELLOW
+                            ecolor::Color32::YELLOW
                         }),
                     |ui| {
                         if let Some(show_file) = self.context.show_file.as_ref() {
                             ui.label(show_file.display().to_string());
                         } else {
-                            ui.colored_label(egui::Color32::YELLOW, "Show not saved");
+                            ui.colored_label(ecolor::Color32::YELLOW, "Show not saved");
                         }
 
                         ui.separator();

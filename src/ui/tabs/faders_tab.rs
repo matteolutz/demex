@@ -21,9 +21,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     )
                     .color(
                         if updatable_handler.fader(*id).unwrap().is_active() {
-                            egui::Color32::YELLOW
+                            ecolor::Color32::YELLOW
                         } else {
-                            egui::Color32::PLACEHOLDER
+                            ecolor::Color32::PLACEHOLDER
                         },
                     ),
                 );
@@ -73,7 +73,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
         // Grand master
         ui.vertical(|ui| {
             ui.set_min_width(100.0);
-            ui.label(egui::RichText::from("Grandmaster").color(egui::Color32::LIGHT_RED));
+            ui.label(egui::RichText::from("Grandmaster").color(ecolor::Color32::LIGHT_RED));
             ui.add(eframe::egui::Slider::new(&mut context.gm_slider_val, 0..=255).vertical());
         });
     });

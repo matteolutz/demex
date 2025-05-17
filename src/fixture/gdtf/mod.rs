@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::ui::utils::color::rgbw_to_rgb;
+use crate::utils::color::rgbw_to_rgb;
 
 use super::{
     channel3::{

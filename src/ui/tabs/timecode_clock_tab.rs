@@ -3,7 +3,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let current_timecode_packet = timing_handler.current_timecode_packet();
 
     egui::Frame::new()
-        .fill(egui::Color32::BLACK)
+        .fill(ecolor::Color32::BLACK)
         .show(ui, |ui| {
             ui.add_sized(
                 ui.available_size(),
@@ -16,8 +16,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                         current_timecode_packet.frame,
                     ))
                     .extra_letter_spacing(2.0)
-                    .color(egui::Color32::LIGHT_GREEN)
-                    .background_color(egui::Color32::BLACK)
+                    .color(ecolor::Color32::LIGHT_GREEN)
+                    .background_color(ecolor::Color32::BLACK)
                     .monospace()
                     .size(80.0),
                 ),

@@ -1,5 +1,3 @@
-use std::time;
-
 use button::{
     preset_grid_button_ui, PresetGridButton, PresetGridButtonConfig, PresetGridButtonDecoration,
     PresetGridButtonQuickMenuActions,
@@ -14,7 +12,14 @@ use crate::{
         updatables::executor::config::ExecutorConfig,
     },
     lexer::token::Token,
-    parser::nodes::action::DeferredAction,
+    parser::nodes::action::{
+        functions::{
+            go_function::ExecutorGoArgs,
+            set_function::{SelectionOrSelector, SetFixturePresetArgs},
+            stop_function::ExecutorStopArgs,
+        },
+        Action, ValueOrRange,
+    },
     ui::{
         window::{edit::DemexEditWindow, DemexWindow},
         DemexUiContext,
@@ -27,10 +32,8 @@ mod button;
 mod row;
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
-    let mut fixture_handler = context.fixture_handler.write();
     let preset_handler = context.preset_handler.read();
-    let mut updatable_handler = context.updatable_handler.write();
-    let patch = context.patch.read();
+    let updatable_handler = context.updatable_handler.read();
 
     let _selected_fixtures = context
         .global_fixture_select
@@ -45,7 +48,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
     ui.vertical(|ui| {
         // Groups
-        preset_grid_row_ui(ui, "Groups", None, egui::Color32::DARK_RED, |ui| {
+        preset_grid_row_ui(ui, "Groups", None, ecolor::Color32::DARK_RED, |ui| {
             for id in 0..=preset_handler.next_group_id().max(min_num_preset_buttons) {
                 let g = preset_handler.get_group(id);
 
@@ -56,7 +59,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         top_bar_color: context.global_fixture_select.as_ref().and_then(
                             |selection| {
                                 if selection == g.fixture_selection() {
-                                    Some(egui::Color32::GREEN)
+                                    Some(ecolor::Color32::GREEN)
                                 } else {
                                     None
                                 }
@@ -80,7 +83,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     || quick_action.is_some_and(|a| a == PresetGridButtonQuickMenuActions::Default)
                 {
                     if let Ok(g) = g {
-                        context.global_fixture_select = Some(g.fixture_selection().clone());
+                        context
+                            .action_queue
+                            .enqueue_now(Action::InternalSetFixtureSelection(Some(
+                                g.fixture_selection().clone(),
+                            )));
                     }
                 }
 
@@ -118,7 +125,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 ui,
                 feature_group.name(),
                 Some(feature_group.into()),
-                egui::Color32::BLUE,
+                ecolor::Color32::BLUE,
                 |ui| {
                     for id in 0..=preset_handler
                         .next_preset_id(feature_group)
@@ -203,14 +210,14 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                             if let (Ok(_), Some(selection)) =
                                 (p.as_ref(), context.global_fixture_select.as_ref())
                             {
-                                preset_handler
-                                    .apply_preset(
-                                        preset_id,
-                                        &mut fixture_handler,
-                                        patch.fixture_types(),
-                                        selection.clone(),
-                                    )
-                                    .unwrap();
+                                context.action_queue.enqueue_now(Action::SetFixturePreset(
+                                    SetFixturePresetArgs {
+                                        selection_or_selector: SelectionOrSelector::Selection(
+                                            selection.clone(),
+                                        ),
+                                        preset_id: ValueOrRange::Single(preset_id),
+                                    },
+                                ));
                             }
                         }
                     }
@@ -219,7 +226,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         }
 
         // Macros
-        preset_grid_row_ui(ui, "Maros", None, egui::Color32::BROWN, |ui| {
+        preset_grid_row_ui(ui, "Maros", None, ecolor::Color32::BROWN, |ui| {
             for id in 0..=preset_handler.next_macro_id().max(min_num_preset_buttons) {
                 let m = preset_handler.get_macro(id);
 
@@ -249,10 +256,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         .is_some_and(|action| action == PresetGridButtonQuickMenuActions::Default)
                 {
                     if let Ok(m) = m {
-                        context.macro_execution_queue.push(DeferredAction {
-                            action: m.action().clone(),
-                            issued_at: time::Instant::now(),
-                        });
+                        context.action_queue.enqueue_now(m.action().clone());
                     } else {
                         context.command.extend_from_slice(&[
                             Token::KeywordCreate,
@@ -287,7 +291,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         });
 
         // Command slices
-        preset_grid_row_ui(ui, "Command Slices", None, egui::Color32::GOLD, |ui| {
+        preset_grid_row_ui(ui, "Command Slices", None, ecolor::Color32::GOLD, |ui| {
             for id in 0..=preset_handler
                 .next_command_slice_id()
                 .max(min_num_preset_buttons)
@@ -317,7 +321,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         });
 
         // Executors
-        preset_grid_row_ui(ui, "Executors", None, egui::Color32::DARK_GREEN, |ui| {
+        preset_grid_row_ui(ui, "Executors", None, ecolor::Color32::DARK_GREEN, |ui| {
             for id in 0..=updatable_handler
                 .next_executor_id()
                 .max(min_num_preset_buttons)
@@ -331,7 +335,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         id,
                         name: executor.name().to_owned(),
                         top_bar_color: if updatable_handler.executor(id).unwrap().is_started() {
-                            Some(egui::Color32::RED)
+                            Some(ecolor::Color32::RED)
                         } else {
                             None
                         },
@@ -377,9 +381,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     || quick_action.is_some_and(|a| a == PresetGridButtonQuickMenuActions::Default)
                 {
                     if executor_exists {
-                        updatable_handler
-                            .start_or_next_executor(id, &mut fixture_handler, &preset_handler, 0.0)
-                            .unwrap();
+                        context.action_queue.enqueue_now(Action::InternalExecutorGo(
+                            ExecutorGoArgs { executor_id: id },
+                        ));
                     } else {
                         context.command.extend_from_slice(&[
                             Token::KeywordCreate,
@@ -421,9 +425,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     && executor_exists
                     && updatable_handler.executor(id).unwrap().is_started()
                 {
-                    updatable_handler
-                        .stop_executor(id, &mut fixture_handler, &preset_handler)
-                        .unwrap();
+                    context
+                        .action_queue
+                        .enqueue_now(Action::InternalExecutorStop(ExecutorStopArgs {
+                            executor_id: id,
+                        }));
                 }
             }
         });

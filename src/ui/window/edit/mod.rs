@@ -152,7 +152,7 @@ impl DemexEditWindow {
             Self::Config(config_type) => match config_type {
                 ConfigTypeActionData::Output => {
                     ui.colored_label(
-                        egui::Color32::YELLOW,
+                        ecolor::Color32::YELLOW,
                         "A restart is required for output changes to take effect!",
                     );
 

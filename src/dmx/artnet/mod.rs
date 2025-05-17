@@ -6,13 +6,13 @@ use std::{
 };
 
 use artnet_protocol::{ArtCommand, Output, Poll, PortAddress};
-use egui_probe::EguiProbe;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use super::DmxData;
 
-#[derive(Clone, Default, Debug, Serialize, Deserialize, EguiProbe)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct ArtnetOutputConfig {
     pub broadcast: bool,
 

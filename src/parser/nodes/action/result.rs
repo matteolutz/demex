@@ -10,7 +10,7 @@ pub enum ActionRunResult {
     Warn(String),
     EditWindow(DemexEditWindow),
 
-    UpdateSelectedFixtures(FixtureSelection),
+    UpdateSelectedFixtures(Option<FixtureSelection>),
 }
 
 impl ActionRunResult {

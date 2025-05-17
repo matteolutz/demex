@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use cue::{Cue, CueIdx};
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -66,7 +65,8 @@ impl FadeFixtureChannelValue {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, Default, PartialEq, Eq, EguiProbe)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum SequenceStopBehavior {
     #[default]
     ManualStop,
@@ -76,9 +76,10 @@ pub enum SequenceStopBehavior {
     AutoStop,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, EguiProbe)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct Sequence {
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     id: u32,
 
     name: String,
@@ -86,7 +87,7 @@ pub struct Sequence {
     #[serde(default)]
     stop_behavior: SequenceStopBehavior,
 
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     cues: Vec<Cue>,
 }
 

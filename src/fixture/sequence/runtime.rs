@@ -1,6 +1,5 @@
 use std::{str::FromStr, time};
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
@@ -50,12 +49,13 @@ impl SequenceRuntimeState {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct SequenceRuntime {
     sequence_id: u32,
 
     #[serde(default, skip_serializing, skip_deserializing)]
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     state: SequenceRuntimeState,
 }
 

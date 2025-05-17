@@ -1,13 +1,14 @@
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, EguiProbe, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum Effect2WaveControlPointWaveType {
     #[default]
     Linear,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct Effect2WaveControlPoint {
     x: f32,
     y: f32,
@@ -59,7 +60,7 @@ impl Effect2WaveControlPoint {
         &self,
         prev_point: &Effect2WaveControlPoint,
         painter: &egui::Painter,
-        color: egui::Color32,
+        color: ecolor::Color32,
         project_point: impl Fn(egui::Pos2) -> egui::Pos2,
     ) {
         match self.wave_type {

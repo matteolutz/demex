@@ -1,6 +1,5 @@
 use std::time;
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -16,14 +15,16 @@ use crate::{
     },
     lexer::token::Token,
     parser::nodes::{
-        action::{Action, DeferredAction},
+        action::Action,
         fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
     },
+    ui::action_queue::ActionQueue,
 };
 
 use super::error::DemexInputDeviceError;
 
-#[derive(Debug, Serialize, Deserialize, EguiProbe, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum DemexInputButton {
     ExecutorStartAndNext(u32),
     ExecutorStop(u32),
@@ -35,13 +36,13 @@ pub enum DemexInputButton {
     FaderGo(u32),
 
     SelectivePreset {
-        #[egui_probe(skip)]
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
         selection: Option<FixtureSelection>,
         preset_id: FixturePresetId,
     },
 
     FixtureSelector {
-        #[egui_probe(skip)]
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
         fixture_selector: FixtureSelector,
     },
 
@@ -50,12 +51,12 @@ pub enum DemexInputButton {
     },
 
     Macro {
-        #[egui_probe(skip)]
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
         action: Action,
     },
 
     TokenInsert {
-        #[egui_probe(skip)]
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
         tokens: Vec<Token>,
     },
 
@@ -72,7 +73,7 @@ impl DemexInputButton {
         timing_handler: &mut TimingHandler,
         patch: &Patch,
         fixture_selector_context: FixtureSelectorContext,
-        macro_exec_cue: &mut Vec<DeferredAction>,
+        action_queue: &mut ActionQueue,
         global_fixture_selection: &mut Option<FixtureSelection>,
         command_input: &mut Vec<Token>,
     ) -> Result<(), DemexInputDeviceError> {
@@ -139,10 +140,7 @@ impl DemexInputButton {
                     .map_err(DemexInputDeviceError::PresetHandlerError)?;
             }
             Self::Macro { action } => {
-                macro_exec_cue.push(DeferredAction {
-                    action: action.clone(),
-                    issued_at: time::Instant::now(),
-                });
+                action_queue.enqueue_now(action.clone());
             }
             Self::FixtureSelector { fixture_selector } => {
                 *global_fixture_selection = Some(

@@ -104,13 +104,13 @@ pub fn draw_center_of_mass(
     painter: &egui::Painter,
     center: egui::Pos2,
     radius: f32,
-    color: egui::Color32,
+    color: ecolor::Color32,
     stroke_width: f32,
 ) {
     let rect = egui::Rect::from_center_size(center, egui::vec2(radius, radius));
     let stroke = egui::Stroke::new(stroke_width, color);
 
-    painter.circle(center, radius, egui::Color32::TRANSPARENT, stroke);
+    painter.circle(center, radius, ecolor::Color32::TRANSPARENT, stroke);
 
     painter.line_segment([rect.center_top(), rect.center_bottom()], stroke);
     painter.line_segment([rect.left_center(), rect.right_center()], stroke);
@@ -120,7 +120,7 @@ pub fn draw_center_of_mass(
     painter.add(egui::epaint::Shape::Circle(egui::epaint::CircleShape {
         center,
         radius,
-        fill: egui::Color32::TRANSPARENT,
+        fill: ecolor::Color32::TRANSPARENT,
         stroke: egui::Stroke::new(stroke_width, color),
     }));
 

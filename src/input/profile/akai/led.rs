@@ -83,7 +83,7 @@ pub enum ApcMiniMk2ButtonLedColor {
 }
 
 impl ApcMiniMk2ButtonLedColor {
-    pub fn try_from_color(value: egui::Color32) -> Option<Self> {
+    pub fn try_from_color(value: ecolor::Color32) -> Option<Self> {
         let [r, g, b, _] = value.to_array();
 
         ApcMiniMk2ButtonLedColor::iter()

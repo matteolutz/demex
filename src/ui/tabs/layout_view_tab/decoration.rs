@@ -22,7 +22,7 @@ impl FixtureLayoutDecoration {
                     egui::Align2::CENTER_CENTER,
                     text,
                     egui::FontId::proportional(font_size * projection.zoom()),
-                    egui::Color32::WHITE,
+                    ecolor::Color32::WHITE,
                 );
             }
             Self::Rect {
@@ -36,7 +36,7 @@ impl FixtureLayoutDecoration {
                 painter.rect_stroke(
                     egui::Rect::from_min_max(projected_min, projected_max),
                     egui::CornerRadius::ZERO,
-                    egui::Stroke::new(stroke_width * projection.zoom(), egui::Color32::WHITE),
+                    egui::Stroke::new(stroke_width * projection.zoom(), ecolor::Color32::WHITE),
                     egui::StrokeKind::Middle,
                 );
             }

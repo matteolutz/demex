@@ -1,13 +1,13 @@
 use std::f32;
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use super::wave::Effect2Wave;
 
 pub type AttributeList = Vec<String>;
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct Effect2Part {
     wave: Effect2Wave,
     attributes: Vec<String>,
@@ -35,7 +35,8 @@ impl Effect2Part {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct Effect2 {
     parts: Vec<Effect2Part>,
 }

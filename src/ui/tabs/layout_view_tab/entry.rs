@@ -22,7 +22,7 @@ impl FixtureLayoutEntry {
         projection: &LayoutProjection,
         screen: &egui::Rect,
         painter: &egui::Painter,
-        fixture_color: egui::Color32,
+        fixture_color: ecolor::Color32,
         fixture_direction: Option<egui::Vec2>,
         is_selected: bool,
         is_about_to_selected: bool,
@@ -32,11 +32,11 @@ impl FixtureLayoutEntry {
 
         let stroke_width = 0.25 * projection.zoom();
         let stroke_color = if is_selected {
-            egui::Color32::GREEN
+            ecolor::Color32::GREEN
         } else if is_about_to_selected {
-            egui::Color32::BLUE
+            ecolor::Color32::BLUE
         } else {
-            egui::Color32::WHITE
+            ecolor::Color32::WHITE
         };
 
         match self.entry_type() {
@@ -70,7 +70,7 @@ impl FixtureLayoutEntry {
                                 [pos, pos_in_rect],
                                 egui::Stroke::new(
                                     0.25 * projection.zoom(),
-                                    egui::Color32::YELLOW.gamma_multiply(0.5),
+                                    ecolor::Color32::YELLOW.gamma_multiply(0.5),
                                 ),
                             );
                         }
@@ -78,7 +78,7 @@ impl FixtureLayoutEntry {
                         painter.circle_filled(
                             pos_in_rect,
                             0.5 * projection.zoom(),
-                            egui::Color32::YELLOW.gamma_multiply(0.5),
+                            ecolor::Color32::YELLOW.gamma_multiply(0.5),
                         );
                     }
                 }
@@ -119,9 +119,9 @@ impl FixtureLayoutEntry {
             label,
             egui::FontId::proportional(2.0 * projection.zoom()),
             if is_selected {
-                egui::Color32::GREEN
+                ecolor::Color32::GREEN
             } else {
-                egui::Color32::WHITE
+                ecolor::Color32::WHITE
             },
         );
     }

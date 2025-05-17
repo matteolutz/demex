@@ -16,7 +16,7 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_a
                     for token in &context.command {
                         ui.label(
                             eframe::egui::RichText::from(token.to_string())
-                                .background_color(eframe::egui::Color32::BLACK)
+                                .background_color(ecolor::Color32::BLACK)
                                 .color(token)
                                 .font(command_font.clone()),
                         );
@@ -29,7 +29,7 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_a
                     ui.available_size(),
                     eframe::egui::TextEdit::singleline(&mut context.command_input)
                         .font(command_font)
-                        .text_color(eframe::egui::Color32::YELLOW),
+                        .text_color(ecolor::Color32::YELLOW),
                 )
                 .labelled_by(command_label.id);
 
@@ -94,9 +94,9 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_a
 
                         context.command_input.clear();
 
-                        if let Err(e) = context.run_cmd() {
-                            log::warn!("{}", e);
-                            context.add_dialog_entry(DemexGlobalDialogEntry::error(e.as_ref()));
+                        if let Err(err) = context.enqueue_cmd() {
+                            log::warn!("Failed to parse cmd: {}", err);
+                            context.add_dialog_entry(DemexGlobalDialogEntry::error(&err));
                         }
 
                         context.command.clear();

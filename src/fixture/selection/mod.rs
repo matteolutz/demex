@@ -1,11 +1,11 @@
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext};
 
 use super::presets::PresetHandler;
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct FixtureSelection {
     fixtures: Vec<u32>,
 
@@ -81,13 +81,15 @@ impl FixtureSelection {
         selection.is_ok_and(|selection| &selection == self)
     }
 
-    pub fn add_fixtures(&mut self, fixtures: &[u32]) {
+    pub fn add_fixtures(mut self, fixtures: &[u32]) -> Self {
         for fixture in fixtures {
             if self.fixtures.contains(fixture) {
                 continue;
             }
             self.fixtures.push(*fixture);
         }
+
+        self
     }
 
     pub fn fixtures(&self) -> &[u32] {

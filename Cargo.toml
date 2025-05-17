@@ -11,7 +11,7 @@ eframe = { features = [
     "default",
     "persistence",
 ], version = "0.31.1", optional = true }
-egui = { features = ["default", "serde"], version = "0.31.1", optional = false }
+egui = { features = ["default", "serde"], version = "0.31.1", optional = true }
 egui-probe = { version = "0.8.0", features = ["derive"], optional = true }
 egui_dock = { version = "0.16.0", optional = true }
 egui_extras = { features = [
@@ -22,6 +22,8 @@ image = { version = "0.25.5", features = ["png"], optional = true }
 open = { version = "5.3.2", optional = true }
 rfd = { version = "0.15.2", optional = true }
 
+ecolor = { version = "0.31.1", features = ["serde"] }
+emath = { version = "0.31.1", features = ["serde"] }
 artnet_protocol = { git = "https://github.com/matteolutz/artnet_protocol" }
 byteorder = "1.5.0"
 chrono = "0.4.39"
@@ -44,13 +46,14 @@ serde_json = "1.0.140"
 strum = { version = "0.27.0", features = ["derive"] }
 strum_macros = "0.27.0"
 uuid = "1.16.0"
+ciborium = "0.2.2"
 
 [features]
 default = ["ui"]
 ui = [
     "dep:catppuccin-egui",
     "dep:eframe",
-    # "dep:egui",
+    "dep:egui",
     "dep:egui-probe",
     "dep:egui_dock",
     "dep:egui_extras",

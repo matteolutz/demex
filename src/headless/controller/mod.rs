@@ -55,7 +55,7 @@ impl DemexHeadlessConroller {
                     loop {
                         let packet = protocol.read_packet::<DemexProtoHeadlessNodePacket>();
                         if let Ok(packet) = packet {
-                            log::debug!("Received demex proto packet: {:?}", packet);
+                            log::debug!("Received demex proto packet: {:#x}", u8::from(&packet));
 
                             match packet {
                                 DemexProtoHeadlessNodePacket::HeadlessInfoResponse { version } => {
@@ -84,21 +84,15 @@ impl DemexHeadlessConroller {
                                         ),
                                     };
 
-                                    let show_file_serialized =
-                                        serde_json::to_vec(&show_file).unwrap();
-
                                     protocol
                                         .send_packet(&DemexProtoControllerPacket::ShowFile {
-                                            show_file: show_file_serialized,
+                                            show_file,
                                         })
                                         .unwrap();
 
                                     protocol
                                         .send_packet(&DemexProtoControllerPacket::Sync {
-                                            sync: serde_json::to_vec(&DemexProtoSync::get(
-                                                &show_context,
-                                            ))
-                                            .unwrap(),
+                                            sync: DemexProtoSync::get(&show_context),
                                         })
                                         .unwrap();
                                 }
@@ -109,10 +103,7 @@ impl DemexHeadlessConroller {
 
                                     protocol
                                         .send_packet(&DemexProtoControllerPacket::Sync {
-                                            sync: serde_json::to_vec(&DemexProtoSync::get(
-                                                &show_context,
-                                            ))
-                                            .unwrap(),
+                                            sync: DemexProtoSync::get(&show_context),
                                         })
                                         .unwrap();
                                 }

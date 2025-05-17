@@ -1,9 +1,9 @@
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::sequence::runtime::SequenceRuntime;
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, EguiProbe, Default)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum DemexFaderRuntimeFunction {
     #[default]
     Intensity,
@@ -11,7 +11,8 @@ pub enum DemexFaderRuntimeFunction {
     FadeAll,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum DemexFaderConfig {
     SequenceRuntime {
         runtime: SequenceRuntime,

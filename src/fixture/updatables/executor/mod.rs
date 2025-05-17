@@ -1,7 +1,6 @@
 use std::{collections::HashSet, time};
 
 use config::ExecutorConfig;
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
@@ -17,9 +16,10 @@ use crate::fixture::{
 
 pub mod config;
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct Executor {
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     id: u32,
 
     #[serde(default)]
@@ -37,7 +37,7 @@ pub struct Executor {
     config: ExecutorConfig,
 
     #[serde(default, skip_serializing, skip_deserializing)]
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     started_at: Option<time::Instant>,
 }
 

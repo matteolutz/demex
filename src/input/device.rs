@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -13,7 +12,8 @@ use super::{
     DemexInputDeviceProfile,
 };
 
-#[derive(Debug, Serialize, Deserialize, EguiProbe, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct DemexInputDeviceConfig {
     buttons: HashMap<u32, DemexInputButton>,
     faders: HashMap<u32, DemexInputFader>,

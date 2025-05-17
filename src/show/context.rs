@@ -12,7 +12,7 @@ use crate::fixture::{
 
 use super::DemexNoUiShow;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ShowContext {
     pub fixture_handler: Arc<RwLock<FixtureHandler>>,
     pub preset_handler: Arc<RwLock<PresetHandler>>,

@@ -132,6 +132,9 @@ pub fn edit_builder_cue_ui(
 
         ui.add_space(20.0);
     } else {
-        ui.colored_label(egui::Color32::LIGHT_RED, "Error: Cue is not a builder cue.");
+        ui.colored_label(
+            ecolor::Color32::LIGHT_RED,
+            "Error: Cue is not a builder cue.",
+        );
     }
 }

@@ -16,7 +16,6 @@ pub mod utils;
 
 use std::{path::PathBuf, sync::Arc, time};
 
-use egui::{Style, Visuals};
 use gdtf::GdtfFile;
 use headless::{controller::DemexHeadlessConroller, node::DemexHeadlessNode};
 use itertools::Itertools;
@@ -268,9 +267,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Box::new(|creation_context| {
                     egui_extras::install_image_loaders(&creation_context.egui_ctx);
 
-                    let style = Style {
-                        visuals: Visuals::dark(),
-                        ..Style::default()
+                    let style = egui::Style {
+                        visuals: egui::Visuals::dark(),
+                        ..egui::Style::default()
                     };
 
                     creation_context.egui_ctx.set_style(style);

@@ -36,7 +36,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                         painter.rect_filled(
                                             response.rect,
                                             2.0,
-                                            egui::Color32::WHITE,
+                                            ecolor::Color32::WHITE,
                                         );
                                         painter_layout_centered(
                                             &painter,
@@ -44,7 +44,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                                 .map(|f| f.name().to_owned())
                                                 .unwrap_or_else(|| fixture_id.to_string()),
                                             egui::FontId::proportional(10.0),
-                                            egui::Color32::BLACK,
+                                            ecolor::Color32::BLACK,
                                             response.rect.shrink(5.0),
                                         );
                                     }

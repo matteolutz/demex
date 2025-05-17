@@ -1,13 +1,13 @@
 use std::f32;
 
 use control_point::Effect2WaveControlPoint;
-use egui_probe::EguiProbe;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 pub mod control_point;
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct Effect2Wave {
     control_points: Vec<Effect2WaveControlPoint>,
 }

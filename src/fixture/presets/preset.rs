@@ -1,6 +1,5 @@
 use std::{collections::HashMap, str::FromStr};
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -27,7 +26,8 @@ use crate::{
 
 use super::{error::PresetHandlerError, PresetHandler};
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Default, EguiProbe)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct FixturePresetId {
     pub feature_group: FixtureChannel3FeatureGroup,
     pub preset_id: u32,
@@ -116,10 +116,11 @@ pub enum FixturePresetTarget {
     None,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum FixturePresetData {
     Default {
-        #[egui_probe(skip)]
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
         data: HashMap<u32, HashMap<String, FixtureChannelValue3>>,
     },
     FeatureEffect {
@@ -135,15 +136,16 @@ impl Default for FixturePresetData {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct FixturePreset {
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     id: FixturePresetId,
 
     name: String,
 
     #[serde(default)]
-    display_color: Option<egui::Color32>,
+    display_color: Option<ecolor::Color32>,
 
     #[serde(default)]
     fade_up: f32,
@@ -333,11 +335,11 @@ impl FixturePreset {
         &mut self.name
     }
 
-    pub fn display_color(&self) -> Option<egui::Color32> {
+    pub fn display_color(&self) -> Option<ecolor::Color32> {
         self.display_color
     }
 
-    pub fn display_color_mut(&mut self) -> &mut Option<egui::Color32> {
+    pub fn display_color_mut(&mut self) -> &mut Option<ecolor::Color32> {
         &mut self.display_color
     }
 

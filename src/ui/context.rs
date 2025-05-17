@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc, time};
+use std::{path::PathBuf, sync::Arc};
 
 use itertools::Itertools;
 use parking_lot::RwLock;
@@ -15,6 +15,7 @@ use crate::{
     input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler},
     lexer::token::Token,
     parser::{
+        error::ParseError,
         nodes::{
             action::{result::ActionRunResult, Action, DeferredAction},
             fixture_selector::FixtureSelectorContext,
@@ -27,6 +28,7 @@ use crate::{
 };
 
 use super::{
+    action_queue::ActionQueue,
     dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
     tabs::encoders_tab::EncodersTabState,
     window::{DemexWindow, DemexWindowHandler},
@@ -52,7 +54,7 @@ pub struct DemexUiContext {
 
     pub logs: Vec<DemexLogEntry>,
 
-    pub macro_execution_queue: Vec<DeferredAction>,
+    pub action_queue: ActionQueue,
 
     pub show_file: Option<PathBuf>,
 
@@ -77,7 +79,18 @@ impl DemexUiContext {
             )));
     }
 
-    pub fn run_cmd(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn execute_action_queue(&mut self) {
+        while !self.action_queue.is_empty() {
+            let action = self.action_queue.dequeue().unwrap();
+
+            if let Err(err) = self.run_and_handle_action(action) {
+                log::warn!("Failed to execute action: {}", err);
+                self.add_dialog_entry(DemexGlobalDialogEntry::error(err.as_ref()));
+            }
+        }
+    }
+
+    pub fn enqueue_cmd(&mut self) -> Result<(), ParseError> {
         self.logs
             .push(DemexLogEntry::new(DemexLogEntryType::CommandEntry(
                 self.command.clone(),
@@ -92,7 +105,9 @@ impl DemexUiContext {
                 )))
         })?;
 
-        self.run_and_handle_action(&action, time::Instant::now())
+        self.action_queue.enqueue_now(action);
+
+        Ok(())
     }
 
     /*
@@ -150,7 +165,7 @@ impl DemexUiContext {
             is_command_input_empty: true,
             command: Vec::new(),
             command_input: String::new(),
-            macro_execution_queue: Vec::new(),
+            action_queue: ActionQueue::default(),
 
             encoders_tab_state: EncodersTabState::default(),
             window_handler: DemexWindowHandler::default(),
@@ -225,9 +240,10 @@ impl DemexUiContext {
 
     pub fn run_and_handle_action(
         &mut self,
-        action: &Action,
-        issued_at: time::Instant,
+        action: DeferredAction,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let (action, issued_at) = (action.action, action.issued_at);
+
         match &action {
             Action::ClearAll => {
                 self.global_fixture_select = None;
@@ -307,7 +323,7 @@ impl DemexUiContext {
                 self.window_handler.add_window(demex_edit_window);
             }
             ActionRunResult::UpdateSelectedFixtures(selection) => {
-                self.global_fixture_select = Some(selection);
+                self.global_fixture_select = selection;
             }
             ActionRunResult::Default => {}
         }

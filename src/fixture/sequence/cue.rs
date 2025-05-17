@@ -3,7 +3,6 @@ use std::{
     time,
 };
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -20,7 +19,8 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, EguiProbe)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum CueTrigger {
     /// Cue is triggered manually
     #[default]
@@ -31,7 +31,8 @@ pub enum CueTrigger {
     Follow,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct CueFixtureChannelValue {
     value: FixtureChannelValue3,
     channel_name: String,
@@ -60,14 +61,16 @@ impl CueFixtureChannelValue {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, Default, EguiProbe)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum CueTimingOriginDirection {
     #[default]
     LowToHigh,
     HighToLow,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, EguiProbe)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct CueTiming {
     // Offset (in seconds), that is applied between the fade in and down
     // of each fixture
@@ -106,14 +109,16 @@ impl CueTiming {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct CueBuilderEntry {
     pub group_id: Option<u32>,
     pub preset_feature_group_id: Option<u32>,
     pub preset_id: Option<FixturePresetId>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum CueDataMode {
     /// Default mode, where the data is stored as a map of fixture_id -> Vec<channel_values>
     Default(HashMap<u32, Vec<CueFixtureChannelValue>>),
@@ -131,16 +136,16 @@ impl Default for CueDataMode {
 
 pub type CueIdx = (u32, u32);
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, EguiProbe)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct Cue {
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     cue_idx: CueIdx,
 
     #[serde(default)]
     name: String,
 
-    #[egui_probe(skip)]
-    // data: HashMap<u32, Vec<CueFixtureChannelValue>>,
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     data: CueDataMode,
 
     selection: FixtureSelection,
