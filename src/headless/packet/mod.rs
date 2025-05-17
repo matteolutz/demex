@@ -21,6 +21,15 @@ pub fn demex_proto_read_string(reader: &mut impl Read) -> io::Result<String> {
     String::from_utf8(buf).map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid UTF-8"))
 }
 
+pub fn demex_proto_write_u32(writer: &mut impl Write, value: u32) -> io::Result<usize> {
+    writer.write_u32::<NetworkEndian>(value)?;
+    Ok(4)
+}
+
+pub fn demex_proto_read_u32(reader: &mut impl Read) -> io::Result<u32> {
+    reader.read_u32::<NetworkEndian>()
+}
+
 pub fn demex_proto_write_u64(writer: &mut impl Write, value: u64) -> io::Result<usize> {
     writer.write_u64::<NetworkEndian>(value)?;
     Ok(8)

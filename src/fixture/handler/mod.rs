@@ -52,7 +52,7 @@ pub struct FixtureHandler {
     outputs: Vec<DemexDmxOutput>,
     universe_output_data: HashMap<u16, [u8; 512]>,
     grand_master: u8,
-    is_headless: bool,
+    is_controller: bool,
 }
 
 impl FixtureHandler {
@@ -63,7 +63,7 @@ impl FixtureHandler {
     pub fn new(
         fixtures: Vec<GdtfFixture>,
         outputs: Vec<DemexDmxOutput>,
-        is_headless: bool,
+        is_controller: bool,
     ) -> Result<Self, FixtureHandlerError> {
         // check if the fixtures overlap
 
@@ -90,6 +90,7 @@ impl FixtureHandler {
         let mut universe_output_data = HashMap::new();
         for universe in outputs
             .iter()
+            .filter(|output| output.should_output())
             .filter_map(|output| output.config().universes())
             .flatten()
             .dedup()
@@ -102,7 +103,7 @@ impl FixtureHandler {
             universe_output_data,
             fixtures,
             outputs,
-            is_headless,
+            is_controller,
             grand_master: Self::default_grandmaster_value(),
         })
     }
@@ -165,7 +166,7 @@ impl FixtureHandler {
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
     ) -> Result<(), FixtureHandlerError> {
-        if self.is_headless {
+        if !self.is_controller {
             for f in self
                 .fixtures
                 .iter_mut()

@@ -1,7 +1,8 @@
 use std::io::{self, Read};
 
 use super::{
-    demex_proto_read_string, demex_proto_write_string, DemexProtoDeserialize, DemexProtoSerialize,
+    demex_proto_read_string, demex_proto_read_u32, demex_proto_write_string, demex_proto_write_u32,
+    DemexProtoDeserialize, DemexProtoSerialize,
 };
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
@@ -12,7 +13,7 @@ const SYNC_REQUEST: u8 = 0x03;
 
 #[derive(Debug)]
 pub enum DemexProtoHeadlessNodePacket {
-    HeadlessInfoResponse { version: String },
+    HeadlessInfoResponse { id: u32, version: String },
     ShowFileRequest,
     SyncRequest,
 }
@@ -33,7 +34,8 @@ impl DemexProtoSerialize for DemexProtoHeadlessNodePacket {
         let mut bytes_written = 1;
 
         match self {
-            Self::HeadlessInfoResponse { version } => {
+            Self::HeadlessInfoResponse { id, version } => {
+                bytes_written += demex_proto_write_u32(buf, *id)?;
                 bytes_written += demex_proto_write_string(buf, version)?
             }
             Self::ShowFileRequest => {}
@@ -50,8 +52,9 @@ impl DemexProtoDeserialize for DemexProtoHeadlessNodePacket {
     fn deserialize(buf: &mut impl Read) -> std::io::Result<Self::Output> {
         match buf.read_u8()? {
             HEADLESS_INFO_RESPONSE => {
+                let id = demex_proto_read_u32(buf)?;
                 let version = demex_proto_read_string(buf)?;
-                Ok(DemexProtoHeadlessNodePacket::HeadlessInfoResponse { version })
+                Ok(DemexProtoHeadlessNodePacket::HeadlessInfoResponse { id, version })
             }
             SHOW_FILE_REQUEST => Ok(DemexProtoHeadlessNodePacket::ShowFileRequest),
             SYNC_REQUEST => Ok(DemexProtoHeadlessNodePacket::SyncRequest),

@@ -1,4 +1,4 @@
-use std::{net, sync::Arc, thread::JoinHandle};
+use std::{collections::HashSet, net, sync::Arc, thread::JoinHandle};
 
 use parking_lot::RwLock;
 
@@ -26,15 +26,19 @@ enum DemexHeadlessNodeState {
     Verified,
 }
 
-pub struct DemexHeadlessConroller {}
+pub struct DemexHeadlessConroller {
+    nodes: Arc<RwLock<HashSet<u32>>>,
+}
 
 impl DemexHeadlessConroller {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            nodes: Arc::new(RwLock::new(HashSet::new())),
+        }
     }
 
     pub fn start_controller_thread(
-        &self,
+        self,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
         show_context: ShowContext,
     ) -> JoinHandle<()> {
@@ -44,6 +48,7 @@ impl DemexHeadlessConroller {
 
             for stream in listener.incoming() {
                 let show_context = show_context.clone();
+                let nodes = self.nodes.clone();
 
                 std::thread::spawn(move || {
                     let mut node_state = DemexHeadlessNodeState::default();
@@ -58,8 +63,21 @@ impl DemexHeadlessConroller {
                             log::debug!("Received demex proto packet: {:#x}", u8::from(&packet));
 
                             match packet {
-                                DemexProtoHeadlessNodePacket::HeadlessInfoResponse { version } => {
+                                DemexProtoHeadlessNodePacket::HeadlessInfoResponse {
+                                    id,
+                                    version,
+                                } => {
                                     if version != VERSION_STR {
+                                        log::warn!(
+                                            "Version mismatch: {} (node) != {} (controller), shutting down..",
+                                            version,
+                                            VERSION_STR
+                                        );
+                                        break;
+                                    }
+
+                                    if nodes.read().contains(&id) {
+                                        log::warn!("Duplicate node id: {id}, shutting down..");
                                         break;
                                     }
 

@@ -17,7 +17,9 @@ pub mod utils;
 use std::{path::PathBuf, sync::Arc, time};
 
 use gdtf::GdtfFile;
-use headless::{controller::DemexHeadlessConroller, node::DemexHeadlessNode};
+use headless::{
+    controller::DemexHeadlessConroller, id::DemexProtoDeviceId, node::DemexHeadlessNode,
+};
 use itertools::Itertools;
 use parking_lot::RwLock;
 use show::{context::ShowContext, DemexShow};
@@ -51,6 +53,10 @@ struct Args {
     /// Run the application in headless mode (i.e. no UI, used for demex nodes). Pass the ip address of the controller node to connect to.
     #[arg(long, value_name = "IP_ADDRESS")]
     headless: Option<String>,
+
+    /// Set a manual node id for the headless node.
+    #[arg(long, value_name = "ID")]
+    headless_id: Option<u32>,
 }
 
 const TEST_MAX_FUPS: f64 = 60.0;
@@ -132,7 +138,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         show.preset_handler,
         show.updatable_handler,
         show.timing_handler,
-        args.headless.is_some(),
+        if args.headless.is_some() {
+            DemexProtoDeviceId::Node(args.headless_id.unwrap_or_default())
+        } else {
+            DemexProtoDeviceId::Controller
+        },
     );
 
     let fixture_handler_thread_a = context.fixture_handler.clone();
@@ -197,7 +207,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(master_ip) = args.headless {
         log::info!("Running in headless mode, no UI will be shown");
-        DemexHeadlessNode::new().start_headless_in_current_thread(master_ip, context.clone())?;
+        DemexHeadlessNode::new().start_headless_in_current_thread(
+            master_ip,
+            args.headless_id.unwrap_or_default(),
+            context.clone(),
+        )?;
     } else {
         DemexHeadlessConroller::new().start_controller_thread(stats.clone(), context.clone());
 

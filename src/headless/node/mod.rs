@@ -10,7 +10,7 @@ use crate::{
     utils::version::VERSION_STR,
 };
 
-use super::error::DemexHeadlessError;
+use super::{error::DemexHeadlessError, id::DemexProtoDeviceId};
 
 pub struct DemexHeadlessNode {}
 
@@ -22,9 +22,12 @@ impl DemexHeadlessNode {
     pub fn start_headless_in_current_thread(
         &mut self,
         master_ip: String,
+        node_id: u32,
         mut show_context: ShowContext,
     ) -> Result<(), DemexHeadlessError> {
         log::debug!("Connecting to {}..", master_ip);
+
+        let device_id = DemexProtoDeviceId::Node(node_id);
 
         let tcp_stream = net::TcpStream::connect((master_ip.as_str(), DEMEX_HEADLESS_TCP_PORT))
             .map_err(|err| DemexHeadlessError::FailedToConnect(master_ip, err))?;
@@ -50,6 +53,7 @@ impl DemexHeadlessNode {
                     DemexProtoControllerPacket::HeadlessInfoRequest => {
                         let _ = proto.send_packet(
                             &DemexProtoHeadlessNodePacket::HeadlessInfoResponse {
+                                id: node_id,
                                 version: VERSION_STR.to_owned(),
                             },
                         );
@@ -59,7 +63,7 @@ impl DemexHeadlessNode {
                     }
                     DemexProtoControllerPacket::ShowFile { show_file } => {
                         log::debug!("Received show file, updating..");
-                        show_context.update_from(*show_file, true);
+                        show_context.update_from(*show_file, device_id);
                     }
                     DemexProtoControllerPacket::Sync { sync } => {
                         log::debug!("Received sync, applying..");

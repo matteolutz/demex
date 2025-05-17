@@ -2,12 +2,15 @@ use std::sync::Arc;
 
 use parking_lot::RwLock;
 
-use crate::fixture::{
-    handler::FixtureHandler,
-    patch::{Patch, SerializablePatch},
-    presets::PresetHandler,
-    timing::TimingHandler,
-    updatables::UpdatableHandler,
+use crate::{
+    fixture::{
+        handler::FixtureHandler,
+        patch::{Patch, SerializablePatch},
+        presets::PresetHandler,
+        timing::TimingHandler,
+        updatables::UpdatableHandler,
+    },
+    headless::id::DemexProtoDeviceId,
 };
 
 use super::DemexNoUiShow;
@@ -22,14 +25,18 @@ pub struct ShowContext {
 }
 
 impl ShowContext {
-    pub fn update_from(&mut self, show: DemexNoUiShow, is_headless: bool) {
+    pub fn update_from(&mut self, show: DemexNoUiShow, own_device_id: DemexProtoDeviceId) {
         let patch = show
             .patch
             .into_patch(self.patch.read().fixture_types().to_vec());
-        let (fixtures, outputs) = patch.into_fixures_and_outputs();
+        let (fixtures, outputs) = patch.into_fixures_and_outputs(own_device_id);
 
-        *self.fixture_handler.write() =
-            FixtureHandler::new(fixtures, outputs, is_headless).unwrap();
+        *self.fixture_handler.write() = FixtureHandler::new(
+            fixtures,
+            outputs,
+            own_device_id == DemexProtoDeviceId::Controller,
+        )
+        .unwrap();
         *self.preset_handler.write() = show.preset_handler;
         *self.updatable_handler.write() = show.updatable_handler;
         *self.timing_handler.write() = show.timing_handler;
@@ -42,13 +49,18 @@ impl ShowContext {
         preset_handler: PresetHandler,
         updatable_handler: UpdatableHandler,
         timing_handler: TimingHandler,
-        is_headless: bool,
+        own_device_id: DemexProtoDeviceId,
     ) -> Self {
         let patch = Arc::new(RwLock::new(patch.into_patch(fixture_types)));
-        let (fixtures, outputs) = patch.read().into_fixures_and_outputs();
+        let (fixtures, outputs) = patch.read().into_fixures_and_outputs(own_device_id);
 
         let fixture_handler = Arc::new(RwLock::new(
-            FixtureHandler::new(fixtures, outputs, is_headless).unwrap(),
+            FixtureHandler::new(
+                fixtures,
+                outputs,
+                own_device_id == DemexProtoDeviceId::Controller,
+            )
+            .unwrap(),
         ));
 
         let preset_handler = Arc::new(RwLock::new(preset_handler));
