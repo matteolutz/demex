@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, f32, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
@@ -279,7 +279,7 @@ impl FixturePreset {
             }
             FixturePresetData::FeatureEffect { runtime } => {
                 for attribute in runtime.effect().attributes() {
-                    // if the fixture doesn't have this feature type, skip
+                    // if the fixture doesn't have this feature type, ski
                     if let Ok(channels) = fixture.channels_for_attribute(fixture_types, attribute) {
                         for (dmx_channel, _, _) in channels {
                             fixture

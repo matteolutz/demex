@@ -53,6 +53,14 @@ impl FeatureEffectRuntime {
         &mut self.effect
     }
 
+    pub fn phase_mut(&mut self) -> &mut RuntimePhase {
+        &mut self.phase
+    }
+
+    pub fn speed_mut(&mut self) -> &mut EffectSpeed {
+        &mut self.speed
+    }
+
     pub fn is_started(&self) -> bool {
         self.effect_started.is_some()
     }

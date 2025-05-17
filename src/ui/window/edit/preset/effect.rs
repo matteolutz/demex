@@ -26,6 +26,16 @@ pub fn edit_effect_ui(
 ) {
     ui.vertical(|ui| {
         ui.heading("Effect");
+
+        egui_probe::Probe::new(effect_runtime.phase_mut())
+            .with_header("Phase")
+            .show(ui);
+        egui_probe::Probe::new(effect_runtime.speed_mut())
+            .with_header("Speed")
+            .show(ui);
+
+        ui.add_space(20.0);
+
         effect_runtime
             .effect_mut()
             .parts_mut()
@@ -48,6 +58,7 @@ pub fn edit_effect_ui(
                         .show(ui);
 
                         egui::ScrollArea::vertical()
+                            .id_salt(format!("{}EffectPart{}Attributes", top_level_id, idx))
                             .auto_shrink(emath::Vec2b::new(false, true))
                             .max_width(ui.available_width())
                             .max_height(300.0)
@@ -75,6 +86,14 @@ pub fn edit_effect_ui(
                                             }
                                         }
                                     }
+
+                                    egui_probe::Probe::new(part.phase_offset_mut())
+                                        .with_header("Phase offset")
+                                        .show(ui);
+
+                                    egui_probe::Probe::new(part.phase_multiplier_mut())
+                                        .with_header("Phase multiplier")
+                                        .show(ui);
                                 });
                             });
                     });
