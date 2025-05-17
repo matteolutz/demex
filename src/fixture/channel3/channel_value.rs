@@ -14,9 +14,13 @@ use super::utils::{
     dmx_value_to_f32, max_value, mix_dmx_value, multiply_dmx_value, multiply_dmx_value_f32,
 };
 
-#[derive(Debug, Clone)]
+use crate::utils::serde::approx_instant;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FixtureChannelValue2PresetState {
+    #[serde(with = "approx_instant")]
     started: time::Instant,
+
     with_selection: FixtureSelection,
 }
 
@@ -53,7 +57,7 @@ pub enum FixtureChannelValue3 {
     Preset {
         id: FixturePresetId,
 
-        #[serde(default, skip_serializing, skip_deserializing)]
+        #[serde(default, skip_serializing_if = "Option::is_none", skip_deserializing)]
         #[cfg_attr(feature = "ui", egui_probe(skip))]
         state: Option<FixtureChannelValue2PresetState>,
     },

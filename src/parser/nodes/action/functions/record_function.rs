@@ -56,7 +56,8 @@ impl RecordChannelTypeSelector {
                     values.push(CueFixtureChannelValue::new(
                         fixture
                             .get_programmer_value(dmx_channel.name().as_ref())?
-                            .clone(),
+                            .clone()
+                            .with_preset_state(None),
                         dmx_channel.name().as_ref().to_owned(),
                         false,
                     ));
@@ -68,7 +69,7 @@ impl RecordChannelTypeSelector {
                     }
 
                     values.push(CueFixtureChannelValue::new(
-                        value.clone(),
+                        value.clone().with_preset_state(None),
                         dmx_channel.name().as_ref().to_owned(),
                         false,
                     ));
