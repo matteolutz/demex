@@ -3,13 +3,18 @@ use std::hash::Hash;
 use itertools::Itertools;
 
 use crate::{
-    fixture::effect2::wave::{control_point::Effect2WaveControlPoint, Effect2Wave},
+    fixture::effect2::wave::{segment::WaveSegment, wave_type::WaveType, Effect2Wave},
     ui::utils::circle::point_lies_in_radius,
 };
+
+fn project_wave_point(rect: &egui::Rect, point: emath::Pos2) -> emath::Pos2 {
+    rect.left_bottom() + (point.to_vec2() * emath::vec2(rect.width(), -rect.height()))
+}
 
 #[derive(Clone, Default)]
 pub struct WaveEditorState {
     selected_point: Option<usize>,
+    debug_val: f32,
 }
 
 pub struct WaveEditor<'a> {
@@ -67,14 +72,32 @@ impl<'a> WaveEditor<'a> {
             );
         }
 
-        for (idx, control_point) in self.wave.control_points().iter().enumerate() {
-            painter.circle_filled(
-                grid_rect.left_bottom()
-                    + (control_point.vec() * emath::vec2(grid_rect.width(), -grid_rect.height())),
-                5.0,
-                ecolor::Color32::BLUE,
-            );
+        for (idx, seg) in self.wave.segments().iter().enumerate() {
+            if self.wave.wave_type() == WaveType::Bezier {
+                for point in seg.control_points() {
+                    painter.circle_filled(
+                        project_wave_point(&grid_rect, *point),
+                        3.0,
+                        ecolor::Color32::RED,
+                    );
 
+                    painter.line(
+                        vec![
+                            project_wave_point(&grid_rect, seg.start_pos()),
+                            project_wave_point(&grid_rect, *point),
+                        ],
+                        (1.0, ecolor::Color32::YELLOW),
+                    );
+                }
+
+                painter.circle_filled(
+                    project_wave_point(&grid_rect, seg.start_pos()),
+                    5.0,
+                    ecolor::Color32::BLUE,
+                );
+            }
+
+            /*
             if state
                 .selected_point
                 .is_some_and(|selected_point_idx| idx == selected_point_idx)
@@ -87,41 +110,26 @@ impl<'a> WaveEditor<'a> {
                     (2.0, ecolor::Color32::GREEN),
                 );
             }
+            */
         }
 
         if let Some(first) = self
             .wave
-            .control_points()
+            .segments()
             .iter()
-            .min_by(|a, b| a.x().partial_cmp(&b.x()).unwrap())
+            .min_by(|a, b| a.start_pos().x.partial_cmp(&b.start_pos().x).unwrap())
         {
             painter.line(
                 vec![
-                    grid_rect.left_bottom(),
-                    grid_rect.left_bottom()
-                        + (first.vec() * emath::vec2(grid_rect.width(), -grid_rect.height())),
+                    project_wave_point(&grid_rect, emath::pos2(0.0, 0.0)),
+                    project_wave_point(&grid_rect, emath::pos2(first.start_pos().x, 0.0)),
+                    project_wave_point(&grid_rect, first.start_pos()),
                 ],
                 (2.0, ecolor::Color32::BLUE),
             );
         }
 
-        if let Some(last) = self
-            .wave
-            .control_points()
-            .iter()
-            .max_by(|a, b| a.x().partial_cmp(&b.x()).unwrap())
-        {
-            painter.line(
-                vec![
-                    grid_rect.left_bottom()
-                        + (last.vec() * emath::vec2(grid_rect.width(), -grid_rect.height())),
-                    grid_rect.right_bottom(),
-                ],
-                (2.0, ecolor::Color32::BLUE),
-            );
-        }
-
-        if self.wave.control_points().is_empty() {
+        if self.wave.segments().is_empty() {
             painter.line(
                 vec![grid_rect.left_bottom(), grid_rect.right_bottom()],
                 (2.0, ecolor::Color32::BLUE),
@@ -130,17 +138,66 @@ impl<'a> WaveEditor<'a> {
 
         for (a, b) in self
             .wave
-            .control_points()
-            .iter()
-            .sorted_by(|a, b| a.x().partial_cmp(&b.x()).unwrap())
-            .tuple_windows::<(_, _)>()
+            .segment_tuples(&WaveSegment::from_start_pos(emath::pos2(1.0, 0.0)))
         {
-            b.draw_from_prev_point(a, &painter, ecolor::Color32::BLUE, |point| {
-                grid_rect.left_bottom()
-                    + (point.to_vec2() * emath::vec2(grid_rect.width(), -grid_rect.height()))
-            });
+            match self.wave.wave_type() {
+                WaveType::Bezier => {
+                    let bezier_shape = egui::epaint::CubicBezierShape::from_points_stroke(
+                        [
+                            project_wave_point(&grid_rect, a.start_pos()),
+                            project_wave_point(&grid_rect, a.control_points()[1]),
+                            project_wave_point(&grid_rect, b.control_points()[0]),
+                            project_wave_point(&grid_rect, b.start_pos()),
+                        ],
+                        false,
+                        egui::Color32::TRANSPARENT,
+                        (2.0, egui::Color32::BLUE),
+                    );
+
+                    painter.add(bezier_shape);
+                }
+                WaveType::Square => {
+                    let x_half = emath::vec2((b.start_pos().x - a.start_pos().x) / 2.0, 0.0);
+                    painter.line(
+                        vec![
+                            project_wave_point(&grid_rect, a.start_pos()),
+                            project_wave_point(&grid_rect, a.start_pos() + x_half),
+                            project_wave_point(&grid_rect, b.start_pos() - x_half),
+                            project_wave_point(&grid_rect, b.start_pos()),
+                        ],
+                        (2.0, egui::Color32::BLUE),
+                    );
+                }
+                WaveType::Triangle => {
+                    painter.line(
+                        vec![
+                            project_wave_point(&grid_rect, a.start_pos()),
+                            project_wave_point(&grid_rect, b.start_pos()),
+                        ],
+                        (2.0, egui::Color32::BLUE),
+                    );
+                }
+            }
         }
 
+        ui.vertical(|ui| {
+            ui.add(egui::Slider::new(&mut state.debug_val, 0.0..=1.0));
+            let wave_value = self
+                .wave
+                .value(state.debug_val * 2.0 * std::f32::consts::PI);
+
+            painter.circle_filled(
+                project_wave_point(&grid_rect, egui::pos2(state.debug_val, wave_value)),
+                10.0,
+                ecolor::Color32::GREEN,
+            );
+
+            egui_probe::Probe::new(self.wave.wave_type_mut())
+                .with_header("Wave type")
+                .show(ui);
+        });
+
+        /*
         if response.double_clicked() {
             state.selected_point = None;
             let interact_pos = response.interact_pointer_pos().unwrap();
@@ -195,6 +252,7 @@ impl<'a> WaveEditor<'a> {
                 .remove(state.selected_point.unwrap());
             state.selected_point = None;
         }
+        */
 
         ui.ctx().data_mut(|d| d.insert_temp(self.id, state));
     }

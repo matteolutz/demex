@@ -98,9 +98,8 @@ impl Effect2 {
                     .any(|attribute| attribute == attribute_name)
             })
             .map(|part| {
-                /*part.wave
-                .value((time_adjusted - part.phase_offset.to_radians()) / part.phase_multiplier)*/
-                part.wave.value(time_adjusted)
+                part.wave
+                    .value((time_adjusted - part.phase_offset.to_radians()) / part.phase_multiplier)
             })
     }
 }
