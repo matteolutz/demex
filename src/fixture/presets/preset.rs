@@ -279,7 +279,7 @@ impl FixturePreset {
             }
             FixturePresetData::FeatureEffect { runtime } => {
                 for attribute in runtime.effect().attributes() {
-                    // if the fixture doesn't have this feature type, ski
+                    // if the fixture doesn't have this feature type, skip
                     if let Ok(channels) = fixture.channels_for_attribute(fixture_types, attribute) {
                         for (dmx_channel, _, _) in channels {
                             fixture
