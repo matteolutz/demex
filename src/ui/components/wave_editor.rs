@@ -1,19 +1,26 @@
 use std::hash::Hash;
 
-use itertools::Itertools;
-
-use crate::{
-    fixture::effect2::wave::{segment::WaveSegment, wave_type::WaveType, Effect2Wave},
-    ui::utils::circle::point_lies_in_radius,
+use crate::fixture::effect2::wave::{
+    segment::{WaveSegment, WaveSegmentTouchResult},
+    wave_type::WaveType,
+    Effect2Wave,
 };
+
+const SNAP_DISTANCE: f32 = 20.0;
 
 fn project_wave_point(rect: &egui::Rect, point: emath::Pos2) -> emath::Pos2 {
     rect.left_bottom() + (point.to_vec2() * emath::vec2(rect.width(), -rect.height()))
 }
 
+fn unproject_wave_point(rect: &egui::Rect, point: emath::Pos2) -> emath::Pos2 {
+    let x = (point.x - rect.left()) / rect.width();
+    let y = 1.0 - ((point.y - rect.top()) / rect.height());
+    emath::pos2(x, y)
+}
+
 #[derive(Clone, Default)]
 pub struct WaveEditorState {
-    selected_point: Option<usize>,
+    selected_point: Option<(usize, WaveSegmentTouchResult)>,
     debug_val: f32,
 }
 
@@ -41,6 +48,9 @@ impl<'a> WaveEditor<'a> {
 
         let grid_rect = response.rect.shrink(20.0);
 
+        let project_point = |point: emath::Pos2| project_wave_point(&grid_rect, point);
+        let unproject_point = |point: emath::Pos2| unproject_wave_point(&grid_rect, point);
+
         painter.rect_stroke(
             grid_rect,
             egui::CornerRadius::same(5),
@@ -48,7 +58,7 @@ impl<'a> WaveEditor<'a> {
             egui::StrokeKind::Middle,
         );
 
-        let num_horizontal_lines = 4;
+        let num_horizontal_lines = 5;
         let horizontal_offset = grid_rect.height() / (num_horizontal_lines + 1) as f32;
 
         for i in 1..=num_horizontal_lines {
@@ -89,13 +99,13 @@ impl<'a> WaveEditor<'a> {
                         (1.0, ecolor::Color32::YELLOW),
                     );
                 }
-
-                painter.circle_filled(
-                    project_wave_point(&grid_rect, seg.start_pos()),
-                    5.0,
-                    ecolor::Color32::BLUE,
-                );
             }
+
+            painter.circle_filled(
+                project_wave_point(&grid_rect, seg.start_pos()),
+                5.0,
+                ecolor::Color32::BLUE,
+            );
 
             /*
             if state
@@ -197,52 +207,52 @@ impl<'a> WaveEditor<'a> {
                 .show(ui);
         });
 
-        /*
         if response.double_clicked() {
             state.selected_point = None;
             let interact_pos = response.interact_pointer_pos().unwrap();
-            let x = (interact_pos.x - grid_rect.left()) / grid_rect.width();
-            let y = 1.0 - ((interact_pos.y - grid_rect.top()) / grid_rect.height());
-            self.wave
-                .control_points_mut()
-                .push(Effect2WaveControlPoint::default_with(x, y));
-        }
-
-        if response.clicked() {
-            let interact_pos = response.interact_pointer_pos().unwrap();
-            state.selected_point = self.wave.control_points_mut().iter_mut().position(|point| {
-                point_lies_in_radius(
-                    interact_pos,
-                    20.0,
-                    grid_rect.left_bottom()
-                        + (point.vec() * emath::vec2(grid_rect.width(), -grid_rect.height())),
-                )
-            });
+            let pos = unproject_point(interact_pos);
+            self.wave.insert_segment(pos);
         }
 
         if response.dragged() {
-            let interact_pos = response.interact_pointer_pos().unwrap();
+            let mut interact_pos = response.interact_pointer_pos().unwrap();
 
-            if let Some(selected_point_idx) = state.selected_point {
-                let selected_point = &mut self.wave.control_points_mut()[selected_point_idx];
-                let x = (interact_pos.x - grid_rect.left()) / grid_rect.width();
-                let y = 1.0 - ((interact_pos.y - grid_rect.top()) / grid_rect.height());
-                *selected_point.x_mut() = x.clamp(0.0, 1.0);
-                *selected_point.y_mut() = y.clamp(0.0, 1.0);
-            } else {
-                state.selected_point =
-                    self.wave.control_points_mut().iter_mut().position(|point| {
-                        point_lies_in_radius(
-                            interact_pos,
-                            20.0,
-                            grid_rect.left_bottom()
-                                + (point.vec()
-                                    * emath::vec2(grid_rect.width(), -grid_rect.height())),
-                        )
-                    });
+            let nearest_x = grid_rect.left()
+                + ((interact_pos.x - grid_rect.left())
+                    / (grid_rect.width() / (num_vertical_lines + 1) as f32))
+                    .round()
+                    * (grid_rect.width() / (num_vertical_lines + 1) as f32);
+            let nearest_y = grid_rect.top()
+                + ((interact_pos.y - grid_rect.top())
+                    / (grid_rect.height() / (num_horizontal_lines + 1) as f32))
+                    .round()
+                    * (grid_rect.height() / (num_horizontal_lines + 1) as f32);
+
+            let nearest_pos = emath::pos2(nearest_x, nearest_y);
+
+            if interact_pos.distance(nearest_pos) < SNAP_DISTANCE {
+                interact_pos = nearest_pos;
             }
+
+            if let Some((seg_idx, touch_mode)) = state.selected_point {
+                if let Some(segment) = self.wave.segments_mut().get_mut(seg_idx) {
+                    segment.apply_dragging(touch_mode, unproject_point(interact_pos));
+                }
+            }
+        } else if response.is_pointer_button_down_on() {
+            let interact_pos = response.interact_pointer_pos().unwrap();
+            state.selected_point =
+                self.wave
+                    .segments()
+                    .iter()
+                    .enumerate()
+                    .find_map(|(idx, seg)| {
+                        seg.touch(interact_pos, 20.0, project_point)
+                            .map(|res| (idx, res))
+                    });
         }
 
+        /*
         if state.selected_point.is_some()
             && ui
                 .input_mut(|reader| reader.consume_key(egui::Modifiers::NONE, egui::Key::Backspace))

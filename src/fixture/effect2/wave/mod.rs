@@ -44,6 +44,10 @@ impl Effect2Wave {
         &self.segments
     }
 
+    pub fn segments_mut(&mut self) -> &mut Vec<WaveSegment> {
+        &mut self.segments
+    }
+
     pub fn wave_type(&self) -> WaveType {
         self.wave_type
     }
@@ -67,6 +71,12 @@ impl Effect2Wave {
                 .sorted_by(|a, b| a.start_pos().x.partial_cmp(&b.start_pos().x).unwrap())
                 .tuple_windows::<(_, _)>()
         }
+    }
+
+    pub fn insert_segment(&mut self, pos: emath::Pos2) {
+        self.segments.push(WaveSegment::from_start_pos(
+            pos.clamp(emath::Pos2::ZERO, emath::pos2(1.0, 1.0)),
+        ));
     }
 
     // TODO: optimize this
