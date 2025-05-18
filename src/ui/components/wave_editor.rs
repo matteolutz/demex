@@ -6,7 +6,7 @@ use crate::fixture::effect2::wave::{
     Effect2Wave,
 };
 
-const SNAP_DISTANCE: f32 = 20.0;
+const SNAP_DISTANCE: f32 = 15.0;
 
 fn project_wave_point(rect: &egui::Rect, point: emath::Pos2) -> emath::Pos2 {
     rect.left_bottom() + (point.to_vec2() * emath::vec2(rect.width(), -rect.height()))
@@ -46,7 +46,7 @@ impl<'a> WaveEditor<'a> {
         let (response, painter) =
             ui.allocate_painter(emath::vec2(3.0, 1.0) * 300.0, egui::Sense::click_and_drag());
 
-        let grid_rect = response.rect.shrink(20.0);
+        let grid_rect = response.rect.shrink(30.0);
 
         let project_point = |point: emath::Pos2| project_wave_point(&grid_rect, point);
         let unproject_point = |point: emath::Pos2| unproject_wave_point(&grid_rect, point);
@@ -58,7 +58,7 @@ impl<'a> WaveEditor<'a> {
             egui::StrokeKind::Middle,
         );
 
-        let num_horizontal_lines = 5;
+        let num_horizontal_lines = 6;
         let horizontal_offset = grid_rect.height() / (num_horizontal_lines + 1) as f32;
 
         for i in 1..=num_horizontal_lines {
@@ -68,9 +68,23 @@ impl<'a> WaveEditor<'a> {
                 vec![from, to],
                 egui::epaint::PathStroke::new(1.0, ecolor::Color32::WHITE.gamma_multiply(0.5)),
             );
+
+            // TODO: draw labels
+            painter.text(
+                from - egui::vec2(5.0, 0.0),
+                egui::Align2::RIGHT_CENTER,
+                format!(
+                    "{}%",
+                    (((num_horizontal_lines - i + 1) as f32 / (num_horizontal_lines + 1) as f32)
+                        * 100.0)
+                        .round()
+                ),
+                egui::FontId::proportional(12.0),
+                egui::Color32::WHITE,
+            );
         }
 
-        let num_vertical_lines = 9;
+        let num_vertical_lines = 11;
         let vertical_offset = grid_rect.width() / (num_vertical_lines + 1) as f32;
 
         for i in 1..=num_vertical_lines {
@@ -79,6 +93,25 @@ impl<'a> WaveEditor<'a> {
             painter.line(
                 vec![from, to],
                 egui::epaint::PathStroke::new(1.0, ecolor::Color32::WHITE.gamma_multiply(0.5)),
+            );
+        }
+
+        let num_phase_labels = 4;
+        for i in 0..=num_phase_labels {
+            let pos = grid_rect.left_bottom()
+                + emath::vec2(
+                    (i as f32 / num_phase_labels as f32) * grid_rect.width(),
+                    0.0,
+                );
+
+            let deg = (i as f32 / num_phase_labels as f32) * 360.0;
+
+            painter.text(
+                pos + egui::vec2(0.0, 5.0),
+                egui::Align2::CENTER_TOP,
+                format!("{}°", deg),
+                egui::FontId::proportional(12.0),
+                egui::Color32::WHITE,
             );
         }
 
