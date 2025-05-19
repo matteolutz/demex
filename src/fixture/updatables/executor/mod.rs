@@ -162,16 +162,7 @@ impl Executor {
                     None
                 } else {
                     runtime
-                        .channel_value(
-                            fixture_types,
-                            fixture,
-                            channel,
-                            1.0,
-                            1.0,
-                            preset_handler,
-                            timing_handler,
-                            self.priority,
-                        )
+                        .channel_value(fixture, channel, self.priority)
                         .map(|val| val.multiply(fade))
                 }
             }
@@ -185,20 +176,32 @@ impl Executor {
                             fixture,
                             fixture_types,
                             selection.offset(fixture.id())?,
-                            self.priority,
                             timing_handler,
                         )
                         .ok()
-                        .map(|val| val.multiply(fade))
+                        .map(|val| FadeFixtureChannelValue::new(val, fade, self.priority))
                 }
             }
         }
     }
 
-    pub fn update(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
+    pub fn update(
+        &mut self,
+        fixture_types: &FixtureTypeList,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
+    ) {
         match &mut self.config {
             ExecutorConfig::Sequence { runtime, .. } => {
-                if runtime.update(1.0, preset_handler) {
+                if runtime.update(
+                    1.0,
+                    fixture_types,
+                    fixture_handler,
+                    preset_handler,
+                    timing_handler,
+                    self.priority,
+                ) {
                     self.stop(fixture_handler, preset_handler);
                 }
             }
@@ -260,27 +263,6 @@ impl Executor {
         if let ExecutorConfig::Sequence { runtime, .. } = &mut self.config {
             if runtime.next_cue(preset_handler, time_offset) {
                 self.stop(fixture_handler, preset_handler);
-            }
-        }
-    }
-
-    pub fn to_string(&self, preset_handler: &PresetHandler) -> String {
-        match &self.config {
-            ExecutorConfig::Sequence { runtime, .. } => format!(
-                "{}\nSeq - ({}/{})\n{}",
-                self.name(),
-                runtime
-                    .current_cue()
-                    .map(|c| (c + 1).to_string())
-                    .unwrap_or("-".to_owned()),
-                runtime.num_cues(preset_handler),
-                preset_handler
-                    .get_sequence(runtime.sequence_id())
-                    .unwrap()
-                    .name()
-            ),
-            ExecutorConfig::FeatureEffect { runtime, .. } => {
-                format!("{}\nEffect\n{:?}", self.name(), runtime.effect())
             }
         }
     }

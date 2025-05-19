@@ -16,8 +16,12 @@ use crate::parser::nodes::{
 };
 
 use super::{
-    handler::FixtureHandler, presets::PresetHandler, selection::FixtureSelection,
-    sequence::runtime::SequenceRuntime, value_source::FixtureChannelValuePriority,
+    handler::{FixtureHandler, FixtureTypeList},
+    presets::PresetHandler,
+    selection::FixtureSelection,
+    sequence::runtime::SequenceRuntime,
+    timing::TimingHandler,
+    value_source::FixtureChannelValuePriority,
 };
 
 pub mod error;
@@ -213,11 +217,18 @@ impl UpdatableHandler {
 
     pub fn update_executors(
         &mut self,
+        fixture_types: &FixtureTypeList,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
     ) {
         for (_, runtime) in self.executors.iter_mut() {
-            runtime.update(fixture_handler, preset_handler);
+            runtime.update(
+                fixture_types,
+                fixture_handler,
+                preset_handler,
+                timing_handler,
+            );
         }
     }
 
@@ -297,9 +308,20 @@ impl UpdatableHandler {
         self.faders.keys().cloned().collect()
     }
 
-    pub fn update_faders(&mut self, preset_handler: &PresetHandler) {
+    pub fn update_faders(
+        &mut self,
+        fixture_types: &FixtureTypeList,
+        fixture_handler: &FixtureHandler,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
+    ) {
         for (_, fader) in self.faders.iter_mut() {
-            fader.update(preset_handler);
+            fader.update(
+                fixture_types,
+                fixture_handler,
+                preset_handler,
+                timing_handler,
+            );
         }
     }
 

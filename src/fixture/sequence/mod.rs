@@ -39,8 +39,16 @@ impl FadeFixtureChannelValue {
         )
     }
 
+    pub fn home(priority: FixtureChannelValuePriority) -> FadeFixtureChannelValue {
+        FadeFixtureChannelValue::new(FixtureChannelValue3::Home, 1.0, priority)
+    }
+
     pub fn value(&self) -> &FixtureChannelValue3 {
         &self.value
+    }
+
+    pub fn into_value(self) -> FixtureChannelValue3 {
+        self.value
     }
 
     pub fn flatten_value(self) -> Self {

@@ -343,17 +343,27 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     };
 
                     let decoration = match executor.config() {
-                        ExecutorConfig::Sequence { runtime, .. } => PresetGridButtonDecoration {
-                            right_top_text: Some(format!(
-                                "{}/{}",
-                                runtime
-                                    .current_cue()
+                        ExecutorConfig::Sequence { runtime, .. } => {
+                            let current_cues = runtime.current_cues();
+                            let current_cue_text = if current_cues.is_empty() {
+                                "-".to_owned()
+                            } else {
+                                current_cues
+                                    .into_iter()
                                     .map(|c| (c + 1).to_string())
-                                    .unwrap_or("-".to_owned()),
-                                runtime.num_cues(&preset_handler)
-                            )),
-                            left_bottom_text: Some("Seq".to_owned()),
-                        },
+                                    .collect::<Vec<_>>()
+                                    .join(", ")
+                            };
+
+                            PresetGridButtonDecoration {
+                                right_top_text: Some(format!(
+                                    "({})/{}",
+                                    current_cue_text,
+                                    runtime.num_cues(&preset_handler)
+                                )),
+                                left_bottom_text: Some("Seq".to_owned()),
+                            }
+                        }
                         ExecutorConfig::FeatureEffect { .. } => PresetGridButtonDecoration {
                             right_top_text: None,
                             left_bottom_text: Some("FeFX".to_owned()),

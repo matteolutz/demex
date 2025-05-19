@@ -78,14 +78,14 @@ impl FunctionArgs for DeleteArgs {
                 ) => {
                     let group_id_from = fixture_selector_from.try_as_group_id().ok_or(
                         ActionRunError::ActionNotImplementedForObject(
-                            "Rename".to_owned(),
+                            "Delete".to_owned(),
                             self.object_range.from().clone(),
                         ),
                     )?;
 
                     let group_id_to = fixture_selector_to.try_as_group_id().ok_or(
                         ActionRunError::ActionNotImplementedForObject(
-                            "Rename".to_owned(),
+                            "Delete".to_owned(),
                             self.object_range.to().clone(),
                         ),
                     )?;
@@ -161,7 +161,7 @@ impl FunctionArgs for DeleteArgs {
                 )),
             },
             _ => Err(ActionRunError::ActionNotImplementedForObjectRange(
-                "Rename".to_owned(),
+                "Delete".to_owned(),
                 self.object_range.clone(),
             )),
         }

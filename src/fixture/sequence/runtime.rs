@@ -1,50 +1,127 @@
-use std::{str::FromStr, time};
+use std::{collections::HashMap, time};
 
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
-    channel3::{
-        channel_value::FixtureChannelValue3, feature::feature_type::FixtureChannel3FeatureType,
-    },
+    channel3::channel_value::FixtureChannelValue3,
     gdtf::GdtfFixture,
-    handler::FixtureTypeList,
+    handler::{FixtureHandler, FixtureTypeList},
     presets::PresetHandler,
     timing::TimingHandler,
     value_source::FixtureChannelValuePriority,
 };
 
-use super::{cue::CueTrigger, FadeFixtureChannelValue, SequenceStopBehavior};
+use super::{cue::CueTrigger, FadeFixtureChannelValue, Sequence, SequenceStopBehavior};
+
+pub struct ActiveCueData {}
 
 #[derive(Debug, Clone, Default)]
 pub enum SequenceRuntimeState {
     #[default]
     Stopped,
 
-    FirstCue(time::Instant),
-    Cue(time::Instant, time::Instant, usize),
+    Cues {
+        active_cues: Vec<(usize, time::Instant)>,
+        current_cue: usize,
+    },
 }
 
 impl SequenceRuntimeState {
     pub fn is_started(&self) -> bool {
         match self {
-            Self::Cue(_, _, _) | Self::FirstCue(_) => true,
+            Self::Cues { .. } => true,
             Self::Stopped => false,
         }
     }
 
-    pub fn cue_idx(&self) -> Option<usize> {
-        match self {
-            Self::FirstCue(_) => Some(0),
-            Self::Cue(_, _, idx) => Some(*idx),
-            _ => None,
+    pub fn start(time_offset: f32) -> Self {
+        Self::Cues {
+            active_cues: vec![(
+                0,
+                time::Instant::now() - time::Duration::from_secs_f32(time_offset),
+            )],
+            current_cue: 0,
         }
     }
 
+    /*
     pub fn when_started(&self) -> Option<(Option<time::Instant>, time::Instant, usize, bool)> {
         match self {
             Self::FirstCue(t) => Some((None, *t, 0, true)),
             Self::Cue(prev_t, t, idx) => Some((Some(*prev_t), *t, *idx, false)),
             _ => None,
+        }
+    }
+    */
+
+    pub fn when_started_mut(&mut self) -> Option<(&mut Vec<(usize, time::Instant)>, usize)> {
+        match self {
+            Self::Cues {
+                active_cues,
+                current_cue,
+            } => Some((active_cues, *current_cue)),
+            _ => None,
+        }
+    }
+
+    pub fn activate_cue(self, cue_idx: usize, activated_at: time::Instant) -> Self {
+        match self {
+            Self::Stopped => Self::Stopped,
+            Self::Cues {
+                mut active_cues, ..
+            } => {
+                if let Some((_, el)) = active_cues.iter_mut().find(|(i, _)| *i == cue_idx) {
+                    *el = activated_at;
+                } else {
+                    active_cues.push((cue_idx, activated_at));
+                }
+
+                Self::Cues {
+                    active_cues,
+                    current_cue: cue_idx,
+                }
+            }
+        }
+    }
+
+    pub fn next_cue(
+        self,
+        num_cues: usize,
+        stop_behavior: SequenceStopBehavior,
+        time_offset: f32,
+    ) -> Self {
+        match self {
+            Self::Stopped => Self::start(time_offset),
+            Self::Cues {
+                mut active_cues,
+                current_cue,
+            } => {
+                if current_cue == num_cues - 1 && stop_behavior != SequenceStopBehavior::Restart {
+                    Self::Stopped
+                } else {
+                    let next_cue = (current_cue + 1) % num_cues;
+                    let activated_at =
+                        time::Instant::now() - time::Duration::from_secs_f32(time_offset);
+
+                    if let Some((_, el)) = active_cues.iter_mut().find(|(i, _)| *i == next_cue) {
+                        *el = activated_at;
+                    } else {
+                        active_cues.push((next_cue, activated_at));
+                    }
+
+                    Self::Cues {
+                        active_cues,
+                        current_cue: next_cue,
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn current_cue_indices(&self) -> Vec<usize> {
+        match self {
+            Self::Cues { active_cues, .. } => active_cues.iter().map(|(i, _)| *i).collect(),
+            Self::Stopped => vec![],
         }
     }
 }
@@ -57,6 +134,10 @@ pub struct SequenceRuntime {
     #[serde(default, skip_serializing, skip_deserializing)]
     #[cfg_attr(feature = "ui", egui_probe(skip))]
     state: SequenceRuntimeState,
+
+    #[serde(default, skip_serializing, skip_deserializing)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
+    tracked_values: HashMap<u32, HashMap<String, Vec<(usize, FadeFixtureChannelValue)>>>,
 }
 
 impl SequenceRuntime {
@@ -64,6 +145,7 @@ impl SequenceRuntime {
         Self {
             sequence_id,
             state: SequenceRuntimeState::default(),
+            tracked_values: HashMap::new(),
         }
     }
 
@@ -75,8 +157,8 @@ impl SequenceRuntime {
         self.state.is_started()
     }
 
-    pub fn current_cue(&self) -> Option<usize> {
-        self.state.cue_idx()
+    pub fn current_cues(&self) -> Vec<usize> {
+        self.state.current_cue_indices()
     }
 
     pub fn num_cues(&self, preset_handler: &PresetHandler) -> usize {
@@ -89,15 +171,30 @@ impl SequenceRuntime {
 
     pub fn channel_value(
         &self,
-        fixture_types: &FixtureTypeList,
         fixture: &GdtfFixture,
         channel: &gdtf::dmx_mode::DmxChannel,
-        speed_multiplier: f32,
-        intensity_multiplier: f32,
-        preset_handler: &PresetHandler,
-        timing_handler: &TimingHandler,
         priority: FixtureChannelValuePriority,
     ) -> Option<FadeFixtureChannelValue> {
+        return self.tracked_values.get(&fixture.id()).and_then(|values| {
+            values.iter().find_map(|(value_channel_name, values)| {
+                if value_channel_name == channel.name().as_ref() {
+                    let mut value = FixtureChannelValue3::Home;
+                    for (_, v) in values.iter() {
+                        value = FixtureChannelValue3::Mix {
+                            a: Box::new(value),
+                            b: Box::new(v.value().clone()),
+                            mix: v.alpha,
+                        };
+                    }
+
+                    Some(FadeFixtureChannelValue::new(value, 1.0, priority))
+                } else {
+                    None
+                }
+            })
+        });
+
+        /*
         if let Some((prev_cue_update, cue_update, cue_idx, is_first_cue)) =
             self.state.when_started()
         {
@@ -234,61 +331,135 @@ impl SequenceRuntime {
         } else {
             None
         }
+
+        */
     }
 
-    pub fn update(&mut self, speed_multiplier: f32, preset_handler: &PresetHandler) -> bool {
-        if let Some((_, cue_update, cue_idx, _)) = self.state.when_started() {
+    pub fn update_values(
+        tracked_values: &mut HashMap<u32, HashMap<String, Vec<(usize, FadeFixtureChannelValue)>>>,
+        sequence: &Sequence,
+        active_cues: &[(usize, time::Instant)],
+        fixture_handler: &FixtureHandler,
+        fixture_types: &FixtureTypeList,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
+        priority: FixtureChannelValuePriority,
+    ) {
+        for (cue_idx, cue_activated_at) in active_cues.iter() {
+            let cue = sequence.cue(*cue_idx);
+
+            if cue.block() {
+                tracked_values.clear();
+            }
+
+            let cue_delta = time::Instant::now()
+                .duration_since(*cue_activated_at)
+                .as_secs_f32();
+
+            for fixture_id in cue.affected_fixtures(preset_handler) {
+                let fixture_cue_delta =
+                    (cue_delta - cue.offset_for_fixture(fixture_id, preset_handler)).max(0.0);
+
+                let cue_values = cue.values_for_fixture(
+                    fixture_handler.fixture_immut(fixture_id).unwrap(),
+                    fixture_types,
+                    preset_handler,
+                    timing_handler,
+                    Some(*cue_activated_at),
+                );
+
+                let fixture_cue_fade = if fixture_cue_delta < cue.in_delay() {
+                    0.0
+                } else {
+                    ((fixture_cue_delta - cue.in_delay()) / cue.in_fade()).min(1.0)
+                };
+
+                for value in cue_values {
+                    let fixture_values = tracked_values.entry(fixture_id).or_default();
+                    let (channel_name, value) = value.into();
+
+                    if let Some(existing_values) = fixture_values.get_mut(&channel_name) {
+                        if fixture_cue_fade == 0.0 {
+                            continue;
+                        } else if fixture_cue_fade == 1.0 {
+                            *existing_values = vec![(
+                                *cue_idx,
+                                FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
+                            )];
+                        } else {
+                            existing_values.retain(|(value_cue_idx, _)| *value_cue_idx != *cue_idx);
+                            existing_values.push((
+                                *cue_idx,
+                                FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
+                            ));
+                        }
+                    } else {
+                        fixture_values.insert(
+                            channel_name,
+                            vec![(
+                                *cue_idx,
+                                FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
+                            )],
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn update(
+        &mut self,
+        speed_multiplier: f32,
+        fixture_types: &FixtureTypeList,
+        fixture_handler: &FixtureHandler,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
+        priority: FixtureChannelValuePriority,
+    ) -> bool {
+        if let Some((active_cues, current_cue_idx)) = self.state.when_started_mut() {
             let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
             if sequence.cues().is_empty() {
-                return false;
+                return true;
             }
 
-            let delta = time::Instant::now()
-                .duration_since(cue_update)
-                .as_secs_f32()
-                * speed_multiplier;
+            active_cues.retain(|(cue_idx, cue_activated_at)| {
+                let cue = sequence.cue(*cue_idx);
+                let cue_in_time = cue.in_time(preset_handler);
 
-            let previous_cue_idx = self.previous_cue_idx(preset_handler);
-            let current_cue = sequence.cue(cue_idx);
-            let next_cue_idx = self.next_cue_idx(preset_handler);
+                let cue_delta = time::Instant::now()
+                    .duration_since(*cue_activated_at)
+                    .as_secs_f32();
 
-            let previous_cue_out_time = previous_cue_idx
-                .map(|i| sequence.cue(i).out_time(preset_handler))
-                .unwrap_or(0.0);
+                cue_delta <= cue_in_time || *cue_idx == current_cue_idx
+            });
 
-            let cue_time = previous_cue_out_time + current_cue.in_time(preset_handler);
+            // TODO: follow cues
 
-            if delta > cue_time {
-                // is the next cue, a follow cue?
-                if let Some(next_cue_idx) = next_cue_idx {
-                    if *sequence.cue(next_cue_idx).trigger() == CueTrigger::Follow {
-                        self.next_cue(preset_handler, 0.0);
-                    }
-                    // it's the last cue, so we should wait for the out time of the last cue
-                    // and then stop the sequence, if the sequence is set to auto stop
-                } else if sequence.stop_behavior() == SequenceStopBehavior::AutoStop
-                    && delta > cue_time + current_cue.out_time(preset_handler)
-                {
-                    self.stop();
-                    return true;
-                }
-            }
+            Self::update_values(
+                &mut self.tracked_values,
+                sequence,
+                active_cues,
+                fixture_handler,
+                fixture_types,
+                preset_handler,
+                timing_handler,
+                priority,
+            );
 
-            false
+            active_cues.is_empty()
         } else {
-            false
+            true
         }
     }
 
     pub fn start(&mut self, time_offset: f32) {
-        self.state = SequenceRuntimeState::FirstCue(
-            time::Instant::now() - time::Duration::from_secs_f32(time_offset),
-        );
+        self.state = SequenceRuntimeState::start(time_offset);
     }
 
     pub fn stop(&mut self) {
-        self.state = SequenceRuntimeState::Stopped
+        self.state = SequenceRuntimeState::Stopped;
+        self.tracked_values.clear();
     }
 
     pub fn should_auto_restart(&self, preset_handler: &PresetHandler) -> bool {
@@ -302,30 +473,18 @@ impl SequenceRuntime {
     }
 
     pub fn next_cue(&mut self, preset_handler: &PresetHandler, time_offset: f32) -> bool {
-        if let Some((_, cue_update, cue_idx, _)) = self.state.when_started() {
-            let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
+        let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
-            if cue_idx == sequence.cues().len() - 1 && !self.should_auto_restart(preset_handler) {
-                if sequence.stop_behavior() == SequenceStopBehavior::Restart {
-                    self.state = SequenceRuntimeState::Cue(cue_update, time::Instant::now(), 0);
-                    return false;
-                } else {
-                    self.stop();
-                    return true;
-                }
-            }
-
-            let cue_idx = (cue_idx + 1) % sequence.cues().len();
-            self.state = SequenceRuntimeState::Cue(
-                cue_update,
-                time::Instant::now() - time::Duration::from_secs_f32(time_offset),
-                cue_idx,
-            );
-        }
+        self.state = self.state.clone().next_cue(
+            sequence.cues().len(),
+            sequence.stop_behavior(),
+            time_offset,
+        );
 
         false
     }
 
+    /*
     pub fn previous_cue_idx(&self, preset_handler: &PresetHandler) -> Option<usize> {
         if let Some((_, _, cue_idx, is_first_cue)) = self.state.when_started() {
             let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
@@ -367,4 +526,6 @@ impl SequenceRuntime {
             None
         }
     }
+
+    */
 }

@@ -200,8 +200,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     &timing_handler,
                 )
                 .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
-            updatable_handler.update_faders(&preset_handler);
-            updatable_handler.update_executors(&mut fixture_handler, &preset_handler);
+            updatable_handler.update_faders(
+                patch.fixture_types(),
+                &fixture_handler,
+                &preset_handler,
+                &timing_handler,
+            );
+            updatable_handler.update_executors(
+                patch.fixture_types(),
+                &mut fixture_handler,
+                &preset_handler,
+                &timing_handler,
+            );
         },
     );
 

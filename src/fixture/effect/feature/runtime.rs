@@ -12,10 +12,8 @@ use crate::{
         effect2::effect::Effect2,
         gdtf::GdtfFixture,
         handler::FixtureTypeList,
-        sequence::FadeFixtureChannelValue,
         timing::TimingHandler,
         updatables::runtime::RuntimePhase,
-        value_source::FixtureChannelValuePriority,
     },
     utils::math::instant_diff_secs,
 };
@@ -74,21 +72,49 @@ impl FeatureEffectRuntime {
         self.effect_started = None;
     }
 
+    pub fn get_values_with_started(
+        &self,
+        fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
+        fixture_offset: f32,
+        timing_handler: &TimingHandler,
+        started: Option<time::Instant>,
+    ) -> Vec<(String, FixtureChannelValue3)> {
+        self.effect()
+            .attributes()
+            .flat_map(|attribute| {
+                fixture
+                    .channels_for_attribute(fixture_types, attribute)
+                    .unwrap()
+            })
+            .filter_map(|(channel, _, _)| {
+                self.get_channel_value_with_started(
+                    channel.name().as_ref(),
+                    fixture,
+                    fixture_types,
+                    fixture_offset,
+                    timing_handler,
+                    started,
+                )
+                .ok()
+                .map(|value| (channel.name().as_ref().to_owned(), value))
+            })
+            .collect::<Vec<_>>()
+    }
+
     pub fn get_channel_value(
         &self,
         channel_name: &str,
         fixture: &GdtfFixture,
         fixture_types: &FixtureTypeList,
         fixture_offset: f32,
-        priority: FixtureChannelValuePriority,
         timing_handler: &TimingHandler,
-    ) -> Result<FadeFixtureChannelValue, EffectError> {
+    ) -> Result<FixtureChannelValue3, EffectError> {
         self.get_channel_value_with_started(
             channel_name,
             fixture,
             fixture_types,
             fixture_offset,
-            priority,
             timing_handler,
             self.effect_started,
         )
@@ -100,10 +126,9 @@ impl FeatureEffectRuntime {
         fixture: &GdtfFixture,
         fixture_types: &FixtureTypeList,
         fixture_offset: f32,
-        priority: FixtureChannelValuePriority,
         timing_handler: &TimingHandler,
         started: Option<time::Instant>,
-    ) -> Result<FadeFixtureChannelValue, EffectError> {
+    ) -> Result<FixtureChannelValue3, EffectError> {
         started
             .ok_or(EffectError::EffectNotStarted)
             .and_then(|effect_started| {
@@ -162,9 +187,7 @@ impl FeatureEffectRuntime {
                     }
                 }
 
-                channel_value
-                    .map(|channel_value| FadeFixtureChannelValue::new(channel_value, 1.0, priority))
-                    .ok_or(EffectError::NoValueForAttribute)
+                channel_value.ok_or(EffectError::NoValueForAttribute)
             })
     }
 

@@ -16,7 +16,6 @@ use crate::{
         handler::{FixtureHandler, FixtureTypeList},
         selection::FixtureSelection,
         timing::TimingHandler,
-        value_source::FixtureChannelValuePriority,
     },
     parser::nodes::{
         action::{functions::update_function::UpdateMode, ValueOrRange},
@@ -343,6 +342,40 @@ impl FixturePreset {
         &mut self.display_color
     }
 
+    pub fn values(
+        &self,
+        fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
+        _preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
+        state: Option<&FixtureChannelValue2PresetState>,
+    ) -> Vec<(String, FixtureChannelValue3)> {
+        match &self.data {
+            FixturePresetData::Default { data } => data
+                .get(&fixture.id())
+                .map(|values| {
+                    values
+                        .iter()
+                        .map(|(channel_name, value)| (channel_name.clone(), value.clone()))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default(),
+            FixturePresetData::FeatureEffect { runtime } => {
+                let fixture_offset = state
+                    .and_then(|state| state.selection().offset(fixture.id()))
+                    .unwrap_or_default();
+
+                runtime.get_values_with_started(
+                    fixture,
+                    fixture_types,
+                    fixture_offset,
+                    timing_handler,
+                    state.map(|state| state.started()),
+                )
+            }
+        }
+    }
+
     pub fn value(
         &self,
         fixture: &GdtfFixture,
@@ -371,17 +404,16 @@ impl FixturePreset {
                     .and_then(|state| state.selection().offset(fixture.id()))
                     .unwrap_or_default();
 
-                let fade_val = runtime.get_channel_value_with_started(
-                    channel_name,
-                    fixture,
-                    fixture_types,
-                    fixture_offset,
-                    FixtureChannelValuePriority::default(),
-                    timing_handler,
-                    state.map(|state| state.started()),
-                );
-
-                fade_val.ok().map(|value| value.value().clone())
+                runtime
+                    .get_channel_value_with_started(
+                        channel_name,
+                        fixture,
+                        fixture_types,
+                        fixture_offset,
+                        timing_handler,
+                        state.map(|state| state.started()),
+                    )
+                    .ok()
             }
         };
 

@@ -42,7 +42,7 @@ impl<'a> SequenceEditorTab<'a> {
             egui_extras::TableBuilder::new(ui)
                 .columns(egui_extras::Column::auto(), 2)
                 .column(egui_extras::Column::remainder())
-                .columns(egui_extras::Column::auto(), 7)
+                .columns(egui_extras::Column::auto(), 6)
                 .striped(true)
                 .header(20.0, |mut header| {
                     header.col(|ui| {
@@ -66,14 +66,6 @@ impl<'a> SequenceEditorTab<'a> {
                     });
 
                     header.col(|ui| {
-                        ui.heading("Out Delay");
-                    });
-
-                    header.col(|ui| {
-                        ui.heading("Out Fade");
-                    });
-
-                    header.col(|ui| {
                         ui.heading("Snap %");
                     });
 
@@ -83,6 +75,10 @@ impl<'a> SequenceEditorTab<'a> {
 
                     header.col(|ui| {
                         ui.heading("Trigger");
+                    });
+
+                    header.col(|ui| {
+                        ui.heading("Block");
                     });
                 })
                 .body(|mut body| {
@@ -130,18 +126,6 @@ impl<'a> SequenceEditorTab<'a> {
                             });
 
                             row.col(|ui| {
-                                egui_probe::Probe::new(cue.out_delay_mut())
-                                    .with_header("")
-                                    .show(ui);
-                            });
-
-                            row.col(|ui| {
-                                egui_probe::Probe::new(cue.out_fade_mut())
-                                    .with_header("")
-                                    .show(ui);
-                            });
-
-                            row.col(|ui| {
                                 egui_probe::Probe::new(cue.snap_percent_mut())
                                     .with_header("")
                                     .show(ui);
@@ -157,6 +141,10 @@ impl<'a> SequenceEditorTab<'a> {
                                 egui_probe::Probe::new(cue.trigger_mut())
                                     .with_header("")
                                     .show(ui);
+                            });
+
+                            row.col(|ui| {
+                                ui.checkbox(cue.block_mut(), "");
                             });
                         });
                     }
