@@ -360,7 +360,7 @@ impl Action {
 
             Self::ClearAll => Ok(ActionRunResult::new()),
             Self::FixtureSelector(fixture_selector) => self.run_fixture_selector(
-                &fixture_selector,
+                fixture_selector,
                 fixture_selector_context,
                 preset_handler,
                 fixture_handler,

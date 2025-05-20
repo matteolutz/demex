@@ -54,12 +54,49 @@ impl SequenceRuntimeState {
     }
     */
 
-    pub fn when_started_mut(&mut self) -> Option<(&mut Vec<(usize, time::Instant)>, usize)> {
+    pub fn when_started(&self) -> Option<(&[(usize, time::Instant)], usize, time::Instant)> {
         match self {
             Self::Cues {
                 active_cues,
                 current_cue,
-            } => Some((active_cues, *current_cue)),
+            } => Some((
+                active_cues,
+                *current_cue,
+                active_cues
+                    .iter()
+                    .find_map(|(i, activated)| {
+                        if *i == *current_cue {
+                            Some(*activated)
+                        } else {
+                            None
+                        }
+                    })
+                    .unwrap(),
+            )),
+            _ => None,
+        }
+    }
+
+    pub fn when_started_mut(
+        &mut self,
+    ) -> Option<(&mut Vec<(usize, time::Instant)>, &mut usize, time::Instant)> {
+        match self {
+            Self::Cues {
+                active_cues,
+                current_cue,
+            } => {
+                let current_cue_activated_at = active_cues
+                    .iter()
+                    .find_map(|(i, activated)| {
+                        if *i == *current_cue {
+                            Some(*activated)
+                        } else {
+                            None
+                        }
+                    })
+                    .unwrap();
+                Some((active_cues, current_cue, current_cue_activated_at))
+            }
             _ => None,
         }
     }
@@ -70,11 +107,8 @@ impl SequenceRuntimeState {
             Self::Cues {
                 mut active_cues, ..
             } => {
-                if let Some((_, el)) = active_cues.iter_mut().find(|(i, _)| *i == cue_idx) {
-                    *el = activated_at;
-                } else {
-                    active_cues.push((cue_idx, activated_at));
-                }
+                active_cues.retain(|(i, _)| *i != cue_idx);
+                active_cues.push((cue_idx, activated_at));
 
                 Self::Cues {
                     active_cues,
@@ -368,11 +402,13 @@ impl SequenceRuntime {
                     Some(*cue_activated_at),
                 );
 
-                let fixture_cue_fade = if fixture_cue_delta < cue.in_delay() {
+                let mut fixture_cue_fade = if fixture_cue_delta < cue.in_delay() {
                     0.0
                 } else {
                     ((fixture_cue_delta - cue.in_delay()) / cue.in_fade()).min(1.0)
                 };
+
+                fixture_cue_fade = cue.fading_function().apply(fixture_cue_fade);
 
                 for value in cue_values {
                     let fixture_values = tracked_values.entry(fixture_id).or_default();
@@ -409,19 +445,23 @@ impl SequenceRuntime {
 
     pub fn update(
         &mut self,
-        speed_multiplier: f32,
+        _speed_multiplier: f32,
         fixture_types: &FixtureTypeList,
         fixture_handler: &FixtureHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         priority: FixtureChannelValuePriority,
     ) -> bool {
-        if let Some((active_cues, current_cue_idx)) = self.state.when_started_mut() {
+        if let Some((active_cues, current_cue_idx, current_cue_activated_at)) =
+            self.state.when_started_mut()
+        {
             let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
             if sequence.cues().is_empty() {
                 return true;
             }
+
+            let current_cue = sequence.cue(*current_cue_idx);
 
             active_cues.retain(|(cue_idx, cue_activated_at)| {
                 let cue = sequence.cue(*cue_idx);
@@ -431,10 +471,29 @@ impl SequenceRuntime {
                     .duration_since(*cue_activated_at)
                     .as_secs_f32();
 
-                cue_delta <= cue_in_time || *cue_idx == current_cue_idx
+                cue_delta <= cue_in_time || *cue_idx == *current_cue_idx
             });
 
-            // TODO: follow cues
+            if let Some(next_cue_idx) = Self::next_cue_idx(sequence, *current_cue_idx) {
+                let next_cue = sequence.cue(next_cue_idx);
+
+                let should_activate = match next_cue.trigger() {
+                    CueTrigger::Time(time) => {
+                        current_cue_activated_at.elapsed().as_secs_f32() >= *time
+                    }
+                    CueTrigger::Follow => {
+                        current_cue_activated_at.elapsed().as_secs_f32()
+                            >= current_cue.in_time(preset_handler)
+                    }
+                    CueTrigger::Manual => false,
+                };
+
+                if should_activate {
+                    active_cues.retain(|(i, _)| *i != next_cue_idx);
+                    active_cues.push((next_cue_idx, time::Instant::now()));
+                    *current_cue_idx = next_cue_idx;
+                }
+            }
 
             Self::update_values(
                 &mut self.tracked_values,
@@ -482,6 +541,18 @@ impl SequenceRuntime {
         );
 
         false
+    }
+
+    fn next_cue_idx(sequence: &Sequence, current_cue_idx: usize) -> Option<usize> {
+        if current_cue_idx == sequence.cues().len() - 1 {
+            if sequence.stop_behavior() == SequenceStopBehavior::Restart {
+                Some(0)
+            } else {
+                None
+            }
+        } else {
+            Some(current_cue_idx + 1)
+        }
     }
 
     /*

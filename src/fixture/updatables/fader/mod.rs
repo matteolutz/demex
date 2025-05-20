@@ -176,7 +176,6 @@ impl DemexFader {
         fixture: &GdtfFixture,
         channel: &gdtf::dmx_mode::DmxChannel,
         preset_handler: &PresetHandler,
-        timing_handler: &TimingHandler,
     ) -> Result<FadeFixtureChannelValue, FixtureError> {
         if !self.is_active() {
             return Err(FixtureError::GdtfChannelValueNotFound(
@@ -195,7 +194,7 @@ impl DemexFader {
                     ));
                 }
 
-                let speed_multiplier = if *function == DemexFaderRuntimeFunction::Speed {
+                let _speed_multiplier = if *function == DemexFaderRuntimeFunction::Speed {
                     self.value
                 } else {
                     1.0
@@ -207,8 +206,21 @@ impl DemexFader {
                     1.0
                 };
 
+                let channel_attribute = channel.logical_channels[0]
+                    .attribute(fixture.fixture_type_and_dmx_mode(fixture_types).unwrap().0);
+
                 runtime
                     .channel_value(fixture, channel, self.priority)
+                    .map(|value| {
+                        if channel_attribute
+                            .and_then(|attribute| attribute.name.as_ref())
+                            .is_some_and(|attribute_name| attribute_name.as_ref() == "Dimmer")
+                        {
+                            value.multiply(intensity_multiplier)
+                        } else {
+                            value
+                        }
+                    })
                     .ok_or(FixtureError::GdtfChannelValueNotFound(
                         channel.name().as_ref().to_owned(),
                     ))

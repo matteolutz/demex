@@ -42,7 +42,7 @@ impl<'a> SequenceEditorTab<'a> {
             egui_extras::TableBuilder::new(ui)
                 .columns(egui_extras::Column::auto(), 2)
                 .column(egui_extras::Column::remainder())
-                .columns(egui_extras::Column::auto(), 6)
+                .columns(egui_extras::Column::auto(), 7)
                 .striped(true)
                 .header(20.0, |mut header| {
                     header.col(|ui| {
@@ -79,6 +79,10 @@ impl<'a> SequenceEditorTab<'a> {
 
                     header.col(|ui| {
                         ui.heading("Block");
+                    });
+
+                    header.col(|ui| {
+                        ui.heading("Fading");
                     });
                 })
                 .body(|mut body| {
@@ -145,6 +149,12 @@ impl<'a> SequenceEditorTab<'a> {
 
                             row.col(|ui| {
                                 ui.checkbox(cue.block_mut(), "");
+                            });
+
+                            row.col(|ui| {
+                                egui_probe::Probe::new(cue.fading_function_mut())
+                                    .with_header("")
+                                    .show(ui);
                             });
                         });
                     }

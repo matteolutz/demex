@@ -115,7 +115,7 @@ impl<'a> WaveEditor<'a> {
             );
         }
 
-        for (idx, seg) in self.wave.segments().iter().enumerate() {
+        for (_idx, seg) in self.wave.segments().iter().enumerate() {
             if self.wave.wave_type() == WaveType::Bezier {
                 for point in seg.control_points() {
                     painter.circle_filled(

@@ -21,6 +21,34 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
+pub enum CueFadingFunction {
+    #[default]
+    Linear,
+
+    EaseInQuad,
+    EaseOutQuad,
+    EaseInOutQuad,
+}
+
+impl CueFadingFunction {
+    pub fn apply(&self, x: f32) -> f32 {
+        match self {
+            Self::Linear => x,
+            Self::EaseInQuad => x * x,
+            Self::EaseOutQuad => 1.0 - (1.0 - x) * (1.0 - x),
+            Self::EaseInOutQuad => {
+                if x < 0.5 {
+                    2.0 * x * x
+                } else {
+                    1.0 - (-2.0 * x + 2.0).powf(2.0) / 2.0
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum CueTrigger {
     /// Cue is triggered manually
     #[default]
@@ -29,6 +57,9 @@ pub enum CueTrigger {
     /// Cue is automatically triggered, after previous cue finished
     /// all of it's fading and delays
     Follow,
+
+    /// Cue is automatically triggered, after a certain time. The time begins with the start of the previous cue
+    Time(f32),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -181,6 +212,9 @@ pub struct Cue {
     timing: CueTiming,
 
     trigger: CueTrigger,
+
+    #[serde(default)]
+    fading_function: CueFadingFunction,
 }
 
 impl Cue {
@@ -226,6 +260,7 @@ impl Cue {
             block: false,
             timing: CueTiming::default(),
             trigger: CueTrigger::Manual,
+            fading_function: Default::default(),
         }
     }
 
@@ -252,6 +287,7 @@ impl Cue {
             block: false,
             timing,
             trigger,
+            fading_function: Default::default(),
         }
     }
 
@@ -321,6 +357,14 @@ impl Cue {
 
     pub fn trigger_mut(&mut self) -> &mut CueTrigger {
         &mut self.trigger
+    }
+
+    pub fn fading_function(&self) -> &CueFadingFunction {
+        &self.fading_function
+    }
+
+    pub fn fading_function_mut(&mut self) -> &mut CueFadingFunction {
+        &mut self.fading_function
     }
 
     pub fn total_offset(&self, preset_handler: &PresetHandler) -> f32 {

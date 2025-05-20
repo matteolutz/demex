@@ -171,7 +171,6 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                                     fixture,
                                     channel,
                                     preset_handler,
-                                    timing_handler,
                                 )
                             } else {
                                 Err(FixtureError::GdtfChannelValueNotFound(
