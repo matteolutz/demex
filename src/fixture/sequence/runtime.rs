@@ -44,16 +44,6 @@ impl SequenceRuntimeState {
         }
     }
 
-    /*
-    pub fn when_started(&self) -> Option<(Option<time::Instant>, time::Instant, usize, bool)> {
-        match self {
-            Self::FirstCue(t) => Some((None, *t, 0, true)),
-            Self::Cue(prev_t, t, idx) => Some((Some(*prev_t), *t, *idx, false)),
-            _ => None,
-        }
-    }
-    */
-
     pub fn when_started(&self) -> Option<(&[(usize, time::Instant)], usize, time::Instant)> {
         match self {
             Self::Cues {
@@ -123,30 +113,32 @@ impl SequenceRuntimeState {
         num_cues: usize,
         stop_behavior: SequenceStopBehavior,
         time_offset: f32,
-    ) -> Self {
+    ) -> (bool, Self) {
         match self {
-            Self::Stopped => Self::start(time_offset),
+            Self::Stopped => (false, Self::start(time_offset)),
             Self::Cues {
                 mut active_cues,
                 current_cue,
             } => {
                 if current_cue == num_cues - 1 && stop_behavior != SequenceStopBehavior::Restart {
-                    Self::Stopped
+                    (false, Self::Stopped)
                 } else {
+                    let should_clear_tracked_values = (current_cue + 1) >= num_cues;
+
                     let next_cue = (current_cue + 1) % num_cues;
                     let activated_at =
                         time::Instant::now() - time::Duration::from_secs_f32(time_offset);
 
-                    if let Some((_, el)) = active_cues.iter_mut().find(|(i, _)| *i == next_cue) {
-                        *el = activated_at;
-                    } else {
-                        active_cues.push((next_cue, activated_at));
-                    }
+                    active_cues.retain(|(i, _)| *i != next_cue);
+                    active_cues.push((next_cue, activated_at));
 
-                    Self::Cues {
-                        active_cues,
-                        current_cue: next_cue,
-                    }
+                    (
+                        should_clear_tracked_values,
+                        Self::Cues {
+                            active_cues,
+                            current_cue: next_cue,
+                        },
+                    )
                 }
             }
         }
@@ -227,146 +219,6 @@ impl SequenceRuntime {
                 }
             })
         });
-
-        /*
-        if let Some((prev_cue_update, cue_update, cue_idx, is_first_cue)) =
-            self.state.when_started()
-        {
-            let (fixture_type, _) = fixture.fixture_type_and_dmx_mode(fixture_types).ok()?;
-            let channel_feature = channel.logical_channels[0]
-                .attribute(fixture_type)
-                .and_then(|attribute| attribute.feature(&fixture_type.attribute_definitions))
-                .and_then(|feature| {
-                    FixtureChannel3FeatureType::from_str(feature.name.as_ref().unwrap().as_ref())
-                        .ok()
-                })?;
-
-            let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
-
-            if sequence.cues().is_empty() {
-                return None;
-            }
-
-            let cue = sequence.cue(cue_idx);
-            let prev_cue_idx = self.previous_cue_idx(preset_handler);
-
-            let mut delta = time::Instant::now()
-                .duration_since(cue_update)
-                .as_secs_f32();
-
-            delta *= speed_multiplier;
-
-            delta = f32::max(
-                delta - cue.offset_for_fixture(fixture.id(), preset_handler),
-                0.0,
-            );
-
-            let should_snap =
-                cue.should_snap_channel_value_for_fixture(fixture.id(), channel.name().as_ref());
-
-            // its the first cue, so we want to fade in from black
-            // TODO: this wont work like this
-            if is_first_cue {
-                let mut fade = if delta < cue.in_delay() {
-                    0.0
-                } else {
-                    ((delta - cue.in_delay()) / cue.in_fade()).min(1.0)
-                };
-
-                if channel_feature == FixtureChannel3FeatureType::Dimmer {
-                    fade *= intensity_multiplier;
-                }
-
-                if should_snap {
-                    fade = if fade >= cue.snap_percent() { 1.0 } else { 0.0 };
-                }
-
-                cue.channel_value_for_fixture(
-                    fixture,
-                    fixture_types,
-                    channel.name().as_ref(),
-                    preset_handler,
-                    timing_handler,
-                    Some(cue_update),
-                )
-                .map(|v| FadeFixtureChannelValue::new(v, fade, priority))
-            } else if prev_cue_idx.is_some() {
-                // this isn't the first cue, meaning we should fade between the value of the previous cue
-                // and the value of the current cue
-                let prev_cue = sequence.cue(prev_cue_idx.unwrap());
-
-                let mut mix = if delta < (prev_cue.out_delay() + cue.in_delay()) {
-                    0.0
-                } else {
-                    ((delta - (cue.in_delay() + prev_cue.out_delay()))
-                        / (cue.in_fade() + prev_cue.out_fade()))
-                    .min(1.0)
-                };
-
-                if should_snap {
-                    mix = if mix >= cue.snap_percent() { 1.0 } else { 0.0 };
-                }
-
-                let fade = if channel_feature == FixtureChannel3FeatureType::Dimmer {
-                    intensity_multiplier
-                } else {
-                    1.0
-                };
-
-                let current_cue_value = cue
-                    .channel_value_for_fixture(
-                        fixture,
-                        fixture_types,
-                        channel.name().as_ref(),
-                        preset_handler,
-                        timing_handler,
-                        Some(cue_update),
-                    )
-                    .map(|v| {
-                        FadeFixtureChannelValue::new(
-                            FixtureChannelValue3::Mix {
-                                a: Box::new(
-                                    prev_cue
-                                        .channel_value_for_fixture(
-                                            fixture,
-                                            fixture_types,
-                                            channel.name().as_ref(),
-                                            preset_handler,
-                                            timing_handler,
-                                            prev_cue_update,
-                                        )
-                                        .unwrap_or(FixtureChannelValue3::Home),
-                                ),
-                                b: Box::new(v),
-                                mix,
-                            },
-                            fade,
-                            priority,
-                        )
-                    });
-
-                if current_cue_value.is_none() {
-                    prev_cue
-                        .channel_value_for_fixture(
-                            fixture,
-                            fixture_types,
-                            channel.name().as_ref(),
-                            preset_handler,
-                            timing_handler,
-                            Some(cue_update),
-                        )
-                        .map(|v| FadeFixtureChannelValue::new(v, (1.0 - mix) * fade, priority))
-                } else {
-                    current_cue_value
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-
-        */
     }
 
     pub fn update_values(
@@ -534,11 +386,17 @@ impl SequenceRuntime {
     pub fn next_cue(&mut self, preset_handler: &PresetHandler, time_offset: f32) -> bool {
         let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
-        self.state = self.state.clone().next_cue(
+        let (should_clear_tracked_values, new_state) = self.state.clone().next_cue(
             sequence.cues().len(),
             sequence.stop_behavior(),
             time_offset,
         );
+
+        if should_clear_tracked_values {
+            self.tracked_values.clear();
+        }
+
+        self.state = new_state;
 
         false
     }
