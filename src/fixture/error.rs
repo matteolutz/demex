@@ -20,6 +20,7 @@ pub enum FixtureError {
     GdtfNoChannelForAttributeFound(String),
     GdtfChannelHasNoAttribute(String),
     GdtfChannelFunctionMismatch(usize, usize),
+    GdtfAtributeHasNoName,
 
     NoDisplayColor(u32),
     PresetHandlerError(Box<PresetHandlerError>),
@@ -85,6 +86,9 @@ impl std::fmt::Display for FixtureError {
                     "GDTF channel function idx mismatch: {} != {}",
                     channel1, channel2
                 )
+            }
+            Self::GdtfAtributeHasNoName => {
+                write!(f, "GDTF attribute has no name")
             }
         }
     }

@@ -67,6 +67,10 @@ impl FadeFixtureChannelValue {
         self.priority
     }
 
+    pub fn set_alpha(&mut self, alpha: f32) {
+        self.alpha = alpha;
+    }
+
     pub fn multiply(mut self, fade: f32) -> Self {
         self.alpha *= fade;
         self

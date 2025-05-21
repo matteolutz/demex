@@ -42,7 +42,7 @@ impl<'a> SequenceEditorTab<'a> {
             egui_extras::TableBuilder::new(ui)
                 .columns(egui_extras::Column::auto(), 2)
                 .column(egui_extras::Column::remainder())
-                .columns(egui_extras::Column::auto(), 7)
+                .columns(egui_extras::Column::auto(), 8)
                 .striped(true)
                 .header(20.0, |mut header| {
                     header.col(|ui| {
@@ -83,6 +83,10 @@ impl<'a> SequenceEditorTab<'a> {
 
                     header.col(|ui| {
                         ui.heading("Fading");
+                    });
+
+                    header.col(|ui| {
+                        ui.heading("MIB");
                     });
                 })
                 .body(|mut body| {
@@ -155,6 +159,10 @@ impl<'a> SequenceEditorTab<'a> {
                                 egui_probe::Probe::new(cue.fading_function_mut())
                                     .with_header("")
                                     .show(ui);
+                            });
+
+                            row.col(|ui| {
+                                ui.checkbox(cue.move_in_black_mut(), "");
                             });
                         });
                     }

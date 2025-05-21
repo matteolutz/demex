@@ -196,6 +196,31 @@ impl GdtfFixture {
         self.sources.retain(|source| source != &value_source);
     }
 
+    pub fn get_channel_attribute(
+        &self,
+        fixture_types: &FixtureTypeList,
+        channel_name: &str,
+    ) -> Result<String, FixtureError> {
+        let (fixture_type, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
+
+        let dmx_channel = dmx_mode
+            .dmx_channel(channel_name)
+            .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel_name.to_owned()))?;
+
+        let logical_channel = &dmx_channel.logical_channels[0];
+
+        let attribute = logical_channel
+            .attribute(fixture_type)
+            .ok_or_else(|| FixtureError::GdtfChannelHasNoAttribute(channel_name.to_owned()))?;
+
+        Ok(attribute
+            .name
+            .as_ref()
+            .ok_or(FixtureError::GdtfAtributeHasNoName)?
+            .as_ref()
+            .to_owned())
+    }
+
     pub fn get_channels_in_feature_group(
         &self,
         fixture_types: &FixtureTypeList,

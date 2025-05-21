@@ -215,6 +215,11 @@ pub struct Cue {
 
     #[serde(default)]
     fading_function: CueFadingFunction,
+
+    /// If the true, this cue will also move all channels except the intensity parameters of all fixtures
+    /// in the next cue, that are not active in the current cue.
+    #[serde(default)]
+    move_in_black: bool,
 }
 
 impl Cue {
@@ -260,7 +265,8 @@ impl Cue {
             block: false,
             timing: CueTiming::default(),
             trigger: CueTrigger::Manual,
-            fading_function: Default::default(),
+            fading_function: CueFadingFunction::default(),
+            move_in_black: false,
         }
     }
 
@@ -288,6 +294,7 @@ impl Cue {
             timing,
             trigger,
             fading_function: Default::default(),
+            move_in_black: false,
         }
     }
 
@@ -365,6 +372,14 @@ impl Cue {
 
     pub fn fading_function_mut(&mut self) -> &mut CueFadingFunction {
         &mut self.fading_function
+    }
+
+    pub fn move_in_black(&self) -> bool {
+        self.move_in_black
+    }
+
+    pub fn move_in_black_mut(&mut self) -> &mut bool {
+        &mut self.move_in_black
     }
 
     pub fn total_offset(&self, preset_handler: &PresetHandler) -> f32 {

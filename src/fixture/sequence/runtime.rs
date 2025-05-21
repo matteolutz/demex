@@ -11,7 +11,10 @@ use crate::fixture::{
     value_source::FixtureChannelValuePriority,
 };
 
-use super::{cue::CueTrigger, FadeFixtureChannelValue, Sequence, SequenceStopBehavior};
+use super::{
+    cue::{Cue, CueTrigger},
+    FadeFixtureChannelValue, Sequence, SequenceStopBehavior,
+};
 
 pub struct ActiveCueData {}
 
@@ -221,10 +224,117 @@ impl SequenceRuntime {
         });
     }
 
+    pub fn update_cue_values<'a>(
+        tracked_values: &mut HashMap<u32, HashMap<String, Vec<(usize, FadeFixtureChannelValue)>>>,
+        fixtures: impl Iterator<Item = &'a u32>,
+        cue_idx: usize,
+        cue: &Cue,
+        cue_delta: f32,
+        cue_activated_at: &time::Instant,
+        fixture_types: &FixtureTypeList,
+        fixture_handler: &FixtureHandler,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
+        priority: FixtureChannelValuePriority,
+        is_mib: bool,
+    ) {
+        for fixture_id in fixtures {
+            let fixture_cue_delta =
+                (cue_delta - cue.offset_for_fixture(*fixture_id, preset_handler)).max(0.0);
+
+            let cue_values = cue.values_for_fixture(
+                fixture_handler.fixture_immut(*fixture_id).unwrap(),
+                fixture_types,
+                preset_handler,
+                timing_handler,
+                Some(*cue_activated_at),
+            );
+
+            let mut fixture_cue_fade = if fixture_cue_delta < cue.in_delay() {
+                0.0
+            } else {
+                ((fixture_cue_delta - cue.in_delay()) / cue.in_fade()).min(1.0)
+            };
+
+            fixture_cue_fade = cue.fading_function().apply(fixture_cue_fade);
+
+            if fixture_cue_fade == 0.0 {
+                continue;
+            }
+
+            for value in cue_values {
+                if is_mib {
+                    let attribute = fixture_handler
+                        .fixture_immut(*fixture_id)
+                        .unwrap()
+                        .get_channel_attribute(fixture_types, value.channel_name());
+
+                    if attribute.is_ok_and(|attribute| attribute == "Dimmer") {
+                        continue;
+                    }
+                }
+
+                let fixture_values = tracked_values.entry(*fixture_id).or_default();
+                let (channel_name, value) = value.into();
+
+                if let Some(existing_values) = fixture_values.get_mut(&channel_name) {
+                    if fixture_cue_fade == 0.0 {
+                        continue;
+                    } else if fixture_cue_fade == 1.0 {
+                        if let Some((_, existing_cue_value)) =
+                            existing_values.iter_mut().find(|(i, _)| *i == cue_idx)
+                        {
+                            existing_cue_value.set_alpha(1.0);
+                        } else {
+                            *existing_values = vec![(
+                                cue_idx,
+                                FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
+                            )];
+                            continue;
+                        }
+
+                        existing_values.retain(|(i, _)| *i == cue_idx);
+                    } else {
+                        let existing_cue_value = existing_values
+                            .iter_mut()
+                            .find(|(value_cue_idx, _)| *value_cue_idx == cue_idx);
+
+                        if let Some((_, existing_cue_value)) = existing_cue_value {
+                            existing_cue_value.set_alpha(fixture_cue_fade);
+                        } else {
+                            existing_values.push((
+                                cue_idx,
+                                FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
+                            ));
+                        }
+
+                        /*
+                        existing_values.retain(|(value_cue_idx, _)| *value_cue_idx != cue_idx);
+                        existing_values.push((
+                            cue_idx,
+                            FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
+                        ));
+                        */
+                    }
+                } else {
+                    fixture_values.insert(
+                        channel_name,
+                        vec![(
+                            cue_idx,
+                            FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
+                        )],
+                    );
+                }
+            }
+        }
+    }
+
     pub fn update_values(
         tracked_values: &mut HashMap<u32, HashMap<String, Vec<(usize, FadeFixtureChannelValue)>>>,
         sequence: &Sequence,
         active_cues: &[(usize, time::Instant)],
+        current_cue_idx: usize,
+        next_cue_idx: Option<usize>,
         fixture_handler: &FixtureHandler,
         fixture_types: &FixtureTypeList,
         preset_handler: &PresetHandler,
@@ -242,55 +352,44 @@ impl SequenceRuntime {
                 .duration_since(*cue_activated_at)
                 .as_secs_f32();
 
-            for fixture_id in cue.affected_fixtures(preset_handler) {
-                let fixture_cue_delta =
-                    (cue_delta - cue.offset_for_fixture(fixture_id, preset_handler)).max(0.0);
+            let cue_affected_fixtures = cue.affected_fixtures(preset_handler);
 
-                let cue_values = cue.values_for_fixture(
-                    fixture_handler.fixture_immut(fixture_id).unwrap(),
+            Self::update_cue_values(
+                tracked_values,
+                cue_affected_fixtures.iter(),
+                *cue_idx,
+                cue,
+                cue_delta,
+                cue_activated_at,
+                fixture_types,
+                fixture_handler,
+                preset_handler,
+                timing_handler,
+                priority,
+                false,
+            );
+
+            if *cue_idx == current_cue_idx && cue.move_in_black() && next_cue_idx.is_some() {
+                let next_cue_idx = next_cue_idx.unwrap();
+                let next_cue = sequence.cue(next_cue_idx);
+
+                let mut next_cue_affected_fixtures = next_cue.affected_fixtures(preset_handler);
+                next_cue_affected_fixtures.retain(|f| !cue_affected_fixtures.contains(f));
+
+                Self::update_cue_values(
+                    tracked_values,
+                    next_cue_affected_fixtures.iter(),
+                    next_cue_idx,
+                    next_cue,
+                    cue_delta,
+                    cue_activated_at,
                     fixture_types,
+                    fixture_handler,
                     preset_handler,
                     timing_handler,
-                    Some(*cue_activated_at),
+                    priority,
+                    true,
                 );
-
-                let mut fixture_cue_fade = if fixture_cue_delta < cue.in_delay() {
-                    0.0
-                } else {
-                    ((fixture_cue_delta - cue.in_delay()) / cue.in_fade()).min(1.0)
-                };
-
-                fixture_cue_fade = cue.fading_function().apply(fixture_cue_fade);
-
-                for value in cue_values {
-                    let fixture_values = tracked_values.entry(fixture_id).or_default();
-                    let (channel_name, value) = value.into();
-
-                    if let Some(existing_values) = fixture_values.get_mut(&channel_name) {
-                        if fixture_cue_fade == 0.0 {
-                            continue;
-                        } else if fixture_cue_fade == 1.0 {
-                            *existing_values = vec![(
-                                *cue_idx,
-                                FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
-                            )];
-                        } else {
-                            existing_values.retain(|(value_cue_idx, _)| *value_cue_idx != *cue_idx);
-                            existing_values.push((
-                                *cue_idx,
-                                FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
-                            ));
-                        }
-                    } else {
-                        fixture_values.insert(
-                            channel_name,
-                            vec![(
-                                *cue_idx,
-                                FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
-                            )],
-                        );
-                    }
-                }
             }
         }
     }
@@ -351,6 +450,8 @@ impl SequenceRuntime {
                 &mut self.tracked_values,
                 sequence,
                 active_cues,
+                *current_cue_idx,
+                Self::next_cue_idx(sequence, *current_cue_idx),
                 fixture_handler,
                 fixture_types,
                 preset_handler,
