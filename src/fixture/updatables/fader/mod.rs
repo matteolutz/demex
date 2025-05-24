@@ -212,6 +212,10 @@ impl DemexFader {
                 runtime
                     .channel_value(fixture, channel, self.priority)
                     .map(|value| {
+                        if *function == DemexFaderRuntimeFunction::FadeAll {
+                            return value.multiply(self.value);
+                        }
+
                         if channel_attribute
                             .and_then(|attribute| attribute.name.as_ref())
                             .is_some_and(|attribute_name| attribute_name.as_ref() == "Dimmer")
