@@ -1,5 +1,6 @@
 #![warn(unused_extern_crates)]
 
+pub mod color;
 pub mod dmx;
 pub mod fixture;
 pub mod headless;
@@ -24,6 +25,7 @@ use itertools::Itertools;
 use parking_lot::RwLock;
 use show::{context::ShowContext, DemexShow};
 
+use ui::utils::load::load_textures;
 #[cfg(feature = "ui")]
 use ui::{context::DemexUiContext, theme::DemexUiTheme, utils::icon::load_icon, DemexUiApp};
 
@@ -229,23 +231,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         {
             let icon = Arc::new(load_icon());
 
-            let ui_app_state = DemexUiApp::new(
-                DemexUiContext::load_show(
-                    &context,
-                    show.input_device_configs,
-                    show.ui_config,
-                    args.show,
-                    stats,
-                ),
-                TEST_UI_FPS,
-                icon.clone(),
-                false,
-            );
-
             let options = eframe::NativeOptions {
                 viewport: eframe::egui::ViewportBuilder::default()
                     .with_maximized(true)
-                    .with_icon(icon),
+                    .with_icon(icon.clone()),
                 ..Default::default()
             };
 
@@ -263,7 +252,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     creation_context.egui_ctx.set_style(style);
                     creation_context
                         .egui_ctx
-                        .set_fonts(ui::utils::fonts::load_fonts());
+                        .set_fonts(ui::utils::load::load_fonts());
 
                     TEST_UI_THEME.apply(&creation_context.egui_ctx);
 
@@ -282,6 +271,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             style.spacing.slider_width = 100.0 * 1.5;
                         });
                     }
+
+                    let ui_app_state = DemexUiApp::new(
+                        DemexUiContext::load_show(
+                            &context,
+                            show.input_device_configs,
+                            show.ui_config,
+                            args.show,
+                            stats,
+                            load_textures(&creation_context.egui_ctx),
+                        ),
+                        TEST_UI_FPS,
+                        icon,
+                        false,
+                    );
 
                     Ok(Box::new(ui_app_state))
                 }),

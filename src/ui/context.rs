@@ -46,6 +46,8 @@ pub struct DemexUiContext {
     pub timing_handler: Arc<RwLock<TimingHandler>>,
     pub patch: Arc<RwLock<Patch>>,
 
+    pub texture_handles: Vec<egui::TextureHandle>,
+
     pub global_fixture_select: Option<FixtureSelection>,
     pub command: Vec<Token>,
 
@@ -133,6 +135,7 @@ impl DemexUiContext {
         ui_config: DemexShowUiConfig,
         show_file: Option<PathBuf>,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
+        texture_handles: Vec<egui::TextureHandle>,
     ) -> Self {
         let patch = show_context.patch.clone();
 
@@ -183,6 +186,8 @@ impl DemexUiContext {
             input_device_handler,
 
             stats,
+
+            texture_handles,
         }
     }
 

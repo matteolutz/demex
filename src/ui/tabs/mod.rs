@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::DemexUiContext;
 
+pub mod color_picker_tab;
 pub mod encoders_tab;
 pub mod faders_tab;
 pub mod fixture_list_tab;
@@ -31,6 +32,7 @@ pub enum DemexTab {
     Patch,
     Timing,
     FixtureSelection,
+    ColorPicker,
     Logs,
     Performance,
 }
@@ -49,6 +51,7 @@ impl std::fmt::Display for DemexTab {
             DemexTab::Patch => write!(f, "Patch"),
             DemexTab::Timing => write!(f, "Timing"),
             DemexTab::FixtureSelection => write!(f, "Fixture Selection"),
+            DemexTab::ColorPicker => write!(f, "Color Picker"),
             DemexTab::Logs => write!(f, "Logs"),
             DemexTab::Performance => write!(f, "Performance"),
         }
@@ -74,6 +77,7 @@ impl DemexTab {
             }
             DemexTab::Timing => timing_tab::ui(ui, context),
             DemexTab::FixtureSelection => fixture_selection_tab::ui(ui, context),
+            DemexTab::ColorPicker => color_picker_tab::ColorPickerComponent::new(context).show(ui),
             DemexTab::Logs => logs_tab::ui(ui, context),
             DemexTab::Performance => performance_tab::ui(ui, context),
         }
@@ -139,6 +143,7 @@ impl Default for DemexTabs {
             0.65,
             vec![
                 DemexTab::LayoutView,
+                DemexTab::ColorPicker,
                 DemexTab::FixtureSelection,
                 DemexTab::SequenceEditor,
                 DemexTab::Patch,

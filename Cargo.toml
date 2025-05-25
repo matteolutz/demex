@@ -1,6 +1,6 @@
 [package]
 name = "demex"
-version = "0.1.19"
+version = "0.1.20"
 edition = "2021"
 
 [dependencies]
@@ -47,6 +47,7 @@ strum = { version = "0.27.0", features = ["derive"] }
 strum_macros = "0.27.0"
 uuid = "1.16.0"
 ciborium = "0.2.2"
+nalgebra = "0.33.2"
 
 [features]
 default = ["ui"]
