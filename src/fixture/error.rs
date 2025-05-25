@@ -21,6 +21,7 @@ pub enum FixtureError {
     GdtfChannelHasNoAttribute(String),
     GdtfChannelFunctionMismatch(usize, usize),
     GdtfAtributeHasNoName,
+    GdtfFixtureCouldNotProduceRgbColor(u32),
 
     NoDisplayColor(u32),
     PresetHandlerError(Box<PresetHandlerError>),
@@ -90,6 +91,11 @@ impl std::fmt::Display for FixtureError {
             Self::GdtfAtributeHasNoName => {
                 write!(f, "GDTF attribute has no name")
             }
+            Self::GdtfFixtureCouldNotProduceRgbColor(fixture_id) => write!(
+                f,
+                "GDTF fixture with id {} could not produce RGB color value",
+                fixture_id
+            ),
         }
     }
 }

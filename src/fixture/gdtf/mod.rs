@@ -354,7 +354,7 @@ impl GdtfFixture {
         self.channels_for_attribute_matches(fixture_types, |attr| attr == attribute)
     }
 
-    pub fn display_color(
+    fn rgbw_add_color(
         &self,
         fixture_types: &FixtureTypeList,
         preset_handler: &PresetHandler,
@@ -388,6 +388,98 @@ impl GdtfFixture {
             .unwrap_or(0.0);
 
         Ok(rgbw_to_rgb([red, green, blue, white]))
+    }
+
+    fn cmy_sub_color(
+        &self,
+        fixture_types: &FixtureTypeList,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
+    ) -> Result<[f32; 3], FixtureError> {
+        let cyan = self.get_attribute_display_value(
+            fixture_types,
+            "ColorSub_C",
+            preset_handler,
+            timing_handler,
+        )?;
+        let magenta = self.get_attribute_display_value(
+            fixture_types,
+            "ColorSub_M",
+            preset_handler,
+            timing_handler,
+        )?;
+        let yellow = self.get_attribute_display_value(
+            fixture_types,
+            "ColorSub_Y",
+            preset_handler,
+            timing_handler,
+        )?;
+
+        let black = 0.0;
+
+        let red = (1.0 - cyan) * (1.0 - black);
+        let green = (1.0 - magenta) * (1.0 - black);
+        let blue = (1.0 - yellow) * (1.0 - black);
+
+        Ok([red, green, blue])
+    }
+
+    pub fn rgb_color(
+        &self,
+        fixture_types: &FixtureTypeList,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
+    ) -> Result<[f32; 3], FixtureError> {
+        let rgb_add = self.rgbw_add_color(fixture_types, preset_handler, timing_handler);
+        if rgb_add.is_ok() {
+            return rgb_add;
+        }
+
+        let cmy_sub = self.cmy_sub_color(fixture_types, preset_handler, timing_handler);
+        if cmy_sub.is_ok() {
+            return cmy_sub;
+        }
+
+        Err(FixtureError::GdtfFixtureCouldNotProduceRgbColor(self.id))
+    }
+
+    pub fn apply_rgb_color(
+        &mut self,
+        fixture_types: &FixtureTypeList,
+        [r, g, b]: [f32; 3],
+    ) -> Result<(), FixtureError> {
+        let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
+
+        for channel in &dmx_mode.dmx_channels {
+            for (channel_function_idx, channel_function) in channel.logical_channels[0]
+                .channel_functions
+                .iter()
+                .enumerate()
+            {
+                let function_val = match channel_function.attribute.first().unwrap().as_ref() {
+                    "ColorAdd_R" => Some(r),
+                    "ColorAdd_G" => Some(g),
+                    "ColorAdd_B" => Some(b),
+                    _ => None,
+                };
+
+                if let Some(function_val) = function_val {
+                    self.set_programmer_value(
+                        fixture_types,
+                        channel.name().as_ref(),
+                        FixtureChannelValue3::Discrete {
+                            channel_function_idx,
+                            value: function_val,
+                        },
+                    )?;
+
+                    // Skip the rest of the channel functions
+                    break;
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub fn get_attribute_display_value(
