@@ -152,7 +152,7 @@ impl Default for DemexTabs {
         {
             let [_, new_node] =
                 surface.split_left(layout_view_node, 0.3, vec![DemexTab::ColorPicker]);
-            surface.split_below(new_node, 0.5, vec![DemexTab::Timing]);
+            surface.split_below(new_node, 0.65, vec![DemexTab::Timing]);
         }
 
         surface.split_above(

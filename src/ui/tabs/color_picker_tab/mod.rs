@@ -92,13 +92,13 @@ impl<'a> ColorPickerComponent<'a> {
                                 self.id_source.with("CieColorSpace"),
                                 "Color Space",
                             )
-                            .selected_text(format!("{:?}", state.cie_color_space))
+                            .selected_text(state.cie_color_space.to_string())
                             .show_ui(ui, |ui| {
                                 for color_space in RgbColorSpace::iter() {
                                     ui.selectable_value(
                                         &mut state.cie_color_space,
                                         color_space,
-                                        format!("{:?}", color_space),
+                                        color_space.to_string(),
                                     );
                                 }
                             });
