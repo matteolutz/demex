@@ -63,7 +63,6 @@ impl DemexEditWindow {
 
     pub fn should_fullscreen(&self) -> bool {
         match self {
-            Self::EditBuilderCue(_, _) => true,
             Self::Config(_) => true,
             Self::EditPreset2(_) => true,
             Self::EditGroup(_) => true,

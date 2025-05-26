@@ -4,21 +4,34 @@ use strum::IntoEnumIterator;
 use crate::{
     fixture::channel3::{
         attribute::FixtureChannel3Attribute,
-        channel_value::FixtureChannelValue3,
+        channel_value::{FixtureChannelValue3, FixtureChannelValue3Discrete},
         feature::{
             feature_group::FixtureChannel3FeatureGroup, feature_type::FixtureChannel3FeatureType,
         },
     },
     ui::{
-        components::tab_viewer::TabViewer, constants::NO_FIXTURES_SELECTED, context::DemexUiContext,
+        components::{
+            numpad::{numpad_ui, NumpadResult},
+            tab_viewer::TabViewer,
+        },
+        constants::NO_FIXTURES_SELECTED,
+        context::DemexUiContext,
     },
 };
 
 const NUM_ENCODERS: usize = 5;
 
+#[derive(Debug, Default, Clone)]
+pub struct ValueSelectionModalState {
+    attribute: String,
+    value: String,
+}
+
 #[derive(Debug, Default)]
 pub struct EncodersTabState {
     pub feature: FixtureChannel3FeatureType,
+    pub modal_state: Option<ValueSelectionModalState>,
+    pub test_val: u8,
 }
 
 impl EncodersTabState {
@@ -26,12 +39,70 @@ impl EncodersTabState {
         self.feature.feature_group()
     }
 
-    pub fn attributes(&self) -> &[&str] {
+    pub fn attributes(&self) -> &[&'static str] {
         self.feature.attributes()
     }
 }
 
 pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
+    if let (Some(mut modal_state), Some(fixtures)) = (
+        context.encoders_tab_state.modal_state.clone(),
+        context
+            .global_fixture_select
+            .as_ref()
+            .map(|fixture_selection| fixture_selection.fixtures()),
+    ) {
+        egui::containers::Modal::new("EncodersTabModal".into()).show(ui.ctx(), |ui| {
+            ui.heading(&modal_state.attribute);
+
+            ui.horizontal(|ui| {
+                numpad_ui(ui, &mut modal_state.value);
+
+                ui.add_space(350.0);
+            });
+
+            ui.horizontal(|ui| {
+                let mut fixture_handler = context.fixture_handler.write();
+                let patch = context.patch.read();
+
+                if ui.button("Ok").clicked() {
+                    let numpad_result = NumpadResult::from_str(&modal_state.value)
+                        .unwrap_or(NumpadResult::Value(0.0));
+
+                    log::info!("result is: {:?}", numpad_result);
+                    // apply values
+                    //
+                    for fixture_id in fixtures {
+                        let fixture = fixture_handler.fixture(*fixture_id).unwrap();
+
+                        let _ = fixture.update_programmer_attribute_value(
+                            patch.fixture_types(),
+                            &modal_state.attribute,
+                            match numpad_result.clone() {
+                                NumpadResult::Value(val) => {
+                                    FixtureChannelValue3Discrete::Value(val)
+                                }
+                                NumpadResult::ChannelSet(channel_set) => {
+                                    FixtureChannelValue3Discrete::ChannelSet(channel_set)
+                                }
+                            },
+                        );
+                    }
+
+                    context.encoders_tab_state.modal_state = None;
+                }
+
+                if ui.button("Close").clicked() {
+                    context.encoders_tab_state.modal_state = None;
+                }
+
+                if context.encoders_tab_state.modal_state.is_some() {
+                    context.encoders_tab_state.modal_state = Some(modal_state);
+                }
+            });
+        });
+    }
+
     let feature_group_tabs = FixtureChannel3FeatureGroup::iter().collect::<Vec<_>>();
     let selected_feature_group = feature_group_tabs
         .iter()
@@ -78,7 +149,10 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                     let timing_handler = context.timing_handler.read();
                     let patch = context.patch.read();
 
-                    for attribute in context.encoders_tab_state.attributes() {
+                    // TODO: find a better way, than to clone the attributes
+                    let attributes = context.encoders_tab_state.attributes().to_vec();
+
+                    for attribute in attributes {
                         let mut fixtures = fixture_handler.selected_fixtures_mut(fixture_select);
 
                         let channels = fixtures
@@ -115,13 +189,23 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                                 ui.set_width(encoder_size.x);
                                 ui.set_height(encoder_size.y);
 
-                                ui.label(RichText::new(master_channel_functions[0].1).color(
-                                    if !is_active {
-                                        ecolor::Color32::PLACEHOLDER
-                                    } else {
-                                        ecolor::Color32::YELLOW
-                                    },
-                                ));
+                                ui.horizontal(|ui| {
+                                    ui.label(RichText::new(master_channel_functions[0].1).color(
+                                        if !is_active {
+                                            ecolor::Color32::PLACEHOLDER
+                                        } else {
+                                            ecolor::Color32::YELLOW
+                                        },
+                                    ));
+
+                                    if ui.button("Sel").clicked() {
+                                        context.encoders_tab_state.modal_state =
+                                            Some(ValueSelectionModalState {
+                                                attribute: attribute.to_string(),
+                                                value: String::new(),
+                                            });
+                                    }
+                                });
 
                                 let (fixture_val_function_idx, fixture_val) = fixtures
                                     .iter()
@@ -209,7 +293,7 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                                                 let _ = fixture.update_programmer_value(
                                                     patch.fixture_types(),
                                                     channel_name,
-                                                    slider_val,
+                                                    FixtureChannelValue3Discrete::Value(slider_val),
                                                 );
                                             }
                                         }

@@ -16,6 +16,27 @@ use super::utils::{
 
 use crate::utils::serde::approx_instant;
 
+#[derive(Debug, Clone)]
+pub enum FixtureChannelValue3Discrete {
+    Value(f32),
+    ChannelSet(String),
+}
+
+impl FixtureChannelValue3Discrete {
+    pub fn get_value(self, channel_function_idx: usize) -> FixtureChannelValue3 {
+        match self {
+            Self::Value(value) => FixtureChannelValue3::Discrete {
+                channel_function_idx,
+                value,
+            },
+            Self::ChannelSet(channel_set) => FixtureChannelValue3::DiscreteSet {
+                channel_function_idx,
+                channel_set,
+            },
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FixtureChannelValue2PresetState {
     #[serde(with = "approx_instant")]

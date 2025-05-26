@@ -29,9 +29,10 @@ pub fn edit_builder_cue_ui(
 
     if let CueDataMode::Builder(data) = cue.data_mut() {
         egui_extras::TableBuilder::new(ui)
+            .auto_shrink([false, true])
             .striped(true)
             .column(egui_extras::Column::auto())
-            .columns(egui_extras::Column::auto().at_least(200.0), 2)
+            .columns(egui_extras::Column::remainder().at_least(200.0), 2)
             .column(egui_extras::Column::auto())
             .header(20.0, |mut ui| {
                 ui.col(|ui| {

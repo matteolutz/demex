@@ -8,6 +8,11 @@ use crate::{
     },
 };
 
+#[derive(Clone, Default)]
+pub struct GelPickerComponentState {
+    filter_input: String,
+}
+
 pub struct GelPickerComponent {
     id_source: egui::Id,
 }
@@ -23,6 +28,20 @@ impl GelPickerComponent {
         let selected_gel_type_viewer =
             TabViewer::new(self.id_source, ColorGelType::iter().collect::<Vec<_>>(), 0).show(ui);
 
+        let mut state = ui
+            .data(|reader| reader.get_temp::<GelPickerComponentState>(self.id_source))
+            .unwrap_or_default();
+
+        ui.add_space(10.0);
+
+        ui.horizontal(|ui| {
+            ui.add_space(5.0);
+            ui.label("Filter:");
+            egui::TextEdit::singleline(&mut state.filter_input)
+                .desired_width(ui.available_size_before_wrap().x - 20.0)
+                .show(ui);
+        });
+
         ui.add_space(10.0);
 
         egui::ScrollArea::vertical()
@@ -30,7 +49,16 @@ impl GelPickerComponent {
             .show(ui, |ui| {
                 ui.add_space(10.0);
 
-                for gel in selected_gel_type_viewer.selected_tab.gels() {
+                for gel in selected_gel_type_viewer
+                    .selected_tab
+                    .gels()
+                    .iter()
+                    .filter(|gel| {
+                        gel.name()
+                            .to_lowercase()
+                            .contains(&state.filter_input.to_lowercase())
+                    })
+                {
                     let (response, painter) = ui.allocate_painter(
                         egui::vec2(ui.available_width(), 50.0),
                         egui::Sense::click(),
@@ -71,6 +99,10 @@ impl GelPickerComponent {
 
                 ui.add_space(10.0);
             });
+
+        ui.data_mut(|writer| {
+            writer.insert_temp(self.id_source, state);
+        });
 
         selected_color
     }

@@ -1,3 +1,5 @@
+use egui::epaint::CubicBezierShape;
+
 use crate::{
     color::color_space::{RgbColorSpace, RgbValue},
     ui::context::DemexUiContext,
@@ -55,6 +57,41 @@ impl<'a> CieColorPickerComponent<'a> {
         );
         */
 
+        // Planckian locus
+        painter.add(CubicBezierShape::from_points_stroke(
+            [
+                to_screen_transform.transform_pos(egui::pos2(0.274, 0.2727)),
+                to_screen_transform.transform_pos(egui::pos2(0.316, 0.3230)),
+                to_screen_transform.transform_pos(egui::pos2(0.358, 0.3613)),
+                to_screen_transform.transform_pos(egui::pos2(0.400, 0.3855)),
+            ],
+            false,
+            egui::Color32::TRANSPARENT,
+            (1.0, egui::Color32::BLACK),
+        ));
+        painter.add(CubicBezierShape::from_points_stroke(
+            [
+                to_screen_transform.transform_pos(egui::pos2(0.400, 0.3855)),
+                to_screen_transform.transform_pos(egui::pos2(0.420, 0.3987)),
+                to_screen_transform.transform_pos(egui::pos2(0.440, 0.4064)),
+                to_screen_transform.transform_pos(egui::pos2(0.460, 0.4108)),
+            ],
+            false,
+            egui::Color32::TRANSPARENT,
+            (1.0, egui::Color32::BLACK),
+        ));
+        painter.add(CubicBezierShape::from_points_stroke(
+            [
+                to_screen_transform.transform_pos(egui::pos2(0.460, 0.4108)),
+                to_screen_transform.transform_pos(egui::pos2(0.487, 0.4208)),
+                to_screen_transform.transform_pos(egui::pos2(0.513, 0.4254)),
+                to_screen_transform.transform_pos(egui::pos2(0.540, 0.4282)),
+            ],
+            false,
+            egui::Color32::TRANSPARENT,
+            (1.0, egui::Color32::BLACK),
+        ));
+
         let color_space_vertices = self
             .color_space
             .gammut()
@@ -82,15 +119,6 @@ impl<'a> CieColorPickerComponent<'a> {
         };
 
         if let Some(color) = display_color {
-            painter.rect_filled(
-                egui::Rect::from_min_size(
-                    response.rect.right_top() + egui::vec2(-40.0, 20.0),
-                    egui::vec2(20.0, 20.0),
-                ),
-                0.0,
-                color,
-            );
-
             let (x, y) = color.to_xy();
             painter.circle_filled(
                 to_screen_transform.transform_pos_clamped(egui::pos2(x, y)),

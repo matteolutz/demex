@@ -70,7 +70,7 @@ impl FromStr for FixtureChannel3FeatureType {
 }
 
 impl FixtureChannel3FeatureType {
-    pub fn attributes(&self) -> &[&str] {
+    pub fn attributes(&self) -> &[&'static str] {
         match self {
             Self::Dimmer => &["Dimmer"],
             Self::PanTilt => &[

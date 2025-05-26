@@ -1,5 +1,6 @@
 pub mod button;
 pub mod fixture_selection_editor;
+pub mod numpad;
 pub mod position_selector;
 pub mod quick_menu;
 pub mod separator;

@@ -6,6 +6,7 @@ pub enum RgbColorSpace {
     Srgb,
 
     AdobeRgb,
+    WideGamutRgb,
 }
 
 impl std::fmt::Display for RgbColorSpace {
@@ -13,6 +14,7 @@ impl std::fmt::Display for RgbColorSpace {
         match self {
             Self::Srgb => write!(f, "sRGB"),
             Self::AdobeRgb => write!(f, "Adobe RGB"),
+            Self::WideGamutRgb => write!(f, "Wide Gamut RGB"),
         }
     }
 }
@@ -30,6 +32,11 @@ impl RgbColorSpace {
                 0.297_376_9,  0.627_349_1,  0.075_274_1;
                 0.027_034_3,  0.070_687_2,  0.991_108_5
             ],
+            Self::WideGamutRgb => nalgebra::matrix![
+                0.716_104_6,  0.100_929_6,  0.147_185_8;
+                0.258_187_4,  0.724_937_8,  0.016_874_8;
+                0.000_000_0,  0.051_781_3,  0.773_428_7
+            ],
         }
     }
 
@@ -44,6 +51,11 @@ impl RgbColorSpace {
                 2.041_369_0, -0.564_946_4, -0.344_694_4;
                 -0.969_266_0,  1.876_010_8,  0.041_556_0;
                 0.013_447_4, -0.118_389_7,  1.015_409_6;
+            ],
+            Self::WideGamutRgb => nalgebra::matrix![
+                1.462_806_7, -0.184_062_3, -0.274_360_6;
+               -0.521_793_3,  1.447_238_1,  0.067_722_7;
+               0.034_934_2, -0.096_893_0,  1.288_409_9
             ],
         }
     }

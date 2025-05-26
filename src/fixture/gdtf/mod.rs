@@ -4,7 +4,8 @@ use crate::utils::color::rgbw_to_rgb;
 
 use super::{
     channel3::{
-        attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3,
+        attribute::FixtureChannel3Attribute,
+        channel_value::{FixtureChannelValue3, FixtureChannelValue3Discrete},
         feature::feature_group::FixtureChannel3FeatureGroup,
     },
     error::FixtureError,
@@ -583,31 +584,47 @@ impl GdtfFixture {
             .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel.to_owned()))
     }
 
+    pub fn update_programmer_attribute_value(
+        &mut self,
+        fixture_types: &FixtureTypeList,
+        attribute: &str,
+        slider_val: FixtureChannelValue3Discrete,
+    ) -> Result<(), FixtureError> {
+        for (channel, _, _) in self.channels_for_attribute(fixture_types, attribute)? {
+            self.update_programmer_value(
+                fixture_types,
+                channel.name().as_ref(),
+                slider_val.clone(),
+            )?;
+        }
+
+        Ok(())
+    }
+
     pub fn update_programmer_value(
         &mut self,
         fixture_types: &FixtureTypeList,
         channel: &str,
-        slider_val: f32,
+        slider_val: FixtureChannelValue3Discrete,
     ) -> Result<(), FixtureError> {
         let programmer_value = self.get_programmer_value(channel)?;
+
+        let channel_function_idx = match programmer_value {
+            FixtureChannelValue3::Discrete {
+                channel_function_idx,
+                value: _,
+            } => *channel_function_idx,
+            FixtureChannelValue3::DiscreteSet {
+                channel_function_idx,
+                ..
+            } => *channel_function_idx,
+            _ => self.get_channel_initial_function_idx(fixture_types, channel)?,
+        };
 
         self.set_programmer_value(
             fixture_types,
             channel,
-            match programmer_value {
-                FixtureChannelValue3::Discrete {
-                    channel_function_idx,
-                    value: _,
-                } => FixtureChannelValue3::Discrete {
-                    channel_function_idx: *channel_function_idx,
-                    value: slider_val,
-                },
-                _ => FixtureChannelValue3::Discrete {
-                    channel_function_idx: self
-                        .get_channel_initial_function_idx(fixture_types, channel)?,
-                    value: slider_val,
-                },
-            },
+            slider_val.get_value(channel_function_idx),
         )
     }
 
