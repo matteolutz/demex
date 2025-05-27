@@ -21,7 +21,6 @@ pub enum ActionRunError {
     InputDeviceError(DemexInputDeviceError),
     FixtureSelectorError(FixtureSelectorError),
     ExecutorIsRunning(u32),
-    FaderIsActive(u32),
     SequenceDeleteDependencies(u32),
     UnimplementedAction(Action),
 
@@ -50,13 +49,6 @@ impl std::fmt::Display for ActionRunError {
                     f,
                     "Executor with id {} is running. Please stop it before trying to modify it",
                     executor_id
-                )
-            }
-            ActionRunError::FaderIsActive(fader_id) => {
-                write!(
-                    f,
-                    "Fader with id {} is not in home position. Please move it to home position before trying to modify it",
-                    fader_id
                 )
             }
             ActionRunError::SequenceDeleteDependencies(seq_id) => {

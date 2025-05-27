@@ -113,7 +113,7 @@ impl FunctionArgs for UpdateSequenceCueArgs {
         let sequence_id = match self.id {
             UpdateSequenceCueArgsId::SequenceId(id) => id,
             UpdateSequenceCueArgsId::ExecutorId(id) => updatable_handler
-                .fader(id)
+                .executor(id)
                 .map(|executor| executor.runtime().sequence_id())
                 .map_err(ActionRunError::UpdatableHandlerError)?,
         };

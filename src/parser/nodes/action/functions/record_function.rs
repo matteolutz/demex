@@ -261,7 +261,7 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
     ) -> Result<ActionRunResult, ActionRunError> {
         match self.id {
             RecordSequenceCueShorthandArgsId::ExecutorId(executor_id) => {
-                if let Ok(executor) = updatable_handler.fader_mut(executor_id) {
+                if let Ok(executor) = updatable_handler.executor_mut(executor_id) {
                     // if the executor is already present, but a sequence name is provided, we want to error
                     if self.sequence_name.is_some() {
                         return Err(ActionRunError::UpdatableHandlerError(
@@ -294,7 +294,7 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                         .map_err(ActionRunError::PresetHandlerError)?;
 
                     updatable_handler
-                        .create_fader(executor_id, sequence_id)
+                        .create_executor(executor_id, sequence_id)
                         .map_err(ActionRunError::UpdatableHandlerError)?;
                 }
             }

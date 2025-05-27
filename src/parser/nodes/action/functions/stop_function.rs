@@ -25,7 +25,7 @@ impl FunctionArgs for ExecutorStopArgs {
         crate::parser::nodes::action::error::ActionRunError,
     > {
         updatable_handler
-            .stop_fader(self.executor_id, fixture_handler, preset_handler)
+            .stop_executor(self.executor_id, fixture_handler, preset_handler)
             .map_err(ActionRunError::UpdatableHandlerError)
             .map(|_| ActionRunResult::new())
     }

@@ -262,7 +262,7 @@ impl DemexUiContext {
                 let mut updatable_handler_lock = self.updatable_handler.write();
 
                 updatable_handler_lock
-                    .faders_stop_all(&mut fixture_handler_lock, &preset_handler_lock);
+                    .executors_stop_all(&mut fixture_handler_lock, &preset_handler_lock);
             }
             Action::Save => {
                 self.save_show();

@@ -45,7 +45,7 @@ impl AssignButtonArgsMode {
         match self {
             Self::ExecutorStop(id) | Self::ExecutorFlash { id, .. } | Self::ExecutorGo(id) => {
                 updatable_handler
-                    .fader(*id)
+                    .executor(*id)
                     .map_err(ActionRunError::UpdatableHandlerError)?;
             }
             Self::SelectivePreset {
@@ -191,7 +191,7 @@ impl FunctionArgs for AssignFaderArgs {
         _: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         let _ = updatable_handler
-            .fader(self.fader_id)
+            .executor(self.fader_id)
             .map_err(ActionRunError::UpdatableHandlerError)?;
 
         let device = input_device_handler

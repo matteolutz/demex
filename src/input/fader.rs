@@ -11,7 +11,7 @@ use super::error::DemexInputDeviceError;
 #[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum DemexInputFader {
     Fader {
-        fader_id: u32,
+        executor_id: u32,
     },
     SpeedMaster {
         speed_master_id: u32,
@@ -22,13 +22,15 @@ pub enum DemexInputFader {
 
 impl Default for DemexInputFader {
     fn default() -> Self {
-        Self::Fader { fader_id: 0 }
+        Self::Fader { executor_id: 0 }
     }
 }
 
 impl DemexInputFader {
     pub fn new(fader_id: u32) -> Self {
-        Self::Fader { fader_id }
+        Self::Fader {
+            executor_id: fader_id,
+        }
     }
 
     pub fn handle_change(
@@ -40,9 +42,11 @@ impl DemexInputFader {
         timing_handler: &mut TimingHandler,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
-            Self::Fader { fader_id } => {
+            Self::Fader {
+                executor_id: fader_id,
+            } => {
                 let fader = updatable_handler
-                    .fader_mut(*fader_id)
+                    .executor_mut(*fader_id)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
                 fader.set_value(value, fixture_handler, preset_handler, 0.0);

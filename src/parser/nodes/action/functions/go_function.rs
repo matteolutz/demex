@@ -25,7 +25,7 @@ impl FunctionArgs for ExecutorGoArgs {
         crate::parser::nodes::action::error::ActionRunError,
     > {
         updatable_handler
-            .fader_go(
+            .executor_go(
                 self.executor_id,
                 fixture_handler,
                 preset_handler,

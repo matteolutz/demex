@@ -127,7 +127,7 @@ impl DemexEditWindow {
             Self::EditExecutor(executor_id) => {
                 Probe::new(
                     updatable_handler
-                        .fader_mut(*executor_id)
+                        .executor_mut(*executor_id)
                         .map_err(|_| DemexUiError::RuntimeError("Executor not found".to_owned()))?,
                 )
                 .show(ui);

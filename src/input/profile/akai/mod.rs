@@ -286,7 +286,7 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
             match button {
                 DemexInputButton::ExecutorGo(id) => {
                     let is_started = updatable_handler
-                        .fader(*id)
+                        .executor(*id)
                         .map_err(DemexInputDeviceError::UpdatableHandlerError)?
                         .is_active();
 
@@ -302,7 +302,7 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                 }
                 DemexInputButton::ExecutorStop(id) => {
                     let is_started = updatable_handler
-                        .fader(*id)
+                        .executor(*id)
                         .map_err(DemexInputDeviceError::UpdatableHandlerError)?
                         .is_active();
 
@@ -318,7 +318,7 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                 }
                 DemexInputButton::ExecutorFlash { id, .. } => {
                     let is_started = updatable_handler
-                        .fader(*id)
+                        .executor(*id)
                         .map_err(DemexInputDeviceError::UpdatableHandlerError)?
                         .is_active();
 

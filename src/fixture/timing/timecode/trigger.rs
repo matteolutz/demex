@@ -34,7 +34,7 @@ impl TimecodeTrigger {
 
         match self.trigger_type {
             TimecodeTriggerType::ExecutorGo(executor_id) => {
-                let _ = updatable_handler.fader_go(
+                let _ = updatable_handler.executor_go(
                     executor_id,
                     fixture_handler,
                     preset_handler,

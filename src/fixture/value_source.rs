@@ -85,7 +85,7 @@ impl FixtureChannelValueSource {
             }
             Self::Executor { executor_id } => {
                 let executor = updatable_handler
-                    .fader(*executor_id)
+                    .executor(*executor_id)
                     .map_err(|err| FixtureError::UpdatableHandlerError(err.into()))?;
 
                 Ok(!executor.stomp_protected()
@@ -126,7 +126,7 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                                 )
                             }),
                         FixtureChannelValueSource::Executor { executor_id } => {
-                            let executor = updatable_handler.fader(*executor_id);
+                            let executor = updatable_handler.executor(*executor_id);
 
                             if let Ok(executor) = executor {
                                 executor.channel_value(

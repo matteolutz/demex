@@ -114,7 +114,7 @@ impl DemexUiApp {
                 &timing_handler,
             )
             .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
-        updatable_handler.update_faders(
+        updatable_handler.update_executors(
             patch.fixture_types(),
             &fixture_handler,
             &preset_handler,

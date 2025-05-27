@@ -2,7 +2,6 @@ use super::{presets::error::PresetHandlerError, updatables::error::UpdatableHand
 
 #[derive(Debug)]
 pub enum FixtureError {
-    FaderProvidesNoValues(u32),
     NoChannelValueSourceFound,
     EmptyPatch,
     DuplicateChannelType,
@@ -31,9 +30,6 @@ pub enum FixtureError {
 impl std::fmt::Display for FixtureError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::FaderProvidesNoValues(fader_id) => {
-                write!(f, "Fader {} provides no values", fader_id)
-            }
             Self::NoChannelValueSourceFound => write!(f, "No channel value source found"),
             Self::EmptyPatch => write!(f, "Patch is empty"),
             Self::DuplicateChannelType => write!(f, "Duplicate channel type"),

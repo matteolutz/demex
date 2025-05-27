@@ -108,7 +108,7 @@ impl FunctionArgs for DeleteArgs {
                 (HomeableObject::Executor(id_from), HomeableObject::Executor(id_to)) => {
                     for id in *id_from..=*id_to {
                         if updatable_handler
-                            .fader(id)
+                            .executor(id)
                             .is_ok_and(|exec| exec.is_active())
                         {
                             return Err(ActionRunError::ExecutorIsRunning(id));
@@ -117,7 +117,7 @@ impl FunctionArgs for DeleteArgs {
 
                     for id in *id_from..=*id_to {
                         updatable_handler
-                            .delete_fader(id)
+                            .delete_executor(id)
                             .map_err(ActionRunError::UpdatableHandlerError)?;
                     }
 

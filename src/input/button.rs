@@ -75,20 +75,20 @@ impl DemexInputButton {
         match self {
             Self::ExecutorFlash { id, stomp } => {
                 updatable_handler
-                    .start_fader(*id, fixture_handler, preset_handler, 0.0)
+                    .start_executor(*id, fixture_handler, preset_handler, 0.0)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
                 if *stomp {
-                    updatable_handler.fader_stomp(*id);
+                    updatable_handler.executor_stomp(*id);
                 }
             }
             Self::ExecutorGo(executor_id) => {
                 updatable_handler
-                    .fader_go(*executor_id, fixture_handler, preset_handler, 0.0)
+                    .executor_go(*executor_id, fixture_handler, preset_handler, 0.0)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
             }
             Self::ExecutorStop(executor_id) => updatable_handler
-                .stop_fader(*executor_id, fixture_handler, preset_handler)
+                .stop_executor(*executor_id, fixture_handler, preset_handler)
                 .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
             Self::SelectivePreset {
                 selection,
@@ -148,17 +148,17 @@ impl DemexInputButton {
         match self {
             Self::ExecutorGo(executor_id) => {
                 let _executor = updatable_handler
-                    .fader(*executor_id)
+                    .executor(*executor_id)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
                 // TODO
             }
             Self::ExecutorFlash { id, stomp } => {
                 updatable_handler
-                    .stop_fader(*id, fixture_handler, preset_handler)
+                    .stop_executor(*id, fixture_handler, preset_handler)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
                 if *stomp {
-                    updatable_handler.fader_unstomp(*id);
+                    updatable_handler.executor_unstomp(*id);
                 }
             }
             _ => {}

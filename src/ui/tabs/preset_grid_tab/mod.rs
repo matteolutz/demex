@@ -322,18 +322,18 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         // Executors
         preset_grid_row_ui(ui, "Executors", None, ecolor::Color32::DARK_GREEN, |ui| {
             for id in 0..=updatable_handler
-                .next_fader_id()
+                .next_executor_id()
                 .max(min_num_preset_buttons)
             {
-                let executor_exists = updatable_handler.fader(id).is_ok();
+                let executor_exists = updatable_handler.executor(id).is_ok();
 
                 let (config, decoration) = if executor_exists {
-                    let executor = updatable_handler.fader(id).unwrap();
+                    let executor = updatable_handler.executor(id).unwrap();
 
                     let config = PresetGridButtonConfig::Preset {
                         id,
                         name: executor.display_name(&preset_handler),
-                        top_bar_color: if updatable_handler.fader(id).unwrap().is_active() {
+                        top_bar_color: if updatable_handler.executor(id).unwrap().is_active() {
                             Some(ecolor::Color32::RED)
                         } else {
                             None
@@ -342,7 +342,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     };
 
                     let decoration = {
-                        let executor = updatable_handler.fader(id).unwrap();
+                        let executor = updatable_handler.executor(id).unwrap();
 
                         let current_cues = executor.runtime().current_cues();
                         let current_cue_text = if current_cues.is_empty() {
@@ -424,8 +424,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                             }
                         }
                         PresetGridButtonQuickMenuActions::Custom("Edit Sequence") => {
-                            context.global_sequence_select =
-                                Some(updatable_handler.fader(id).unwrap().runtime().sequence_id());
+                            context.global_sequence_select = Some(
+                                updatable_handler
+                                    .executor(id)
+                                    .unwrap()
+                                    .runtime()
+                                    .sequence_id(),
+                            );
                         }
                         _ => {}
                     }
@@ -435,7 +440,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     || quick_action
                         .is_some_and(|a| a == PresetGridButtonQuickMenuActions::Custom("Stop")))
                     && executor_exists
-                    && updatable_handler.fader(id).unwrap().is_active()
+                    && updatable_handler.executor(id).unwrap().is_active()
                 {
                     context
                         .action_queue
