@@ -108,35 +108,10 @@ impl FunctionArgs for DeleteArgs {
                 (HomeableObject::Executor(id_from), HomeableObject::Executor(id_to)) => {
                     for id in *id_from..=*id_to {
                         if updatable_handler
-                            .executor(id)
-                            .is_some_and(|exec| exec.is_started())
+                            .fader(id)
+                            .is_ok_and(|exec| exec.is_active())
                         {
                             return Err(ActionRunError::ExecutorIsRunning(id));
-                        }
-                    }
-
-                    for id in *id_from..=*id_to {
-                        updatable_handler
-                            .delete_executor(id)
-                            .map_err(ActionRunError::UpdatableHandlerError)?;
-                    }
-
-                    if id_from == id_to {
-                        Ok(ActionRunResult::new())
-                    } else {
-                        Ok(ActionRunResult::Info(format!(
-                            "Deleted {} executors",
-                            id_to - id_from + 1
-                        )))
-                    }
-                }
-                (HomeableObject::Fader(id_from), HomeableObject::Fader(id_to)) => {
-                    for id in *id_from..=*id_to {
-                        if updatable_handler
-                            .fader(id)
-                            .is_ok_and(|fader| fader.is_active())
-                        {
-                            return Err(ActionRunError::FaderIsActive(id));
                         }
                     }
 
@@ -150,7 +125,7 @@ impl FunctionArgs for DeleteArgs {
                         Ok(ActionRunResult::new())
                     } else {
                         Ok(ActionRunResult::Info(format!(
-                            "Deleted {} faders",
+                            "Deleted {} executors",
                             id_to - id_from + 1
                         )))
                     }

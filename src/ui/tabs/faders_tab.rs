@@ -30,7 +30,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 ui.label(
                     egui::RichText::from(format!(
                         "{}",
-                        updatable_handler.fader(*id).unwrap().config()
+                        updatable_handler
+                            .fader(*id)
+                            .unwrap()
+                            .display_name(&preset_handler)
                     ))
                     .small(),
                 );
@@ -42,7 +45,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                             let fader = updatable_handler.fader_mut(*id).unwrap();
 
-                            fader.set_value(val as f32, &mut fixture_handler, &preset_handler);
+                            fader.set_value(val as f32, &mut fixture_handler, &preset_handler, 0.0);
 
                             val
                         } else {
@@ -56,13 +59,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     updatable_handler
                         .fader_mut(*id)
                         .unwrap()
-                        .home(&mut fixture_handler, &preset_handler);
+                        .stop(&mut fixture_handler, &preset_handler);
                 }
 
                 if ui.button("Sel").clicked() {
                     context
                         .command
-                        .extend_from_slice(&[Token::KeywordFader, Token::Integer(*id)]);
+                        .extend_from_slice(&[Token::KeywordExecutor, Token::Integer(*id)]);
                 }
             });
         }

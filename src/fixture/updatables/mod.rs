@@ -1,31 +1,18 @@
 use std::collections::HashMap;
 
 use error::UpdatableHandlerError;
-use executor::Executor;
-use fader::{
-    config::{DemexFaderConfig, DemexFaderRuntimeFunction},
-    DemexFader,
-};
+use fader::{config::DemexFaderRuntimeFunction, DemexFader};
 use serde::{Deserialize, Serialize};
-
-use crate::parser::nodes::{
-    action::functions::create_function::{
-        CreateExecutorArgsCreationMode, CreateFaderArgsCreationMode,
-    },
-    fixture_selector::FixtureSelectorContext,
-};
 
 use super::{
     handler::{FixtureHandler, FixtureTypeList},
     presets::PresetHandler,
-    selection::FixtureSelection,
     sequence::runtime::SequenceRuntime,
     timing::TimingHandler,
-    value_source::FixtureChannelValuePriority,
 };
 
 pub mod error;
-pub mod executor;
+// pub mod executor;
 pub mod fader;
 pub mod runtime;
 
@@ -37,7 +24,7 @@ pub enum StompSource {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct UpdatableHandler {
-    executors: HashMap<u32, Executor>,
+    // executors: HashMap<u32, Executor>,
     faders: HashMap<u32, DemexFader>,
 
     #[serde(default, skip_serializing, skip_deserializing)]
@@ -46,15 +33,14 @@ pub struct UpdatableHandler {
 
 impl UpdatableHandler {
     pub fn sequence_deleteable(&mut self, sequence_id: u32) -> bool {
-        !(self
-            .executors
+        !(/*self
+        .executors
+        .iter()
+        .any(|(_, v)| v.refers_to_sequence(sequence_id))
+        ||*/self
+            .faders
             .iter()
-            .any(|(_, v)| v.refers_to_sequence(sequence_id))
-            || self.faders.iter().any(|(_, v)| match v.config() {
-                DemexFaderConfig::SequenceRuntime { runtime, .. } => {
-                    sequence_id == runtime.sequence_id()
-                }
-            }))
+            .any(|(_, fader)| sequence_id == fader.runtime().sequence_id()))
     }
 
     pub fn last_stomp_source(&self) -> Option<StompSource> {
@@ -62,6 +48,7 @@ impl UpdatableHandler {
     }
 }
 
+/*
 // Executors
 impl UpdatableHandler {
     pub fn create_executor(
@@ -239,40 +226,21 @@ impl UpdatableHandler {
         Ok(())
     }
 }
+*/
 
 // Faders
 impl UpdatableHandler {
-    pub fn create_fader(
-        &mut self,
-        id: u32,
-        creation_mode: &CreateFaderArgsCreationMode,
-        name: Option<String>,
-        preset_handler: &PresetHandler,
-        _fixture_selector_context: FixtureSelectorContext,
-    ) -> Result<(), UpdatableHandlerError> {
+    pub fn create_fader(&mut self, id: u32, sequence_id: u32) -> Result<(), UpdatableHandlerError> {
         if self.faders.contains_key(&id) {
             return Err(UpdatableHandlerError::UpdatableAlreadyExists(id));
         }
-
-        let fader_config = match creation_mode {
-            CreateFaderArgsCreationMode::Sequence(sequence_id) => {
-                preset_handler
-                    .get_sequence(*sequence_id)
-                    .map_err(UpdatableHandlerError::PresetHandlerError)?;
-
-                DemexFaderConfig::SequenceRuntime {
-                    runtime: SequenceRuntime::new(*sequence_id),
-                    function: DemexFaderRuntimeFunction::default(),
-                }
-            }
-        };
 
         self.faders.insert(
             id,
             DemexFader::new(
                 id,
-                name.unwrap_or_else(|| format!("Fader {}", id)),
-                fader_config,
+                SequenceRuntime::new(sequence_id),
+                DemexFaderRuntimeFunction::default(),
             ),
         );
         Ok(())
@@ -294,13 +262,13 @@ impl UpdatableHandler {
         &self.faders
     }
 
-    pub fn faders_home_all(
+    pub fn faders_stop_all(
         &mut self,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
     ) {
         for (_, fader) in self.faders.iter_mut() {
-            fader.home(fixture_handler, preset_handler);
+            fader.stop(fixture_handler, preset_handler);
         }
     }
 
@@ -336,8 +304,49 @@ impl UpdatableHandler {
         self.faders.keys().max().unwrap_or(&0) + 1
     }
 
-    pub fn rename_fader(&mut self, id: u32, name: String) -> Result<(), UpdatableHandlerError> {
-        *self.fader_mut(id)?.name_mut() = name;
+    pub fn start_fader(
+        &mut self,
+        id: u32,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+        time_offset: f32,
+    ) -> Result<(), UpdatableHandlerError> {
+        self.fader_mut(id)?
+            .start(fixture_handler, preset_handler, time_offset);
         Ok(())
+    }
+
+    pub fn stop_fader(
+        &mut self,
+        id: u32,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+    ) -> Result<(), UpdatableHandlerError> {
+        self.fader_mut(id)?.stop(fixture_handler, preset_handler);
+        Ok(())
+    }
+
+    pub fn fader_go(
+        &mut self,
+        id: u32,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &PresetHandler,
+        time_offset: f32,
+    ) -> Result<(), UpdatableHandlerError> {
+        self.fader_mut(id)?
+            .go(fixture_handler, preset_handler, time_offset);
+        Ok(())
+    }
+
+    pub fn fader_stomp(&mut self, id: u32) {
+        self.fader_unstomp(id);
+        self.stomps.push(StompSource::Fader(id));
+    }
+
+    pub fn fader_unstomp(&mut self, id: u32) {
+        self.stomps.retain(|v| match v {
+            StompSource::Fader(v) => *v != id,
+            _ => true,
+        });
     }
 }

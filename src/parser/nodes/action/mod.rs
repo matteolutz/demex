@@ -3,8 +3,7 @@ use std::{ops::RangeInclusive, time};
 use functions::{
     assign_function::{AssignButtonArgs, AssignFaderArgs},
     create_function::{
-        CreateEffectPresetArgs, CreateExecutorArgs, CreateFaderArgs, CreateMacroArgs,
-        CreateSequenceArgs,
+        CreateEffectPresetArgs, CreateExecutorArgs, CreateMacroArgs, CreateSequenceArgs,
     },
     delete_function::DeleteArgs,
     go_function::ExecutorGoArgs,
@@ -103,7 +102,6 @@ pub enum Action {
     // Create
     CreateSequence(CreateSequenceArgs),
     CreateExecutor(CreateExecutorArgs),
-    CreateFader(CreateFaderArgs),
     CreateMacro(CreateMacroArgs),
     CreateEffectPreset(CreateEffectPresetArgs),
 
@@ -273,16 +271,6 @@ impl Action {
                 patch,
             ),
             Self::CreateMacro(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-            ),
-            Self::CreateFader(args) => args.run(
                 issued_at,
                 fixture_handler,
                 preset_handler,

@@ -208,12 +208,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &preset_handler,
                 &timing_handler,
             );
-            updatable_handler.update_executors(
-                patch.fixture_types(),
-                &mut fixture_handler,
-                &preset_handler,
-                &timing_handler,
-            );
         },
     );
 

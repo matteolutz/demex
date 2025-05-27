@@ -7,7 +7,7 @@ use crate::{
         patch::Patch,
         presets::{preset::FixturePresetId, PresetHandler},
         timing::TimingHandler,
-        updatables::{error::UpdatableHandlerError, UpdatableHandler},
+        updatables::UpdatableHandler,
     },
     input::{button::DemexInputButton, error::DemexInputDeviceError, fader::DemexInputFader},
     lexer::token::Token,
@@ -21,13 +21,12 @@ use super::FunctionArgs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AssignButtonArgsMode {
-    ExecutorStartAndNext(u32),
+    ExecutorGo(u32),
     ExecutorStop(u32),
     ExecutorFlash {
         id: u32,
         stomp: bool,
     },
-    FaderGo(u32),
     FixtureSelector(FixtureSelector),
     SelectivePreset {
         preset_id_range: ValueOrRange<FixturePresetId>,
@@ -44,16 +43,7 @@ impl AssignButtonArgsMode {
         updatable_handler: &UpdatableHandler,
     ) -> Result<(), ActionRunError> {
         match self {
-            Self::ExecutorStop(id)
-            | Self::ExecutorFlash { id, .. }
-            | Self::ExecutorStartAndNext(id) => {
-                updatable_handler
-                    .executor(*id)
-                    .ok_or(ActionRunError::UpdatableHandlerError(
-                        UpdatableHandlerError::UpdatableNotFound(*id),
-                    ))?;
-            }
-            Self::FaderGo(id) => {
+            Self::ExecutorStop(id) | Self::ExecutorFlash { id, .. } | Self::ExecutorGo(id) => {
                 updatable_handler
                     .fader(*id)
                     .map_err(ActionRunError::UpdatableHandlerError)?;
@@ -80,8 +70,8 @@ impl AssignButtonArgsMode {
         fixture_selector_context: FixtureSelectorContext,
     ) -> Result<Vec<DemexInputButton>, ActionRunError> {
         match &self {
-            AssignButtonArgsMode::ExecutorStartAndNext(executor_id) => {
-                Ok(vec![DemexInputButton::ExecutorStartAndNext(*executor_id)])
+            AssignButtonArgsMode::ExecutorGo(executor_id) => {
+                Ok(vec![DemexInputButton::ExecutorGo(*executor_id)])
             }
             AssignButtonArgsMode::ExecutorStop(executor_id) => {
                 Ok(vec![DemexInputButton::ExecutorStop(*executor_id)])
@@ -91,9 +81,6 @@ impl AssignButtonArgsMode {
                     id: *id,
                     stomp: *stomp,
                 }])
-            }
-            AssignButtonArgsMode::FaderGo(fader_id) => {
-                Ok(vec![DemexInputButton::FaderGo(*fader_id)])
             }
             AssignButtonArgsMode::FixtureSelector(fixture_selector) => {
                 Ok(vec![DemexInputButton::FixtureSelector {

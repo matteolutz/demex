@@ -7,7 +7,7 @@ use crate::{
         presets::{preset::FixturePresetTarget, PresetHandler},
         selection::FixtureSelection,
         timing::TimingHandler,
-        updatables::{error::UpdatableHandlerError, UpdatableHandler},
+        updatables::UpdatableHandler,
     },
     input::{
         button::DemexInputButton, error::DemexInputDeviceError, message::DemexInputDeviceMessage,
@@ -284,13 +284,11 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
     ) -> Result<(), DemexInputDeviceError> {
         for (button_id, button) in device_config.buttons() {
             match button {
-                DemexInputButton::ExecutorStartAndNext(id) => {
+                DemexInputButton::ExecutorGo(id) => {
                     let is_started = updatable_handler
-                        .executor(*id)
-                        .ok_or(DemexInputDeviceError::UpdatableHandlerError(
-                            UpdatableHandlerError::UpdatableNotFound(*id),
-                        ))?
-                        .is_started();
+                        .fader(*id)
+                        .map_err(DemexInputDeviceError::UpdatableHandlerError)?
+                        .is_active();
 
                     self.set_button_led(
                         *button_id,
@@ -304,11 +302,9 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                 }
                 DemexInputButton::ExecutorStop(id) => {
                     let is_started = updatable_handler
-                        .executor(*id)
-                        .ok_or(DemexInputDeviceError::UpdatableHandlerError(
-                            UpdatableHandlerError::UpdatableNotFound(*id),
-                        ))?
-                        .is_started();
+                        .fader(*id)
+                        .map_err(DemexInputDeviceError::UpdatableHandlerError)?
+                        .is_active();
 
                     self.set_button_led(
                         *button_id,
@@ -322,11 +318,9 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                 }
                 DemexInputButton::ExecutorFlash { id, .. } => {
                     let is_started = updatable_handler
-                        .executor(*id)
-                        .ok_or(DemexInputDeviceError::UpdatableHandlerError(
-                            UpdatableHandlerError::UpdatableNotFound(*id),
-                        ))?
-                        .is_started();
+                        .fader(*id)
+                        .map_err(DemexInputDeviceError::UpdatableHandlerError)?
+                        .is_active();
 
                     self.set_button_led(
                         *button_id,
@@ -416,7 +410,6 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         },
                     )?;
                 }
-                DemexInputButton::FaderGo(_) => todo!(),
                 DemexInputButton::Unused => {}
             }
         }

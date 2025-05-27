@@ -44,7 +44,6 @@ pub trait ObjectTrait {
 pub enum HomeableObject {
     FixtureSelector(FixtureSelector),
     Executor(u32),
-    Fader(u32),
     Programmer,
 }
 
@@ -72,15 +71,8 @@ impl HomeableObject {
                 Ok(ActionRunResult::new())
             }
             HomeableObject::Executor(executor_id) => {
-                updatable_handler
-                    .stop_executor(*executor_id, fixture_handler, preset_handler)
-                    .map_err(ActionRunError::UpdatableHandlerError)?;
-
-                Ok(ActionRunResult::new())
-            }
-            HomeableObject::Fader(fader_id) => {
-                if let Ok(fader) = updatable_handler.fader_mut(*fader_id) {
-                    fader.home(fixture_handler, preset_handler);
+                if let Ok(fader) = updatable_handler.fader_mut(*executor_id) {
+                    fader.stop(fixture_handler, preset_handler);
                 }
 
                 Ok(ActionRunResult::new())
@@ -107,7 +99,6 @@ impl ObjectTrait for HomeableObject {
     fn edit_window(self) -> Option<crate::ui::window::edit::DemexEditWindow> {
         match self {
             Self::Executor(id) => Some(crate::ui::window::edit::DemexEditWindow::EditExecutor(id)),
-            Self::Fader(id) => Some(crate::ui::window::edit::DemexEditWindow::EditFader(id)),
             Self::FixtureSelector(fixture_selector) => fixture_selector
                 .try_as_group_id()
                 .map(crate::ui::window::edit::DemexEditWindow::EditGroup),
@@ -121,7 +112,6 @@ impl HomeableObject {
         match (self, other) {
             (Self::FixtureSelector(_), Self::FixtureSelector(_)) => true,
             (Self::Executor(_), Self::Executor(_)) => true,
-            (Self::Fader(_), Self::Fader(_)) => true,
             _ => false,
         }
     }

@@ -8,11 +8,8 @@ use crate::fixture::{
 };
 
 use super::{
-    channel3::channel_value::FixtureChannelValue3,
-    gdtf::GdtfFixture,
-    handler::FixtureTypeList,
-    timing::TimingHandler,
-    updatables::{error::UpdatableHandlerError, StompSource},
+    channel3::channel_value::FixtureChannelValue3, gdtf::GdtfFixture, handler::FixtureTypeList,
+    timing::TimingHandler, updatables::StompSource,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -70,7 +67,6 @@ pub trait FixtureChannelValueSourceTrait {
 pub enum FixtureChannelValueSource {
     Programmer,
     Executor { executor_id: u32 },
-    Fader { fader_id: u32 },
 }
 
 impl FixtureChannelValueSource {
@@ -88,26 +84,14 @@ impl FixtureChannelValueSource {
                 Ok(!programmer_stomp_protected)
             }
             Self::Executor { executor_id } => {
-                let executor = updatable_handler.executor(*executor_id).ok_or(
-                    FixtureError::UpdatableHandlerError(Box::new(
-                        UpdatableHandlerError::UpdatableNotFound(*executor_id),
-                    )),
-                )?;
+                let executor = updatable_handler
+                    .fader(*executor_id)
+                    .map_err(|err| FixtureError::UpdatableHandlerError(err.into()))?;
 
                 Ok(!executor.stomp_protected()
                     && stomp_source.as_ref().is_some_and(
                         |s| !matches!(s, StompSource::Executor(id) if id == executor_id),
                     ))
-            }
-            Self::Fader { fader_id } => {
-                let fader = updatable_handler
-                    .fader(*fader_id)
-                    .map_err(|err| FixtureError::UpdatableHandlerError(Box::new(err)))?;
-
-                Ok(!fader.stomp_protected()
-                    && stomp_source
-                        .as_ref()
-                        .is_some_and(|s| !matches!(s, StompSource::Fader(id) if id == fader_id)))
             }
         }
     }
@@ -142,35 +126,15 @@ impl FixtureChannelValueSourceTrait for Vec<FixtureChannelValueSource> {
                                 )
                             }),
                         FixtureChannelValueSource::Executor { executor_id } => {
-                            let runtime = updatable_handler.executor(*executor_id);
+                            let executor = updatable_handler.fader(*executor_id);
 
-                            if let Some(runtime) = runtime {
-                                runtime
-                                    .channel_value(
-                                        fixture_types,
-                                        fixture,
-                                        channel,
-                                        preset_handler,
-                                        timing_handler,
-                                    )
-                                    .ok_or(FixtureError::GdtfChannelValueNotFound(
-                                        channel.name().as_ref().to_owned(),
-                                    ))
-                            } else {
-                                Err(FixtureError::GdtfChannelValueNotFound(
-                                    channel.name().as_ref().to_owned(),
-                                ))
-                            }
-                        }
-                        FixtureChannelValueSource::Fader { fader_id } => {
-                            let fader = updatable_handler.fader(*fader_id);
-
-                            if let Ok(fader) = fader {
-                                fader.get_channel_value(
+                            if let Ok(executor) = executor {
+                                executor.channel_value(
                                     fixture_types,
                                     fixture,
                                     channel,
                                     preset_handler,
+                                    timing_handler,
                                 )
                             } else {
                                 Err(FixtureError::GdtfChannelValueNotFound(
@@ -240,7 +204,6 @@ impl FixtureChannelValueSource {
         match self {
             Self::Programmer => "P".to_string(),
             Self::Executor { executor_id } => executor_id.to_string(),
-            Self::Fader { fader_id } => fader_id.to_string(),
         }
     }
 }
@@ -252,7 +215,6 @@ impl fmt::Display for FixtureChannelValueSource {
             Self::Executor {
                 executor_id: runtime_id,
             } => write!(f, "Exe({})", runtime_id),
-            Self::Fader { fader_id } => write!(f, "Fdr({})", fader_id),
         }
     }
 }

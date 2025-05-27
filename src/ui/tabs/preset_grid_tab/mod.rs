@@ -9,7 +9,6 @@ use crate::{
     fixture::{
         channel3::feature::feature_group::FixtureChannel3FeatureGroup,
         presets::preset::{FixturePresetData, FixturePresetId},
-        updatables::executor::config::ExecutorConfig,
     },
     lexer::token::Token,
     parser::nodes::action::{
@@ -323,18 +322,18 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         // Executors
         preset_grid_row_ui(ui, "Executors", None, ecolor::Color32::DARK_GREEN, |ui| {
             for id in 0..=updatable_handler
-                .next_executor_id()
+                .next_fader_id()
                 .max(min_num_preset_buttons)
             {
-                let executor_exists = updatable_handler.executor(id).is_some();
+                let executor_exists = updatable_handler.fader(id).is_ok();
 
                 let (config, decoration) = if executor_exists {
-                    let executor = updatable_handler.executor(id).unwrap();
+                    let executor = updatable_handler.fader(id).unwrap();
 
                     let config = PresetGridButtonConfig::Preset {
                         id,
-                        name: executor.name().to_owned(),
-                        top_bar_color: if updatable_handler.executor(id).unwrap().is_started() {
+                        name: executor.display_name(&preset_handler),
+                        top_bar_color: if updatable_handler.fader(id).unwrap().is_active() {
                             Some(ecolor::Color32::RED)
                         } else {
                             None
@@ -342,32 +341,28 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         display_color: None,
                     };
 
-                    let decoration = match executor.config() {
-                        ExecutorConfig::Sequence { runtime, .. } => {
-                            let current_cues = runtime.current_cues();
-                            let current_cue_text = if current_cues.is_empty() {
-                                "-".to_owned()
-                            } else {
-                                current_cues
-                                    .into_iter()
-                                    .map(|c| (c + 1).to_string())
-                                    .collect::<Vec<_>>()
-                                    .join(", ")
-                            };
+                    let decoration = {
+                        let executor = updatable_handler.fader(id).unwrap();
 
-                            PresetGridButtonDecoration {
-                                right_top_text: Some(format!(
-                                    "({})/{}",
-                                    current_cue_text,
-                                    runtime.num_cues(&preset_handler)
-                                )),
-                                left_bottom_text: Some("Seq".to_owned()),
-                            }
+                        let current_cues = executor.runtime().current_cues();
+                        let current_cue_text = if current_cues.is_empty() {
+                            "-".to_owned()
+                        } else {
+                            current_cues
+                                .into_iter()
+                                .map(|c| (c + 1).to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        };
+
+                        PresetGridButtonDecoration {
+                            right_top_text: Some(format!(
+                                "({})/{}",
+                                current_cue_text,
+                                executor.runtime().num_cues(&preset_handler)
+                            )),
+                            left_bottom_text: Some("Seq".to_owned()),
                         }
-                        ExecutorConfig::FeatureEffect { .. } => PresetGridButtonDecoration {
-                            right_top_text: None,
-                            left_bottom_text: Some("FeFX".to_owned()),
-                        },
                     };
 
                     (config, decoration)
@@ -428,6 +423,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                 ));
                             }
                         }
+                        PresetGridButtonQuickMenuActions::Custom("Edit Sequence") => {
+                            context.global_sequence_select =
+                                Some(updatable_handler.fader(id).unwrap().runtime().sequence_id());
+                        }
                         _ => {}
                     }
                 }
@@ -436,7 +435,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                     || quick_action
                         .is_some_and(|a| a == PresetGridButtonQuickMenuActions::Custom("Stop")))
                     && executor_exists
-                    && updatable_handler.executor(id).unwrap().is_started()
+                    && updatable_handler.fader(id).unwrap().is_active()
                 {
                     context
                         .action_queue

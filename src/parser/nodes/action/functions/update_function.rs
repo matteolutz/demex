@@ -4,14 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        patch::Patch,
-        presets::preset::FixturePresetId,
-        sequence::cue::CueIdx,
+        patch::Patch, presets::preset::FixturePresetId, sequence::cue::CueIdx,
         timing::TimingHandler,
-        updatables::{
-            error::UpdatableHandlerError, executor::config::ExecutorConfig,
-            fader::config::DemexFaderConfig,
-        },
     },
     lexer::token::Token,
     parser::{
@@ -79,7 +73,6 @@ impl FunctionArgs for UpdatePresetArgs {
 pub enum UpdateSequenceCueArgsId {
     SequenceId(u32),
     ExecutorId(u32),
-    FaderId(u32),
 }
 
 impl TryFrom<(Token, u32)> for UpdateSequenceCueArgsId {
@@ -89,9 +82,8 @@ impl TryFrom<(Token, u32)> for UpdateSequenceCueArgsId {
         match token {
             Token::KeywordSequence => Ok(UpdateSequenceCueArgsId::SequenceId(id)),
             Token::KeywordExecutor => Ok(UpdateSequenceCueArgsId::ExecutorId(id)),
-            Token::KeywordFader => Ok(UpdateSequenceCueArgsId::FaderId(id)),
             _ => Err(ParseError::UnexpectedArgs(
-                "Expected 'sequence', 'executor' or 'fader'".to_owned(),
+                "Expected 'sequence', 'executor'".to_owned(),
             )),
         }
     }
@@ -120,28 +112,10 @@ impl FunctionArgs for UpdateSequenceCueArgs {
     ) -> Result<ActionRunResult, ActionRunError> {
         let sequence_id = match self.id {
             UpdateSequenceCueArgsId::SequenceId(id) => id,
-            UpdateSequenceCueArgsId::ExecutorId(id) => {
-                let executor = updatable_handler
-                    .executor(id)
-                    .ok_or(UpdatableHandlerError::UpdatableNotFound(id))
-                    .map_err(ActionRunError::UpdatableHandlerError)?;
-                match executor.config() {
-                    ExecutorConfig::Sequence { runtime, .. } => runtime.sequence_id(),
-                    _ => {
-                        return Err(ActionRunError::UpdatableHandlerError(
-                            UpdatableHandlerError::ExecutorIsNotASequence(id),
-                        ))
-                    }
-                }
-            }
-            UpdateSequenceCueArgsId::FaderId(id) => {
-                let fader = updatable_handler
-                    .fader(id)
-                    .map_err(ActionRunError::UpdatableHandlerError)?;
-                match fader.config() {
-                    DemexFaderConfig::SequenceRuntime { runtime, .. } => runtime.sequence_id(),
-                }
-            }
+            UpdateSequenceCueArgsId::ExecutorId(id) => updatable_handler
+                .fader(id)
+                .map(|executor| executor.runtime().sequence_id())
+                .map_err(ActionRunError::UpdatableHandlerError)?,
         };
 
         let num_updated = preset_handler

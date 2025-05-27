@@ -10,13 +10,9 @@ use crate::{
         handler::{FixtureHandler, FixtureTypeList},
         patch::Patch,
         presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler},
-        selection::FixtureSelection,
         sequence::cue::{CueFixtureChannelValue, CueIdx},
         timing::TimingHandler,
-        updatables::{
-            error::UpdatableHandlerError, executor::config::ExecutorConfig,
-            fader::config::DemexFaderConfig,
-        },
+        updatables::error::UpdatableHandlerError,
     },
     lexer::token::Token,
     parser::{
@@ -28,10 +24,7 @@ use crate::{
     },
 };
 
-use super::{
-    create_function::{CreateExecutorArgsCreationMode, CreateFaderArgsCreationMode},
-    FunctionArgs,
-};
+use super::FunctionArgs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RecordChannelTypeSelector {
@@ -197,7 +190,6 @@ impl FunctionArgs for RecordSequenceCueArgs {
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum RecordSequenceCueShorthandArgsId {
     ExecutorId(u32),
-    FaderId(u32),
 }
 
 impl TryFrom<(Token, u32)> for RecordSequenceCueShorthandArgsId {
@@ -206,10 +198,7 @@ impl TryFrom<(Token, u32)> for RecordSequenceCueShorthandArgsId {
     fn try_from((token, id): (Token, u32)) -> Result<Self, Self::Error> {
         match token {
             Token::KeywordExecutor => Ok(Self::ExecutorId(id)),
-            Token::KeywordFader => Ok(Self::FaderId(id)),
-            _ => Err(ParseError::UnexpectedArgs(
-                "Expected 'executor' or 'fader'".to_owned(),
-            )),
+            _ => Err(ParseError::UnexpectedArgs("Expected 'executor'".to_owned())),
         }
     }
 }
@@ -218,7 +207,6 @@ impl std::fmt::Display for RecordSequenceCueShorthandArgsId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::ExecutorId(id) => write!(f, "Executor {}", id),
-            Self::FaderId(id) => write!(f, "Fader {}", id),
         }
     }
 }
@@ -229,6 +217,7 @@ pub struct RecordSequenceCueShorthandArgs {
     pub cue_idx: Option<CueIdx>,
     pub fixture_selector: FixtureSelector,
     pub channel_type_selector: RecordChannelTypeSelector,
+    pub sequence_name: Option<String>,
 }
 
 impl RecordSequenceCueShorthandArgs {
@@ -238,10 +227,11 @@ impl RecordSequenceCueShorthandArgs {
         preset_handler: &mut PresetHandler,
         fixture_selector_context: FixtureSelectorContext,
         fixture_types: &FixtureTypeList,
+        name: String,
     ) -> Result<u32, PresetHandlerError> {
         let sequence_id = preset_handler.next_sequence_id();
 
-        preset_handler.create_sequence(sequence_id, Some(format!("Sequence for {}", self.id)))?;
+        preset_handler.create_sequence(sequence_id, Some(name))?;
 
         preset_handler.record_sequence_cue(
             sequence_id,
@@ -271,27 +261,25 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
     ) -> Result<ActionRunResult, ActionRunError> {
         match self.id {
             RecordSequenceCueShorthandArgsId::ExecutorId(executor_id) => {
-                if let Some(executor) = updatable_handler.executor_mut(executor_id) {
-                    match executor.config_mut() {
-                        ExecutorConfig::Sequence { runtime } => {
-                            preset_handler
-                                .record_sequence_cue(
-                                    runtime.sequence_id(),
-                                    fixture_handler,
-                                    &self.fixture_selector,
-                                    fixture_selector_context,
-                                    self.cue_idx,
-                                    &self.channel_type_selector,
-                                    patch.fixture_types(),
-                                )
-                                .map_err(ActionRunError::PresetHandlerError)?;
-                        }
-                        _ => {
-                            return Err(ActionRunError::UpdatableHandlerError(
-                                UpdatableHandlerError::ExecutorIsNotASequence(executor_id),
-                            ))
-                        }
+                if let Ok(executor) = updatable_handler.fader_mut(executor_id) {
+                    // if the executor is already present, but a sequence name is provided, we want to error
+                    if self.sequence_name.is_some() {
+                        return Err(ActionRunError::UpdatableHandlerError(
+                            UpdatableHandlerError::UpdatableAlreadyExists(executor.id()),
+                        ));
                     }
+
+                    preset_handler
+                        .record_sequence_cue(
+                            executor.runtime().sequence_id(),
+                            fixture_handler,
+                            &self.fixture_selector,
+                            fixture_selector_context,
+                            self.cue_idx,
+                            &self.channel_type_selector,
+                            patch.fixture_types(),
+                        )
+                        .map_err(ActionRunError::PresetHandlerError)?;
                 } else {
                     let sequence_id = self
                         .create_sequence(
@@ -299,54 +287,14 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                             preset_handler,
                             fixture_selector_context,
                             patch.fixture_types(),
+                            self.sequence_name.clone().unwrap_or_else(|| {
+                                format!("Sequence {}", preset_handler.next_sequence_id())
+                            }),
                         )
                         .map_err(ActionRunError::PresetHandlerError)?;
 
                     updatable_handler
-                        .create_executor(
-                            executor_id,
-                            None,
-                            &CreateExecutorArgsCreationMode::Sequence(sequence_id),
-                            FixtureSelection::default(),
-                        )
-                        .map_err(ActionRunError::UpdatableHandlerError)?;
-                }
-            }
-            RecordSequenceCueShorthandArgsId::FaderId(fader_id) => {
-                if let Ok(fader) = updatable_handler.fader_mut(fader_id) {
-                    match fader.config_mut() {
-                        DemexFaderConfig::SequenceRuntime { runtime, .. } => {
-                            preset_handler
-                                .record_sequence_cue(
-                                    runtime.sequence_id(),
-                                    fixture_handler,
-                                    &self.fixture_selector,
-                                    fixture_selector_context,
-                                    self.cue_idx,
-                                    &self.channel_type_selector,
-                                    patch.fixture_types(),
-                                )
-                                .map_err(ActionRunError::PresetHandlerError)?;
-                        }
-                    }
-                } else {
-                    let sequence_id = self
-                        .create_sequence(
-                            fixture_handler,
-                            preset_handler,
-                            fixture_selector_context.clone(),
-                            patch.fixture_types(),
-                        )
-                        .map_err(ActionRunError::PresetHandlerError)?;
-
-                    updatable_handler
-                        .create_fader(
-                            fader_id,
-                            &CreateFaderArgsCreationMode::Sequence(sequence_id),
-                            None,
-                            preset_handler,
-                            fixture_selector_context,
-                        )
+                        .create_fader(executor_id, sequence_id)
                         .map_err(ActionRunError::UpdatableHandlerError)?;
                 }
             }

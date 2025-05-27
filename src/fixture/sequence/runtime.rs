@@ -18,7 +18,7 @@ use super::{
 
 pub struct ActiveCueData {}
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum SequenceRuntimeState {
     #[default]
     Stopped,
@@ -499,7 +499,7 @@ impl SequenceRuntime {
 
         self.state = new_state;
 
-        false
+        self.state == SequenceRuntimeState::Stopped
     }
 
     fn next_cue_idx(sequence: &Sequence, current_cue_idx: usize) -> Option<usize> {

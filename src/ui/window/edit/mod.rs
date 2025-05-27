@@ -25,7 +25,6 @@ pub enum DemexEditWindow {
     EditSequence(u32),
     EditSequenceCue(u32, CueIdx),
     EditExecutor(u32),
-    EditFader(u32),
     EditPreset(FixturePresetId),
 
     EditPreset2(FixturePresetId),
@@ -51,7 +50,6 @@ impl DemexEditWindow {
             }
 
             Self::EditExecutor(executor_id) => format!("Executor {}", executor_id),
-            Self::EditFader(fader_id) => format!("Fader {}", fader_id),
             Self::EditPreset(preset_id) | Self::EditPreset2(preset_id) => {
                 format!("Preset {}", preset_id)
             }
@@ -122,20 +120,17 @@ impl DemexEditWindow {
                 let sequence = preset_handler.get_sequence_mut(*sequence_id)?;
                 let cue = sequence
                     .find_cue_mut(*cue_idx)
-                    .ok_or(DemexUiError::RuntimeError("cue not found".to_owned()))?;
+                    .ok_or(DemexUiError::RuntimeError("Cue not found".to_owned()))?;
 
                 edit_builder_cue_ui(ui, *sequence_id, cue, groups, presets);
             }
             Self::EditExecutor(executor_id) => {
                 Probe::new(
                     updatable_handler
-                        .executor_mut(*executor_id)
-                        .ok_or(DemexUiError::RuntimeError("executor not found".to_owned()))?,
+                        .fader_mut(*executor_id)
+                        .map_err(|_| DemexUiError::RuntimeError("Executor not found".to_owned()))?,
                 )
                 .show(ui);
-            }
-            Self::EditFader(fader_id) => {
-                Probe::new(updatable_handler.fader_mut(*fader_id)?).show(ui);
             }
             Self::EditPreset(preset_id) => {
                 Probe::new(preset_handler.get_preset_mut(*preset_id)?).show(ui);
