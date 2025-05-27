@@ -416,11 +416,9 @@ impl GdtfFixture {
             timing_handler,
         )?;
 
-        let black = 0.0;
-
-        let red = (1.0 - cyan) * (1.0 - black);
-        let green = (1.0 - magenta) * (1.0 - black);
-        let blue = (1.0 - yellow) * (1.0 - black);
+        let red = 1.0 - cyan;
+        let green = 1.0 - magenta;
+        let blue = 1.0 - yellow;
 
         Ok([red, green, blue])
     }
@@ -461,6 +459,9 @@ impl GdtfFixture {
                     "ColorAdd_R" => Some(r),
                     "ColorAdd_G" => Some(g),
                     "ColorAdd_B" => Some(b),
+                    "ColorSub_C" => Some(1.0 - r),
+                    "ColorSub_M" => Some(1.0 - g),
+                    "ColorSub_Y" => Some(1.0 - b),
                     _ => None,
                 };
 

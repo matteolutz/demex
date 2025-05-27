@@ -49,6 +49,8 @@ pub struct DemexUiContext {
     pub texture_handles: Vec<egui::TextureHandle>,
 
     pub global_fixture_select: Option<FixtureSelection>,
+    pub global_sequence_select: Option<u32>,
+
     pub command: Vec<Token>,
 
     pub stats: Arc<RwLock<DemexThreadStatsHandler>>,
@@ -172,6 +174,7 @@ impl DemexUiContext {
             encoders_tab_state: EncodersTabState::default(),
             window_handler: DemexWindowHandler::default(),
             global_fixture_select: None,
+            global_sequence_select: None,
 
             ui_config,
 

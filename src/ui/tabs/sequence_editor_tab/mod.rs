@@ -1,5 +1,3 @@
-use state::SequenceEditorState;
-
 use crate::{
     fixture::sequence::cue::{Cue, CueDataMode},
     ui::{
@@ -8,33 +6,18 @@ use crate::{
     },
 };
 
-mod state;
-
 pub struct SequenceEditorTab<'a> {
     context: &'a mut DemexUiContext,
-    id_source: egui::Id,
 }
 
 impl<'a> SequenceEditorTab<'a> {
-    pub fn new(context: &'a mut DemexUiContext, name: &str) -> Self {
-        Self {
-            context,
-            id_source: egui::Id::new(name),
-        }
+    pub fn new(context: &'a mut DemexUiContext) -> Self {
+        Self { context }
     }
 
-    fn show_selected_sequence(
-        &mut self,
-        ui: &mut egui::Ui,
-        sequence_id: u32,
-        state: &mut SequenceEditorState,
-    ) {
+    fn show_selected_sequence(&mut self, ui: &mut egui::Ui, sequence_id: u32) {
         let mut preset_handler = self.context.preset_handler.write();
         let sequence = preset_handler.get_sequence_mut(sequence_id);
-
-        if ui.button("Back").clicked() {
-            state.selected_sequence = None;
-        }
 
         if let Ok(sequence) = sequence {
             ui.heading(sequence.name());
@@ -174,32 +157,22 @@ impl<'a> SequenceEditorTab<'a> {
         }
     }
 
-    fn show_sequence_list(&self, ui: &mut egui::Ui, state: &mut SequenceEditorState) {
+    fn show_sequence_list(&mut self, ui: &mut egui::Ui) {
         let preset_handler = self.context.preset_handler.read();
         let sequences = preset_handler.sequences();
 
         for sequence in sequences.values() {
             if ui.button(sequence.name()).clicked() {
-                state.selected_sequence = Some(sequence.id());
+                self.context.global_sequence_select = Some(sequence.id());
             }
         }
     }
 
     pub fn show(&mut self, ui: &mut egui::Ui) {
-        let id = ui.make_persistent_id(self.id_source);
-        let mut state = ui
-            .ctx()
-            .data_mut(|d| d.get_temp::<SequenceEditorState>(id))
-            .unwrap_or_default();
-
-        if let Some(sequence_id) = state.selected_sequence {
-            self.show_selected_sequence(ui, sequence_id, &mut state);
+        if let Some(sequence_id) = self.context.global_sequence_select {
+            self.show_selected_sequence(ui, sequence_id);
         } else {
-            self.show_sequence_list(ui, &mut state);
+            self.show_sequence_list(ui);
         }
-
-        ui.ctx().data_mut(|d| {
-            d.insert_temp(id, state);
-        });
     }
 }

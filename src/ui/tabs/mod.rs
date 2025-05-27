@@ -67,7 +67,7 @@ impl DemexTab {
             DemexTab::Faders => faders_tab::ui(ui, context),
             DemexTab::SequencesList => sequences_list_tab::ui(ui, context),
             DemexTab::SequenceEditor => {
-                sequence_editor_tab::SequenceEditorTab::new(context, "MainSequenceEditor").show(ui)
+                sequence_editor_tab::SequenceEditorTab::new(context).show(ui)
             }
             DemexTab::Encoders => encoders_tab::ui(ui, context),
             DemexTab::TimecodeClock => timecode_clock_tab::ui(ui, context),
@@ -161,7 +161,6 @@ impl Default for DemexTabs {
             vec![
                 DemexTab::PresetGrid,
                 DemexTab::Faders,
-                DemexTab::Timing,
                 DemexTab::TimecodeClock,
             ],
         );

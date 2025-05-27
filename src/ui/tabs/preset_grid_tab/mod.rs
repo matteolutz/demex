@@ -382,7 +382,10 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                 let (response, quick_action) = PresetGridButton::new(
                     config,
                     decoration,
-                    Some(vec![PresetGridButtonQuickMenuActions::Custom("Stop")]),
+                    Some(vec![
+                        PresetGridButtonQuickMenuActions::Custom("Stop"),
+                        PresetGridButtonQuickMenuActions::Custom("Edit Sequence"),
+                    ]),
                     None,
                 )
                 .show(ui);
