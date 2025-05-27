@@ -61,7 +61,8 @@ impl FunctionArgs for CreateExecutorArgs {
     ) -> Result<ActionRunResult, ActionRunError> {
         updatable_handler
             .create_executor(
-                self.id.unwrap_or_else(|| updatable_handler.next_executor_id()),
+                self.id
+                    .unwrap_or_else(|| updatable_handler.next_executor_id()),
                 self.sequence_id,
             )
             .map_err(ActionRunError::UpdatableHandlerError)?;
