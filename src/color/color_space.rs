@@ -119,9 +119,13 @@ impl RgbValue {
     }
 
     pub fn from_xy_bri(x: f32, y: f32, bri: f32, color_space: RgbColorSpace) -> Self {
+        if y == 0.0 {
+            return Self::new(0.0, 0.0, 0.0, color_space);
+        }
+
         let big_y = bri;
-        let big_x = (x / y) * big_y;
-        let big_z = ((1.0 - x - y) / y) * big_y;
+        let big_x = (x * big_y) / y;
+        let big_z = ((1.0 - x - y) * big_y) / y;
 
         let xyz_vector = nalgebra::vector![big_x, big_y, big_z];
         let rgb_matrix = color_space.xyz_to_rgb();
