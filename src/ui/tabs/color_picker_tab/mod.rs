@@ -55,20 +55,31 @@ impl<'a> ColorPickerComponent<'a> {
             let timing_handler = self.context.timing_handler.read();
             let patch = self.context.patch.read();
 
-            self.context
+            let fixtures = self
+                .context
                 .global_fixture_select
                 .as_ref()
-                .and_then(|fixture_selection| {
-                    fixture_handler.fixture_immut(fixture_selection.fixtures()[0])
-                })
-                .and_then(|fixture| {
-                    fixture
-                        .rgb_color(patch.fixture_types(), &preset_handler, &timing_handler)
-                        .ok()
-                })
-                .map(|[r, g, b]| {
-                    egui::Color32::from_rgb((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8)
-                })
+                .map(|fixture_selection| fixture_selection.fixtures());
+
+            if let Some(fixtures) = fixtures {
+                fixtures
+                    .iter()
+                    .map(|&fixture_id| fixture_handler.fixture_immut(fixture_id).unwrap())
+                    .find_map(|fixture| {
+                        fixture
+                            .rgb_color(patch.fixture_types(), &preset_handler, &timing_handler)
+                            .ok()
+                    })
+                    .map(|[r, g, b]| {
+                        egui::Color32::from_rgb(
+                            (r * 255.0) as u8,
+                            (g * 255.0) as u8,
+                            (b * 255.0) as u8,
+                        )
+                    })
+            } else {
+                None
+            }
         }
         .unwrap_or(egui::Color32::TRANSPARENT);
 

@@ -69,6 +69,34 @@ impl FunctionArgs for DeleteArgs {
                 }
             }
             (
+                Object::SequenceCue(sequence_id_from, cue_idx_from),
+                Object::SequenceCue(sequence_id_to, cue_idx_to),
+            ) => {
+                if sequence_id_from != sequence_id_to {
+                    return Err(ActionRunError::ActionNotImplementedForObjectRange(
+                        "Delete".to_owned(),
+                        self.object_range.clone(),
+                    ));
+                }
+
+                preset_handler
+                    .delete_sequence_cues(*sequence_id_from, *cue_idx_from, *cue_idx_to)
+                    .map_err(ActionRunError::PresetHandlerError)?;
+
+                if cue_idx_from == cue_idx_to {
+                    Ok(ActionRunResult::new())
+                } else {
+                    Ok(ActionRunResult::Info(format!(
+                        "Deleted cue {}.{} to {}.{} in sequence {}",
+                        cue_idx_from.0,
+                        cue_idx_from.1,
+                        cue_idx_to.0,
+                        cue_idx_to.1,
+                        sequence_id_from
+                    )))
+                }
+            }
+            (
                 Object::HomeableObject(homeable_object_from),
                 Object::HomeableObject(homeable_object_to),
             ) => match (homeable_object_from, homeable_object_to) {

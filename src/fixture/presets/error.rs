@@ -22,6 +22,7 @@ pub enum PresetHandlerError {
     CueAlreadyExists(u32, CueIdx),
     CueNotFound(u32, CueIdx),
     CantUpdateNonDefaultCue(u32, CueIdx),
+    InvalidCueRange(CueIdx, CueIdx),
 }
 
 impl std::fmt::Display for PresetHandlerError {
@@ -84,6 +85,16 @@ impl std::fmt::Display for PresetHandlerError {
             }
             PresetHandlerError::FixtureHandlerError(err) => {
                 write!(f, "Fixture handler error: {}", err)
+            }
+            PresetHandlerError::InvalidCueRange(
+                (cue_idx_from_major, cue_idx_from_minor),
+                (cue_idx_to_major, cue_idx_to_minor),
+            ) => {
+                write!(
+                    f,
+                    "Invalid cue range: {}.{} to {}.{}",
+                    cue_idx_from_major, cue_idx_from_minor, cue_idx_to_major, cue_idx_to_minor
+                )
             }
         }
     }

@@ -1,5 +1,6 @@
 use crate::{
     fixture::sequence::cue::{Cue, CueDataMode},
+    lexer::token::Token,
     ui::{
         context::DemexUiContext,
         window::{edit::DemexEditWindow, DemexWindow},
@@ -23,9 +24,9 @@ impl<'a> SequenceEditorTab<'a> {
             ui.heading(sequence.name());
 
             egui_extras::TableBuilder::new(ui)
-                .columns(egui_extras::Column::auto(), 2)
-                .column(egui_extras::Column::remainder())
-                .columns(egui_extras::Column::auto(), 8)
+                .columns(egui_extras::Column::auto().at_least(20.0), 2)
+                .column(egui_extras::Column::remainder().at_least(100.0))
+                .columns(egui_extras::Column::auto().at_least(20.0), 8)
                 .striped(true)
                 .header(20.0, |mut header| {
                     header.col(|ui| {
@@ -78,7 +79,20 @@ impl<'a> SequenceEditorTab<'a> {
                             let (cue_idx_major, cue_idx_minor) = cue.cue_idx();
 
                             row.col(|ui| {
-                                ui.label(format!("{}.{}", cue_idx_major, cue_idx_minor));
+                                ui.horizontal(|ui| {
+                                    ui.label(format!("{}.{}", cue_idx_major, cue_idx_minor));
+                                    if ui.button("Sel").clicked() {
+                                        self.context.command.extend_from_slice(&[
+                                            Token::KeywordSequence,
+                                            Token::Integer(sequence_id),
+                                            Token::KeywordCue,
+                                            Token::FloatingPoint(
+                                                0.0,
+                                                (cue_idx_major, cue_idx_minor),
+                                            ),
+                                        ]);
+                                    }
+                                });
                             });
 
                             row.col(|ui| match cue.data() {

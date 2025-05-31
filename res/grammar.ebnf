@@ -25,8 +25,7 @@ recall_command              = "sequence" integer "cue" cue_idx
 unassign_command            = "button" float
                             | "fader" float
 
-assign_function             = "executor" integer ("go" | "stop" | "flash") "to" float 
-                            | "fader" integer "to" float
+assign_function             = "executor" integer ("go" | "stop" | "flash" | "fader") "to" float 
                             | "preset" integer ["with" fixture_selector] "to" float
                             | fixture_selector "to" float
                             | "macro" function "to" float

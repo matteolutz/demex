@@ -633,4 +633,27 @@ impl PresetHandler {
             .ok_or(PresetHandlerError::PresetNotFound(id))?;
         Ok(())
     }
+
+    pub fn delete_sequence_cues(
+        &mut self,
+        sequence_id: u32,
+        cue_from: CueIdx,
+        cue_to: CueIdx,
+    ) -> Result<usize, PresetHandlerError> {
+        if cue_from > cue_to {
+            return Err(PresetHandlerError::InvalidCueRange(cue_from, cue_to));
+        }
+
+        let sequence = self
+            .sequences
+            .get_mut(&sequence_id)
+            .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?;
+
+        let initial_len = sequence.cues().len();
+        sequence
+            .cues_mut()
+            .retain(|c| c.cue_idx() < cue_from || c.cue_idx() > cue_to);
+
+        Ok(initial_len - sequence.cues().len())
+    }
 }

@@ -173,7 +173,7 @@ impl FunctionArgs for AssignButtonArgs {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssignFaderArgs {
-    pub fader_id: u32,
+    pub executor_id: u32,
     pub device_idx: usize,
     pub input_fader_id: u32,
 }
@@ -191,7 +191,7 @@ impl FunctionArgs for AssignFaderArgs {
         _: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         let _ = updatable_handler
-            .executor(self.fader_id)
+            .executor(self.executor_id)
             .map_err(ActionRunError::UpdatableHandlerError)?;
 
         let device = input_device_handler
@@ -207,7 +207,7 @@ impl FunctionArgs for AssignFaderArgs {
         device
             .config
             .faders_mut()
-            .insert(self.input_fader_id, DemexInputFader::new(self.fader_id));
+            .insert(self.input_fader_id, DemexInputFader::new(self.executor_id));
 
         Ok(ActionRunResult::new())
     }

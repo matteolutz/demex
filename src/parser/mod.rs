@@ -962,60 +962,59 @@ impl<'a> Parser2<'a> {
 
                 let executor_id = self.parse_integer()?;
 
-                let mode = match self.current_token()? {
-                    Token::KeywordGo => {
-                        self.advance();
-                        Ok(AssignButtonArgsMode::ExecutorGo(executor_id))
-                    }
-                    Token::KeywordStop => {
-                        self.advance();
-                        Ok(AssignButtonArgsMode::ExecutorStop(executor_id))
-                    }
-                    Token::KeywordFlash => {
-                        self.advance();
+                if matches!(self.current_token()?, Token::KeywordFader) {
+                    self.advance();
 
-                        let stomp = if matches!(self.current_token()?, Token::KeywordStomp) {
+                    expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+
+                    let (device_idx, input_fader_id) = self.parse_float_individual()?;
+
+                    Ok(Action::AssignFader(AssignFaderArgs {
+                        executor_id,
+                        device_idx: device_idx as usize,
+                        input_fader_id,
+                    }))
+                } else {
+                    let mode = match self.current_token()? {
+                        Token::KeywordGo => {
                             self.advance();
-                            true
-                        } else {
-                            false
-                        };
+                            Ok(AssignButtonArgsMode::ExecutorGo(executor_id))
+                        }
+                        Token::KeywordStop => {
+                            self.advance();
+                            Ok(AssignButtonArgsMode::ExecutorStop(executor_id))
+                        }
+                        Token::KeywordFlash => {
+                            self.advance();
 
-                        Ok(AssignButtonArgsMode::ExecutorFlash {
-                            id: executor_id,
-                            stomp,
-                        })
-                    }
-                    unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
-                        unexpected_token.clone(),
-                        vec!["\"go\"", "\"stop\"", "\"flash\""],
-                    )),
-                }?;
+                            let stomp = if matches!(self.current_token()?, Token::KeywordStomp) {
+                                self.advance();
+                                true
+                            } else {
+                                false
+                            };
 
-                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+                            Ok(AssignButtonArgsMode::ExecutorFlash {
+                                id: executor_id,
+                                stomp,
+                            })
+                        }
+                        unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                            unexpected_token.clone(),
+                            vec!["\"go\"", "\"stop\"", "\"flash\""],
+                        )),
+                    }?;
 
-                let (device_idx, button_id) = self.parse_float_individual()?;
+                    expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
-                Ok(Action::AssignButton(AssignButtonArgs {
-                    mode,
-                    device_idx: device_idx as usize,
-                    button_id,
-                }))
-            }
-            Token::KeywordFader => {
-                self.advance();
+                    let (device_idx, button_id) = self.parse_float_individual()?;
 
-                let fader_id = self.parse_integer()?;
-
-                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
-
-                let (device_idx, input_fader_id) = self.parse_float_individual()?;
-
-                Ok(Action::AssignFader(AssignFaderArgs {
-                    fader_id,
-                    device_idx: device_idx as usize,
-                    input_fader_id,
-                }))
+                    Ok(Action::AssignButton(AssignButtonArgs {
+                        mode,
+                        device_idx: device_idx as usize,
+                        button_id,
+                    }))
+                }
             }
             Token::KeywordPreset => {
                 // Intentionally not advancing past the keyword,

@@ -487,6 +487,10 @@ impl SequenceRuntime {
     pub fn next_cue(&mut self, preset_handler: &PresetHandler, time_offset: f32) -> bool {
         let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
+        if sequence.cues().is_empty() {
+            return true;
+        }
+
         let (should_clear_tracked_values, new_state) = self.state.clone().next_cue(
             sequence.cues().len(),
             sequence.stop_behavior(),
