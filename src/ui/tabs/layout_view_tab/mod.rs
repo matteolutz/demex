@@ -124,7 +124,7 @@ impl<'a> LayoutViewComponent<'a> {
                 .unwrap();
 
             let rect_color = if let Ok(color) =
-                fixture.rgb_color(patch.fixture_types(), &preset_handler, &timing_handler)
+                fixture.display_color(patch.fixture_types(), &preset_handler, &timing_handler)
             {
                 ecolor::Color32::from_rgba_unmultiplied(
                     (color[0] * 255.0) as u8,

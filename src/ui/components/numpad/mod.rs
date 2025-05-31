@@ -21,7 +21,7 @@ impl NumpadResult {
         }
 
         let channel_set_re = regex::Regex::new(r#"\s*"(.+)"\s*"#).unwrap();
-        if let Some(captures) = channel_set_re.captures(&value) {
+        if let Some(captures) = channel_set_re.captures(value) {
             return Some(NumpadResult::ChannelSet(
                 captures.get(1).unwrap().as_str().to_owned(),
             ));
@@ -78,7 +78,7 @@ pub fn numpad_ui(ui: &mut egui::Ui, value: &mut String) {
                             col + row * 3 + 1
                         };
 
-                        NumpadAction::Insert((num + '0' as u8) as char)
+                        NumpadAction::Insert((num + b'0') as char)
                     }
                 };
 

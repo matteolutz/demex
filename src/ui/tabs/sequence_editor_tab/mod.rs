@@ -30,52 +30,52 @@ impl<'a> SequenceEditorTab<'a> {
                 .striped(true)
                 .header(20.0, |mut header| {
                     header.col(|ui| {
-                        ui.heading("Cue Idx");
+                        ui.label("Cue Idx");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Builder");
+                        ui.label("Builder");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Name");
+                        ui.label("Name");
                     });
 
                     header.col(|ui| {
-                        ui.heading("In Delay");
+                        ui.label("In Delay");
                     });
 
                     header.col(|ui| {
-                        ui.heading("In Fade");
+                        ui.label("In Fade");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Snap %");
+                        ui.label("Snap %");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Timing");
+                        ui.label("Timing");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Trigger");
+                        ui.label("Trigger");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Block");
+                        ui.label("Block");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Fading");
+                        ui.label("Fading");
                     });
 
                     header.col(|ui| {
-                        ui.heading("MIB");
+                        ui.label("MIB");
                     });
                 })
                 .body(|mut body| {
                     for cue in sequence.cues_mut() {
-                        body.row(20.0, |mut row| {
+                        body.row(60.0, |mut row| {
                             let (cue_idx_major, cue_idx_minor) = cue.cue_idx();
 
                             row.col(|ui| {
@@ -165,6 +165,7 @@ impl<'a> SequenceEditorTab<'a> {
                     }
                 });
 
+            ui.add_space(20.0);
             if ui.button("Add Builder Cue").clicked() {
                 sequence.add_cue(Cue::new_default_builder(sequence.next_cue_idx()));
             }

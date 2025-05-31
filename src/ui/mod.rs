@@ -296,6 +296,11 @@ impl eframe::App for DemexUiApp {
                             ui.close_menu();
                             self.context.save_show();
                         }
+
+                        if ui.button("Open").clicked() {
+                            ui.close_menu();
+                            self.context.open_new_show();
+                        }
                     },
                 );
 

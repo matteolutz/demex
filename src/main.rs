@@ -27,7 +27,10 @@ use show::{context::ShowContext, DemexShow};
 
 use ui::utils::load::load_textures;
 #[cfg(feature = "ui")]
-use ui::{context::DemexUiContext, theme::DemexUiTheme, utils::icon::load_icon, DemexUiApp};
+use ui::{
+    context::DemexUiContext, theme::DemexUiTheme, theme::DemexUiThemeAttribute,
+    utils::icon::load_icon, DemexUiApp,
+};
 
 use utils::{
     deadlock::start_deadlock_checking_thread,
@@ -35,6 +38,10 @@ use utils::{
 };
 
 use clap::Parser;
+
+#[cfg(not(feature = "ui"))]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
+enum DemexUiThemeAttribute {}
 
 /// demex - command based stage lighting control
 #[derive(Parser, Debug)]
@@ -59,14 +66,15 @@ struct Args {
     /// Set a manual node id for the headless node.
     #[arg(long, value_name = "ID")]
     headless_id: Option<u32>,
+
+    /// Set the UI theme to use. This is only used if the UI feature is enabled.
+    #[arg(long, value_name = "THEME", conflicts_with = "headless")]
+    ui_theme: Option<DemexUiThemeAttribute>,
 }
 
 const TEST_MAX_FUPS: f64 = 60.0;
 const TEST_MAX_DMX_FPS: f64 = 30.0;
 const TEST_UI_FPS: f64 = 60.0;
-
-#[cfg(feature = "ui")]
-const TEST_UI_THEME: DemexUiTheme = DemexUiTheme::Default;
 
 const APP_ID: &str = "demex";
 
@@ -248,7 +256,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .egui_ctx
                         .set_fonts(ui::utils::load::load_fonts());
 
-                    TEST_UI_THEME.apply(&creation_context.egui_ctx);
+                    args.ui_theme
+                        .map(DemexUiTheme::from)
+                        .unwrap_or(DemexUiTheme::Default)
+                        .apply(&creation_context.egui_ctx);
 
                     if args.touchscreen_mode {
                         creation_context.egui_ctx.style_mut(|style| {

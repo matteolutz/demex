@@ -12,6 +12,7 @@ use crate::{
         timing::TimingHandler,
         updatables::UpdatableHandler,
     },
+    headless::id::DemexProtoDeviceId,
     input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler},
     lexer::token::Token,
     parser::{
@@ -192,6 +193,54 @@ impl DemexUiContext {
 
             texture_handles,
         }
+    }
+
+    pub fn open_new_show(&mut self) {
+        rfd::FileDialog::new()
+            .add_filter("demex Show-File", &["json"])
+            .pick_file()
+            .ok_or(DemexUiError::RuntimeError(
+                "Failed show file dialog".to_string(),
+            ))
+            .and_then(|show_file| {
+                let show: DemexShow =
+                    serde_json::from_reader(std::fs::File::open(&show_file).unwrap())
+                        .map_err(DemexUiError::SerdeJsonError)?;
+
+                let input_device_configs = show
+                    .input_device_configs
+                    .into_iter()
+                    .map(DemexInputDeviceConfig::from)
+                    .collect::<Vec<_>>();
+
+                let new_patch = {
+                    let patch = self.patch.read();
+                    show.patch.into_patch(patch.fixture_types().to_vec())
+                };
+
+                let (fixtures, outputs) =
+                    new_patch.into_fixures_and_outputs(DemexProtoDeviceId::Controller);
+
+                *self.fixture_handler.write() = FixtureHandler::new(fixtures, outputs, true)
+                    .map_err(|err| DemexUiError::RuntimeError(err.to_string()))?;
+                *self.preset_handler.write() = show.preset_handler;
+                *self.updatable_handler.write() = show.updatable_handler;
+                *self.timing_handler.write() = show.timing_handler;
+
+                *self.patch.write() = new_patch;
+
+                self.input_device_handler = DemexInputDeviceHandler::new(
+                    input_device_configs
+                        .into_iter()
+                        .map_into()
+                        .collect::<Vec<_>>(),
+                );
+
+                Ok(())
+            })
+            .unwrap_or_else(|e| {
+                self.add_dialog_entry(DemexGlobalDialogEntry::error(&e));
+            });
     }
 
     pub fn save_show(&mut self) {

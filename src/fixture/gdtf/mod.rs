@@ -355,6 +355,17 @@ impl GdtfFixture {
         self.channels_for_attribute_matches(fixture_types, |attr| attr == attribute)
     }
 
+    pub fn display_color(
+        &self,
+        fixture_types: &FixtureTypeList,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
+    ) -> Result<[f32; 3], FixtureError> {
+        // TODO: also check for color wheel and other color attributes
+        // this should be the color that is for example displayed in the fixture layout
+        self.rgb_color(fixture_types, preset_handler, timing_handler)
+    }
+
     fn rgbw_add_color(
         &self,
         fixture_types: &FixtureTypeList,
