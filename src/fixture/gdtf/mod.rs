@@ -7,6 +7,7 @@ use super::{
         attribute::FixtureChannel3Attribute,
         channel_value::{FixtureChannelValue3, FixtureChannelValue3Discrete},
         feature::feature_group::FixtureChannel3FeatureGroup,
+        utils::dmx_value_to_f32,
     },
     error::FixtureError,
     handler::FixtureTypeList,
@@ -659,15 +660,6 @@ impl GdtfFixture {
             .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel.to_owned()))?;
         *programmer_value = value.clone();
 
-        let linked_value = if value.is_home() {
-            value
-        } else {
-            FixtureChannelValue3::Discrete {
-                channel_function_idx: 0,
-                value: 0.0,
-            }
-        };
-
         if let Some(activation_group) =
             logical_channel_attribute.activation_group(&fixture_type.attribute_definitions)
         {
@@ -689,8 +681,17 @@ impl GdtfFixture {
                     .programmer_values
                     .get_mut(dmx_channel.name().as_ref())
                     .unwrap();
-                if channel_value.is_home() != linked_value.is_home() {
-                    *channel_value = linked_value.clone();
+
+                if channel_value.is_home() && !value.is_home() {
+                    *channel_value = FixtureChannelValue3::Discrete {
+                        channel_function_idx: 0,
+                        value: dmx_value_to_f32(
+                            dmx_channel.logical_channels[0].channel_functions[0].default,
+                        ),
+                    };
+                } else if !channel_value.is_home() && value.is_home() {
+                    // set home value for function 0
+                    *channel_value = FixtureChannelValue3::Home;
                 }
             }
         }
