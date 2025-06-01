@@ -394,7 +394,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                         ));
                     } else {
                         context.command.extend_from_slice(&[
-                            Token::KeywordCreate,
+                            Token::KeywordRecord,
                             Token::KeywordExecutor,
                             Token::Integer(id),
                         ]);
@@ -411,7 +411,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
 
                         PresetGridButtonQuickMenuActions::New => {
                             context.command.extend_from_slice(&[
-                                Token::KeywordCreate,
+                                Token::KeywordRecord,
                                 Token::KeywordExecutor,
                                 Token::Integer(id),
                             ]);

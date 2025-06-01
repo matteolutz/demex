@@ -21,7 +21,8 @@ impl<'a> SequenceEditorTab<'a> {
         let sequence = preset_handler.get_sequence_mut(sequence_id);
 
         if let Ok(sequence) = sequence {
-            ui.heading(sequence.name());
+            egui::TextEdit::singleline(sequence.name_mut()).show(ui);
+            ui.add_space(20.0);
 
             egui_extras::TableBuilder::new(ui)
                 .columns(egui_extras::Column::auto().at_least(20.0), 2)
