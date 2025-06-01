@@ -49,9 +49,9 @@ impl ApcMiniMk2InputDeviceProfile {
             .iter()
             .inspect(|p| log::debug!("Found MIDI out port: {:?}", midi_out.port_name(p)))
             .find(|p| {
-                midi_out
-                    .port_name(p)
-                    .is_ok_and(|port_name| port_name == apc_midi_name)
+                midi_out.port_name(p).is_ok_and(|port_name| {
+                    port_name.contains("APC mini mk2") && port_name.contains("Contr")
+                })
             })
             .ok_or(DemexInputDeviceError::InputDeviceNotFound(
                 apc_midi_name.to_owned(),
@@ -74,9 +74,9 @@ impl ApcMiniMk2InputDeviceProfile {
             .iter()
             .inspect(|p| log::debug!("Found MIDI in port: {:?}", midi_in.port_name(p)))
             .find(|p| {
-                midi_in
-                    .port_name(p)
-                    .is_ok_and(|port_name| port_name == apc_midi_name)
+                midi_in.port_name(p).is_ok_and(|port_name| {
+                    port_name.contains("APC mini mk2") && port_name.contains("Contr")
+                })
             })
             .ok_or(DemexInputDeviceError::InputDeviceNotFound(
                 apc_midi_name.to_owned(),
