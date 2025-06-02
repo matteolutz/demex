@@ -5,9 +5,7 @@ use components::button::icon::DemexIcon;
 use context::DemexUiContext;
 use dlog::{DemexLogEntry, DemexLogEntryType};
 use egui::IconData;
-use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
-use tabs::DemexTabs;
 use window::DemexWindow;
 
 #[allow(unused_imports)]
@@ -17,6 +15,8 @@ use crate::{
         action::{Action, ConfigTypeActionData},
         fixture_selector::FixtureSelectorContext,
     },
+    show::ui::DemexShowUiConfig,
+    ui::viewport::position::DemexViewportPositonState,
     utils::version::VERSION_STR,
 };
 
@@ -33,31 +33,16 @@ pub mod tabs;
 pub mod theme;
 pub mod traits;
 pub mod utils;
+pub mod viewport;
 pub mod window;
 
 const UI_THREAD_NAME: &str = "demex-ui";
 
-#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone)]
-pub struct DetachedTabConfigPosSize {
-    pos: emath::Pos2,
-    size: emath::Vec2,
-}
-
-#[derive(Default, Serialize, Deserialize, Debug, Clone)]
-pub struct DetachedTabConfig {
-    is_fullscreen: bool,
-    pos_size: Option<DetachedTabConfigPosSize>,
-
-    #[serde(skip_serializing, skip_deserializing, default)]
-    open: bool,
-}
-
 pub struct DemexUiApp {
     context: DemexUiContext,
 
-    tabs: DemexTabs,
-
-    command_auto_focus: bool,
+    ui_config: DemexShowUiConfig,
+    num_additional_viewports: usize,
 
     last_update: std::time::Instant,
 
@@ -75,6 +60,7 @@ impl DemexUiApp {
         desired_fps: f64,
         icon: Arc<IconData>,
         is_single_threaded: bool,
+        num_additional_viewports: Option<usize>,
     ) -> Self {
         context
             .stats
@@ -82,10 +68,7 @@ impl DemexUiApp {
             .register_thread(UI_THREAD_NAME.to_owned(), thread::current().id());
 
         Self {
-            context,
-            tabs: DemexTabs::default(),
-
-            command_auto_focus: false,
+            ui_config: context.ui_config.clone(),
 
             last_update: time::Instant::now(),
             desired_fps,
@@ -94,6 +77,10 @@ impl DemexUiApp {
 
             is_single_threaded,
             last_single_threaded_update: time::Instant::now(),
+
+            num_additional_viewports: num_additional_viewports.unwrap_or(0),
+
+            context,
         }
     }
 }
@@ -160,7 +147,7 @@ impl eframe::App for DemexUiApp {
                 )));
         }
 
-        self.context.execute_action_queue();
+        self.context.execute_action_queue(&self.ui_config);
 
         self.context.window_handler.show(
             ctx,
@@ -170,88 +157,44 @@ impl eframe::App for DemexUiApp {
             &mut self.context.patch,
         );
 
-        for detached_tab in self.context.ui_config.detached_tabs.clone() {
-            let tab_title = detached_tab.to_string();
-
-            // get current tab config as mut reference
-            // insert if it does not exist
-
-            let tab_config = self
-                .context
-                .ui_config
-                .detached_tabs_config
-                .entry(detached_tab)
-                .or_default();
-
-            let viewport_id = egui::ViewportId::from_hash_of(tab_title.as_str());
+        for (idx, viewport) in self
+            .ui_config
+            .viewports
+            .iter_mut()
+            .skip(1)
+            .take(self.num_additional_viewports)
+            .filter(|viewport| viewport.should_render())
+            .enumerate()
+        {
+            let viewport_title = format!("demex - Additional Viewport {}", idx + 1);
+            let viewport_id = egui::ViewportId::from_hash_of(viewport_title.as_str());
 
             let mut viewport_builder = egui::ViewportBuilder::default()
-                .with_title(format!("demex - {}", tab_title))
-                .with_icon(self.icon.clone())
-                .with_window_level(egui::WindowLevel::AlwaysOnTop)
-                .with_fullscreen(tab_config.is_fullscreen);
+                .with_title(&viewport_title)
+                .with_icon(self.icon.clone());
 
-            if let Some(pos_size) = tab_config.pos_size.as_ref() {
-                if !tab_config.open {
-                    viewport_builder = viewport_builder
-                        .with_position(pos_size.pos)
-                        .with_inner_size(pos_size.size);
-                    tab_config.open = true;
-                }
+            if let DemexViewportPositonState::Initial(rect) = viewport.pos_state() {
+                viewport_builder = viewport_builder
+                    .with_position(rect.min)
+                    .with_inner_size(rect.size());
             }
 
             ctx.show_viewport_immediate(viewport_id, viewport_builder, |ctx, _| {
-                let tab_config = self
-                    .context
-                    .ui_config
-                    .detached_tabs_config
-                    .entry(detached_tab)
-                    .or_default();
-
-                if ctx.input(|reader| reader.viewport().close_requested()) {
-                    self.context.ui_config.detached_tabs.remove(&detached_tab);
-                    self.tabs.re_attach(detached_tab);
-                    tab_config.open = false;
-                }
-
                 let pos = ctx.input(|reader| reader.viewport().outer_rect.map(|r| r.min));
                 let size = ctx.input(|reader| reader.viewport().outer_rect.map(|r| r.size()));
 
                 if let (Some(pos), Some(size)) = (pos, size) {
-                    tab_config.pos_size = Some(DetachedTabConfigPosSize { pos, size })
+                    *viewport.pos_state_mut() =
+                        DemexViewportPositonState::Rendered(egui::Rect::from_min_size(pos, size));
                 }
 
-                egui::TopBottomPanel::top(format!("DemexDetachedTab-{}", tab_title)).show(
-                    ctx,
-                    |ui| {
-                        if ui
-                            .button(
-                                if ctx
-                                    .input(|reader| reader.viewport().fullscreen.is_some_and(|f| f))
-                                {
-                                    "Exit Fullscreen"
-                                } else {
-                                    "Fullscreen"
-                                },
-                            )
-                            .clicked()
-                        {
-                            tab_config.is_fullscreen = !tab_config.is_fullscreen;
-                        }
-                    },
-                );
-
-                ui_command_input(ctx, &mut self.context, self.command_auto_focus);
-
                 egui::CentralPanel::default().show(ctx, |ui| {
-                    egui::ScrollArea::both().auto_shrink(false).show(ui, |ui| {
-                        detached_tab.ui(ui, &mut self.context);
-                    });
+                    viewport.ui(ui, &mut self.context);
                 });
             });
         }
 
-        eframe::egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+        eframe::egui::TopBottomPanel::top("DemexMainViewport").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("demex");
 
@@ -294,7 +237,7 @@ impl eframe::App for DemexUiApp {
 
                         if ui.button("Save").clicked() {
                             ui.close_menu();
-                            self.context.save_show();
+                            self.context.save_show(self.ui_config.clone());
                         }
 
                         if ui.button("Open").clicked() {
@@ -329,10 +272,6 @@ impl eframe::App for DemexUiApp {
 
                     ui.separator();
 
-                    ui.checkbox(&mut self.command_auto_focus, "CMD AF");
-
-                    ui.separator();
-
                     if ui.button("TOP SECRET").clicked() {
                         ui.close_menu();
                         let _ = open::that("https://youtu.be/dQw4w9WgXcQ");
@@ -341,10 +280,10 @@ impl eframe::App for DemexUiApp {
             });
         });
 
-        ui_command_input(ctx, &mut self.context, self.command_auto_focus);
+        ui_command_input(ctx, &mut self.context);
 
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
-            self.tabs.ui(ui, &mut self.context, ctx);
+            self.ui_config.viewports[0].ui(ui, &mut self.context);
         });
 
         let elapsed = self.last_update.elapsed().as_secs_f64();

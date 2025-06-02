@@ -70,6 +70,15 @@ struct Args {
     /// Set the UI theme to use. This is only used if the UI feature is enabled.
     #[arg(long, value_name = "THEME", conflicts_with = "headless")]
     ui_theme: Option<DemexUiThemeAttribute>,
+
+    /// Number of additional viewports to create in the UI. This is only used if the UI feature is enabled.
+    #[arg(
+        short,
+        long,
+        value_name = "ADDITIONAL_VIEWPORTS",
+        conflicts_with = "headless"
+    )]
+    additional_viewports: Option<usize>,
 }
 
 const TEST_MAX_FUPS: f64 = 60.0;
@@ -289,6 +298,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         TEST_UI_FPS,
                         icon,
                         false,
+                        args.additional_viewports,
                     );
 
                     Ok(Box::new(ui_app_state))

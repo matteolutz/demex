@@ -1,6 +1,6 @@
 [package]
 name = "demex"
-version = "0.1.23"
+version = "0.1.24"
 edition = "2021"
 
 [dependencies]
@@ -13,7 +13,7 @@ eframe = { features = [
 ], version = "0.31.1", optional = true }
 egui = { features = ["default", "serde"], version = "0.31.1", optional = true }
 egui-probe = { version = "0.8.0", features = ["derive"], optional = true }
-egui_dock = { version = "0.16.0", optional = true }
+egui_dock = { version = "0.16.0", features = ["serde"], optional = true }
 egui_extras = { features = [
     "default",
     "all_loaders",

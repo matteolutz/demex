@@ -16,6 +16,7 @@ use crate::{
         },
         constants::NO_FIXTURES_SELECTED,
         context::DemexUiContext,
+        utils::{color::color_to_luma, painter::painter_layout_centered},
     },
 };
 
@@ -53,18 +54,108 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
             .map(|fixture_selection| fixture_selection.fixtures()),
     ) {
         egui::containers::Modal::new("EncodersTabModal".into()).show(ui.ctx(), |ui| {
+            let mut fixture_handler = context.fixture_handler.write();
+            let patch = context.patch.read();
+
             ui.heading(&modal_state.attribute);
 
             ui.horizontal(|ui| {
                 numpad_ui(ui, &mut modal_state.value);
 
-                ui.add_space(350.0);
+                ui.vertical(|ui| {
+                    ui.set_min_width(350.0);
+                    egui::ScrollArea::vertical()
+                        .auto_shrink(emath::Vec2b::FALSE)
+                        .show(ui, |ui| {
+                            let channels = fixture_handler
+                                .fixture_immut(fixtures[0])
+                                .unwrap()
+                                .channels_for_attribute_matches(
+                                    patch.fixture_types(),
+                                    |fixture_attribute_name| {
+                                        fixture_attribute_name == modal_state.attribute
+                                    },
+                                );
+
+                            if let Ok(channels) = channels {
+                                let (_, logical_channel, channel_functions) = &channels[0];
+                                for (channel_function_idx, channel_function_attribute) in
+                                    channel_functions
+                                {
+                                    ui.label(*channel_function_attribute);
+
+                                    for channel_set in logical_channel.channel_functions
+                                        [*channel_function_idx]
+                                        .channel_sets
+                                        .iter()
+                                    {
+                                        let channel_set_name =
+                                            channel_set.name.as_ref().unwrap().as_ref().to_owned();
+
+                                        let (response, painter) = ui.allocate_painter(
+                                            egui::vec2(ui.available_width(), 50.0),
+                                            egui::Sense::click(),
+                                        );
+
+                                        let button_rect =
+                                            response.rect.shrink2(egui::vec2(10.0, 2.5));
+
+                                        let set_color = egui::Color32::GRAY;
+
+                                        painter.rect_filled(button_rect, 5.0, set_color);
+                                        painter_layout_centered(
+                                            &painter,
+                                            channel_set_name.clone(),
+                                            egui::FontId::proportional(12.0),
+                                            if color_to_luma(&set_color) > 0.5 {
+                                                egui::Color32::BLACK
+                                            } else {
+                                                egui::Color32::WHITE
+                                            },
+                                            button_rect,
+                                        );
+
+                                        if response.hovered() {
+                                            ui.output_mut(|o| {
+                                                o.cursor_icon = egui::CursorIcon::PointingHand;
+                                            });
+
+                                            painter.rect_stroke(
+                                                button_rect,
+                                                5.0,
+                                                (1.0, egui::Color32::WHITE),
+                                                egui::StrokeKind::Middle,
+                                            );
+                                        }
+
+                                        if response.clicked() {
+                                            for fixture_id in fixtures {
+                                                let fixture =
+                                                    fixture_handler.fixture(*fixture_id).unwrap();
+
+                                                let _ = fixture
+                                                    .update_programmer_attribute_matches_value(
+                                                        patch.fixture_types(),
+                                                        |fixture_attribute_name| {
+                                                            fixture_attribute_name
+                                                                == modal_state.attribute
+                                                        },
+                                                        FixtureChannelValue3Discrete::ChannelSet(
+                                                            channel_set_name.clone(),
+                                                        ),
+                                                    );
+                                            }
+
+                                            context.encoders_tab_state.modal_state = None;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                });
             });
 
             ui.horizontal(|ui| {
-                let mut fixture_handler = context.fixture_handler.write();
-                let patch = context.patch.read();
-
                 if ui.button("Ok").clicked() {
                     let numpad_result = NumpadResult::from_str(&modal_state.value)
                         .unwrap_or(NumpadResult::Value(0.0));
@@ -75,9 +166,11 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                     for fixture_id in fixtures {
                         let fixture = fixture_handler.fixture(*fixture_id).unwrap();
 
-                        let _ = fixture.update_programmer_attribute_value(
+                        let _ = fixture.update_programmer_attribute_matches_value(
                             patch.fixture_types(),
-                            &modal_state.attribute,
+                            |fixture_attribute_name| {
+                                fixture_attribute_name == modal_state.attribute
+                            },
                             match numpad_result.clone() {
                                 NumpadResult::Value(val) => {
                                     FixtureChannelValue3Discrete::Value(val)
@@ -201,7 +294,7 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                                     if ui.button("Sel").clicked() {
                                         context.encoders_tab_state.modal_state =
                                             Some(ValueSelectionModalState {
-                                                attribute: attribute.to_string(),
+                                                attribute: master_channel_functions[0].1.to_owned(),
                                                 value: String::new(),
                                             });
                                     }
@@ -288,13 +381,34 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                                                     value: slider_val,
                                                 },
                                             );
+                                            let master_fixture_type = fixtures[0].fixture_type_id();
+                                            let master_fixture_type_mode =
+                                                fixtures[0].fixture_type_dmx_mode().to_string();
 
                                             for fixture in fixtures.iter_mut().skip(1) {
-                                                let _ = fixture.update_programmer_value(
-                                                    patch.fixture_types(),
-                                                    channel_name,
-                                                    FixtureChannelValue3Discrete::Value(slider_val),
-                                                );
+                                                let _ = if fixture.fixture_type_id()
+                                                    == master_fixture_type
+                                                    && fixture.fixture_type_dmx_mode()
+                                                        == master_fixture_type_mode
+                                                {
+                                                    fixture.set_programmer_value(
+                                                        patch.fixture_types(),
+                                                        channel_name,
+                                                        FixtureChannelValue3::Discrete {
+                                                            channel_function_idx:
+                                                                selected_channel_function,
+                                                            value: slider_val,
+                                                        },
+                                                    )
+                                                } else {
+                                                    fixture.update_programmer_value(
+                                                        patch.fixture_types(),
+                                                        channel_name,
+                                                        FixtureChannelValue3Discrete::Value(
+                                                            slider_val,
+                                                        ),
+                                                    )
+                                                };
                                             }
                                         }
                                     }

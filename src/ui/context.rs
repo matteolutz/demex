@@ -40,6 +40,7 @@ pub type SaveShowFn =
 pub struct DemexUiContext {
     pub command_input: String,
     pub is_command_input_empty: bool,
+    pub should_focus_command_input: bool,
 
     pub fixture_handler: Arc<RwLock<FixtureHandler>>,
     pub preset_handler: Arc<RwLock<PresetHandler>>,
@@ -83,11 +84,11 @@ impl DemexUiContext {
             )));
     }
 
-    pub fn execute_action_queue(&mut self) {
+    pub fn execute_action_queue(&mut self, ui_config: &DemexShowUiConfig) {
         while !self.action_queue.is_empty() {
             let action = self.action_queue.dequeue().unwrap();
 
-            if let Err(err) = self.run_and_handle_action(action) {
+            if let Err(err) = self.run_and_handle_action(action, ui_config) {
                 log::warn!("Failed to execute action: {}", err);
                 self.add_dialog_entry(DemexGlobalDialogEntry::error(err.as_ref()));
             }
@@ -169,6 +170,7 @@ impl DemexUiContext {
 
             is_command_input_empty: true,
             command: Vec::new(),
+            should_focus_command_input: false,
             command_input: String::new(),
             action_queue: ActionQueue::default(),
 
@@ -243,7 +245,7 @@ impl DemexUiContext {
             });
     }
 
-    pub fn save_show(&mut self) {
+    pub fn save_show(&mut self, ui_config: DemexShowUiConfig) {
         let save_result = {
             let preset_handler_lock = self.preset_handler.read();
             let updatable_handler_lock = self.updatable_handler.read();
@@ -261,7 +263,7 @@ impl DemexUiContext {
                     .map(|d| d.config().clone())
                     .collect::<Vec<_>>(),
                 patch: SerializablePatch::from_patch(&patch_lock),
-                ui_config: self.ui_config.clone(),
+                ui_config,
             };
 
             let save_file = if let Some(show_file) = self.show_file.as_ref() {
@@ -297,6 +299,7 @@ impl DemexUiContext {
     pub fn run_and_handle_action(
         &mut self,
         action: DeferredAction,
+        ui_config: &DemexShowUiConfig,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let (action, issued_at) = (action.action, action.issued_at);
 
@@ -314,7 +317,7 @@ impl DemexUiContext {
                     .executors_stop_all(&mut fixture_handler_lock, &preset_handler_lock);
             }
             Action::Save => {
-                self.save_show();
+                self.save_show(ui_config.clone());
             }
             Action::Test(cmd) => match cmd.as_str() {
                 _ => self.add_dialog_entry(DemexGlobalDialogEntry::error(

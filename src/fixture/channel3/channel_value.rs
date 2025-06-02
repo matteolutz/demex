@@ -228,9 +228,20 @@ impl FixtureChannelValue3 {
                     let channel_function =
                         &logical_channel.channel_functions[*channel_function_idx];
 
+                    let channel_function_from = dmx_value_to_f32(channel_function.dmx_from);
+                    let channel_function_to = logical_channel
+                        .channel_functions
+                        .get(*channel_function_idx + 1)
+                        .map(|channel_function| dmx_value_to_f32(channel_function.dmx_from))
+                        .unwrap_or(1.0);
+
                     let channel_set_value = channel_function
                         .channel_set(channel_set)
                         .map(|channel_set| dmx_value_to_f32(channel_set.dmx_from))
+                        .map(|channel_set_from_value| {
+                            (channel_set_from_value - channel_function_from)
+                                / (channel_function_to - channel_function_from)
+                        })
                         .unwrap_or(0.0);
 
                     (*channel_function_idx, channel_set_value)

@@ -118,16 +118,8 @@ impl RgbValue {
         xyz_vector[1] // Return the Y component as brightness
     }
 
-    pub fn from_xy_bri(x: f32, y: f32, bri: f32, color_space: RgbColorSpace) -> Self {
-        if y == 0.0 {
-            return Self::new(0.0, 0.0, 0.0, color_space);
-        }
-
-        let big_y = bri;
-        let big_x = (x * big_y) / y;
-        let big_z = ((1.0 - x - y) * big_y) / y;
-
-        let xyz_vector = nalgebra::vector![big_x, big_y, big_z];
+    pub fn from_xyz(x: f32, y: f32, z: f32, color_space: RgbColorSpace) -> Self {
+        let xyz_vector = nalgebra::vector![x, y, z];
         let rgb_matrix = color_space.xyz_to_rgb();
         let mut rgb_vector = rgb_matrix * xyz_vector;
 
@@ -144,11 +136,29 @@ impl RgbValue {
             color_space,
         )
     }
+
+    pub fn from_xy_bri(x: f32, y: f32, bri: f32, color_space: RgbColorSpace) -> Self {
+        if y == 0.0 {
+            return Self::new(0.0, 0.0, 0.0, color_space);
+        }
+
+        let big_y = bri;
+        let big_x = (x * big_y) / y;
+        let big_z = ((1.0 - x - y) * big_y) / y;
+
+        Self::from_xyz(big_x, big_y, big_z, color_space)
+    }
 }
 
 impl From<RgbValue> for ecolor::Color32 {
     fn from(value: RgbValue) -> Self {
         let (r, g, b) = (value.r, value.g, value.b);
         ecolor::Color32::from_rgb((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8)
+    }
+}
+
+impl From<RgbValue> for [f32; 3] {
+    fn from(value: RgbValue) -> Self {
+        [value.r, value.g, value.b]
     }
 }

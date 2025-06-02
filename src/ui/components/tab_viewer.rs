@@ -14,15 +14,15 @@ pub struct TabViewer<Tab: Display + Eq + Copy> {
 }
 
 impl<Tab: Display + Eq + Copy> TabViewer<Tab> {
-    pub fn new(id_source: impl Hash, tabs: Vec<Tab>, selected_tab: usize) -> Self {
-        if selected_tab >= tabs.len() {
+    pub fn new(id_source: impl Hash, tabs: Vec<Tab>, initial_selected_tab: usize) -> Self {
+        if initial_selected_tab >= tabs.len() {
             panic!("Selected tab index out of bounds");
         }
 
         Self {
             id: egui::Id::new(id_source),
             tabs,
-            initial_selected_tab: selected_tab,
+            initial_selected_tab,
             bypass_state: false,
         }
     }

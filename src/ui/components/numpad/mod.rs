@@ -42,9 +42,10 @@ impl std::fmt::Display for NumpadAction {
 
 pub fn numpad_ui(ui: &mut egui::Ui, value: &mut String) {
     ui.vertical(|ui| {
-        egui::TextEdit::singleline(value)
+        let text_edit = egui::TextEdit::singleline(value)
             .desired_width(WIDTH)
             .show(ui);
+        text_edit.response.request_focus();
 
         let num_cols = 3;
         let num_rows = 4;

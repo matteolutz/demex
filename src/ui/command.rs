@@ -2,7 +2,7 @@ use crate::{lexer::Lexer, ui::dlog::dialog::DemexGlobalDialogEntry};
 
 use super::context::DemexUiContext;
 
-pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_af: bool) {
+pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext) {
     eframe::egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
         ui.add_space(10.0);
 
@@ -34,9 +34,22 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_a
                 .labelled_by(command_label.id);
 
             if context.window_handler.is_empty() {
+                if ui.input_mut(|writer| writer.consume_key(egui::Modifiers::NONE, egui::Key::Tab))
+                {
+                    context.should_focus_command_input = true;
+                }
+
+                if command_input_field.lost_focus() {
+                    context.should_focus_command_input = false;
+                }
+
+                if context.should_focus_command_input {
+                    command_input_field.request_focus();
+                }
+
                 if command_input_field
                     .ctx
-                    .input_mut(|i| i.consume_key(egui::Modifiers::NONE, ::egui::Key::Space))
+                    .input_mut(|i| i.key_pressed(egui::Key::Space))
                 {
                     let mut lexer = Lexer::new(&context.command_input);
                     let tokens = lexer.tokenize();
@@ -71,15 +84,6 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_a
 
                 context.is_command_input_empty = context.command_input.is_empty();
 
-                if !command_input_field.has_focus()
-                    && (cmd_af
-                        || ui.input_mut(|reader| {
-                            reader.consume_key(egui::Modifiers::NONE, egui::Key::Tab)
-                        }))
-                {
-                    command_input_field.request_focus();
-                }
-
                 let command_empty = context.command.is_empty() && context.command_input.is_empty();
                 if !command_empty
                     && command_input_field
@@ -100,6 +104,8 @@ pub fn ui_command_input(ctx: &egui::Context, context: &mut DemexUiContext, cmd_a
                         }
 
                         context.command.clear();
+
+                        context.should_focus_command_input = false;
                     }
                 }
             }

@@ -1,6 +1,7 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::utils::color::rgbw_to_rgb;
+use crate::{color::color_space::RgbValue, utils::color::rgbw_to_rgb};
 
 use super::{
     channel3::{
@@ -141,6 +142,19 @@ impl GdtfFixture {
 
     pub fn address_footprint(&self) -> u16 {
         self.address_footprint
+    }
+
+    pub fn fixture_type_id(&self) -> uuid::Uuid {
+        self.fixture_type_id
+    }
+
+    pub fn fixture_type_dmx_mode(&self) -> &str {
+        &self.fixture_type_dmx_mode
+    }
+
+    pub fn fixture_type_matches(&self, other: &Self) -> bool {
+        self.fixture_type_id == other.fixture_type_id
+            && self.fixture_type_dmx_mode == other.fixture_type_dmx_mode
     }
 
     pub fn programmer_values(&self) -> &HashMap<String, FixtureChannelValue3> {
@@ -364,7 +378,93 @@ impl GdtfFixture {
     ) -> Result<[f32; 3], FixtureError> {
         // TODO: also check for color wheel and other color attributes
         // this should be the color that is for example displayed in the fixture layout
-        self.rgb_color(fixture_types, preset_handler, timing_handler)
+        let rgb_color = self.rgb_color(fixture_types, preset_handler, timing_handler);
+        if let Ok(rgb_color) = rgb_color {
+            return Ok(rgb_color);
+        }
+
+        let color_wheel_color =
+            self.color_wheel_color(fixture_types, preset_handler, timing_handler);
+        if let Ok(color_wheel_color) = color_wheel_color {
+            return Ok(color_wheel_color);
+        }
+
+        Err(FixtureError::GdtfFixtureCouldNotProduceDisplayColor(
+            self.id,
+        ))
+    }
+
+    fn color_wheel_color(
+        &self,
+        fixture_types: &FixtureTypeList,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
+    ) -> Result<[f32; 3], FixtureError> {
+        let color_wheel_channels = self.channels_for_attribute(fixture_types, "Color1")?;
+
+        let (fixture_type, _) = self.fixture_type_and_dmx_mode(fixture_types)?;
+
+        let rgb_color: Option<[f32; 3]> =
+            color_wheel_channels
+                .into_iter()
+                .find_map(|(dmx_channel, logical_channel, _)| {
+                    let value = self
+                        .get_value(fixture_types, dmx_channel.name().as_ref())
+                        .unwrap();
+                    let (channel_function_idx, channel_value) = value.get_as_discrete(
+                        self,
+                        fixture_types,
+                        dmx_channel.name().as_ref(),
+                        preset_handler,
+                        timing_handler,
+                    );
+
+                    let channel_function = &logical_channel.channel_functions[channel_function_idx];
+                    let channel_function_from = dmx_value_to_f32(channel_function.dmx_from);
+                    let channel_function_to = logical_channel
+                        .channel_functions
+                        .get(channel_function_idx + 1)
+                        .map(|channel_function| dmx_value_to_f32(channel_function.dmx_from))
+                        .unwrap_or(1.0);
+
+                    let color_wheel = channel_function.wheel(fixture_type);
+                    if color_wheel.is_none() {
+                        return None;
+                    }
+
+                    let active_channel_set = channel_function
+                        .channel_sets
+                        .iter()
+                        .map(|channel_set| (dmx_value_to_f32(channel_set.dmx_from), channel_set))
+                        .sorted_by(|(a, _), (b, _)| b.partial_cmp(a).unwrap())
+                        .find(|(from_value, _)| {
+                            // map the from value from the range [channel_function_from, channel_function_to] to [0.0, 1.0]
+
+                            let mapped_from_value = (from_value - channel_function_from)
+                                / (channel_function_to - channel_function_from);
+
+                            mapped_from_value <= channel_value
+                        });
+
+                    let cie_color = active_channel_set
+                        .and_then(|(_, channel_set)| channel_set.wheel_slot(color_wheel.unwrap()))
+                        .and_then(|wheel_slot| match wheel_slot.optic {
+                            gdtf::wheel::WheelSlotOptic::Color(color) => Some(color),
+                            _ => None,
+                        });
+
+                    cie_color.map(|cie_color| {
+                        RgbValue::from_xy_bri(
+                            cie_color.x as f32,
+                            cie_color.y as f32,
+                            cie_color.z as f32 / 100.0,
+                            crate::color::color_space::RgbColorSpace::Srgb,
+                        )
+                        .into()
+                    })
+                });
+
+        rgb_color.ok_or(FixtureError::GdtfFixtureHasNoColorWheelColor(self.id))
     }
 
     fn rgbw_add_color(
@@ -597,13 +697,13 @@ impl GdtfFixture {
             .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel.to_owned()))
     }
 
-    pub fn update_programmer_attribute_value(
+    pub fn update_programmer_attribute_matches_value(
         &mut self,
         fixture_types: &FixtureTypeList,
-        attribute: &str,
+        filter: impl Fn(&str) -> bool,
         slider_val: FixtureChannelValue3Discrete,
     ) -> Result<(), FixtureError> {
-        for (channel, _, _) in self.channels_for_attribute(fixture_types, attribute)? {
+        for (channel, _, _) in self.channels_for_attribute_matches(fixture_types, filter)? {
             self.update_programmer_value(
                 fixture_types,
                 channel.name().as_ref(),

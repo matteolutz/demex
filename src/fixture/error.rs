@@ -21,6 +21,8 @@ pub enum FixtureError {
     GdtfChannelFunctionMismatch(usize, usize),
     GdtfAtributeHasNoName,
     GdtfFixtureCouldNotProduceRgbColor(u32),
+    GdtfFixtureHasNoColorWheelColor(u32),
+    GdtfFixtureCouldNotProduceDisplayColor(u32),
 
     NoDisplayColor(u32),
     PresetHandlerError(Box<PresetHandlerError>),
@@ -90,6 +92,16 @@ impl std::fmt::Display for FixtureError {
             Self::GdtfFixtureCouldNotProduceRgbColor(fixture_id) => write!(
                 f,
                 "GDTF fixture with id {} could not produce RGB color value",
+                fixture_id
+            ),
+            Self::GdtfFixtureHasNoColorWheelColor(fixture_id) => write!(
+                f,
+                "GDTF fixture with id {} has no color wheel color",
+                fixture_id
+            ),
+            Self::GdtfFixtureCouldNotProduceDisplayColor(fixture_id) => write!(
+                f,
+                "GDTF fixture with id {} could not produce display color value",
                 fixture_id
             ),
         }
