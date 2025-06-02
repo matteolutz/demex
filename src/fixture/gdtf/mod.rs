@@ -454,7 +454,7 @@ impl GdtfFixture {
                         });
 
                     cie_color.map(|cie_color| {
-                        RgbValue::from_xy_bri(
+                        RgbValue::from_xyy(
                             cie_color.x as f32,
                             cie_color.y as f32,
                             cie_color.z as f32 / 100.0,

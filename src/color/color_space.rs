@@ -137,12 +137,11 @@ impl RgbValue {
         )
     }
 
-    pub fn from_xy_bri(x: f32, y: f32, bri: f32, color_space: RgbColorSpace) -> Self {
+    pub fn from_xyy(x: f32, y: f32, big_y: f32, color_space: RgbColorSpace) -> Self {
         if y == 0.0 {
             return Self::new(0.0, 0.0, 0.0, color_space);
         }
 
-        let big_y = bri;
         let big_x = (x * big_y) / y;
         let big_z = ((1.0 - x - y) * big_y) / y;
 

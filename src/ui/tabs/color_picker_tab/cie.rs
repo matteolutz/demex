@@ -112,7 +112,7 @@ impl<'a> CieColorPickerComponent<'a> {
             let interact_pos = response.interact_pointer_pos().unwrap();
             let norm_pos = to_cie_transform.transform_pos_clamped(interact_pos);
 
-            let color = RgbValue::from_xy_bri(norm_pos.x, norm_pos.y, 1.0, self.color_space);
+            let color = RgbValue::from_xyy(norm_pos.x, norm_pos.y, 1.0, self.color_space);
             Some(color)
         } else {
             selected_color.map(|color| RgbValue::from_color(color, self.color_space))
