@@ -189,6 +189,15 @@ impl DemexTabs {
     pub fn is_empty(&self) -> bool {
         self.dock_state.surfaces_count() == 0
     }
+
+    pub fn focus(&mut self, tab: DemexTab) -> bool {
+        if let Some(tab) = self.dock_state.find_tab(&tab) {
+            self.dock_state.set_active_tab(tab);
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl Default for DemexTabs {
@@ -229,9 +238,5 @@ impl DemexTabs {
                 .set_focused_node_and_surface((tab.surface, tab.node));
             self.dock_state.push_to_focused_leaf(tab.tab);
         });
-    }
-
-    pub fn re_attach(&mut self, tab: DemexTab) {
-        self.dock_state.add_window(vec![tab]);
     }
 }

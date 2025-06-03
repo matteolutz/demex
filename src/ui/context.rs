@@ -24,7 +24,11 @@ use crate::{
         Parser2,
     },
     show::{context::ShowContext, ui::DemexShowUiConfig, DemexShow},
-    ui::error::DemexUiError,
+    ui::{
+        edit_request::{UiEditRequest, UiEditRequestTrait},
+        error::DemexUiError,
+        tabs::DemexTab,
+    },
     utils::{thread::DemexThreadStatsHandler, version::VERSION_STR},
 };
 
@@ -51,7 +55,8 @@ pub struct DemexUiContext {
     pub texture_handles: Vec<egui::TextureHandle>,
 
     pub global_fixture_select: Option<FixtureSelection>,
-    pub global_sequence_select: Option<u32>,
+
+    pub global_sequence_select: UiEditRequest<u32>,
 
     pub command: Vec<Token>,
 
@@ -113,23 +118,9 @@ impl DemexUiContext {
         Ok(())
     }
 
-    /*
-    pub fn load_show_file(
-        show_file_path: PathBuf,
-        fixture_types: Vec<gdtf::fixture_type::FixtureType>,
-        stats: Arc<RwLock<DemexThreadStatsHandler>>,
-        is_headless: bool,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let show: DemexShow =
-            serde_json::from_reader(std::fs::File::open(show_file_path.clone()).unwrap())?;
-        Self::load_show(
-            show,
-            Some(show_file_path),
-            fixture_types,
-            stats,
-            is_headless,
-        )
-    }*/
+    pub fn ui_edit_requests<'a>(&'a mut self) -> [(&'a mut dyn UiEditRequestTrait, DemexTab); 1] {
+        [(&mut self.global_sequence_select, DemexTab::SequenceEditor)]
+    }
 
     pub fn load_show(
         show_context: &ShowContext,
@@ -174,7 +165,7 @@ impl DemexUiContext {
             encoders_tab_state: EncodersTabState::default(),
             window_handler: DemexWindowHandler::default(),
             global_fixture_select: None,
-            global_sequence_select: None,
+            global_sequence_select: UiEditRequest::None,
 
             ui_config,
 

@@ -176,8 +176,8 @@ impl Splitter {
 
         if resp.hovered() {
             match data.axis {
-                SplitterAxis::Horizontal => ui.ctx().set_cursor_icon(CursorIcon::ResizeVertical),
-                SplitterAxis::Vertical => ui.ctx().set_cursor_icon(CursorIcon::ResizeHorizontal),
+                SplitterAxis::Horizontal => ui.ctx().set_cursor_icon(CursorIcon::ResizeHorizontal),
+                SplitterAxis::Vertical => ui.ctx().set_cursor_icon(CursorIcon::ResizeVertical),
             }
         }
 

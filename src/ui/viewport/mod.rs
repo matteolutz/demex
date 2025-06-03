@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::ui::{
     constants::MAX_VIEWPORTS,
     context::DemexUiContext,
-    tabs::DemexTabs,
+    tabs::{DemexTab, DemexTabs},
     viewport::{position::DemexViewportPositonState, viewport_type::ViewportType},
 };
 
@@ -13,7 +13,7 @@ pub mod viewport_type;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DemexViewport {
     viewport_type: ViewportType,
-    tabs: DemexTabs,
+    tabs: Option<DemexTabs>,
     pos_state: DemexViewportPositonState,
 }
 
@@ -21,7 +21,7 @@ impl DemexViewport {
     pub fn main() -> Self {
         Self {
             viewport_type: ViewportType::Main,
-            tabs: DemexTabs::main(),
+            tabs: Some(DemexTabs::main()),
             pos_state: DemexViewportPositonState::default(),
         }
     }
@@ -32,7 +32,7 @@ impl DemexViewport {
                 id: id.into(),
                 is_active: true,
             },
-            tabs: DemexTabs::default(),
+            tabs: None,
             pos_state: DemexViewportPositonState::default(),
         }
     }
@@ -59,8 +59,16 @@ impl DemexViewport {
         &mut self.pos_state
     }
 
+    pub fn focus(&mut self, tab: DemexTab) -> bool {
+        self.tabs.as_mut().is_some_and(|tabs| tabs.focus(tab))
+    }
+
     pub fn ui(&mut self, ui: &mut egui::Ui, context: &mut DemexUiContext) {
-        self.tabs.ui(
+        if self.tabs.is_none() {
+            self.tabs = Some(DemexTabs::default());
+        }
+
+        self.tabs.as_mut().unwrap().ui(
             ui,
             context,
             self.viewport_type.id().with("TabViewer"),

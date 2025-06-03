@@ -16,7 +16,9 @@ use crate::{
         fixture_selector::FixtureSelectorContext,
     },
     show::ui::DemexShowUiConfig,
-    ui::viewport::position::DemexViewportPositonState,
+    ui::{
+        constants::MAIN_VIEWPORT_TOP_BOTTOM_PANEL_ID, viewport::position::DemexViewportPositonState,
+    },
     utils::version::VERSION_STR,
 };
 
@@ -25,6 +27,7 @@ pub mod components;
 pub mod constants;
 pub mod context;
 pub mod dlog;
+pub mod edit_request;
 pub mod error;
 pub mod graphics;
 pub mod iimpl;
@@ -129,6 +132,18 @@ impl eframe::App for DemexUiApp {
             self.update_single_threaded();
         }
 
+        for (ui_edit_request, tab) in self.context.ui_edit_requests() {
+            if !ui_edit_request.accept() {
+                continue;
+            }
+
+            for viewport in self.ui_config.viewports.iter_mut() {
+                if viewport.focus(tab) {
+                    break;
+                }
+            }
+        }
+
         if let Err(input_error) = self.context.input_device_handler.update(
             &mut self.context.fixture_handler.write(),
             &mut self.context.preset_handler.write(),
@@ -194,7 +209,7 @@ impl eframe::App for DemexUiApp {
             });
         }
 
-        eframe::egui::TopBottomPanel::top("DemexMainViewport").show(ctx, |ui| {
+        eframe::egui::TopBottomPanel::top(MAIN_VIEWPORT_TOP_BOTTOM_PANEL_ID).show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("demex");
 

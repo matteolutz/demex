@@ -3,6 +3,7 @@ use crate::{
     lexer::token::Token,
     ui::{
         context::DemexUiContext,
+        edit_request::UiEditRequest,
         window::{edit::DemexEditWindow, DemexWindow},
     },
 };
@@ -179,13 +180,13 @@ impl<'a> SequenceEditorTab<'a> {
 
         for sequence in sequences.values() {
             if ui.button(sequence.name()).clicked() {
-                self.context.global_sequence_select = Some(sequence.id());
+                self.context.global_sequence_select = UiEditRequest::Editing(sequence.id());
             }
         }
     }
 
     pub fn show(&mut self, ui: &mut egui::Ui) {
-        if let Some(sequence_id) = self.context.global_sequence_select {
+        if let Some(sequence_id) = self.context.global_sequence_select.option() {
             self.show_selected_sequence(ui, sequence_id);
         } else {
             self.show_sequence_list(ui);

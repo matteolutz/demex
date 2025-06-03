@@ -20,6 +20,7 @@ use crate::{
         Action, ValueOrRange,
     },
     ui::{
+        edit_request::UiEditRequest,
         window::{edit::DemexEditWindow, DemexWindow},
         DemexUiContext,
     },
@@ -424,7 +425,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                             }
                         }
                         PresetGridButtonQuickMenuActions::Custom("Edit Sequence") => {
-                            context.global_sequence_select = Some(
+                            context.global_sequence_select = UiEditRequest::Request(
                                 updatable_handler
                                     .executor(id)
                                     .unwrap()
