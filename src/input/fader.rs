@@ -18,6 +18,7 @@ pub enum DemexInputFader {
         bpm_min: f32,
         bpm_max: f32,
     },
+    Grandmaster,
 }
 
 impl Default for DemexInputFader {
@@ -65,6 +66,12 @@ impl DemexInputFader {
                 let value = min_bpm + (max_bpm - min_bpm) * value;
 
                 speed_master.set_bpm(value);
+
+                Ok(())
+            }
+            Self::Grandmaster => {
+                let byte_value = (value * 255.0) as u8;
+                *fixture_handler.grand_master_mut() = byte_value;
 
                 Ok(())
             }

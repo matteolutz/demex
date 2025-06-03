@@ -77,7 +77,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
         ui.vertical(|ui| {
             ui.set_min_width(100.0);
             ui.label(egui::RichText::from("Grandmaster").color(ecolor::Color32::LIGHT_RED));
-            ui.add(eframe::egui::Slider::new(&mut context.gm_slider_val, 0..=255).vertical());
+            ui.add(
+                eframe::egui::Slider::new(fixture_handler.grand_master_mut(), 0..=255).vertical(),
+            );
         });
     });
 }

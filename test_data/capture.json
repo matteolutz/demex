@@ -1,6 +1,17 @@
 {
   "preset_handler": {
     "groups": {
+      "3": {
+        "id": 3,
+        "name": "All Spots",
+        "fixture_selection": {
+          "fixtures": [301, 302, 303, 304, 305],
+          "group": 1,
+          "block": 1,
+          "wings": 1,
+          "reverse": false
+        }
+      },
       "1": {
         "id": 1,
         "name": "PAR 2 Wing",
@@ -35,23 +46,555 @@
           "wings": 1,
           "reverse": false
         }
-      },
-      "3": {
-        "id": 3,
-        "name": "All Spots",
-        "fixture_selection": {
-          "fixtures": [301, 302, 303, 304, 305],
-          "group": 1,
-          "block": 1,
-          "wings": 1,
-          "reverse": false
-        }
       }
     },
     "macros": {},
     "command_slices": {},
     "sequences": {},
     "presets": {
+      "Position.0": {
+        "id": "Position.0",
+        "name": "Position Preset Position.0",
+        "display_color": null,
+        "fade_up": 0.0,
+        "data": {
+          "Default": {
+            "data": {
+              "9": {
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.94 }
+                },
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "10": {
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.94 }
+                },
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "5": {
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
+                },
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "8": {
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.94 }
+                },
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "6": {
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.94 }
+                },
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "7": {
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.94 }
+                }
+              },
+              "1": {
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
+                }
+              },
+              "3": {
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
+                },
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "2": {
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
+                },
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "4": {
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
+                },
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Color.1": {
+        "id": "Color.1",
+        "name": "Blue",
+        "display_color": [0, 170, 255, 255],
+        "fade_up": 0.0,
+        "data": {
+          "Default": {
+            "data": {
+              "10": {
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "6": {
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "5": {
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "9": {
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "7": {
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "2": {
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "1": {
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "3": {
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "8": {
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "4": {
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Color.0": {
+        "id": "Color.0",
+        "name": "Pink",
+        "display_color": [255, 0, 212, 255],
+        "fade_up": 0.0,
+        "data": {
+          "Default": {
+            "data": {
+              "5": {
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "4": {
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "3": {
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "7": {
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "1": {
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "6": {
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
+                }
+              },
+              "8": {
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
+                }
+              },
+              "9": {
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "10": {
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
+                },
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "2": {
+                "Head_Color2": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                },
+                "Head_ColorSub_Y": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
+                },
+                "Head_ColorSub_M": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                },
+                "Head_ColorSub_C": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
+                },
+                "Head_Color1": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Dimmer.2": {
+        "id": "Dimmer.2",
+        "name": "Out",
+        "display_color": null,
+        "fade_up": 0.0,
+        "data": {
+          "Default": {
+            "data": {
+              "305": {
+                "Beam_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "303": {
+                "Beam_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "302": {
+                "Beam_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "5": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "7": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "304": {
+                "Beam_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "4": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "9": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "301": {
+                "Beam_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "3": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "10": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "2": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "8": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "6": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              },
+              "1": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                }
+              }
+            }
+          }
+        }
+      },
       "Dimmer.4": {
         "id": "Dimmer.4",
         "name": "Snap in 360",
@@ -97,454 +640,6 @@
               },
               "speed": { "Bpm": 60.0 },
               "phase": { "Range": { "start": 0.0, "end": 360.0 } }
-            }
-          }
-        }
-      },
-      "Dimmer.1": {
-        "id": "Dimmer.1",
-        "name": "Full",
-        "display_color": null,
-        "fade_up": 0.0,
-        "data": {
-          "Default": {
-            "data": {
-              "4": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "305": {
-                "Beam_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "3": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "5": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "304": {
-                "Beam_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "301": {
-                "Beam_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "6": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "7": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "2": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "8": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "10": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "1": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "9": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "303": {
-                "Beam_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "302": {
-                "Beam_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              }
-            }
-          }
-        }
-      },
-      "Color.0": {
-        "id": "Color.0",
-        "name": "Pink",
-        "display_color": [255, 0, 212, 255],
-        "fade_up": 0.0,
-        "data": {
-          "Default": {
-            "data": {
-              "10": {
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
-                }
-              },
-              "9": {
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
-                },
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "4": {
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
-                }
-              },
-              "8": {
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
-                }
-              },
-              "5": {
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "1": {
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
-                }
-              },
-              "2": {
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
-                },
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "3": {
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "7": {
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              },
-              "6": {
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.67 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.78 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                }
-              }
-            }
-          }
-        }
-      },
-      "Dimmer.2": {
-        "id": "Dimmer.2",
-        "name": "Out",
-        "display_color": null,
-        "fade_up": 0.0,
-        "data": {
-          "Default": {
-            "data": {
-              "5": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "6": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "303": {
-                "Beam_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "302": {
-                "Beam_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "304": {
-                "Beam_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "10": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "4": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "1": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "305": {
-                "Beam_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "301": {
-                "Beam_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "7": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "9": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "3": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "2": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "8": {
-                "Head_Dimmer": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              }
-            }
-          }
-        }
-      },
-      "Position.0": {
-        "id": "Position.0",
-        "name": "Position Preset Position.0",
-        "display_color": null,
-        "fade_up": 0.0,
-        "data": {
-          "Default": {
-            "data": {
-              "9": {
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.94 }
-                },
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "8": {
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.94 }
-                }
-              },
-              "5": {
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
-                },
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "4": {
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
-                },
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "6": {
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.94 }
-                }
-              },
-              "10": {
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.94 }
-                }
-              },
-              "1": {
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
-                },
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "7": {
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.94 }
-                },
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "3": {
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
-                },
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "2": {
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
-                }
-              }
             }
           }
         }
@@ -629,182 +724,87 @@
           }
         }
       },
-      "Color.1": {
-        "id": "Color.1",
-        "name": "Blue",
-        "display_color": [0, 170, 255, 255],
+      "Dimmer.1": {
+        "id": "Dimmer.1",
+        "name": "Full",
+        "display_color": null,
         "fade_up": 0.0,
         "data": {
           "Default": {
             "data": {
+              "303": {
+                "Beam_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "304": {
+                "Beam_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
               "10": {
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_C": {
+                "Head_Dimmer": {
                   "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "2": {
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "6": {
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "5": {
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "7": {
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
                 }
               },
               "4": {
-                "Head_ColorSub_C": {
+                "Head_Dimmer": {
                   "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
                 }
               },
-              "1": {
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_C": {
+              "2": {
+                "Head_Dimmer": {
                   "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                }
-              },
-              "3": {
-                "Head_ColorSub_C": {
-                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
                 }
               },
               "9": {
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_C": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "302": {
+                "Beam_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "7": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "305": {
+                "Beam_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "3": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "301": {
+                "Beam_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "1": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "6": {
+                "Head_Dimmer": {
+                  "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                }
+              },
+              "5": {
+                "Head_Dimmer": {
                   "Discrete": { "channel_function_idx": 0, "value": 1.0 }
                 }
               },
               "8": {
-                "Head_ColorSub_C": {
+                "Head_Dimmer": {
                   "Discrete": { "channel_function_idx": 0, "value": 1.0 }
-                },
-                "Head_Color1": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_Y": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_ColorSub_M": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
-                },
-                "Head_Color2": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.0 }
                 }
               }
             }
@@ -819,6 +819,38 @@
         "data": {
           "Default": {
             "data": {
+              "1": {
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
+                },
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.31 }
+                }
+              },
+              "10": {
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.32 }
+                },
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
+                }
+              },
+              "8": {
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
+                },
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.32 }
+                }
+              },
+              "9": {
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.32 }
+                },
+                "Head_Tilt": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
+                }
+              },
               "3": {
                 "Head_Tilt": {
                   "Discrete": { "channel_function_idx": 0, "value": 0.19 }
@@ -835,39 +867,7 @@
                   "Discrete": { "channel_function_idx": 0, "value": 0.31 }
                 }
               },
-              "9": {
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.32 }
-                },
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
-                }
-              },
-              "1": {
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
-                },
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.31 }
-                }
-              },
-              "6": {
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.32 }
-                },
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
-                }
-              },
               "2": {
-                "Head_Tilt": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.19 }
-                },
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.31 }
-                }
-              },
-              "5": {
                 "Yoke_Pan": {
                   "Discrete": { "channel_function_idx": 0, "value": 0.31 }
                 },
@@ -883,15 +883,15 @@
                   "Discrete": { "channel_function_idx": 0, "value": 0.32 }
                 }
               },
-              "8": {
+              "5": {
+                "Yoke_Pan": {
+                  "Discrete": { "channel_function_idx": 0, "value": 0.31 }
+                },
                 "Head_Tilt": {
                   "Discrete": { "channel_function_idx": 0, "value": 0.19 }
-                },
-                "Yoke_Pan": {
-                  "Discrete": { "channel_function_idx": 0, "value": 0.32 }
                 }
               },
-              "10": {
+              "6": {
                 "Yoke_Pan": {
                   "Discrete": { "channel_function_idx": 0, "value": 0.32 }
                 },
@@ -905,22 +905,19 @@
       }
     }
   },
-  "updatable_handler": {
-    "executors": {},
-    "faders": {}
-  },
+  "updatable_handler": { "executors": {} },
   "timing_handler": {
     "speed_master_values": {
+      "5": { "bpm": 120.0 },
+      "3": { "bpm": 120.0 },
+      "9": { "bpm": 120.0 },
       "2": { "bpm": 120.0 },
       "0": { "bpm": 10.0 },
-      "8": { "bpm": 120.0 },
       "1": { "bpm": 120.0 },
-      "5": { "bpm": 120.0 },
-      "9": { "bpm": 120.0 },
       "7": { "bpm": 120.0 },
       "6": { "bpm": 120.0 },
-      "3": { "bpm": 120.0 },
-      "4": { "bpm": 120.0 }
+      "4": { "bpm": 120.0 },
+      "8": { "bpm": 120.0 }
     },
     "timecodes": {}
   },
@@ -1259,6 +1256,5 @@
         "device_id": "Controller"
       }
     ]
-  },
-  "ui_config": { "detached_tabs": [], "detached_tabs_config": {} }
+  }
 }

@@ -171,9 +171,15 @@ impl FunctionArgs for AssignButtonArgs {
     }
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum AssignFaderArgsMode {
+    Executor(u32),
+    Grandmaster,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssignFaderArgs {
-    pub executor_id: u32,
+    pub mode: AssignFaderArgsMode,
     pub device_idx: usize,
     pub input_fader_id: u32,
 }
@@ -190,10 +196,6 @@ impl FunctionArgs for AssignFaderArgs {
         _: &mut TimingHandler,
         _: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
-        let _ = updatable_handler
-            .executor(self.executor_id)
-            .map_err(ActionRunError::UpdatableHandlerError)?;
-
         let device = input_device_handler
             .device_mut(self.device_idx)
             .map_err(ActionRunError::InputDeviceError)?;
@@ -204,10 +206,21 @@ impl FunctionArgs for AssignFaderArgs {
             ));
         }
 
+        let assignment = match self.mode {
+            AssignFaderArgsMode::Executor(executor_id) => {
+                // Verify, taht the executor exists
+                let _ = updatable_handler
+                    .executor(executor_id)
+                    .map_err(ActionRunError::UpdatableHandlerError)?;
+                DemexInputFader::Fader { executor_id }
+            }
+            AssignFaderArgsMode::Grandmaster => DemexInputFader::Grandmaster,
+        };
+
         device
             .config
             .faders_mut()
-            .insert(self.input_fader_id, DemexInputFader::new(self.executor_id));
+            .insert(self.input_fader_id, assignment);
 
         Ok(ActionRunResult::new())
     }

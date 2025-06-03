@@ -27,6 +27,7 @@ use crate::{
         presets::preset::FixturePresetId, sequence::cue::CueIdx,
     },
     lexer::token::Token,
+    parser::nodes::action::functions::assign_function::AssignFaderArgsMode,
 };
 
 use self::{
@@ -970,7 +971,7 @@ impl<'a> Parser2<'a> {
                     let (device_idx, input_fader_id) = self.parse_float_individual()?;
 
                     Ok(Action::AssignFader(AssignFaderArgs {
-                        executor_id,
+                        mode: AssignFaderArgsMode::Executor(executor_id),
                         device_idx: device_idx as usize,
                         input_fader_id,
                     }))
@@ -1079,6 +1080,19 @@ impl<'a> Parser2<'a> {
                     button_id,
                 }))
             }
+            Token::KeywordGrandmaster => {
+                self.advance();
+
+                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+
+                let (device_idx, input_fader_id) = self.parse_float_individual()?;
+
+                Ok(Action::AssignFader(AssignFaderArgs {
+                    mode: AssignFaderArgsMode::Grandmaster,
+                    device_idx: device_idx as usize,
+                    input_fader_id,
+                }))
+            }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
                 vec![
@@ -1087,6 +1101,7 @@ impl<'a> Parser2<'a> {
                     "\"preset\"",
                     "\"macro\"",
                     "\"tokens\"",
+                    "\"grandmaster\"",
                     "fixture selector",
                 ],
             )),

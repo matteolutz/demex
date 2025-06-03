@@ -30,7 +30,7 @@ impl Default for Effect2Part {
         Self {
             wave: Effect2Wave::default(),
             attributes: Vec::default(),
-            phase_offset: 1.0,
+            phase_offset: 0.0,
             phase_multiplier: 1.0,
         }
     }

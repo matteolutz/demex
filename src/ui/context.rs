@@ -63,8 +63,6 @@ pub struct DemexUiContext {
 
     pub show_file: Option<PathBuf>,
 
-    pub gm_slider_val: u8,
-
     pub input_device_handler: DemexInputDeviceHandler,
 
     pub window_handler: DemexWindowHandler,
@@ -157,7 +155,6 @@ impl DemexUiContext {
         );
 
         Self {
-            gm_slider_val: FixtureHandler::default_grandmaster_value(),
             logs: vec![
                 DemexLogEntry::new(DemexLogEntryType::Info(format!(
                     "demex v{} (by @matteolutz), Welcome!",
