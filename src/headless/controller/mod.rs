@@ -26,17 +26,12 @@ enum DemexHeadlessNodeState {
     Verified,
 }
 
+#[derive(Default)]
 pub struct DemexHeadlessConroller {
     nodes: Arc<RwLock<HashSet<u32>>>,
 }
 
 impl DemexHeadlessConroller {
-    pub fn new() -> Self {
-        Self {
-            nodes: Arc::new(RwLock::new(HashSet::new())),
-        }
-    }
-
     pub fn start_controller_thread(
         self,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,

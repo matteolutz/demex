@@ -109,6 +109,7 @@ impl ObjectTrait for HomeableObject {
 
 impl HomeableObject {
     pub fn rangable_with(&self, other: &HomeableObject) -> bool {
+        #[allow(clippy::match_like_matches_macro)]
         match (self, other) {
             (Self::FixtureSelector(_), Self::FixtureSelector(_)) => true,
             (Self::Executor(_), Self::Executor(_)) => true,

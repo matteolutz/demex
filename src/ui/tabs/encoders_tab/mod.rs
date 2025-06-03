@@ -263,7 +263,6 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
                                     )
                                     .unwrap()
                             })
-                            .into_iter()
                             .map(|(dmx_channel, _, channel_functions)| {
                                 (dmx_channel.name().as_ref().to_owned(), channel_functions)
                             })

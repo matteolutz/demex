@@ -3,6 +3,7 @@ use crate::ui::components::separator::padded_separator;
 pub struct SlidersColorPickerComponent {}
 
 impl SlidersColorPickerComponent {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {}
     }

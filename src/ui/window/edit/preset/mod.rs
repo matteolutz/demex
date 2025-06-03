@@ -18,6 +18,7 @@ pub fn edit_preset_ui(ui: &mut egui::Ui, preset: &mut FixturePreset) {
     padded_separator(ui);
 
     let preset_id = preset.id();
+    #[allow(clippy::match_like_matches_macro)]
     match preset.data_mut() {
         FixturePresetData::FeatureEffect { runtime } => edit_effect_ui(
             ui,

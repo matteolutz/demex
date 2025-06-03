@@ -58,7 +58,7 @@ impl DemexExecutor {
         let sequence_name = preset_handler
             .get_sequence(self.runtime.sequence_id())
             .map(|seq| seq.name());
-        format!("{}", sequence_name.unwrap_or("[Deleted Sequence]"))
+        sequence_name.unwrap_or("[Deleted Sequence]").to_string()
     }
 
     pub fn priority(&self) -> FixtureChannelValuePriority {

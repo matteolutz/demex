@@ -12,13 +12,10 @@ use crate::{
 
 use super::{error::DemexHeadlessError, id::DemexProtoDeviceId};
 
+#[derive(Default)]
 pub struct DemexHeadlessNode {}
 
 impl DemexHeadlessNode {
-    pub fn new() -> Self {
-        Self {}
-    }
-
     pub fn start_headless_in_current_thread(
         &mut self,
         master_ip: String,

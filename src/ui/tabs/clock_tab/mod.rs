@@ -3,7 +3,7 @@ use strum::IntoEnumIterator;
 use crate::ui::{
     components::tab_viewer::TabViewer,
     context::DemexUiContext,
-    tabs::timecode_clock_tab::{mode::ClockMode, value::ClockValue},
+    tabs::clock_tab::{mode::ClockMode, value::ClockValue},
 };
 
 pub mod mode;
@@ -48,8 +48,8 @@ impl<'a> ClockComponent<'a> {
                         egui::Label::new(
                             egui::RichText::new(clock_value.to_string())
                                 .extra_letter_spacing(2.0)
-                                .color(ecolor::Color32::LIGHT_GREEN)
-                                .background_color(ecolor::Color32::BLACK)
+                                .color(clock_mode.color())
+                                .background_color(egui::Color32::BLACK)
                                 .monospace()
                                 .size(80.0),
                         ),

@@ -427,10 +427,7 @@ impl GdtfFixture {
                         .map(|channel_function| dmx_value_to_f32(channel_function.dmx_from))
                         .unwrap_or(1.0);
 
-                    let color_wheel = channel_function.wheel(fixture_type);
-                    if color_wheel.is_none() {
-                        return None;
-                    }
+                    let color_wheel = channel_function.wheel(fixture_type)?;
 
                     let active_channel_set = channel_function
                         .channel_sets
@@ -447,7 +444,7 @@ impl GdtfFixture {
                         });
 
                     let cie_color = active_channel_set
-                        .and_then(|(_, channel_set)| channel_set.wheel_slot(color_wheel.unwrap()))
+                        .and_then(|(_, channel_set)| channel_set.wheel_slot(color_wheel))
                         .and_then(|wheel_slot| match wheel_slot.optic {
                             gdtf::wheel::WheelSlotOptic::Color(color) => Some(color),
                             _ => None,

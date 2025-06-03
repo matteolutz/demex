@@ -230,13 +230,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(master_ip) = args.headless {
         log::info!("Running in headless mode, no UI will be shown");
-        DemexHeadlessNode::new().start_headless_in_current_thread(
+        DemexHeadlessNode::default().start_headless_in_current_thread(
             master_ip,
             args.headless_id.unwrap_or_default(),
             context.clone(),
         )?;
     } else {
-        DemexHeadlessConroller::new().start_controller_thread(stats.clone(), context.clone());
+        DemexHeadlessConroller::default().start_controller_thread(stats.clone(), context.clone());
 
         #[cfg(feature = "ui")]
         {

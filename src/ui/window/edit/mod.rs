@@ -60,6 +60,7 @@ impl DemexEditWindow {
     }
 
     pub fn should_fullscreen(&self) -> bool {
+        #[allow(clippy::match_like_matches_macro)]
         match self {
             Self::Config(_) => true,
             Self::EditPreset2(_) => true,

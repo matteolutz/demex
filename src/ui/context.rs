@@ -118,7 +118,7 @@ impl DemexUiContext {
         Ok(())
     }
 
-    pub fn ui_edit_requests<'a>(&'a mut self) -> [(&'a mut dyn UiEditRequestTrait, DemexTab); 1] {
+    pub fn ui_edit_requests(&mut self) -> [(&mut dyn UiEditRequestTrait, DemexTab); 1] {
         [(&mut self.global_sequence_select, DemexTab::SequenceEditor)]
     }
 
@@ -197,11 +197,7 @@ impl DemexUiContext {
                     serde_json::from_reader(std::fs::File::open(&show_file).unwrap())
                         .map_err(DemexUiError::SerdeJsonError)?;
 
-                let input_device_configs = show
-                    .input_device_configs
-                    .into_iter()
-                    .map(DemexInputDeviceConfig::from)
-                    .collect::<Vec<_>>();
+                let input_device_configs = show.input_device_configs;
 
                 let new_patch = {
                     let patch = self.patch.read();

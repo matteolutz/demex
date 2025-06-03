@@ -135,7 +135,7 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, config: ArtnetOut
 
                 if let Some(nodes) = nodes.get_mut(&send_universe) {
                     nodes.retain(|node| {
-                        if let Ok(_) = socket.send_to(&command_bytes, node.addr) {
+                        if socket.send_to(&command_bytes, node.addr).is_ok() {
                             true
                         } else {
                             // If we fail to send, the node is probably disconnected and we should remove it

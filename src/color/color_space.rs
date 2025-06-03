@@ -19,6 +19,7 @@ impl std::fmt::Display for RgbColorSpace {
     }
 }
 
+#[allow(clippy::excessive_precision)]
 impl RgbColorSpace {
     pub fn rgb_to_xyz(self) -> nalgebra::SMatrix<f32, 3, 3> {
         match self {

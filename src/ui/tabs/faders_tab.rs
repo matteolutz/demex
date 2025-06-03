@@ -28,13 +28,12 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     ),
                 );
                 ui.label(
-                    egui::RichText::from(format!(
-                        "{}",
+                    egui::RichText::from(
                         updatable_handler
                             .executor(*id)
                             .unwrap()
-                            .display_name(&preset_handler)
-                    ))
+                            .display_name(&preset_handler),
+                    )
                     .small(),
                 );
 

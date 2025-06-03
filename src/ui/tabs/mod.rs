@@ -3,10 +3,9 @@ use egui_dock::{DockArea, DockState, Style, TabViewer};
 use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};
 
-use crate::ui::tabs::timecode_clock_tab::ClockComponent;
-
 use super::DemexUiContext;
 
+pub mod clock_tab;
 pub mod color_picker_tab;
 pub mod empty_tab;
 pub mod encoders_tab;
@@ -20,7 +19,6 @@ pub mod performance_tab;
 pub mod preset_grid_tab;
 pub mod sequence_editor_tab;
 pub mod sequences_list_tab;
-pub mod timecode_clock_tab;
 pub mod timing_tab;
 
 pub struct DemexAddedTab {
@@ -82,7 +80,9 @@ impl DemexTab {
                 sequence_editor_tab::SequenceEditorTab::new(context).show(ui)
             }
             DemexTab::Encoders => encoders_tab::ui(ui, context),
-            DemexTab::TimecodeClock => ClockComponent::new("DemexClockComponent", context).show(ui),
+            DemexTab::TimecodeClock => {
+                clock_tab::ClockComponent::new("DemexClockComponent", context).show(ui)
+            }
             DemexTab::Patch => {
                 let mut patch_view_component = patch_tab::PatchViewComponent::new(context);
                 patch_view_component.show(ui);

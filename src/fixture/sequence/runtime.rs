@@ -204,7 +204,7 @@ impl SequenceRuntime {
         channel: &gdtf::dmx_mode::DmxChannel,
         priority: FixtureChannelValuePriority,
     ) -> Option<FadeFixtureChannelValue> {
-        return self.tracked_values.get(&fixture.id()).and_then(|values| {
+        self.tracked_values.get(&fixture.id()).and_then(|values| {
             values.iter().find_map(|(value_channel_name, values)| {
                 if value_channel_name == channel.name().as_ref() {
                     let mut value = FixtureChannelValue3::Home;
@@ -221,7 +221,7 @@ impl SequenceRuntime {
                     None
                 }
             })
-        });
+        })
     }
 
     pub fn update_cue_values<'a>(
