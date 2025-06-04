@@ -282,7 +282,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                             ]);
                         }
                         PresetGridButtonQuickMenuActions::Edit => {
-                            todo!()
+                            context
+                                .window_handler
+                                .add_window(DemexWindow::Edit(DemexEditWindow::EditMacro(id)));
                         }
                         _ => {}
                     }

@@ -26,6 +26,7 @@ pub enum DemexEditWindow {
     EditSequenceCue(u32, CueIdx),
     EditExecutor(u32),
     EditPreset(FixturePresetId),
+    EditMacro(u32),
 
     EditPreset2(FixturePresetId),
 
@@ -54,6 +55,7 @@ impl DemexEditWindow {
                 format!("Preset {}", preset_id)
             }
             Self::EditGroup(group_id) => format!("Group {}", group_id),
+            Self::EditMacro(macro_id) => format!("Macro {}", macro_id),
             Self::ConfigOverview => "Config".to_owned(),
             Self::Config(config_type) => format!("Config {:?}", config_type),
         }
@@ -140,6 +142,9 @@ impl DemexEditWindow {
                 let group = preset_handler.get_group_mut(*group_id)?;
 
                 edit_group_ui(ui, group, fixture_handler);
+            }
+            Self::EditMacro(macro_id) => {
+                Probe::new(preset_handler.get_macro_mut(*macro_id)?).show(ui);
             }
             Self::ConfigOverview => {
                 ui.heading("Config overview");

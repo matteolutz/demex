@@ -381,6 +381,12 @@ impl PresetHandler {
             .ok_or(PresetHandlerError::PresetNotFound(id))
     }
 
+    pub fn get_macro_mut(&mut self, id: u32) -> Result<&mut MMacro, PresetHandlerError> {
+        self.macros
+            .get_mut(&id)
+            .ok_or(PresetHandlerError::PresetNotFound(id))
+    }
+
     pub fn next_macro_id(&self) -> u32 {
         self.macros.keys().max().unwrap_or(&0) + 1
     }

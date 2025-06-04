@@ -446,7 +446,7 @@ impl FixturePreset {
 
                 Ok(updated)
             }
-            FixturePresetData::FeatureEffect { .. } => todo!(),
+            FixturePresetData::FeatureEffect { .. } => Ok(0),
         }
     }
 }
