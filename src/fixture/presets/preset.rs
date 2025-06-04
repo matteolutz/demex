@@ -181,18 +181,20 @@ impl FixturePreset {
                     // let channel = dmx_channel.logical_channels[0];
 
                     // check, if the channel attribute belongs into the correct feature group
-                    if dmx_channel.logical_channels[0]
-                        .attribute(fixture_type)
-                        .and_then(|attribute| {
-                            attribute.feature(&fixture_type.attribute_definitions)
-                        })
-                        .and_then(|feature| {
-                            FixtureChannel3FeatureType::from_str(
-                                feature.name.as_ref().unwrap().as_ref(),
-                            )
-                            .ok()
-                        })
-                        .is_none_or(|feature| feature.feature_group() != feature_group)
+                    // if not, skip it (continue)
+                    if feature_group != FixtureChannel3FeatureGroup::All
+                        && dmx_channel.logical_channels[0]
+                            .attribute(fixture_type)
+                            .and_then(|attribute| {
+                                attribute.feature(&fixture_type.attribute_definitions)
+                            })
+                            .and_then(|feature| {
+                                FixtureChannel3FeatureType::from_str(
+                                    feature.name.as_ref().unwrap().as_ref(),
+                                )
+                                .ok()
+                            })
+                            .is_none_or(|feature| feature.feature_group() != feature_group)
                     {
                         continue;
                     }

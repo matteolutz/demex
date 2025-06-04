@@ -57,45 +57,51 @@ pub fn edit_effect_ui(
                         )
                         .show(ui);
 
-                        egui::ScrollArea::vertical()
-                            .id_salt(format!("{}EffectPart{}Attributes", top_level_id, idx))
-                            .auto_shrink(emath::Vec2b::new(false, true))
-                            .max_width(ui.available_width())
-                            .max_height(300.0)
-                            .show(ui, |ui| {
-                                ui.vertical(|ui| {
-                                    for attribute in
-                                        FixtureChannel3Attribute::iter().filter(|attribute| {
-                                            attribute.feature().feature_group() == feature_group
-                                        })
-                                    {
-                                        let attribute_string = attribute.to_string();
-                                        let was_selected =
-                                            part.attributes().contains(&attribute_string);
-                                        let mut is_selected = was_selected;
+                        ui.vertical(|ui| {
+                            egui::ScrollArea::vertical()
+                                .id_salt(format!("{}EffectPart{}Attributes", top_level_id, idx))
+                                .auto_shrink(emath::Vec2b::new(false, true))
+                                .max_width(ui.available_width())
+                                .max_height(300.0)
+                                .show(ui, |ui| {
+                                    ui.vertical(|ui| {
+                                        for attribute in
+                                            FixtureChannel3Attribute::iter().filter(|attribute| {
+                                                feature_group == FixtureChannel3FeatureGroup::All
+                                                    || attribute.feature().feature_group()
+                                                        == feature_group
+                                            })
+                                        {
+                                            let attribute_string = attribute.to_string();
+                                            let was_selected =
+                                                part.attributes().contains(&attribute_string);
+                                            let mut is_selected = was_selected;
 
-                                        ui.checkbox(&mut is_selected, attribute_string.clone());
+                                            ui.checkbox(&mut is_selected, attribute_string.clone());
 
-                                        if is_selected != was_selected {
-                                            if is_selected {
-                                                part.attributes_mut().push(attribute_string);
-                                            } else {
-                                                part.attributes_mut().retain(|attribute| {
-                                                    attribute != &attribute_string
-                                                });
+                                            if is_selected != was_selected {
+                                                if is_selected {
+                                                    part.attributes_mut().push(attribute_string);
+                                                } else {
+                                                    part.attributes_mut().retain(|attribute| {
+                                                        attribute != &attribute_string
+                                                    });
+                                                }
                                             }
                                         }
-                                    }
-
-                                    egui_probe::Probe::new(part.phase_offset_mut())
-                                        .with_header("Phase offset")
-                                        .show(ui);
-
-                                    egui_probe::Probe::new(part.phase_multiplier_mut())
-                                        .with_header("Phase multiplier")
-                                        .show(ui);
+                                    });
                                 });
-                            });
+
+                            ui.add_space(10.0);
+
+                            egui_probe::Probe::new(part.phase_offset_mut())
+                                .with_header("Phase offset")
+                                .show(ui);
+
+                            egui_probe::Probe::new(part.phase_multiplier_mut())
+                                .with_header("Phase multiplier")
+                                .show(ui);
+                        });
                     });
                 });
 

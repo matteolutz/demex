@@ -1,3 +1,4 @@
+use gdtf::values::DmxValue;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -834,9 +835,10 @@ impl GdtfFixture {
         let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
 
         let mut data = vec![0u8; self.address_footprint as usize];
+        let mut dynamic_data: HashMap<String, DmxValue> = HashMap::new();
 
         // loop through dmx_channels
-        for dmx_channel in &dmx_mode.dmx_channels {
+        for dmx_channel in dmx_mode.dmx_channels.iter() {
             let offsets = match &dmx_channel.offset {
                 Some(offsets) => offsets,
                 None => continue,
@@ -852,6 +854,7 @@ impl GdtfFixture {
                     fixture_types,
                     self,
                     dmx_channel,
+                    &mut dynamic_data,
                     grand_master,
                     preset_handler,
                     timing_handler,
@@ -859,6 +862,9 @@ impl GdtfFixture {
                 .ok_or(FixtureError::GdtfChannelValueNotConvertable(
                     dmx_channel.name().as_ref().to_owned(),
                 ))?;
+
+            dynamic_data.insert(dmx_channel.name().as_ref().to_string(), dmx_value);
+
             let mut real_dmx_value = dmx_value.to(offsets.len() as u8);
 
             for offset in offsets.iter().rev() {

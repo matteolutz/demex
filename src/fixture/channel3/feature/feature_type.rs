@@ -7,6 +7,7 @@ use super::feature_group::FixtureChannel3FeatureGroup;
 #[derive(
     Debug, Copy, Clone, strum_macros::EnumIter, PartialEq, Eq, Serialize, Deserialize, Default,
 )]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum FixtureChannel3FeatureType {
     #[default]
     Dimmer,

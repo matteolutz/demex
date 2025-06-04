@@ -1,5 +1,6 @@
 use std::{collections::HashMap, time};
 
+use gdtf::values::DmxValue;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
@@ -297,6 +298,7 @@ impl FixtureChannelValue3 {
         fixture: &GdtfFixture,
         fixture_types: &FixtureTypeList,
         dmx_mode: &gdtf::dmx_mode::DmxMode,
+        dynamic_data: &mut HashMap<String, DmxValue>,
         values: &HashMap<String, FixtureChannelValue3>,
         channel_function: &gdtf::dmx_mode::ChannelFunction,
         grand_master: f32,
@@ -309,20 +311,27 @@ impl FixtureChannelValue3 {
         });
         relation.map(|rel| {
             let relation_master = rel.master(dmx_mode).unwrap();
+            if let Some(dynamic_value) = dynamic_data.get(relation_master.name().as_ref()) {
+                return *dynamic_value;
+            }
+
             let relation_master_value = values.get(relation_master.name().as_ref()).unwrap();
 
-            relation_master_value
+            let value = relation_master_value
                 ._to_dmx(
                     fixture,
                     fixture_types,
                     dmx_mode,
                     relation_master,
+                    dynamic_data,
                     values,
                     grand_master,
                     preset_handler,
                     timing_handler,
                 )
-                .unwrap()
+                .unwrap();
+            dynamic_data.insert(relation_master.name().as_ref().to_string(), value);
+            value
         })
     }
 
@@ -332,6 +341,7 @@ impl FixtureChannelValue3 {
         fixture_types: &FixtureTypeList,
         fixture: &GdtfFixture,
         dmx_channel: &gdtf::dmx_mode::DmxChannel,
+        dynamic_data: &mut HashMap<String, DmxValue>,
         grand_master: f32,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
@@ -344,6 +354,7 @@ impl FixtureChannelValue3 {
             fixture_types,
             dmx_mode,
             dmx_channel,
+            dynamic_data,
             values,
             grand_master,
             preset_handler,
@@ -357,6 +368,7 @@ impl FixtureChannelValue3 {
         fixture_types: &FixtureTypeList,
         dmx_mode: &gdtf::dmx_mode::DmxMode,
         dmx_channel: &gdtf::dmx_mode::DmxChannel,
+        dynamic_data: &mut HashMap<String, DmxValue>,
         values: &HashMap<String, FixtureChannelValue3>,
         grand_master: f32,
         preset_handler: &PresetHandler,
@@ -370,6 +382,7 @@ impl FixtureChannelValue3 {
                     fixture,
                     fixture_types,
                     dmx_mode,
+                    dynamic_data,
                     values,
                     f,
                     grand_master,
@@ -395,6 +408,7 @@ impl FixtureChannelValue3 {
                     fixture,
                     fixture_types,
                     dmx_mode,
+                    dynamic_data,
                     values,
                     channel_function,
                     grand_master,
@@ -433,6 +447,7 @@ impl FixtureChannelValue3 {
                     fixture,
                     fixture_types,
                     dmx_mode,
+                    dynamic_data,
                     values,
                     channel_function,
                     grand_master,
@@ -459,6 +474,7 @@ impl FixtureChannelValue3 {
                         fixture_types,
                         dmx_mode,
                         dmx_channel,
+                        dynamic_data,
                         values,
                         grand_master,
                         preset_handler,
@@ -473,6 +489,7 @@ impl FixtureChannelValue3 {
                             fixture_types,
                             dmx_mode,
                             dmx_channel,
+                            dynamic_data,
                             values,
                             grand_master,
                             preset_handler,
@@ -484,6 +501,7 @@ impl FixtureChannelValue3 {
                             fixture_types,
                             dmx_mode,
                             dmx_channel,
+                            dynamic_data,
                             values,
                             grand_master,
                             preset_handler,
@@ -496,6 +514,7 @@ impl FixtureChannelValue3 {
                         fixture_types,
                         dmx_mode,
                         dmx_channel,
+                        dynamic_data,
                         values,
                         grand_master,
                         preset_handler,
@@ -506,6 +525,7 @@ impl FixtureChannelValue3 {
                         fixture_types,
                         dmx_mode,
                         dmx_channel,
+                        dynamic_data,
                         values,
                         grand_master,
                         preset_handler,

@@ -25,6 +25,12 @@ impl<'a> SequenceEditorTab<'a> {
             egui::TextEdit::singleline(sequence.name_mut()).show(ui);
             ui.add_space(20.0);
 
+            egui_probe::Probe::new(sequence.stop_behavior_mut())
+                .with_header("Stop behavior")
+                .show(ui);
+
+            ui.add_space(20.0);
+
             egui_extras::TableBuilder::new(ui)
                 .columns(egui_extras::Column::auto().at_least(20.0), 2)
                 .column(egui_extras::Column::remainder().at_least(100.0))

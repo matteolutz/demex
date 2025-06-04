@@ -121,6 +121,10 @@ impl Sequence {
         self.stop_behavior
     }
 
+    pub fn stop_behavior_mut(&mut self) -> &mut SequenceStopBehavior {
+        &mut self.stop_behavior
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }

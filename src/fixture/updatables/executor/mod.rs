@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, str::FromStr};
 
 use fader_function::DemexExecutorFaderFunction;
 use serde::{Deserialize, Serialize};
@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 pub mod fader_function;
 
 use crate::fixture::{
+    channel3::feature::feature_type::FixtureChannel3FeatureType,
     error::FixtureError,
     gdtf::GdtfFixture,
     handler::{FixtureHandler, FixtureTypeList},
@@ -73,8 +74,8 @@ impl DemexExecutor {
         &mut self.runtime
     }
 
-    pub fn fader_function(&self) -> DemexExecutorFaderFunction {
-        self.fader_function
+    pub fn fader_function(&self) -> &DemexExecutorFaderFunction {
+        &self.fader_function
     }
 
     pub fn fader_function_mut(&mut self) -> &mut DemexExecutorFaderFunction {
@@ -195,30 +196,41 @@ impl DemexExecutor {
             1.0
         };
 
-        let intensity_multiplier = if self.fader_function == DemexExecutorFaderFunction::Intensity {
-            self.value
-        } else {
-            1.0
-        };
+        let (fixture_type, _) = fixture.fixture_type_and_dmx_mode(fixture_types).unwrap();
 
-        let channel_attribute = channel.logical_channels[0]
-            .attribute(fixture.fixture_type_and_dmx_mode(fixture_types).unwrap().0);
+        let channel_feature = channel.logical_channels[0]
+            .attribute(fixture_type)
+            .and_then(|attribute| attribute.feature(&fixture_type.attribute_definitions));
 
         self.runtime
             .channel_value(fixture, channel, self.priority)
-            .map(|value| {
-                if self.fader_function == DemexExecutorFaderFunction::FadeAll {
-                    return value.multiply(self.value);
+            .map(|value| match &self.fader_function {
+                DemexExecutorFaderFunction::FadeAll => value.multiply(self.value),
+                DemexExecutorFaderFunction::Intensity => {
+                    if channel_feature
+                        .is_some_and(|feature| feature.name.as_ref().unwrap().as_ref() == "Dimmer")
+                    {
+                        value.multiply(self.value)
+                    } else {
+                        value
+                    }
                 }
-
-                if channel_attribute
-                    .and_then(|attribute| attribute.name.as_ref())
-                    .is_some_and(|attribute_name| attribute_name.as_ref() == "Dimmer")
-                {
-                    value.multiply(intensity_multiplier)
-                } else {
-                    value
+                DemexExecutorFaderFunction::FadeFeatures(features) => {
+                    if channel_feature
+                        .and_then(|feature| {
+                            FixtureChannel3FeatureType::from_str(
+                                feature.name.as_ref().unwrap().as_ref(),
+                            )
+                            .ok()
+                        })
+                        .is_some_and(|feature| features.contains(&feature))
+                    {
+                        value.multiply(self.value)
+                    } else {
+                        value
+                    }
                 }
+                _ => value,
             })
             .ok_or(FixtureError::GdtfChannelValueNotFound(
                 channel.name().as_ref().to_owned(),
