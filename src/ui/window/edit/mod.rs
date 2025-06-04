@@ -13,6 +13,7 @@ use crate::{
         updatables::UpdatableHandler,
     },
     parser::nodes::action::ConfigTypeActionData,
+    show::ui::DemexShowUiConfig,
     ui::error::DemexUiError,
 };
 
@@ -78,6 +79,7 @@ impl DemexEditWindow {
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         patch: &mut Patch,
+        ui_config: &mut DemexShowUiConfig,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Self::EditSequence(sequence_id) => {
@@ -162,6 +164,11 @@ impl DemexEditWindow {
                 }
                 ConfigTypeActionData::Patch => {
                     ui.heading("Patch");
+                }
+                ConfigTypeActionData::Ui => {
+                    ui.heading("UI Config");
+
+                    Probe::new(ui_config).with_header("").show(ui);
                 }
             },
         };

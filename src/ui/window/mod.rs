@@ -3,8 +3,11 @@ use std::sync::Arc;
 use edit::DemexEditWindow;
 use parking_lot::RwLock;
 
-use crate::fixture::{
-    handler::FixtureHandler, patch::Patch, presets::PresetHandler, updatables::UpdatableHandler,
+use crate::{
+    fixture::{
+        handler::FixtureHandler, patch::Patch, presets::PresetHandler, updatables::UpdatableHandler,
+    },
+    show::ui::DemexShowUiConfig,
 };
 
 use super::{
@@ -57,6 +60,7 @@ impl DemexWindowHandler {
         preset_handler: &mut Arc<RwLock<PresetHandler>>,
         updatable_handler: &mut Arc<RwLock<UpdatableHandler>>,
         patch: &mut Arc<RwLock<Patch>>,
+        ui_config: &mut DemexShowUiConfig,
     ) {
         for i in 0..self.windows.len() {
             if self.windows[i].ui(
@@ -65,6 +69,7 @@ impl DemexWindowHandler {
                 preset_handler,
                 updatable_handler,
                 patch,
+                ui_config,
             ) {
                 self.windows.remove(i);
             }
@@ -135,6 +140,7 @@ impl DemexWindow {
         preset_handler: &mut Arc<RwLock<PresetHandler>>,
         updatable_handler: &mut Arc<RwLock<UpdatableHandler>>,
         patch: &mut Arc<RwLock<Patch>>,
+        ui_config: &mut DemexShowUiConfig,
     ) -> bool {
         let mut window = egui::Window::new(self.title())
             .interactable(true)
@@ -191,6 +197,7 @@ impl DemexWindow {
                                 &mut preset_handler,
                                 &mut updatable_handler,
                                 &mut patch,
+                                ui_config,
                             ) {
                                 ui.vertical(|ui| {
                                     ui.colored_label(

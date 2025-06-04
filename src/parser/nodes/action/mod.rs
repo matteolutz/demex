@@ -70,6 +70,7 @@ impl<T: Copy> From<ValueOrRange<T>> for RangeInclusive<T> {
 pub enum ConfigTypeActionData {
     Output,
     Patch,
+    Ui,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -172,6 +172,7 @@ impl eframe::App for DemexUiApp {
             &mut self.context.preset_handler,
             &mut self.context.updatable_handler,
             &mut self.context.patch,
+            &mut self.ui_config,
         );
 
         for (idx, viewport) in self
