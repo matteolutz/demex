@@ -3,13 +3,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum FixtureLayoutDecoration {
     Label {
-        pos: egui::Pos2,
+        pos: emath::Pos2,
         text: String,
         font_size: f32,
     },
     Rect {
-        min: egui::Pos2,
-        max: egui::Pos2,
+        min: emath::Pos2,
+        max: emath::Pos2,
         stroke_width: f32,
     },
 }
@@ -25,17 +25,17 @@ pub enum FixtureLayoutEntryType {
 pub struct FixtureLayoutEntry {
     fixture_id: u32,
     // offset to center
-    position: egui::Pos2,
+    position: emath::Pos2,
     // size
-    size: egui::Vec2,
+    size: emath::Vec2,
     entry_type: FixtureLayoutEntryType,
 }
 
 impl FixtureLayoutEntry {
     pub fn new(
         fixture_id: u32,
-        position: egui::Pos2,
-        size: egui::Vec2,
+        position: emath::Pos2,
+        size: emath::Vec2,
         entry_type: FixtureLayoutEntryType,
     ) -> Self {
         Self {
@@ -50,11 +50,11 @@ impl FixtureLayoutEntry {
         self.fixture_id
     }
 
-    pub fn position(&self) -> &egui::Pos2 {
+    pub fn position(&self) -> &emath::Pos2 {
         &self.position
     }
 
-    pub fn size(&self) -> &egui::Vec2 {
+    pub fn size(&self) -> &emath::Vec2 {
         &self.size
     }
 

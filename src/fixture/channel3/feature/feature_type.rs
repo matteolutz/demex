@@ -7,6 +7,7 @@ use super::feature_group::FixtureChannel3FeatureGroup;
 #[derive(
     Debug, Copy, Clone, strum_macros::EnumIter, PartialEq, Eq, Serialize, Deserialize, Default,
 )]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum FixtureChannel3FeatureType {
     #[default]
     Dimmer,
@@ -70,7 +71,7 @@ impl FromStr for FixtureChannel3FeatureType {
 }
 
 impl FixtureChannel3FeatureType {
-    pub fn attributes(&self) -> &[&str] {
+    pub fn attributes(&self) -> &[&'static str] {
         match self {
             Self::Dimmer => &["Dimmer"],
             Self::PanTilt => &[
@@ -264,6 +265,7 @@ impl FixtureChannel3FeatureType {
                 "LampPowerMode",
                 "Fans",
             ],
+            Self::Gobo => &["Gobo(n)"],
             _ => &[],
         }
     }

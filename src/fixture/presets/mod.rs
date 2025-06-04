@@ -20,7 +20,8 @@ use super::{
         channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
         feature::feature_group::FixtureChannel3FeatureGroup,
     },
-    effect::feature::{runtime::FeatureEffectRuntime, FeatureEffect},
+    effect::feature::runtime::FeatureEffectRuntime,
+    effect2::effect::Effect2,
     gdtf::GdtfFixture,
     handler::{error::FixtureHandlerError, FixtureHandler, FixtureTypeList},
     selection::FixtureSelection,
@@ -140,12 +141,7 @@ impl PresetHandler {
             id.feature_group,
         )?;
 
-        let preset = FixturePreset::new(
-            id,
-            name,
-            id.feature_group,
-            FixturePresetData::Default { data },
-        )?;
+        let preset = FixturePreset::new(id, name, FixturePresetData::Default { data })?;
 
         self.presets.insert(id, preset);
         Ok(())
@@ -163,9 +159,8 @@ impl PresetHandler {
         let preset = FixturePreset::new(
             id,
             name,
-            id.feature_group,
             FixturePresetData::FeatureEffect {
-                runtime: FeatureEffectRuntime::new(FeatureEffect::default()),
+                runtime: FeatureEffectRuntime::new(Effect2::default()),
             },
         )?;
 
@@ -561,9 +556,7 @@ impl PresetHandler {
             cue_data,
             selection,
             0.0,
-            None,
             0.0,
-            None,
             0.0,
             CueTiming::default(),
             CueTrigger::Manual,
@@ -639,5 +632,28 @@ impl PresetHandler {
             .remove(&id)
             .ok_or(PresetHandlerError::PresetNotFound(id))?;
         Ok(())
+    }
+
+    pub fn delete_sequence_cues(
+        &mut self,
+        sequence_id: u32,
+        cue_from: CueIdx,
+        cue_to: CueIdx,
+    ) -> Result<usize, PresetHandlerError> {
+        if cue_from > cue_to {
+            return Err(PresetHandlerError::InvalidCueRange(cue_from, cue_to));
+        }
+
+        let sequence = self
+            .sequences
+            .get_mut(&sequence_id)
+            .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?;
+
+        let initial_len = sequence.cues().len();
+        sequence
+            .cues_mut()
+            .retain(|c| c.cue_idx() < cue_from || c.cue_idx() > cue_to);
+
+        Ok(initial_len - sequence.cues().len())
     }
 }

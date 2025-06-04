@@ -1,3 +1,5 @@
+use std::time;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -16,6 +18,7 @@ pub struct RecallSequenceCueArgs {
 impl FunctionArgs for RecallSequenceCueArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,

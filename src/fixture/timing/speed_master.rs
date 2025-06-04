@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::tap::TapChain;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SpeedMasterValue {
     bpm: f32,
 

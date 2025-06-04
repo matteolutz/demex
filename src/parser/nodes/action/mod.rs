@@ -1,30 +1,33 @@
-use std::ops::RangeInclusive;
+use std::{ops::RangeInclusive, time};
 
 use functions::{
     assign_function::{AssignButtonArgs, AssignFaderArgs},
     create_function::{
-        CreateEffectPresetArgs, CreateExecutorArgs, CreateFaderArgs, CreateMacroArgs,
-        CreateSequenceArgs,
+        CreateEffectPresetArgs, CreateExecutorArgs, CreateMacroArgs, CreateSequenceArgs,
     },
     delete_function::DeleteArgs,
+    go_function::ExecutorGoArgs,
     recall_function::RecallSequenceCueArgs,
     record_function::{
         RecordGroupArgs, RecordPresetArgs, RecordSequenceCueArgs, RecordSequenceCueShorthandArgs,
     },
     rename_function::RenameObjectArgs,
     set_function::{SetFeatureValueArgs, SetFixturePresetArgs},
+    stop_function::ExecutorStopArgs,
     update_function::{UpdatePresetArgs, UpdateSequenceCueArgs},
     FunctionArgs,
 };
 use serde::{Deserialize, Serialize};
+use strum::EnumIter;
+
+use crate::utils::serde::approx_instant;
 
 use crate::{
     fixture::{
-        handler::FixtureHandler, patch::Patch, presets::PresetHandler, timing::TimingHandler,
-        updatables::UpdatableHandler,
+        handler::FixtureHandler, patch::Patch, presets::PresetHandler, selection::FixtureSelection,
+        timing::TimingHandler, updatables::UpdatableHandler,
     },
     input::{error::DemexInputDeviceError, DemexInputDeviceHandler},
-    ui::{constants::INFO_TEXT, window::edit::DemexEditWindow},
 };
 
 use self::{error::ActionRunError, result::ActionRunResult};
@@ -36,6 +39,7 @@ use super::{
 
 pub mod error;
 pub mod functions;
+pub mod queue;
 pub mod result;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -62,39 +66,56 @@ impl<T: Copy> From<ValueOrRange<T>> for RangeInclusive<T> {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, EnumIter)]
 pub enum ConfigTypeActionData {
     Output,
+    Patch,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeferredAction {
+    pub action: Action,
+
+    #[serde(with = "approx_instant")]
+    pub issued_at: time::Instant,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum Action {
+    // Set
     SetFeatureValue(SetFeatureValueArgs),
     SetFixturePreset(SetFixturePresetArgs),
 
+    // Home
     Home(HomeableObject),
     HomeAll,
 
+    // Record
     RecordPreset(RecordPresetArgs),
     RecordGroup2(RecordGroupArgs),
     RecordSequenceCue(RecordSequenceCueArgs),
     RecordSequenceCueShorthand(RecordSequenceCueShorthandArgs),
 
+    // Reanme
     Rename(RenameObjectArgs),
 
+    // Create
     CreateSequence(CreateSequenceArgs),
     CreateExecutor(CreateExecutorArgs),
-    CreateFader(CreateFaderArgs),
     CreateMacro(CreateMacroArgs),
     CreateEffectPreset(CreateEffectPresetArgs),
 
+    // Update
     UpdatePreset(UpdatePresetArgs),
     UpdateSequenceCue(UpdateSequenceCueArgs),
 
+    // Recall
     RecallSequenceCue(RecallSequenceCueArgs),
 
+    // Delete
     Delete(DeleteArgs),
 
+    // Edit
     Edit(Object),
 
     // Assign
@@ -120,6 +141,11 @@ pub enum Action {
     Nuzul,
     Sueud,
 
+    // Internal
+    InternalSetFixtureSelection(Option<FixtureSelection>),
+    InternalExecutorGo(ExecutorGoArgs),
+    InternalExecutorStop(ExecutorStopArgs),
+
     #[default]
     MatteoLutz,
 }
@@ -134,10 +160,12 @@ impl Action {
         input_device_handler: &mut DemexInputDeviceHandler,
         timing_handler: &mut TimingHandler,
         patch: &Patch,
+        issued_at: time::Instant,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
             // Set
             Self::SetFeatureValue(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -147,6 +175,7 @@ impl Action {
                 patch,
             ),
             Self::SetFixturePreset(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -168,6 +197,7 @@ impl Action {
 
             // Record
             Self::RecordPreset(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -177,6 +207,7 @@ impl Action {
                 patch,
             ),
             Self::RecordGroup2(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -186,6 +217,7 @@ impl Action {
                 patch,
             ),
             Self::RecordSequenceCue(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -195,6 +227,7 @@ impl Action {
                 patch,
             ),
             Self::RecordSequenceCueShorthand(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -206,6 +239,7 @@ impl Action {
 
             // Rename
             Self::Rename(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -217,6 +251,7 @@ impl Action {
 
             // Create
             Self::CreateSequence(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -226,6 +261,7 @@ impl Action {
                 patch,
             ),
             Self::CreateExecutor(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -235,15 +271,7 @@ impl Action {
                 patch,
             ),
             Self::CreateMacro(args) => args.run(
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-            ),
-            Self::CreateFader(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -253,6 +281,7 @@ impl Action {
                 patch,
             ),
             Self::CreateEffectPreset(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -264,6 +293,7 @@ impl Action {
 
             // Update
             Self::UpdatePreset(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -273,6 +303,7 @@ impl Action {
                 patch,
             ),
             Self::UpdateSequenceCue(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -283,6 +314,7 @@ impl Action {
             ),
 
             Self::RecallSequenceCue(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -294,6 +326,7 @@ impl Action {
 
             // Delete
             Self::Delete(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -303,6 +336,7 @@ impl Action {
                 patch,
             ),
 
+            #[cfg(feature = "ui")]
             Self::Edit(object) => object
                 .clone()
                 .edit_window()
@@ -325,16 +359,19 @@ impl Action {
             Self::Nuzul => Ok(ActionRunResult::Info("Going down...".to_owned())),
             Self::Sueud => Ok(ActionRunResult::Info("Going up...".to_owned())),
 
-            Self::Config(config_type) => Ok(ActionRunResult::EditWindow(DemexEditWindow::Config(
-                *config_type,
-            ))),
+            #[cfg(feature = "ui")]
+            Self::Config(config_type) => Ok(ActionRunResult::EditWindow(
+                crate::ui::window::edit::DemexEditWindow::Config(*config_type),
+            )),
 
+            #[cfg(feature = "ui")]
             Self::MatteoLutz => Ok(ActionRunResult::InfoWithLink(
-                INFO_TEXT.to_owned(),
+                crate::ui::constants::INFO_TEXT.to_owned(),
                 "https://matteolutz.de".to_owned(),
             )),
 
             Self::AssignFader(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -345,6 +382,7 @@ impl Action {
             ),
 
             Self::AssignButton(args) => args.run(
+                issued_at,
                 fixture_handler,
                 preset_handler,
                 fixture_selector_context,
@@ -362,6 +400,30 @@ impl Action {
                 device_idx,
                 fader_id,
             } => self.run_unassign_input_fader(input_device_handler, *device_idx, *fader_id),
+
+            Self::InternalSetFixtureSelection(selection) => {
+                Ok(ActionRunResult::UpdateSelectedFixtures(selection.clone()))
+            }
+            Self::InternalExecutorGo(args) => args.run(
+                issued_at,
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+                patch,
+            ),
+            Self::InternalExecutorStop(args) => args.run(
+                issued_at,
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+                patch,
+            ),
 
             #[allow(unreachable_patterns)]
             unimplemented_action => Err(ActionRunError::UnimplementedAction(
@@ -411,7 +473,7 @@ impl Action {
             ));
         }
 
-        Ok(ActionRunResult::UpdateSelectedFixtures(selection))
+        Ok(ActionRunResult::UpdateSelectedFixtures(Some(selection)))
     }
 
     pub fn run_delete_macro(

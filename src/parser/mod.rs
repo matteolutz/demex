@@ -3,17 +3,17 @@ use nodes::{
         functions::{
             assign_function::{AssignButtonArgs, AssignButtonArgsMode, AssignFaderArgs},
             create_function::{
-                CreateEffectPresetArgs, CreateExecutorArgs, CreateExecutorArgsCreationMode,
-                CreateFaderArgs, CreateFaderArgsCreationMode, CreateMacroArgs, CreateSequenceArgs,
+                CreateEffectPresetArgs, CreateExecutorArgs, CreateMacroArgs, CreateSequenceArgs,
             },
             delete_function::DeleteArgs,
             recall_function::RecallSequenceCueArgs,
             record_function::{
                 RecordChannelTypeSelector, RecordGroupArgs, RecordPresetArgs,
                 RecordSequenceCueArgs, RecordSequenceCueShorthandArgs,
+                RecordSequenceCueShorthandArgsId,
             },
             rename_function::RenameObjectArgs,
-            set_function::{SetFeatureValueArgs, SetFixturePresetArgs},
+            set_function::{SelectionOrSelector, SetFeatureValueArgs, SetFixturePresetArgs},
             update_function::{UpdateMode, UpdatePresetArgs, UpdateSequenceCueArgs},
         },
         ConfigTypeActionData, ValueOrRange,
@@ -27,6 +27,7 @@ use crate::{
         presets::preset::FixturePresetId, sequence::cue::CueIdx,
     },
     lexer::token::Token,
+    parser::nodes::action::functions::assign_function::AssignFaderArgsMode,
 };
 
 use self::{
@@ -225,13 +226,6 @@ impl<'a> Parser2<'a> {
             return Ok(HomeableObject::Executor(executor_id));
         }
 
-        if matches!(self.current_token()?, Token::KeywordFader) {
-            self.advance();
-            let fader_id = self.parse_integer()?;
-
-            return Ok(HomeableObject::Fader(fader_id));
-        }
-
         if matches!(self.current_token()?, Token::KeywordProgrammer) {
             self.advance();
 
@@ -422,7 +416,7 @@ impl<'a> Parser2<'a> {
         let preset = self.try_parse(Self::parse_specific_preset_or_range);
         if let Ok(preset_id) = preset {
             return Ok(Action::SetFixturePreset(SetFixturePresetArgs {
-                fixture_selector,
+                selection_or_selector: SelectionOrSelector::Selector(fixture_selector),
                 preset_id,
             }));
         }
@@ -688,8 +682,7 @@ impl<'a> Parser2<'a> {
                     channel_type_selector,
                 }))
             }
-            Token::KeywordExecutor | Token::KeywordFader => {
-                let id_type_token = self.current_token()?.clone();
+            Token::KeywordExecutor => {
                 self.advance();
 
                 let id = self.parse_integer()?;
@@ -708,18 +701,21 @@ impl<'a> Parser2<'a> {
                     RecordChannelTypeSelector::Active
                 };
 
+                let sequence_name = self.try_parse(Self::parse_as).ok();
+
                 Ok(Action::RecordSequenceCueShorthand(
                     RecordSequenceCueShorthandArgs {
-                        id: (id_type_token, id).try_into()?,
+                        id: RecordSequenceCueShorthandArgsId::ExecutorId(id),
                         cue_idx,
                         fixture_selector,
                         channel_type_selector,
+                        sequence_name,
                     },
                 ))
             }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
-                vec!["\"preset\"", "\"group\"", "\"sequence\""],
+                vec!["\"preset\"", "\"group\"", "\"sequence\"", "\"executor\""],
             )),
         }
     }
@@ -732,24 +728,6 @@ impl<'a> Parser2<'a> {
         let new_name = self.parse_string()?;
 
         Ok(Action::Rename(RenameObjectArgs { object, new_name }))
-    }
-
-    fn parse_create_fader_function(&mut self) -> Result<CreateFaderArgsCreationMode, ParseError> {
-        expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
-
-        match self.current_token()? {
-            Token::KeywordSequence => {
-                self.advance();
-
-                let sequence_id = self.parse_integer()?;
-
-                Ok(CreateFaderArgsCreationMode::Sequence(sequence_id))
-            }
-            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
-                unexpected_token.clone(),
-                vec!["\"sequence\""],
-            )),
-        }
     }
 
     fn parse_create_function(&mut self) -> Result<Action, ParseError> {
@@ -770,36 +748,13 @@ impl<'a> Parser2<'a> {
 
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
 
-                let creation_mode = match self.current_token()? {
-                    Token::KeywordSequence => {
-                        self.advance();
+                expect_and_consume_token!(self, Token::KeywordSequence, "\"sequence\"");
 
-                        let sequence_id = self.parse_integer()?;
-
-                        Ok(CreateExecutorArgsCreationMode::Sequence(sequence_id))
-                    }
-                    Token::KeywordEffect => {
-                        self.advance();
-
-                        Ok(CreateExecutorArgsCreationMode::Effect)
-                    }
-                    unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
-                        unexpected_token.clone(),
-                        vec!["\"sequence\"", "\"effect\""],
-                    )),
-                }?;
-
-                expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
-
-                let fixture_selector = self.parse_fixture_selector()?;
-
-                let name = self.try_parse(Self::parse_as).ok();
+                let sequence_id = self.parse_integer()?;
 
                 Ok(Action::CreateExecutor(CreateExecutorArgs {
                     id,
-                    creation_mode,
-                    fixture_selector,
-                    name,
+                    sequence_id,
                 }))
             }
             Token::KeywordMacro => {
@@ -816,21 +771,6 @@ impl<'a> Parser2<'a> {
                 Ok(Action::CreateMacro(CreateMacroArgs {
                     id,
                     action: Box::new(macro_action),
-                    name,
-                }))
-            }
-            Token::KeywordFader => {
-                self.advance();
-
-                let id = self.parse_integer_or_next()?;
-
-                let creation_mode = self.parse_create_fader_function()?;
-
-                let name = self.try_parse(Self::parse_as).ok();
-
-                Ok(Action::CreateFader(CreateFaderArgs {
-                    id,
-                    creation_mode,
                     name,
                 }))
             }
@@ -879,7 +819,7 @@ impl<'a> Parser2<'a> {
                     update_mode,
                 }))
             }
-            Token::KeywordSequence | Token::KeywordExecutor | Token::KeywordFader => {
+            Token::KeywordSequence | Token::KeywordExecutor => {
                 let id_type_keyword = self.current_token()?.clone();
 
                 self.advance();
@@ -993,9 +933,13 @@ impl<'a> Parser2<'a> {
                 self.advance();
                 Ok(Action::Config(ConfigTypeActionData::Output))
             }
+            Token::KeywordPatch => {
+                self.advance();
+                Ok(Action::Config(ConfigTypeActionData::Patch))
+            }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
-                vec!["\"output\""],
+                vec!["\"output\"", "\"patch\""],
             )),
         }
     }
@@ -1019,74 +963,57 @@ impl<'a> Parser2<'a> {
 
                 let executor_id = self.parse_integer()?;
 
-                let mode = match self.current_token()? {
-                    Token::KeywordGo => {
-                        self.advance();
-                        Ok(AssignButtonArgsMode::ExecutorStartAndNext(executor_id))
-                    }
-                    Token::KeywordStop => {
-                        self.advance();
-                        Ok(AssignButtonArgsMode::ExecutorStop(executor_id))
-                    }
-                    Token::KeywordFlash => {
-                        self.advance();
-
-                        let stomp = if matches!(self.current_token()?, Token::KeywordStomp) {
-                            self.advance();
-                            true
-                        } else {
-                            false
-                        };
-
-                        Ok(AssignButtonArgsMode::ExecutorFlash {
-                            id: executor_id,
-                            stomp,
-                        })
-                    }
-                    unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
-                        unexpected_token.clone(),
-                        vec!["\"go\"", "\"stop\"", "\"flash\""],
-                    )),
-                }?;
-
-                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
-
-                let (device_idx, button_id) = self.parse_float_individual()?;
-
-                Ok(Action::AssignButton(AssignButtonArgs {
-                    mode,
-                    device_idx: device_idx as usize,
-                    button_id,
-                }))
-            }
-            Token::KeywordFader => {
-                self.advance();
-
-                let fader_id = self.parse_integer()?;
-
-                let mut is_go_assign = false;
-                if matches!(self.current_token()?, Token::KeywordGo) {
+                if matches!(self.current_token()?, Token::KeywordFader) {
                     self.advance();
-                    is_go_assign = true;
-                }
 
-                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+                    expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
-                let (device_idx, input_fader_id) = self.parse_float_individual()?;
+                    let (device_idx, input_fader_id) = self.parse_float_individual()?;
 
-                if is_go_assign {
-                    let button_id = input_fader_id;
-
-                    Ok(Action::AssignButton(AssignButtonArgs {
-                        mode: AssignButtonArgsMode::FaderGo(fader_id),
-                        device_idx: device_idx as usize,
-                        button_id,
-                    }))
-                } else {
                     Ok(Action::AssignFader(AssignFaderArgs {
-                        fader_id,
+                        mode: AssignFaderArgsMode::Executor(executor_id),
                         device_idx: device_idx as usize,
                         input_fader_id,
+                    }))
+                } else {
+                    let mode = match self.current_token()? {
+                        Token::KeywordGo => {
+                            self.advance();
+                            Ok(AssignButtonArgsMode::ExecutorGo(executor_id))
+                        }
+                        Token::KeywordStop => {
+                            self.advance();
+                            Ok(AssignButtonArgsMode::ExecutorStop(executor_id))
+                        }
+                        Token::KeywordFlash => {
+                            self.advance();
+
+                            let stomp = if matches!(self.current_token()?, Token::KeywordStomp) {
+                                self.advance();
+                                true
+                            } else {
+                                false
+                            };
+
+                            Ok(AssignButtonArgsMode::ExecutorFlash {
+                                id: executor_id,
+                                stomp,
+                            })
+                        }
+                        unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                            unexpected_token.clone(),
+                            vec!["\"go\"", "\"stop\"", "\"flash\""],
+                        )),
+                    }?;
+
+                    expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+
+                    let (device_idx, button_id) = self.parse_float_individual()?;
+
+                    Ok(Action::AssignButton(AssignButtonArgs {
+                        mode,
+                        device_idx: device_idx as usize,
+                        button_id,
                     }))
                 }
             }
@@ -1153,6 +1080,19 @@ impl<'a> Parser2<'a> {
                     button_id,
                 }))
             }
+            Token::KeywordGrandmaster => {
+                self.advance();
+
+                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+
+                let (device_idx, input_fader_id) = self.parse_float_individual()?;
+
+                Ok(Action::AssignFader(AssignFaderArgs {
+                    mode: AssignFaderArgsMode::Grandmaster,
+                    device_idx: device_idx as usize,
+                    input_fader_id,
+                }))
+            }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
                 vec![
@@ -1161,6 +1101,7 @@ impl<'a> Parser2<'a> {
                     "\"preset\"",
                     "\"macro\"",
                     "\"tokens\"",
+                    "\"grandmaster\"",
                     "fixture selector",
                 ],
             )),

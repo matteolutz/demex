@@ -71,6 +71,7 @@ pub enum Token {
     KeywordNext,
     KeywordConfig,
     KeywordOutput,
+    KeywordPatch,
     KeywordFeature,
     KeywordAssign,
     KeywordUnassign,
@@ -83,6 +84,7 @@ pub enum Token {
     KeywordProgrammer,
     KeywordStomp,
     KeywordRecall,
+    KeywordGrandmaster,
 
     KeywordNuzul,
     KeywordSueud,
@@ -118,6 +120,7 @@ impl Token {
             Token::KeywordFull => TokenType::ValueKeyword,
             Token::KeywordHalf => TokenType::ValueKeyword,
             Token::KeywordOut => TokenType::ValueKeyword,
+            Token::KeywordPatch => TokenType::ValueKeyword,
 
             Token::KeywordHome => TokenType::ActionKeyword,
             Token::KeywordManSet => TokenType::ActionKeyword,
@@ -148,6 +151,7 @@ impl Token {
             Token::KeywordEffect => TokenType::ObjectKeyword,
             Token::KeywordButton => TokenType::ObjectKeyword,
             Token::KeywordProgrammer => TokenType::ObjectKeyword,
+            Token::KeywordGrandmaster => TokenType::ObjectKeyword,
 
             Token::KeywordThru => TokenType::OtherKeyword,
             Token::KeywordFor => TokenType::OtherKeyword,
@@ -233,6 +237,7 @@ impl std::fmt::Display for Token {
             Token::KeywordNext => write!(f, "next"),
             Token::KeywordConfig => write!(f, "config"),
             Token::KeywordOutput => write!(f, "output"),
+            Token::KeywordPatch => write!(f, "patch"),
             Token::KeywordControl => write!(f, "control"),
             Token::KeywordBeam => write!(f, "beam"),
             Token::KeywordFocus => write!(f, "focus"),
@@ -248,6 +253,7 @@ impl std::fmt::Display for Token {
             Token::KeywordProgrammer => write!(f, "programmer"),
             Token::KeywordStomp => write!(f, "stomp"),
             Token::KeywordRecall => write!(f, "recall"),
+            Token::KeywordGrandmaster => write!(f, "grandmaster"),
             Token::Eof => write!(f, "Eof"),
         }
     }

@@ -1,6 +1,5 @@
 use std::time;
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -10,38 +9,35 @@ use crate::{
         presets::{preset::FixturePresetId, PresetHandler},
         selection::FixtureSelection,
         timing::TimingHandler,
-        updatables::{
-            error::UpdatableHandlerError, executor::config::ExecutorConfig, UpdatableHandler,
-        },
+        updatables::UpdatableHandler,
     },
     lexer::token::Token,
     parser::nodes::{
-        action::Action,
+        action::{queue::ActionQueue, Action},
         fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
     },
 };
 
 use super::error::DemexInputDeviceError;
 
-#[derive(Debug, Serialize, Deserialize, EguiProbe, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum DemexInputButton {
-    ExecutorStartAndNext(u32),
+    ExecutorGo(u32),
     ExecutorStop(u32),
     ExecutorFlash {
         id: u32,
         stomp: bool,
     },
 
-    FaderGo(u32),
-
     SelectivePreset {
-        #[egui_probe(skip)]
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
         selection: Option<FixtureSelection>,
         preset_id: FixturePresetId,
     },
 
     FixtureSelector {
-        #[egui_probe(skip)]
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
         fixture_selector: FixtureSelector,
     },
 
@@ -50,12 +46,12 @@ pub enum DemexInputButton {
     },
 
     Macro {
-        #[egui_probe(skip)]
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
         action: Action,
     },
 
     TokenInsert {
-        #[egui_probe(skip)]
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
         tokens: Vec<Token>,
     },
 
@@ -72,45 +68,27 @@ impl DemexInputButton {
         timing_handler: &mut TimingHandler,
         patch: &Patch,
         fixture_selector_context: FixtureSelectorContext,
-        macro_exec_cue: &mut Vec<Action>,
+        action_queue: &mut ActionQueue,
         global_fixture_selection: &mut Option<FixtureSelection>,
         command_input: &mut Vec<Token>,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
             Self::ExecutorFlash { id, stomp } => {
                 updatable_handler
-                    .start_executor(*id, fixture_handler, preset_handler)
+                    .start_executor(*id, fixture_handler, preset_handler, 0.0)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
                 if *stomp {
                     updatable_handler.executor_stomp(*id);
                 }
             }
-            Self::ExecutorStartAndNext(executor_id) => {
-                let executor = updatable_handler.executor(*executor_id).ok_or(
-                    DemexInputDeviceError::UpdatableHandlerError(
-                        UpdatableHandlerError::UpdatableNotFound(*executor_id),
-                    ),
-                )?;
-
-                if matches!(executor.config(), ExecutorConfig::FeatureEffect { .. })
-                    && executor.is_started()
-                {
-                    updatable_handler
-                        .stop_executor(*executor_id, fixture_handler, preset_handler)
-                        .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
-                } else {
-                    updatable_handler
-                        .start_or_next_executor(*executor_id, fixture_handler, preset_handler, 0.0)
-                        .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
-                }
+            Self::ExecutorGo(executor_id) => {
+                updatable_handler
+                    .executor_go(*executor_id, fixture_handler, preset_handler, 0.0)
+                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
             }
             Self::ExecutorStop(executor_id) => updatable_handler
                 .stop_executor(*executor_id, fixture_handler, preset_handler)
-                .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
-            Self::FaderGo(fader_id) => updatable_handler
-                .fader_mut(*fader_id)
-                .and_then(|f| f.sequence_go(preset_handler))
                 .map_err(DemexInputDeviceError::UpdatableHandlerError)?,
             Self::SelectivePreset {
                 selection,
@@ -139,7 +117,7 @@ impl DemexInputButton {
                     .map_err(DemexInputDeviceError::PresetHandlerError)?;
             }
             Self::Macro { action } => {
-                macro_exec_cue.push(action.clone());
+                action_queue.enqueue_now(action.clone());
             }
             Self::FixtureSelector { fixture_selector } => {
                 *global_fixture_selection = Some(
@@ -168,16 +146,11 @@ impl DemexInputButton {
         updatable_handler: &mut UpdatableHandler,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
-            Self::ExecutorStartAndNext(executor_id) => {
-                let executor = updatable_handler.executor(*executor_id).ok_or(
-                    DemexInputDeviceError::UpdatableHandlerError(
-                        UpdatableHandlerError::UpdatableNotFound(*executor_id),
-                    ),
-                )?;
-
-                if matches!(executor.config(), ExecutorConfig::FeatureEffect { .. })
-                    && executor.is_started()
-                {}
+            Self::ExecutorGo(executor_id) => {
+                let _executor = updatable_handler
+                    .executor(*executor_id)
+                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+                // TODO
             }
             Self::ExecutorFlash { id, stomp } => {
                 updatable_handler

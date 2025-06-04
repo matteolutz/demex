@@ -5,16 +5,16 @@ use crate::{
 
 impl IntoEguiColor32 for &Token {}
 
-impl Into<eframe::egui::Color32> for &Token {
-    fn into(self) -> eframe::egui::Color32 {
+impl Into<ecolor::Color32> for &Token {
+    fn into(self) -> ecolor::Color32 {
         match self.token_type() {
-            TokenType::Literal | TokenType::ValueKeyword => eframe::egui::Color32::LIGHT_BLUE,
-            TokenType::Operator => eframe::egui::Color32::LIGHT_RED,
-            TokenType::ActionKeyword => eframe::egui::Color32::LIGHT_RED,
-            TokenType::ObjectKeyword => eframe::egui::Color32::YELLOW,
-            TokenType::ChannelTypeKeyword => eframe::egui::Color32::LIGHT_GREEN,
-            TokenType::OtherKeyword => eframe::egui::Color32::WHITE,
-            TokenType::Eof => eframe::egui::Color32::TRANSPARENT,
+            TokenType::Literal | TokenType::ValueKeyword => ecolor::Color32::LIGHT_BLUE,
+            TokenType::Operator => ecolor::Color32::LIGHT_RED,
+            TokenType::ActionKeyword => ecolor::Color32::LIGHT_RED,
+            TokenType::ObjectKeyword => ecolor::Color32::YELLOW,
+            TokenType::ChannelTypeKeyword => ecolor::Color32::LIGHT_GREEN,
+            TokenType::OtherKeyword => ecolor::Color32::WHITE,
+            TokenType::Eof => ecolor::Color32::TRANSPARENT,
         }
     }
 }

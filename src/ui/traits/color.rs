@@ -1,1 +1,1 @@
-pub trait IntoEguiColor32: Into<eframe::egui::Color32> {}
+pub trait IntoEguiColor32: Into<ecolor::Color32> {}

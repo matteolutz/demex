@@ -1,6 +1,5 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, f32, str::FromStr};
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -17,7 +16,6 @@ use crate::{
         handler::{FixtureHandler, FixtureTypeList},
         selection::FixtureSelection,
         timing::TimingHandler,
-        value_source::FixtureChannelValuePriority,
     },
     parser::nodes::{
         action::{functions::update_function::UpdateMode, ValueOrRange},
@@ -27,7 +25,8 @@ use crate::{
 
 use super::{error::PresetHandlerError, PresetHandler};
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Default, EguiProbe)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct FixturePresetId {
     pub feature_group: FixtureChannel3FeatureGroup,
     pub preset_id: u32,
@@ -116,10 +115,11 @@ pub enum FixturePresetTarget {
     None,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum FixturePresetData {
     Default {
-        #[egui_probe(skip)]
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
         data: HashMap<u32, HashMap<String, FixtureChannelValue3>>,
     },
     FeatureEffect {
@@ -135,15 +135,16 @@ impl Default for FixturePresetData {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct FixturePreset {
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     id: FixturePresetId,
 
     name: String,
 
     #[serde(default)]
-    display_color: Option<egui::Color32>,
+    display_color: Option<ecolor::Color32>,
 
     #[serde(default)]
     fade_up: f32,
@@ -180,18 +181,20 @@ impl FixturePreset {
                     // let channel = dmx_channel.logical_channels[0];
 
                     // check, if the channel attribute belongs into the correct feature group
-                    if dmx_channel.logical_channels[0]
-                        .attribute(fixture_type)
-                        .and_then(|attribute| {
-                            attribute.feature(&fixture_type.attribute_definitions)
-                        })
-                        .and_then(|feature| {
-                            FixtureChannel3FeatureType::from_str(
-                                feature.name.as_ref().unwrap().as_ref(),
-                            )
-                            .ok()
-                        })
-                        .is_none_or(|feature| feature.feature_group() != feature_group)
+                    // if not, skip it (continue)
+                    if feature_group != FixtureChannel3FeatureGroup::All
+                        && dmx_channel.logical_channels[0]
+                            .attribute(fixture_type)
+                            .and_then(|attribute| {
+                                attribute.feature(&fixture_type.attribute_definitions)
+                            })
+                            .and_then(|feature| {
+                                FixtureChannel3FeatureType::from_str(
+                                    feature.name.as_ref().unwrap().as_ref(),
+                                )
+                                .ok()
+                            })
+                            .is_none_or(|feature| feature.feature_group() != feature_group)
                     {
                         continue;
                     }
@@ -229,10 +232,9 @@ impl FixturePreset {
     pub fn new(
         id: FixturePresetId,
         name: Option<String>,
-        feature_group: FixtureChannel3FeatureGroup,
         data: FixturePresetData,
     ) -> Result<Self, PresetHandlerError> {
-        let name = name.unwrap_or(format!("{} Preset {}", feature_group.name(), id));
+        let name = name.unwrap_or(format!("Preset {}", id));
 
         Ok(Self {
             id,
@@ -245,6 +247,10 @@ impl FixturePreset {
 
     pub fn data(&self) -> &FixturePresetData {
         &self.data
+    }
+
+    pub fn data_mut(&mut self) -> &mut FixturePresetData {
+        &mut self.data
     }
 
     pub fn apply(
@@ -273,7 +279,7 @@ impl FixturePreset {
                 }
             }
             FixturePresetData::FeatureEffect { runtime } => {
-                for attribute in runtime.effect().get_attributes() {
+                for attribute in runtime.effect().attributes() {
                     // if the fixture doesn't have this feature type, skip
                     if let Ok(channels) = fixture.channels_for_attribute(fixture_types, attribute) {
                         for (dmx_channel, _, _) in channels {
@@ -330,8 +336,46 @@ impl FixturePreset {
         &mut self.name
     }
 
-    pub fn display_color(&self) -> Option<egui::Color32> {
+    pub fn display_color(&self) -> Option<ecolor::Color32> {
         self.display_color
+    }
+
+    pub fn display_color_mut(&mut self) -> &mut Option<ecolor::Color32> {
+        &mut self.display_color
+    }
+
+    pub fn values(
+        &self,
+        fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
+        _preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
+        state: Option<&FixtureChannelValue2PresetState>,
+    ) -> Vec<(String, FixtureChannelValue3)> {
+        match &self.data {
+            FixturePresetData::Default { data } => data
+                .get(&fixture.id())
+                .map(|values| {
+                    values
+                        .iter()
+                        .map(|(channel_name, value)| (channel_name.clone(), value.clone()))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default(),
+            FixturePresetData::FeatureEffect { runtime } => {
+                let fixture_offset = state
+                    .and_then(|state| state.selection().offset(fixture.id()))
+                    .unwrap_or_default();
+
+                runtime.get_values_with_started(
+                    fixture,
+                    fixture_types,
+                    fixture_offset,
+                    timing_handler,
+                    state.map(|state| state.started()),
+                )
+            }
+        }
     }
 
     pub fn value(
@@ -362,17 +406,16 @@ impl FixturePreset {
                     .and_then(|state| state.selection().offset(fixture.id()))
                     .unwrap_or_default();
 
-                let fade_val = runtime.get_channel_value_with_started(
-                    channel_name,
-                    fixture,
-                    fixture_types,
-                    fixture_offset,
-                    FixtureChannelValuePriority::default(),
-                    timing_handler,
-                    state.map(|state| state.started()),
-                );
-
-                fade_val.ok().map(|value| value.value().clone())
+                runtime
+                    .get_channel_value_with_started(
+                        channel_name,
+                        fixture,
+                        fixture_types,
+                        fixture_offset,
+                        timing_handler,
+                        state.map(|state| state.started()),
+                    )
+                    .ok()
             }
         };
 

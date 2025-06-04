@@ -1,3 +1,5 @@
+use std::time;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -18,6 +20,7 @@ pub struct DeleteArgs {
 impl FunctionArgs for DeleteArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -66,6 +69,34 @@ impl FunctionArgs for DeleteArgs {
                 }
             }
             (
+                Object::SequenceCue(sequence_id_from, cue_idx_from),
+                Object::SequenceCue(sequence_id_to, cue_idx_to),
+            ) => {
+                if sequence_id_from != sequence_id_to {
+                    return Err(ActionRunError::ActionNotImplementedForObjectRange(
+                        "Delete".to_owned(),
+                        self.object_range.clone(),
+                    ));
+                }
+
+                preset_handler
+                    .delete_sequence_cues(*sequence_id_from, *cue_idx_from, *cue_idx_to)
+                    .map_err(ActionRunError::PresetHandlerError)?;
+
+                if cue_idx_from == cue_idx_to {
+                    Ok(ActionRunResult::new())
+                } else {
+                    Ok(ActionRunResult::Info(format!(
+                        "Deleted cue {}.{} to {}.{} in sequence {}",
+                        cue_idx_from.0,
+                        cue_idx_from.1,
+                        cue_idx_to.0,
+                        cue_idx_to.1,
+                        sequence_id_from
+                    )))
+                }
+            }
+            (
                 Object::HomeableObject(homeable_object_from),
                 Object::HomeableObject(homeable_object_to),
             ) => match (homeable_object_from, homeable_object_to) {
@@ -75,14 +106,14 @@ impl FunctionArgs for DeleteArgs {
                 ) => {
                     let group_id_from = fixture_selector_from.try_as_group_id().ok_or(
                         ActionRunError::ActionNotImplementedForObject(
-                            "Rename".to_owned(),
+                            "Delete".to_owned(),
                             self.object_range.from().clone(),
                         ),
                     )?;
 
                     let group_id_to = fixture_selector_to.try_as_group_id().ok_or(
                         ActionRunError::ActionNotImplementedForObject(
-                            "Rename".to_owned(),
+                            "Delete".to_owned(),
                             self.object_range.to().clone(),
                         ),
                     )?;
@@ -106,7 +137,7 @@ impl FunctionArgs for DeleteArgs {
                     for id in *id_from..=*id_to {
                         if updatable_handler
                             .executor(id)
-                            .is_some_and(|exec| exec.is_started())
+                            .is_ok_and(|exec| exec.is_active())
                         {
                             return Err(ActionRunError::ExecutorIsRunning(id));
                         }
@@ -127,38 +158,13 @@ impl FunctionArgs for DeleteArgs {
                         )))
                     }
                 }
-                (HomeableObject::Fader(id_from), HomeableObject::Fader(id_to)) => {
-                    for id in *id_from..=*id_to {
-                        if updatable_handler
-                            .fader(id)
-                            .is_ok_and(|fader| fader.is_active())
-                        {
-                            return Err(ActionRunError::FaderIsActive(id));
-                        }
-                    }
-
-                    for id in *id_from..=*id_to {
-                        updatable_handler
-                            .delete_fader(id)
-                            .map_err(ActionRunError::UpdatableHandlerError)?;
-                    }
-
-                    if id_from == id_to {
-                        Ok(ActionRunResult::new())
-                    } else {
-                        Ok(ActionRunResult::Info(format!(
-                            "Deleted {} faders",
-                            id_to - id_from + 1
-                        )))
-                    }
-                }
                 _ => Err(ActionRunError::ActionNotImplementedForObjectRange(
                     "Delete".to_owned(),
                     self.object_range.clone(),
                 )),
             },
             _ => Err(ActionRunError::ActionNotImplementedForObjectRange(
-                "Rename".to_owned(),
+                "Delete".to_owned(),
                 self.object_range.clone(),
             )),
         }

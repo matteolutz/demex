@@ -1,6 +1,5 @@
 use std::{f32, time};
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -10,21 +9,20 @@ use crate::{
             error::EffectError,
             speed::{EffectSpeed, EffectSpeedSyncMode},
         },
+        effect2::effect::Effect2,
         gdtf::GdtfFixture,
         handler::FixtureTypeList,
-        sequence::FadeFixtureChannelValue,
         timing::TimingHandler,
         updatables::runtime::RuntimePhase,
-        value_source::FixtureChannelValuePriority,
     },
     utils::math::instant_diff_secs,
 };
 
-use super::FeatureEffect;
-
-#[derive(Debug, Serialize, Deserialize, Clone, Default, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct FeatureEffectRuntime {
-    effect: FeatureEffect,
+    // effect: FeatureEffect,
+    effect: Effect2,
 
     #[serde(default)]
     speed: EffectSpeed,
@@ -33,20 +31,32 @@ pub struct FeatureEffectRuntime {
     phase: RuntimePhase,
 
     #[serde(default, skip_serializing, skip_deserializing)]
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     effect_started: Option<time::Instant>,
 }
 
 impl FeatureEffectRuntime {
-    pub fn new(effect: FeatureEffect) -> Self {
+    pub fn new(effect: Effect2) -> Self {
         Self {
             effect,
             ..Default::default()
         }
     }
 
-    pub fn effect(&self) -> &FeatureEffect {
+    pub fn effect(&self) -> &Effect2 {
         &self.effect
+    }
+
+    pub fn effect_mut(&mut self) -> &mut Effect2 {
+        &mut self.effect
+    }
+
+    pub fn phase_mut(&mut self) -> &mut RuntimePhase {
+        &mut self.phase
+    }
+
+    pub fn speed_mut(&mut self) -> &mut EffectSpeed {
+        &mut self.speed
     }
 
     pub fn is_started(&self) -> bool {
@@ -62,21 +72,49 @@ impl FeatureEffectRuntime {
         self.effect_started = None;
     }
 
+    pub fn get_values_with_started(
+        &self,
+        fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
+        fixture_offset: f32,
+        timing_handler: &TimingHandler,
+        started: Option<time::Instant>,
+    ) -> Vec<(String, FixtureChannelValue3)> {
+        self.effect()
+            .attributes()
+            .flat_map(|attribute| {
+                fixture
+                    .channels_for_attribute(fixture_types, attribute)
+                    .unwrap()
+            })
+            .filter_map(|(channel, _, _)| {
+                self.get_channel_value_with_started(
+                    channel.name().as_ref(),
+                    fixture,
+                    fixture_types,
+                    fixture_offset,
+                    timing_handler,
+                    started,
+                )
+                .ok()
+                .map(|value| (channel.name().as_ref().to_owned(), value))
+            })
+            .collect::<Vec<_>>()
+    }
+
     pub fn get_channel_value(
         &self,
         channel_name: &str,
         fixture: &GdtfFixture,
         fixture_types: &FixtureTypeList,
         fixture_offset: f32,
-        priority: FixtureChannelValuePriority,
         timing_handler: &TimingHandler,
-    ) -> Result<FadeFixtureChannelValue, EffectError> {
+    ) -> Result<FixtureChannelValue3, EffectError> {
         self.get_channel_value_with_started(
             channel_name,
             fixture,
             fixture_types,
             fixture_offset,
-            priority,
             timing_handler,
             self.effect_started,
         )
@@ -88,10 +126,9 @@ impl FeatureEffectRuntime {
         fixture: &GdtfFixture,
         fixture_types: &FixtureTypeList,
         fixture_offset: f32,
-        priority: FixtureChannelValuePriority,
         timing_handler: &TimingHandler,
         started: Option<time::Instant>,
-    ) -> Result<FadeFixtureChannelValue, EffectError> {
+    ) -> Result<FixtureChannelValue3, EffectError> {
         started
             .ok_or(EffectError::EffectNotStarted)
             .and_then(|effect_started| {
@@ -134,7 +171,7 @@ impl FeatureEffectRuntime {
                 for (idx, channel_function) in logical_channel.channel_functions.iter().enumerate()
                 {
                     let function_attribute = channel_function.attribute.first().unwrap().as_ref();
-                    let attribute_value = self.effect.get_attribute_value(
+                    let attribute_value = self.effect.attribute_value(
                         function_attribute,
                         started_elapsed,
                         phase_offset,
@@ -150,9 +187,7 @@ impl FeatureEffectRuntime {
                     }
                 }
 
-                channel_value
-                    .map(|channel_value| FadeFixtureChannelValue::new(channel_value, 1.0, priority))
-                    .ok_or(EffectError::NoValueForAttribute)
+                channel_value.ok_or(EffectError::NoValueForAttribute)
             })
     }
 

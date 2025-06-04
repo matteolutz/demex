@@ -6,13 +6,13 @@ use std::{
 };
 
 use artnet_protocol::{ArtCommand, Output, Poll, PortAddress};
-use egui_probe::EguiProbe;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use super::DmxData;
 
-#[derive(Clone, Default, Debug, Serialize, Deserialize, EguiProbe)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct ArtnetOutputConfig {
     pub broadcast: bool,
 
@@ -20,6 +20,9 @@ pub struct ArtnetOutputConfig {
     pub broadcast_addresses: Vec<String>,
 
     pub bind_ip: Option<String>,
+
+    #[serde(default)]
+    pub universes: Vec<u16>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -43,8 +46,19 @@ pub fn start_broadcast_artnet_output_thread(
             .set_read_timeout(Some(time::Duration::from_secs(3)))
             .unwrap();
 
-        let broacast_addr =
-            net::SocketAddr::new(net::IpAddr::V4(net::Ipv4Addr::BROADCAST), ARTNET_PORT);
+        #[cfg(unix)]
+        {
+            log::debug!("Setting SO_REUSEADDR (Unix only)");
+            nix::sys::socket::setsockopt(&socket, nix::sys::socket::sockopt::ReuseAddr, &true)
+                .unwrap();
+        }
+
+        let broadcast_addresses = config
+            .broadcast_addresses
+            .iter()
+            .map(|addr| net::SocketAddr::new(net::IpAddr::V4(addr.parse().unwrap()), ARTNET_PORT))
+            .collect::<Vec<_>>();
+
         socket.set_broadcast(true).unwrap();
 
         loop {
@@ -58,7 +72,9 @@ pub fn start_broadcast_artnet_output_thread(
                 });
 
                 let command_bytes = output_command.write_to_buffer().unwrap();
-                socket.send_to(&command_bytes, broacast_addr).unwrap();
+                for addr in &broadcast_addresses {
+                    socket.send_to(&command_bytes, addr).unwrap();
+                }
             } else if recv_result.err().unwrap() == TryRecvError::Disconnected {
                 break;
             }
@@ -78,6 +94,13 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, config: ArtnetOut
         socket
             .set_read_timeout(Some(time::Duration::from_secs(3)))
             .unwrap();
+
+        #[cfg(unix)]
+        {
+            log::debug!("Setting SO_REUSEADDR (Unix only)");
+            nix::sys::socket::setsockopt(&socket, nix::sys::socket::sockopt::ReuseAddr, &true)
+                .unwrap();
+        }
 
         let broadcast_addresses = config
             .broadcast_addresses
@@ -112,7 +135,7 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, config: ArtnetOut
 
                 if let Some(nodes) = nodes.get_mut(&send_universe) {
                     nodes.retain(|node| {
-                        if let Ok(_) = socket.send_to(&command_bytes, node.addr) {
+                        if socket.send_to(&command_bytes, node.addr).is_ok() {
                             true
                         } else {
                             // If we fail to send, the node is probably disconnected and we should remove it

@@ -1,26 +1,37 @@
 #![warn(unused_extern_crates)]
 
+pub mod color;
 pub mod dmx;
 pub mod fixture;
+pub mod headless;
 pub mod input;
 pub mod lexer;
 pub mod parser;
 pub mod show;
 pub mod storage;
+
+#[cfg(feature = "ui")]
 pub mod ui;
+
 pub mod utils;
 
 use std::{path::PathBuf, sync::Arc, time};
 
-use egui::{Style, Visuals};
-use fixture::handler::FixtureHandler;
 use gdtf::GdtfFile;
-use input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler};
+use headless::{
+    controller::DemexHeadlessConroller, id::DemexProtoDeviceId, node::DemexHeadlessNode,
+};
 use itertools::Itertools;
 use parking_lot::RwLock;
-use rfd::FileDialog;
-use show::DemexShow;
-use ui::{error::DemexUiError, theme::DemexUiTheme, utils::icon::load_icon, DemexUiApp};
+use show::{context::ShowContext, DemexShow};
+
+use ui::utils::load::load_textures;
+#[cfg(feature = "ui")]
+use ui::{
+    context::DemexUiContext, theme::DemexUiTheme, theme::DemexUiThemeAttribute,
+    utils::icon::load_icon, DemexUiApp,
+};
+
 use utils::{
     deadlock::start_deadlock_checking_thread,
     thread::{demex_update_thread, DemexThreadStatsHandler},
@@ -28,73 +39,53 @@ use utils::{
 
 use clap::Parser;
 
+#[cfg(not(feature = "ui"))]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
+enum DemexUiThemeAttribute {}
+
 /// demex - command based stage lighting control
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
     /// Path to the show file to load
-    #[arg(short, long)]
+    #[arg(short, long, conflicts_with = "headless")]
     show: Option<PathBuf>,
 
     /// Run an additional thread to periodically check for RwLock deadlocks
     #[arg(long)]
     deadlock_test: bool,
 
-    /// Run the application in single-threaded mode
-    #[arg(long)]
-    single_thread: bool,
+    /// Run the application in a mode that is more suitable for touchscreen devices (i.e. larger UI elements, ..)
+    #[arg(long, conflicts_with = "headless")]
+    touchscreen_mode: bool,
+
+    /// Run the application in headless mode (i.e. no UI, used for demex nodes). Pass the ip address of the controller node to connect to.
+    #[arg(long, value_name = "IP_ADDRESS")]
+    headless: Option<String>,
+
+    /// Set a manual node id for the headless node.
+    #[arg(long, value_name = "ID")]
+    headless_id: Option<u32>,
+
+    /// Set the UI theme to use. This is only used if the UI feature is enabled.
+    #[arg(long, value_name = "THEME", conflicts_with = "headless")]
+    ui_theme: Option<DemexUiThemeAttribute>,
+
+    /// Number of additional viewports to create in the UI. This is only used if the UI feature is enabled.
+    #[arg(
+        short,
+        long,
+        value_name = "ADDITIONAL_VIEWPORTS",
+        conflicts_with = "headless"
+    )]
+    additional_viewports: Option<usize>,
 }
 
 const TEST_MAX_FUPS: f64 = 60.0;
 const TEST_MAX_DMX_FPS: f64 = 30.0;
 const TEST_UI_FPS: f64 = 60.0;
 
-const TEST_UI_THEME: DemexUiTheme = DemexUiTheme::Default;
-const TEST_TOUCHSCREEN_FRIENDLY: bool = false;
-
 const APP_ID: &str = "demex";
-
-fn load_fonts() -> egui::FontDefinitions {
-    let mut fonts = egui::FontDefinitions::default();
-
-    fonts.font_data.insert(
-        "open-sans".to_string(),
-        Arc::new(egui::FontData::from_static(include_bytes!(
-            "../assets/fonts/OpenSans-Regular.ttf"
-        ))),
-    );
-    fonts.font_data.insert(
-        "jetbrains-mono".to_string(),
-        Arc::new(egui::FontData::from_static(include_bytes!(
-            "../assets/fonts/JetBrainsMono-Regular.ttf"
-        ))),
-    );
-    fonts.font_data.insert(
-        "timecode".to_string(),
-        Arc::new(egui::FontData::from_static(include_bytes!(
-            "../assets/fonts/Timecode.ttf"
-        ))),
-    );
-
-    fonts
-        .families
-        .get_mut(&egui::FontFamily::Proportional)
-        .unwrap()
-        .insert(0, "open-sans".to_string());
-
-    fonts
-        .families
-        .get_mut(&egui::FontFamily::Monospace)
-        .unwrap()
-        .insert(0, "jetbrains-mono".to_string());
-
-    fonts.families.insert(
-        egui::FontFamily::Name("Timecode".into()),
-        vec!["timecode".to_string()],
-    );
-
-    fonts
-}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::var("RUST_LOG").is_err() {
@@ -109,8 +100,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.deadlock_test {
         start_deadlock_checking_thread();
     }
-
-    let show_file = args.show.clone();
 
     let fixture_files = std::fs::read_dir(storage::fixture_types(APP_ID))
         .unwrap()
@@ -151,6 +140,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let show: DemexShow = args
         .show
+        .as_ref()
         .inspect(|show_path| log::info!("Loading show file: {:?}", show_path))
         .map(|show_path| serde_json::from_reader(std::fs::File::open(show_path).unwrap()).unwrap())
         .unwrap_or(DemexShow::default());
@@ -160,153 +150,168 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .flat_map(|file| file.description.fixture_types)
         .collect::<Vec<_>>();
 
-    let patch = Arc::new(RwLock::new(show.patch.into_patch(fixture_types)));
-    let (fixtures, outputs) = patch.read().into_fixures_and_outputs();
-
-    let fixture_handler = Arc::new(RwLock::new(FixtureHandler::new(fixtures, outputs).unwrap()));
-
-    let preset_handler = Arc::new(RwLock::new(show.preset_handler));
-    let updatable_handler = Arc::new(RwLock::new(show.updatable_handler));
-    let timing_handler = Arc::new(RwLock::new(show.timing_handler));
-
     let stats = Arc::new(RwLock::new(DemexThreadStatsHandler::default()));
-
-    let icon = Arc::new(load_icon());
-
-    let ui_app_state = DemexUiApp::new(
-        fixture_handler.clone(),
-        preset_handler.clone(),
-        updatable_handler.clone(),
-        timing_handler.clone(),
-        patch.clone(),
-        stats.clone(),
-        show_file,
-        |show: DemexShow, show_file: Option<&PathBuf>| {
-            let save_file = if let Some(show_file) = show_file {
-                show_file.clone()
-            } else if let Some(save_file) = FileDialog::new()
-                .add_filter("demex Show-File", &["json"])
-                .save_file()
-            {
-                save_file
-            } else {
-                return Err(DemexUiError::RuntimeError("No save file selected".to_owned()).into());
-            };
-
-            serde_json::to_writer(std::fs::File::create(&save_file).unwrap(), &show)?;
-
-            Ok(save_file)
+    let context = ShowContext::new(
+        fixture_types,
+        show.patch,
+        show.preset_handler,
+        show.updatable_handler,
+        show.timing_handler,
+        if args.headless.is_some() {
+            DemexProtoDeviceId::Node(args.headless_id.unwrap_or_default())
+        } else {
+            DemexProtoDeviceId::Controller
         },
-        TEST_UI_FPS,
-        icon.clone(),
-        DemexInputDeviceHandler::new(
-            show.input_device_configs
-                .into_iter()
-                .map(DemexInputDeviceConfig::into)
-                .collect::<Vec<_>>(),
-        ),
-        show.ui_config,
-        args.single_thread,
     );
 
-    if !args.single_thread {
-        let fixture_handler_thread_a = fixture_handler.clone();
-        let preset_handler_thread_a = preset_handler.clone();
-        let timing_handler_thread_a = timing_handler.clone();
-        let patch_thread_a = patch.clone();
+    let fixture_handler_thread_a = context.fixture_handler.clone();
+    let preset_handler_thread_a = context.preset_handler.clone();
+    let timing_handler_thread_a = context.timing_handler.clone();
+    let patch_thread_a = context.patch.clone();
 
-        demex_update_thread(
-            "demex-dmx-output".to_owned(),
-            stats.clone(),
-            TEST_MAX_DMX_FPS,
-            move |_, last_user_update| {
-                let mut fixture_handler = fixture_handler_thread_a.write();
-                let preset_handler = preset_handler_thread_a.read();
-                let timing_handler = timing_handler_thread_a.read();
-                let patch = patch_thread_a.read();
+    demex_update_thread(
+        "demex-dmx-output".to_owned(),
+        stats.clone(),
+        TEST_MAX_DMX_FPS,
+        move |_, last_user_update| {
+            let mut fixture_handler = fixture_handler_thread_a.write();
+            let preset_handler = preset_handler_thread_a.read();
+            let timing_handler = timing_handler_thread_a.read();
+            let patch = patch_thread_a.read();
 
-                if fixture_handler
-                    .generate_output_data(
-                        patch.fixture_types(),
-                        &preset_handler,
-                        &timing_handler,
-                        last_user_update.elapsed().as_secs_f64() > 1.0,
-                    )
-                    .inspect_err(|err| log::error!("Failed to generate output data: {}", err))
-                    .is_ok_and(|res| res > 0)
-                {
-                    *last_user_update = time::Instant::now();
-                }
-            },
-        );
+            if fixture_handler
+                .generate_output_data(
+                    patch.fixture_types(),
+                    &preset_handler,
+                    &timing_handler,
+                    last_user_update.elapsed().as_secs_f64() > 1.0,
+                )
+                .inspect_err(|err| log::error!("Failed to generate output data: {}", err))
+                .is_ok_and(|res| res > 0)
+            {
+                *last_user_update = time::Instant::now();
+            }
+        },
+    );
 
-        demex_update_thread(
-            "demex-update".to_owned(),
-            stats.clone(),
-            TEST_MAX_FUPS,
-            move |_, _| {
-                let mut fixture_handler = fixture_handler.write();
-                let preset_handler = preset_handler.read();
-                let mut updatable_handler = updatable_handler.write();
-                let timing_handler = timing_handler.read();
-                let patch = patch.read();
+    let fixture_handler_thread_b = context.fixture_handler.clone();
+    let preset_handler_thread_b = context.preset_handler.clone();
+    let updatable_handler_thread_b = context.updatable_handler.clone();
+    let timing_handler_thread_b = context.timing_handler.clone();
+    let patch_thread_b = context.patch.clone();
 
-                let _ = fixture_handler
-                    .update_output_values(
-                        patch.fixture_types(),
-                        &preset_handler,
-                        &updatable_handler,
-                        &timing_handler,
-                    )
-                    .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
-                updatable_handler.update_faders(&preset_handler);
-                updatable_handler.update_executors(&mut fixture_handler, &preset_handler);
-            },
-        );
-    }
+    demex_update_thread(
+        "demex-update".to_owned(),
+        stats.clone(),
+        TEST_MAX_FUPS,
+        move |_, _| {
+            let mut fixture_handler = fixture_handler_thread_b.write();
+            let preset_handler = preset_handler_thread_b.read();
+            let mut updatable_handler = updatable_handler_thread_b.write();
+            let timing_handler = timing_handler_thread_b.read();
+            let patch = patch_thread_b.read();
 
-    let options = eframe::NativeOptions {
-        viewport: eframe::egui::ViewportBuilder::default()
-            .with_maximized(true)
-            .with_icon(icon),
-        ..Default::default()
-    };
+            let _ = fixture_handler
+                .update_output_values(
+                    patch.fixture_types(),
+                    &preset_handler,
+                    &updatable_handler,
+                    &timing_handler,
+                )
+                .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
+            updatable_handler.update_executors(
+                patch.fixture_types(),
+                &fixture_handler,
+                &preset_handler,
+                &timing_handler,
+            );
+        },
+    );
 
-    eframe::run_native(
-        APP_ID,
-        options,
-        Box::new(|creation_context| {
-            egui_extras::install_image_loaders(&creation_context.egui_ctx);
+    if let Some(master_ip) = args.headless {
+        log::info!("Running in headless mode, no UI will be shown");
+        DemexHeadlessNode::default().start_headless_in_current_thread(
+            master_ip,
+            args.headless_id.unwrap_or_default(),
+            context.clone(),
+        )?;
+    } else {
+        DemexHeadlessConroller::default().start_controller_thread(stats.clone(), context.clone());
 
-            let style = Style {
-                visuals: Visuals::dark(),
-                ..Style::default()
+        #[cfg(feature = "ui")]
+        {
+            let icon = Arc::new(load_icon());
+
+            let options = eframe::NativeOptions {
+                viewport: eframe::egui::ViewportBuilder::default()
+                    .with_maximized(true)
+                    .with_icon(icon.clone()),
+                ..Default::default()
             };
 
-            creation_context.egui_ctx.set_style(style);
-            creation_context.egui_ctx.set_fonts(load_fonts());
+            eframe::run_native(
+                APP_ID,
+                options,
+                Box::new(|creation_context| {
+                    egui_extras::install_image_loaders(&creation_context.egui_ctx);
 
-            TEST_UI_THEME.apply(&creation_context.egui_ctx);
+                    let style = egui::Style {
+                        visuals: egui::Visuals::dark(),
+                        ..egui::Style::default()
+                    };
 
-            if TEST_TOUCHSCREEN_FRIENDLY {
-                creation_context.egui_ctx.style_mut(|style| {
-                    style.spacing.button_padding = egui::vec2(10.0, 10.0);
+                    creation_context.egui_ctx.set_style(style);
+                    creation_context
+                        .egui_ctx
+                        .set_fonts(ui::utils::load::load_fonts());
 
-                    style.spacing.indent = 18.0 * 2.0;
-                    style.spacing.icon_width = 14.0 * 2.0;
-                    style.spacing.icon_width_inner = 8.0 * 2.0;
+                    args.ui_theme
+                        .map(DemexUiTheme::from)
+                        .unwrap_or(DemexUiTheme::Default)
+                        .apply(&creation_context.egui_ctx);
 
-                    // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
-                    //
-                    style.spacing.interact_size = egui::vec2(40.0, 18.0) * 1.5;
-                    style.spacing.slider_rail_height = 8.0 * 2.0;
-                    style.spacing.slider_width = 100.0 * 1.5;
-                });
-            }
+                    if args.touchscreen_mode {
+                        creation_context.egui_ctx.style_mut(|style| {
+                            style.spacing.button_padding = emath::vec2(10.0, 10.0);
 
-            Ok(Box::new(ui_app_state))
-        }),
-    )?;
+                            style.spacing.indent = 18.0 * 2.0;
+                            style.spacing.icon_width = 14.0 * 2.0;
+                            style.spacing.icon_width_inner = 8.0 * 2.0;
+
+                            // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
+                            //
+                            style.spacing.interact_size = emath::vec2(40.0, 18.0) * 1.5;
+                            style.spacing.slider_rail_height = 8.0 * 2.0;
+                            style.spacing.slider_width = 100.0 * 1.5;
+                        });
+                    }
+
+                    let ui_app_state = DemexUiApp::new(
+                        DemexUiContext::load_show(
+                            &context,
+                            show.input_device_configs,
+                            show.ui_config,
+                            args.show,
+                            stats,
+                            load_textures(&creation_context.egui_ctx),
+                        ),
+                        TEST_UI_FPS,
+                        icon,
+                        false,
+                        args.additional_viewports,
+                    );
+
+                    Ok(Box::new(ui_app_state))
+                }),
+            )?;
+        }
+
+        #[cfg(not(feature = "ui"))]
+        {
+            log::error!("UI feature is not enabled. Please enable the UI feature to run the application with a user interface or run in headless mode.");
+            std::process::exit(1);
+        }
+    }
 
     Ok(())
 }

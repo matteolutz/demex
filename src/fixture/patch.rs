@@ -1,9 +1,11 @@
 use std::ops::Range;
 
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::dmx::{DemexDmxOutput, DemexDmxOutputConfig};
+use crate::{
+    dmx::{DemexDmxOutput, DemexDmxOutputConfig},
+    headless::id::DemexProtoDeviceId,
+};
 
 use super::{
     gdtf::{GdtfFixture, GdtfFixturePatch},
@@ -93,21 +95,22 @@ impl Patch {
     }
 }
 
-impl From<&Patch> for Vec<DemexDmxOutput> {
-    fn from(value: &Patch) -> Self {
-        value.outputs.iter().cloned().map_into().collect()
-    }
-}
-
 impl Patch {
-    pub fn into_fixures_and_outputs(&self) -> (Vec<GdtfFixture>, Vec<DemexDmxOutput>) {
+    pub fn into_fixures_and_outputs(
+        &self,
+        own_device_id: DemexProtoDeviceId,
+    ) -> (Vec<GdtfFixture>, Vec<DemexDmxOutput>) {
         (
             self.fixtures
                 .clone()
                 .into_iter()
                 .map(|f| f.into_fixture(&self.fixture_types).unwrap())
                 .collect(),
-            self.outputs.clone().into_iter().map_into().collect(),
+            self.outputs
+                .clone()
+                .into_iter()
+                .map(|output_config| DemexDmxOutput::from_config(output_config, own_device_id))
+                .collect(),
         )
     }
 }

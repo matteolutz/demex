@@ -1,23 +1,13 @@
 use std::str::FromStr;
 
-use egui_probe::EguiProbe;
 use strum::IntoEnumIterator;
 
 use super::feature_type::FixtureChannel3FeatureType;
 
 #[derive(
-    Debug,
-    Copy,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    EguiProbe,
-    Default,
-    PartialOrd,
-    Ord,
-    strum_macros::EnumIter,
+    Debug, Copy, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord, strum_macros::EnumIter,
 )]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum FixtureChannel3FeatureGroup {
     #[default]
     Dimmer,
@@ -30,6 +20,8 @@ pub enum FixtureChannel3FeatureGroup {
     Control,
     Shapers,
     Video,
+
+    All,
 }
 
 impl FixtureChannel3FeatureGroup {
@@ -71,6 +63,7 @@ impl TryFrom<u32> for FixtureChannel3FeatureGroup {
             6 => Ok(Self::Control),
             7 => Ok(Self::Shapers),
             8 => Ok(Self::Video),
+            99 => Ok(Self::All),
             _ => Err(()),
         }
     }
@@ -88,6 +81,7 @@ impl From<FixtureChannel3FeatureGroup> for u32 {
             FixtureChannel3FeatureGroup::Control => 6,
             FixtureChannel3FeatureGroup::Shapers => 7,
             FixtureChannel3FeatureGroup::Video => 8,
+            FixtureChannel3FeatureGroup::All => 99,
         }
     }
 }
@@ -104,6 +98,7 @@ impl FixtureChannel3FeatureGroup {
             Self::Control => "Control",
             Self::Shapers => "Shapers",
             Self::Video => "Video",
+            Self::All => "All",
         }
     }
 
@@ -118,6 +113,8 @@ impl FixtureChannel3FeatureGroup {
             Self::Control => FixtureChannel3FeatureType::Control,
             Self::Shapers => FixtureChannel3FeatureType::Shapers,
             Self::Video => FixtureChannel3FeatureType::Video,
+            // TODO: should we change this??
+            Self::All => FixtureChannel3FeatureType::Dimmer,
         }
     }
 }

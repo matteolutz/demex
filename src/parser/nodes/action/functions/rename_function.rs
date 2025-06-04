@@ -1,3 +1,5 @@
+use std::time;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -19,10 +21,11 @@ pub struct RenameObjectArgs {
 impl FunctionArgs for RenameObjectArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
-        updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
+        _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
         _: &Patch,
@@ -49,15 +52,11 @@ impl FunctionArgs for RenameObjectArgs {
                             .map_err(ActionRunError::PresetHandlerError)
                     })
                     .map(|_| ActionRunResult::new()),
-                HomeableObject::Executor(executor_id) => updatable_handler
-                    .rename_executor(*executor_id, self.new_name.clone())
-                    .map_err(ActionRunError::UpdatableHandlerError)
-                    .map(|_| ActionRunResult::new()),
-                HomeableObject::Fader(fader_id) => updatable_handler
-                    .rename_fader(*fader_id, self.new_name.clone())
-                    .map_err(ActionRunError::UpdatableHandlerError)
-                    .map(|_| ActionRunResult::new()),
                 HomeableObject::Programmer => Err(ActionRunError::ActionNotImplementedForObject(
+                    "Rename".to_owned(),
+                    self.object.clone(),
+                )),
+                _ => Err(ActionRunError::ActionNotImplementedForObject(
                     "Rename".to_owned(),
                     self.object.clone(),
                 )),

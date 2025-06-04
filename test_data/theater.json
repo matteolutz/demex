@@ -1,1 +1,1209 @@
-{"preset_handler":{"groups":{"0":{"id":0,"name":"Group 0","fixture_selection":{"fixtures":[501,502],"group":1,"block":1,"wings":1,"reverse":true}}},"macros":{},"command_slices":{},"sequences":{"1":{"id":1,"name":"Sequence for Executor 0","stop_behavior":"ManualStop","cues":[{"cue_idx":[1,0],"name":"Cue 1.0","data":{"Default":{"13":[{"value":{"Discrete":{"channel_function_idx":0,"value":1.0}},"channel_name":"Head_Dimmer","snap":false}],"16":[{"value":{"Discrete":{"channel_function_idx":0,"value":0.0}},"channel_name":"Head_Dimmer","snap":false}]}},"selection":{"fixtures":[13,16],"group":1,"block":1,"wings":1,"reverse":false},"in_fade":0.5,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Manual"},{"cue_idx":[2,0],"name":"Cue 2.0","data":{"Default":{"16":[{"value":{"Discrete":{"channel_function_idx":0,"value":1.0}},"channel_name":"Head_Dimmer","snap":false}],"13":[{"value":{"Discrete":{"channel_function_idx":0,"value":0.0}},"channel_name":"Head_Dimmer","snap":false}]}},"selection":{"fixtures":[13,16],"group":1,"block":1,"wings":1,"reverse":false},"in_fade":0.5,"out_fade":null,"in_delay":0.0,"out_delay":null,"snap_percent":0.0,"timing":{"offset":0.0,"direction":"LowToHigh"},"trigger":"Manual"}]}},"presets":{"Dimmer.0":{"id":"Dimmer.0","name":"Dimmer Preset Dimmer.0","display_color":null,"fade_up":0.0,"data":{"FeatureEffect":{"runtime":{"effect":{"IntensitySine":{"sine_variant":"SnapInEnd"}},"speed":{"Bpm":120.0},"phase":{"Range":{"start":0.0,"end":360.0}}}}}}}},"updatable_handler":{"executors":{"0":{"id":0,"name":"Sequence Executor 0","priority":"Ltp","stomp_protected":false,"fade_up":0.0,"config":{"Sequence":{"runtime":{"sequence_id":1}}}}},"faders":{}},"timing_handler":{"speed_master_values":{"8":{"bpm":120.0},"1":{"bpm":120.0},"4":{"bpm":120.0},"3":{"bpm":120.0},"0":{"bpm":118.71698},"5":{"bpm":120.0},"9":{"bpm":120.0},"6":{"bpm":120.0},"7":{"bpm":120.0},"2":{"bpm":120.0}},"timecodes":{}},"input_device_configs":[{"buttons":{},"faders":{},"profile_type":"GenericMidi"}],"patch":{"fixtures":[{"id":1,"name":"Dimmer 1","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":1},{"id":2,"name":"Dimmer 2","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":2},{"id":3,"name":"Dimmer 3","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":3},{"id":4,"name":"Dimmer 4","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":4},{"id":5,"name":"Dimmer 5","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":5},{"id":6,"name":"Dimmer 6","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":6},{"id":7,"name":"Dimmer 7","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":7},{"id":8,"name":"Dimmer 8","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":8},{"id":9,"name":"Dimmer 9","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":9},{"id":10,"name":"Dimmer 10","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":10},{"id":11,"name":"Dimmer 11","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":11},{"id":12,"name":"Dimmer 12","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":12},{"id":13,"name":"Dimmer 13","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":13},{"id":14,"name":"Dimmer 14","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":14},{"id":15,"name":"Dimmer 15","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":15},{"id":16,"name":"Dimmer 16","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":16},{"id":17,"name":"Dimmer 17","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":17},{"id":18,"name":"Dimmer 18","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":18},{"id":19,"name":"Dimmer 19","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":19},{"id":20,"name":"Dimmer 20","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":20},{"id":21,"name":"Dimmer 21","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":21},{"id":22,"name":"Dimmer 22","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":22},{"id":23,"name":"Dimmer 23","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":23},{"id":24,"name":"Dimmer 24","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":24},{"id":101,"name":"TourLED front 1","fixture_type_id":"9d581a5f-292b-4cbb-a95c-c929ee7662a1","fixture_type_dmx_mode":"AR2 Z","universe":0,"start_address":90},{"id":102,"name":"TourLED front 2","fixture_type_id":"9d581a5f-292b-4cbb-a95c-c929ee7662a1","fixture_type_dmx_mode":"AR2 Z","universe":0,"start_address":100},{"id":103,"name":"TourLED front 3","fixture_type_id":"9d581a5f-292b-4cbb-a95c-c929ee7662a1","fixture_type_dmx_mode":"AR2 Z","universe":0,"start_address":110},{"id":104,"name":"TourLED front 4","fixture_type_id":"9d581a5f-292b-4cbb-a95c-c929ee7662a1","fixture_type_dmx_mode":"AR2 Z","universe":0,"start_address":120},{"id":105,"name":"TourLED front 5","fixture_type_id":"9d581a5f-292b-4cbb-a95c-c929ee7662a1","fixture_type_dmx_mode":"AR2 Z","universe":0,"start_address":130},{"id":106,"name":"TourLED front 6","fixture_type_id":"9d581a5f-292b-4cbb-a95c-c929ee7662a1","fixture_type_dmx_mode":"AR2 Z","universe":0,"start_address":140},{"id":201,"name":"TourLED links 1","fixture_type_id":"9d581a5f-292b-4cbb-a95c-c929ee7662a1","fixture_type_dmx_mode":"AR2 Z","universe":0,"start_address":150},{"id":202,"name":"TourLED links 2","fixture_type_id":"9d581a5f-292b-4cbb-a95c-c929ee7662a1","fixture_type_dmx_mode":"AR2 Z","universe":0,"start_address":160},{"id":301,"name":"TourLED rechts 1","fixture_type_id":"9d581a5f-292b-4cbb-a95c-c929ee7662a1","fixture_type_dmx_mode":"AR2 Z","universe":0,"start_address":170},{"id":302,"name":"TourLED rechts 2","fixture_type_id":"9d581a5f-292b-4cbb-a95c-c929ee7662a1","fixture_type_dmx_mode":"AR2 Z","universe":0,"start_address":180},{"id":401,"name":"Powerpixel 8 RGB 1","fixture_type_id":"e1c51f01-0c4b-412f-9a71-b47ed17b27cb","fixture_type_dmx_mode":"27Ch","universe":0,"start_address":190},{"id":402,"name":"Powerpixel 8 RGB 2","fixture_type_id":"e1c51f01-0c4b-412f-9a71-b47ed17b27cb","fixture_type_dmx_mode":"27Ch","universe":0,"start_address":220},{"id":403,"name":"Powerpixel 8 RGB 3","fixture_type_id":"e1c51f01-0c4b-412f-9a71-b47ed17b27cb","fixture_type_dmx_mode":"27Ch","universe":0,"start_address":250},{"id":404,"name":"Powerpixel 8 RGB 4","fixture_type_id":"e1c51f01-0c4b-412f-9a71-b47ed17b27cb","fixture_type_dmx_mode":"27Ch","universe":0,"start_address":280},{"id":405,"name":"Powerpixel 8 RGB 5","fixture_type_id":"e1c51f01-0c4b-412f-9a71-b47ed17b27cb","fixture_type_dmx_mode":"27Ch","universe":0,"start_address":310},{"id":406,"name":"Powerpixel 8 RGB 6","fixture_type_id":"e1c51f01-0c4b-412f-9a71-b47ed17b27cb","fixture_type_dmx_mode":"27Ch","universe":0,"start_address":340},{"id":501,"name":"TMH-X4 links","fixture_type_id":"5aefbbee-f64c-4f83-8275-f26861f1732a","fixture_type_dmx_mode":"24CH","universe":0,"start_address":370},{"id":502,"name":"TMH-X4 rechts","fixture_type_id":"5aefbbee-f64c-4f83-8275-f26861f1732a","fixture_type_dmx_mode":"24CH","universe":0,"start_address":400},{"id":1001,"name":"Fog","fixture_type_id":"6b9acb11-a69b-4e1a-a667-ac31cfe8655c","fixture_type_dmx_mode":"Standard mode","universe":0,"start_address":512}],"layout":{"fixtures":[{"fixture_id":201,"position":{"x":-70.0,"y":20.0},"size":{"x":5.0,"y":5.0},"entry_type":"Circle"},{"fixture_id":202,"position":{"x":-70.0,"y":0.0},"size":{"x":5.0,"y":5.0},"entry_type":"Circle"},{"fixture_id":301,"position":{"x":70.0,"y":20.0},"size":{"x":5.0,"y":5.0},"entry_type":"Circle"},{"fixture_id":302,"position":{"x":70.0,"y":0.0},"size":{"x":5.0,"y":5.0},"entry_type":"Circle"},{"fixture_id":401,"position":{"x":-40.0,"y":30.0},"size":{"x":14.0,"y":2.5},"entry_type":"Rect"},{"fixture_id":402,"position":{"x":0.0,"y":30.0},"size":{"x":14.0,"y":2.5},"entry_type":"Rect"},{"fixture_id":403,"position":{"x":40.0,"y":30.0},"size":{"x":14.0,"y":2.5},"entry_type":"Rect"},{"fixture_id":101,"position":{"x":-60.0,"y":50.0},"size":{"x":5.0,"y":5.0},"entry_type":"Circle"},{"fixture_id":102,"position":{"x":-35.0,"y":50.0},"size":{"x":5.0,"y":5.0},"entry_type":"Circle"},{"fixture_id":103,"position":{"x":-10.0,"y":50.0},"size":{"x":5.0,"y":5.0},"entry_type":"Circle"},{"fixture_id":104,"position":{"x":10.0,"y":50.0},"size":{"x":5.0,"y":5.0},"entry_type":"Circle"},{"fixture_id":105,"position":{"x":35.0,"y":50.0},"size":{"x":5.0,"y":5.0},"entry_type":"Circle"},{"fixture_id":106,"position":{"x":60.0,"y":50.0},"size":{"x":5.0,"y":5.0},"entry_type":"Circle"},{"fixture_id":1,"position":{"x":-70.0,"y":65.0},"size":{"x":3.0,"y":3.0},"entry_type":"Circle"},{"fixture_id":2,"position":{"x":-45.0,"y":65.0},"size":{"x":3.0,"y":3.0},"entry_type":"Circle"},{"fixture_id":3,"position":{"x":-20.0,"y":65.0},"size":{"x":3.0,"y":3.0},"entry_type":"Circle"},{"fixture_id":4,"position":{"x":20.0,"y":65.0},"size":{"x":3.0,"y":3.0},"entry_type":"Circle"},{"fixture_id":5,"position":{"x":45.0,"y":65.0},"size":{"x":3.0,"y":3.0},"entry_type":"Circle"},{"fixture_id":6,"position":{"x":70.0,"y":65.0},"size":{"x":3.0,"y":3.0},"entry_type":"Circle"},{"fixture_id":7,"position":{"x":-75.0,"y":80.0},"size":{"x":3.0,"y":3.0},"entry_type":"Circle"},{"fixture_id":8,"position":{"x":-30.0,"y":80.0},"size":{"x":3.0,"y":3.0},"entry_type":"Circle"},{"fixture_id":9,"position":{"x":-15.0,"y":80.0},"size":{"x":3.0,"y":3.0},"entry_type":"Circle"},{"fixture_id":10,"position":{"x":15.0,"y":80.0},"size":{"x":3.0,"y":3.0},"entry_type":"Circle"},{"fixture_id":11,"position":{"x":30.0,"y":80.0},"size":{"x":3.0,"y":3.0},"entry_type":"Circle"},{"fixture_id":12,"position":{"x":75.0,"y":80.0},"size":{"x":3.0,"y":3.0},"entry_type":"Circle"},{"fixture_id":13,"position":{"x":-40.0,"y":120.0},"size":{"x":5.0,"y":10.0},"entry_type":"Rect"},{"fixture_id":16,"position":{"x":40.0,"y":120.0},"size":{"x":5.0,"y":10.0},"entry_type":"Rect"},{"fixture_id":14,"position":{"x":-60.0,"y":150.0},"size":{"x":7.5,"y":10.0},"entry_type":"Rect"},{"fixture_id":15,"position":{"x":0.0,"y":150.0},"size":{"x":7.5,"y":10.0},"entry_type":"Rect"},{"fixture_id":17,"position":{"x":60.0,"y":150.0},"size":{"x":7.5,"y":10.0},"entry_type":"Rect"},{"fixture_id":501,"position":{"x":-80.0,"y":100.0},"size":{"x":5.0,"y":5.0},"entry_type":"Circle"},{"fixture_id":502,"position":{"x":80.0,"y":100.0},"size":{"x":5.0,"y":5.0},"entry_type":"Circle"}],"decorations":[{"Label":{"pos":{"x":0.0,"y":-20.0},"text":"Bühne","font_size":8.0}},{"Rect":{"min":{"x":-80.0,"y":-40.0},"max":{"x":80.0,"y":40.0},"stroke_width":2.0}}]},"outputs":[{"Artnet":{"broadcast":false,"broadcast_addresses":["192.168.255.255"],"bind_ip":"192.168.2.226"}}]},"ui_config":{"detached_tabs":[],"detached_tabs_config":{}}}
+{
+  "preset_handler": {
+    "groups": {
+      "0": {
+        "id": 0,
+        "name": "Group 0",
+        "fixture_selection": {
+          "fixtures": [501, 502],
+          "group": 1,
+          "block": 1,
+          "wings": 1,
+          "reverse": true
+        }
+      }
+    },
+    "macros": {},
+    "command_slices": {},
+    "sequences": {
+      "2": {
+        "id": 2,
+        "name": "Sequence for Fader 1",
+        "stop_behavior": "ManualStop",
+        "cues": [
+          {
+            "cue_idx": [1, 0],
+            "name": "Cue 1.0",
+            "data": {
+              "Default": {
+                "403": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Base_Pixel8_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Beam_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Beam_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Beam_ColorAdd_B",
+                    "snap": false
+                  }
+                ],
+                "103": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Lens_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_B",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_W",
+                    "snap": false
+                  }
+                ],
+                "301": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Lens_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_B",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_W",
+                    "snap": false
+                  }
+                ],
+                "402": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Base_Pixel8_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Beam_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Beam_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Beam_ColorAdd_B",
+                    "snap": false
+                  }
+                ],
+                "201": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Lens_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_B",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_W",
+                    "snap": false
+                  }
+                ],
+                "105": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Lens_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_B",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_W",
+                    "snap": false
+                  }
+                ],
+                "106": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Lens_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_B",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_W",
+                    "snap": false
+                  }
+                ],
+                "104": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Lens_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_B",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_W",
+                    "snap": false
+                  }
+                ],
+                "302": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Lens_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_B",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_W",
+                    "snap": false
+                  }
+                ],
+                "101": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Lens_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_B",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_W",
+                    "snap": false
+                  }
+                ],
+                "202": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Lens_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_B",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_W",
+                    "snap": false
+                  }
+                ],
+                "102": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Lens_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_B",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Lens_ColorAdd_W",
+                    "snap": false
+                  }
+                ],
+                "401": [
+                  {
+                    "value": { "Preset": { "id": "Dimmer.0" } },
+                    "channel_name": "Base_Pixel8_Dimmer",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Beam_ColorAdd_R",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Beam_ColorAdd_G",
+                    "snap": false
+                  },
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Beam_ColorAdd_B",
+                    "snap": false
+                  }
+                ]
+              }
+            },
+            "selection": {
+              "fixtures": [
+                201, 202, 301, 302, 401, 402, 403, 101, 102, 103, 104, 105, 106
+              ],
+              "group": 1,
+              "block": 1,
+              "wings": 2,
+              "reverse": false
+            },
+            "in_fade": 0.0,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Manual"
+          }
+        ]
+      },
+      "1": {
+        "id": 1,
+        "name": "Sequence for Executor 0",
+        "stop_behavior": "ManualStop",
+        "cues": [
+          {
+            "cue_idx": [1, 0],
+            "name": "Cue 1.0",
+            "data": {
+              "Default": {
+                "16": [
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                    },
+                    "channel_name": "Head_Dimmer",
+                    "snap": false
+                  }
+                ],
+                "13": [
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Head_Dimmer",
+                    "snap": false
+                  }
+                ]
+              }
+            },
+            "selection": {
+              "fixtures": [13, 16],
+              "group": 1,
+              "block": 1,
+              "wings": 1,
+              "reverse": false
+            },
+            "in_fade": 0.5,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Manual"
+          },
+          {
+            "cue_idx": [2, 0],
+            "name": "Cue 2.0",
+            "data": {
+              "Default": {
+                "13": [
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 0.0 }
+                    },
+                    "channel_name": "Head_Dimmer",
+                    "snap": false
+                  }
+                ],
+                "16": [
+                  {
+                    "value": {
+                      "Discrete": { "channel_function_idx": 0, "value": 1.0 }
+                    },
+                    "channel_name": "Head_Dimmer",
+                    "snap": false
+                  }
+                ]
+              }
+            },
+            "selection": {
+              "fixtures": [13, 16],
+              "group": 1,
+              "block": 1,
+              "wings": 1,
+              "reverse": false
+            },
+            "in_fade": 0.5,
+            "out_fade": null,
+            "in_delay": 0.0,
+            "out_delay": null,
+            "snap_percent": 0.0,
+            "timing": { "offset": 0.0, "direction": "LowToHigh" },
+            "trigger": "Manual"
+          }
+        ]
+      }
+    },
+    "presets": {
+      "Dimmer.0": {
+        "id": "Dimmer.0",
+        "name": "Dimmer Preset Dimmer.0",
+        "display_color": null,
+        "fade_up": 0.0,
+        "data": {
+          "FeatureEffect": {
+            "runtime": {
+              "effect": { "IntensitySine": { "sine_variant": "SnapInEnd" } },
+              "speed": { "Bpm": 120.0 },
+              "phase": { "Range": { "start": 0.0, "end": 360.0 } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "updatable_handler": {
+    "executors": {
+      "0": {
+        "id": 0,
+        "name": "Sequence Executor 0",
+        "priority": "Ltp",
+        "stomp_protected": false,
+        "fade_up": 0.0,
+        "config": { "Sequence": { "runtime": { "sequence_id": 1 } } }
+      }
+    },
+    "faders": {
+      "1": {
+        "id": 1,
+        "name": "Fader 1",
+        "priority": "Ltp",
+        "stomp_protected": false,
+        "config": {
+          "SequenceRuntime": {
+            "runtime": { "sequence_id": 2 },
+            "function": "Intensity"
+          }
+        }
+      }
+    }
+  },
+  "timing_handler": {
+    "speed_master_values": {
+      "5": { "bpm": 120.0 },
+      "7": { "bpm": 120.0 },
+      "2": { "bpm": 120.0 },
+      "1": { "bpm": 120.0 },
+      "4": { "bpm": 120.0 },
+      "6": { "bpm": 120.0 },
+      "9": { "bpm": 120.0 },
+      "0": { "bpm": 118.71698 },
+      "3": { "bpm": 120.0 },
+      "8": { "bpm": 120.0 }
+    },
+    "timecodes": {}
+  },
+  "input_device_configs": [
+    { "buttons": {}, "faders": {}, "profile_type": "GenericMidi" },
+    {
+      "buttons": {},
+      "faders": { "1": { "Fader": { "fader_id": 1 } } },
+      "profile_type": "ApcMiniMk2"
+    }
+  ],
+  "patch": {
+    "fixtures": [
+      {
+        "id": 1,
+        "name": "Dimmer 1",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 1
+      },
+      {
+        "id": 2,
+        "name": "Dimmer 2",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 2
+      },
+      {
+        "id": 3,
+        "name": "Dimmer 3",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 3
+      },
+      {
+        "id": 4,
+        "name": "Dimmer 4",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 4
+      },
+      {
+        "id": 5,
+        "name": "Dimmer 5",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 5
+      },
+      {
+        "id": 6,
+        "name": "Dimmer 6",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 6
+      },
+      {
+        "id": 7,
+        "name": "Dimmer 7",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 7
+      },
+      {
+        "id": 8,
+        "name": "Dimmer 8",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 8
+      },
+      {
+        "id": 9,
+        "name": "Dimmer 9",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 9
+      },
+      {
+        "id": 10,
+        "name": "Dimmer 10",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 10
+      },
+      {
+        "id": 11,
+        "name": "Dimmer 11",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 11
+      },
+      {
+        "id": 12,
+        "name": "Dimmer 12",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 12
+      },
+      {
+        "id": 13,
+        "name": "Dimmer 13",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 13
+      },
+      {
+        "id": 14,
+        "name": "Dimmer 14",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 14
+      },
+      {
+        "id": 15,
+        "name": "Dimmer 15",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 15
+      },
+      {
+        "id": 16,
+        "name": "Dimmer 16",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 16
+      },
+      {
+        "id": 17,
+        "name": "Dimmer 17",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 17
+      },
+      {
+        "id": 18,
+        "name": "Dimmer 18",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 18
+      },
+      {
+        "id": 19,
+        "name": "Dimmer 19",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 19
+      },
+      {
+        "id": 20,
+        "name": "Dimmer 20",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 20
+      },
+      {
+        "id": 21,
+        "name": "Dimmer 21",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 21
+      },
+      {
+        "id": 22,
+        "name": "Dimmer 22",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 22
+      },
+      {
+        "id": 23,
+        "name": "Dimmer 23",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 23
+      },
+      {
+        "id": 24,
+        "name": "Dimmer 24",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 24
+      },
+      {
+        "id": 101,
+        "name": "TourLED front 1",
+        "fixture_type_id": "9d581a5f-292b-4cbb-a95c-c929ee7662a1",
+        "fixture_type_dmx_mode": "AR2 Z",
+        "universe": 0,
+        "start_address": 90
+      },
+      {
+        "id": 102,
+        "name": "TourLED front 2",
+        "fixture_type_id": "9d581a5f-292b-4cbb-a95c-c929ee7662a1",
+        "fixture_type_dmx_mode": "AR2 Z",
+        "universe": 0,
+        "start_address": 100
+      },
+      {
+        "id": 103,
+        "name": "TourLED front 3",
+        "fixture_type_id": "9d581a5f-292b-4cbb-a95c-c929ee7662a1",
+        "fixture_type_dmx_mode": "AR2 Z",
+        "universe": 0,
+        "start_address": 110
+      },
+      {
+        "id": 104,
+        "name": "TourLED front 4",
+        "fixture_type_id": "9d581a5f-292b-4cbb-a95c-c929ee7662a1",
+        "fixture_type_dmx_mode": "AR2 Z",
+        "universe": 0,
+        "start_address": 120
+      },
+      {
+        "id": 105,
+        "name": "TourLED front 5",
+        "fixture_type_id": "9d581a5f-292b-4cbb-a95c-c929ee7662a1",
+        "fixture_type_dmx_mode": "AR2 Z",
+        "universe": 0,
+        "start_address": 130
+      },
+      {
+        "id": 106,
+        "name": "TourLED front 6",
+        "fixture_type_id": "9d581a5f-292b-4cbb-a95c-c929ee7662a1",
+        "fixture_type_dmx_mode": "AR2 Z",
+        "universe": 0,
+        "start_address": 140
+      },
+      {
+        "id": 201,
+        "name": "TourLED links 1",
+        "fixture_type_id": "9d581a5f-292b-4cbb-a95c-c929ee7662a1",
+        "fixture_type_dmx_mode": "AR2 Z",
+        "universe": 0,
+        "start_address": 150
+      },
+      {
+        "id": 202,
+        "name": "TourLED links 2",
+        "fixture_type_id": "9d581a5f-292b-4cbb-a95c-c929ee7662a1",
+        "fixture_type_dmx_mode": "AR2 Z",
+        "universe": 0,
+        "start_address": 160
+      },
+      {
+        "id": 301,
+        "name": "TourLED rechts 1",
+        "fixture_type_id": "9d581a5f-292b-4cbb-a95c-c929ee7662a1",
+        "fixture_type_dmx_mode": "AR2 Z",
+        "universe": 0,
+        "start_address": 170
+      },
+      {
+        "id": 302,
+        "name": "TourLED rechts 2",
+        "fixture_type_id": "9d581a5f-292b-4cbb-a95c-c929ee7662a1",
+        "fixture_type_dmx_mode": "AR2 Z",
+        "universe": 0,
+        "start_address": 180
+      },
+      {
+        "id": 401,
+        "name": "Powerpixel 8 RGB 1",
+        "fixture_type_id": "e1c51f01-0c4b-412f-9a71-b47ed17b27cb",
+        "fixture_type_dmx_mode": "27Ch",
+        "universe": 0,
+        "start_address": 190
+      },
+      {
+        "id": 402,
+        "name": "Powerpixel 8 RGB 2",
+        "fixture_type_id": "e1c51f01-0c4b-412f-9a71-b47ed17b27cb",
+        "fixture_type_dmx_mode": "27Ch",
+        "universe": 0,
+        "start_address": 220
+      },
+      {
+        "id": 403,
+        "name": "Powerpixel 8 RGB 3",
+        "fixture_type_id": "e1c51f01-0c4b-412f-9a71-b47ed17b27cb",
+        "fixture_type_dmx_mode": "27Ch",
+        "universe": 0,
+        "start_address": 250
+      },
+      {
+        "id": 404,
+        "name": "Powerpixel 8 RGB 4",
+        "fixture_type_id": "e1c51f01-0c4b-412f-9a71-b47ed17b27cb",
+        "fixture_type_dmx_mode": "27Ch",
+        "universe": 0,
+        "start_address": 280
+      },
+      {
+        "id": 405,
+        "name": "Powerpixel 8 RGB 5",
+        "fixture_type_id": "e1c51f01-0c4b-412f-9a71-b47ed17b27cb",
+        "fixture_type_dmx_mode": "27Ch",
+        "universe": 0,
+        "start_address": 310
+      },
+      {
+        "id": 406,
+        "name": "Powerpixel 8 RGB 6",
+        "fixture_type_id": "e1c51f01-0c4b-412f-9a71-b47ed17b27cb",
+        "fixture_type_dmx_mode": "27Ch",
+        "universe": 0,
+        "start_address": 340
+      },
+      {
+        "id": 501,
+        "name": "TMH-X4 links",
+        "fixture_type_id": "5aefbbee-f64c-4f83-8275-f26861f1732a",
+        "fixture_type_dmx_mode": "24CH",
+        "universe": 0,
+        "start_address": 370
+      },
+      {
+        "id": 502,
+        "name": "TMH-X4 rechts",
+        "fixture_type_id": "5aefbbee-f64c-4f83-8275-f26861f1732a",
+        "fixture_type_dmx_mode": "24CH",
+        "universe": 0,
+        "start_address": 400
+      },
+      {
+        "id": 1001,
+        "name": "Fog",
+        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+        "fixture_type_dmx_mode": "Standard mode",
+        "universe": 0,
+        "start_address": 512
+      }
+    ],
+    "layout": {
+      "fixtures": [
+        {
+          "fixture_id": 201,
+          "position": { "x": -70.0, "y": 20.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 202,
+          "position": { "x": -70.0, "y": 0.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 301,
+          "position": { "x": 70.0, "y": 20.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 302,
+          "position": { "x": 70.0, "y": 0.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 401,
+          "position": { "x": -40.0, "y": 30.0 },
+          "size": { "x": 14.0, "y": 2.5 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 402,
+          "position": { "x": 0.0, "y": 30.0 },
+          "size": { "x": 14.0, "y": 2.5 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 403,
+          "position": { "x": 40.0, "y": 30.0 },
+          "size": { "x": 14.0, "y": 2.5 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 101,
+          "position": { "x": -60.0, "y": 50.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 102,
+          "position": { "x": -35.0, "y": 50.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 103,
+          "position": { "x": -10.0, "y": 50.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 104,
+          "position": { "x": 10.0, "y": 50.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 105,
+          "position": { "x": 35.0, "y": 50.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 106,
+          "position": { "x": 60.0, "y": 50.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 1,
+          "position": { "x": -70.0, "y": 65.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 2,
+          "position": { "x": -45.0, "y": 65.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 3,
+          "position": { "x": -20.0, "y": 65.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 4,
+          "position": { "x": 20.0, "y": 65.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 5,
+          "position": { "x": 45.0, "y": 65.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 6,
+          "position": { "x": 70.0, "y": 65.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 7,
+          "position": { "x": -75.0, "y": 80.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 8,
+          "position": { "x": -30.0, "y": 80.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 9,
+          "position": { "x": -15.0, "y": 80.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 10,
+          "position": { "x": 15.0, "y": 80.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 11,
+          "position": { "x": 30.0, "y": 80.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 12,
+          "position": { "x": 75.0, "y": 80.0 },
+          "size": { "x": 3.0, "y": 3.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 13,
+          "position": { "x": -40.0, "y": 120.0 },
+          "size": { "x": 5.0, "y": 10.0 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 16,
+          "position": { "x": 40.0, "y": 120.0 },
+          "size": { "x": 5.0, "y": 10.0 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 14,
+          "position": { "x": -60.0, "y": 150.0 },
+          "size": { "x": 7.5, "y": 10.0 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 15,
+          "position": { "x": 0.0, "y": 150.0 },
+          "size": { "x": 7.5, "y": 10.0 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 17,
+          "position": { "x": 60.0, "y": 150.0 },
+          "size": { "x": 7.5, "y": 10.0 },
+          "entry_type": "Rect"
+        },
+        {
+          "fixture_id": 501,
+          "position": { "x": -80.0, "y": 100.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Circle"
+        },
+        {
+          "fixture_id": 502,
+          "position": { "x": 80.0, "y": 100.0 },
+          "size": { "x": 5.0, "y": 5.0 },
+          "entry_type": "Circle"
+        }
+      ],
+      "decorations": [
+        {
+          "Label": {
+            "pos": { "x": 0.0, "y": -20.0 },
+            "text": "Bühne",
+            "font_size": 8.0
+          }
+        },
+        {
+          "Rect": {
+            "min": { "x": -80.0, "y": -40.0 },
+            "max": { "x": 80.0, "y": 40.0 },
+            "stroke_width": 2.0
+          }
+        }
+      ]
+    },
+    "outputs": [
+      {
+        "Artnet": {
+          "broadcast": false,
+          "broadcast_addresses": ["192.168.255.255"],
+          "bind_ip": "192.168.2.226"
+        }
+      }
+    ]
+  },
+  "ui_config": { "detached_tabs": [], "detached_tabs_config": {} }
+}

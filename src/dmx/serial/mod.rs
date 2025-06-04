@@ -3,13 +3,13 @@ use std::{
     thread,
 };
 
-use egui_probe::EguiProbe;
 use open_dmx::DMXSerial;
 use serde::{Deserialize, Serialize};
 
 use super::DmxData;
 
-#[derive(Debug, Clone, Default, EguiProbe, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct SerialOutputConfig {
     pub serial_port: String,
     pub universe: u16,

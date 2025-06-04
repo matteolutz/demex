@@ -1,6 +1,6 @@
 use std::{collections::HashMap, time};
 
-use egui_probe::EguiProbe;
+use gdtf::values::DmxValue;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
@@ -15,9 +15,34 @@ use super::utils::{
     dmx_value_to_f32, max_value, mix_dmx_value, multiply_dmx_value, multiply_dmx_value_f32,
 };
 
+use crate::utils::serde::approx_instant;
+
 #[derive(Debug, Clone)]
+pub enum FixtureChannelValue3Discrete {
+    Value(f32),
+    ChannelSet(String),
+}
+
+impl FixtureChannelValue3Discrete {
+    pub fn get_value(self, channel_function_idx: usize) -> FixtureChannelValue3 {
+        match self {
+            Self::Value(value) => FixtureChannelValue3::Discrete {
+                channel_function_idx,
+                value,
+            },
+            Self::ChannelSet(channel_set) => FixtureChannelValue3::DiscreteSet {
+                channel_function_idx,
+                channel_set,
+            },
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FixtureChannelValue2PresetState {
+    #[serde(with = "approx_instant")]
     started: time::Instant,
+
     with_selection: FixtureSelection,
 }
 
@@ -45,7 +70,8 @@ impl FixtureChannelValue2PresetState {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum FixtureChannelValue3 {
     #[default]
     Home,
@@ -53,8 +79,8 @@ pub enum FixtureChannelValue3 {
     Preset {
         id: FixturePresetId,
 
-        #[serde(default, skip_serializing, skip_deserializing)]
-        #[egui_probe(skip)]
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
         state: Option<FixtureChannelValue2PresetState>,
     },
 
@@ -203,9 +229,20 @@ impl FixtureChannelValue3 {
                     let channel_function =
                         &logical_channel.channel_functions[*channel_function_idx];
 
+                    let channel_function_from = dmx_value_to_f32(channel_function.dmx_from);
+                    let channel_function_to = logical_channel
+                        .channel_functions
+                        .get(*channel_function_idx + 1)
+                        .map(|channel_function| dmx_value_to_f32(channel_function.dmx_from))
+                        .unwrap_or(1.0);
+
                     let channel_set_value = channel_function
                         .channel_set(channel_set)
                         .map(|channel_set| dmx_value_to_f32(channel_set.dmx_from))
+                        .map(|channel_set_from_value| {
+                            (channel_set_from_value - channel_function_from)
+                                / (channel_function_to - channel_function_from)
+                        })
                         .unwrap_or(0.0);
 
                     (*channel_function_idx, channel_set_value)
@@ -261,6 +298,7 @@ impl FixtureChannelValue3 {
         fixture: &GdtfFixture,
         fixture_types: &FixtureTypeList,
         dmx_mode: &gdtf::dmx_mode::DmxMode,
+        dynamic_data: &mut HashMap<String, DmxValue>,
         values: &HashMap<String, FixtureChannelValue3>,
         channel_function: &gdtf::dmx_mode::ChannelFunction,
         grand_master: f32,
@@ -273,20 +311,27 @@ impl FixtureChannelValue3 {
         });
         relation.map(|rel| {
             let relation_master = rel.master(dmx_mode).unwrap();
+            if let Some(dynamic_value) = dynamic_data.get(relation_master.name().as_ref()) {
+                return *dynamic_value;
+            }
+
             let relation_master_value = values.get(relation_master.name().as_ref()).unwrap();
 
-            relation_master_value
+            let value = relation_master_value
                 ._to_dmx(
                     fixture,
                     fixture_types,
                     dmx_mode,
                     relation_master,
+                    dynamic_data,
                     values,
                     grand_master,
                     preset_handler,
                     timing_handler,
                 )
-                .unwrap()
+                .unwrap();
+            dynamic_data.insert(relation_master.name().as_ref().to_string(), value);
+            value
         })
     }
 
@@ -296,6 +341,7 @@ impl FixtureChannelValue3 {
         fixture_types: &FixtureTypeList,
         fixture: &GdtfFixture,
         dmx_channel: &gdtf::dmx_mode::DmxChannel,
+        dynamic_data: &mut HashMap<String, DmxValue>,
         grand_master: f32,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
@@ -308,6 +354,7 @@ impl FixtureChannelValue3 {
             fixture_types,
             dmx_mode,
             dmx_channel,
+            dynamic_data,
             values,
             grand_master,
             preset_handler,
@@ -321,6 +368,7 @@ impl FixtureChannelValue3 {
         fixture_types: &FixtureTypeList,
         dmx_mode: &gdtf::dmx_mode::DmxMode,
         dmx_channel: &gdtf::dmx_mode::DmxChannel,
+        dynamic_data: &mut HashMap<String, DmxValue>,
         values: &HashMap<String, FixtureChannelValue3>,
         grand_master: f32,
         preset_handler: &PresetHandler,
@@ -334,6 +382,7 @@ impl FixtureChannelValue3 {
                     fixture,
                     fixture_types,
                     dmx_mode,
+                    dynamic_data,
                     values,
                     f,
                     grand_master,
@@ -359,6 +408,7 @@ impl FixtureChannelValue3 {
                     fixture,
                     fixture_types,
                     dmx_mode,
+                    dynamic_data,
                     values,
                     channel_function,
                     grand_master,
@@ -397,6 +447,7 @@ impl FixtureChannelValue3 {
                     fixture,
                     fixture_types,
                     dmx_mode,
+                    dynamic_data,
                     values,
                     channel_function,
                     grand_master,
@@ -423,6 +474,7 @@ impl FixtureChannelValue3 {
                         fixture_types,
                         dmx_mode,
                         dmx_channel,
+                        dynamic_data,
                         values,
                         grand_master,
                         preset_handler,
@@ -437,6 +489,7 @@ impl FixtureChannelValue3 {
                             fixture_types,
                             dmx_mode,
                             dmx_channel,
+                            dynamic_data,
                             values,
                             grand_master,
                             preset_handler,
@@ -448,6 +501,7 @@ impl FixtureChannelValue3 {
                             fixture_types,
                             dmx_mode,
                             dmx_channel,
+                            dynamic_data,
                             values,
                             grand_master,
                             preset_handler,
@@ -460,6 +514,7 @@ impl FixtureChannelValue3 {
                         fixture_types,
                         dmx_mode,
                         dmx_channel,
+                        dynamic_data,
                         values,
                         grand_master,
                         preset_handler,
@@ -470,13 +525,16 @@ impl FixtureChannelValue3 {
                         fixture_types,
                         dmx_mode,
                         dmx_channel,
+                        dynamic_data,
                         values,
                         grand_master,
                         preset_handler,
                         timing_handler,
                     )?;
 
-                    Some(mix_dmx_value(a, b, *mix))
+                    let mixed = mix_dmx_value(a, b, *mix);
+
+                    Some(mixed)
                 }
             }
         };

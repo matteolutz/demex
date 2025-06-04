@@ -39,6 +39,6 @@ pub fn mix_dmx_value(
 ) -> gdtf::values::DmxValue {
     let a = dmx_a.value() as f32 / max_value(dmx_a.bytes()) as f32;
     let b = dmx_b.value() as f32 / max_value(dmx_b.bytes()) as f32;
-    let value = (a * mix + b * (1.0 - mix)) * max_value(dmx_a.bytes()) as f32;
+    let value = (b * mix + a * (1.0 - mix)) * max_value(dmx_a.bytes()) as f32;
     gdtf::values::DmxValue::new(value as u64, dmx_a.bytes(), dmx_a.shifting()).unwrap()
 }

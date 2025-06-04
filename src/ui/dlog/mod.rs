@@ -62,15 +62,15 @@ impl DemexLogEntry {
         &self.time
     }
 
-    pub fn color(&self) -> egui::Color32 {
+    pub fn color(&self) -> ecolor::Color32 {
         match &self.entry_type {
-            DemexLogEntryType::Info(_) => egui::Color32::DARK_GREEN,
-            DemexLogEntryType::DialogEntry(_) => egui::Color32::DARK_GRAY,
-            DemexLogEntryType::CommandEntry(_) => egui::Color32::LIGHT_BLUE,
-            DemexLogEntryType::CommandFailedEntry(_) => egui::Color32::LIGHT_RED,
-            DemexLogEntryType::ActionEntrySuccess(_, _) => egui::Color32::LIGHT_GREEN,
-            DemexLogEntryType::ActionEntryFailed(_, _) => egui::Color32::LIGHT_RED,
-            DemexLogEntryType::Error(_) => egui::Color32::RED,
+            DemexLogEntryType::Info(_) => ecolor::Color32::DARK_GREEN,
+            DemexLogEntryType::DialogEntry(_) => ecolor::Color32::DARK_GRAY,
+            DemexLogEntryType::CommandEntry(_) => ecolor::Color32::LIGHT_BLUE,
+            DemexLogEntryType::CommandFailedEntry(_) => ecolor::Color32::LIGHT_RED,
+            DemexLogEntryType::ActionEntrySuccess(_, _) => ecolor::Color32::LIGHT_GREEN,
+            DemexLogEntryType::ActionEntryFailed(_, _) => ecolor::Color32::LIGHT_RED,
+            DemexLogEntryType::Error(_) => ecolor::Color32::RED,
         }
     }
 }

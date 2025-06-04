@@ -1,31 +1,22 @@
-use egui_probe::Probe;
-
-use crate::{
-    lexer::token::Token,
-    ui::{
-        components::splitter::{Splitter, SplitterAxis},
-        utils::painter::painter_layout_centered,
-    },
-};
-
-const ELEMENT_SIZE: f32 = 50.0;
+use crate::ui::components::fixture_selection_editor::fixture_selection_editor;
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     if let Some(fixture_selection) = context.global_fixture_select.as_mut() {
         let fixture_handler = context.fixture_handler.read();
 
+        /*
         Splitter::new("FixtureSelectionTabSplitter", SplitterAxis::Horizontal).show(
             ui,
             |left_ui, right_ui| {
                 egui::ScrollArea::both()
-                    .auto_shrink(egui::Vec2b::FALSE)
+                    .auto_shrink(emath::Vec2b::FALSE)
                     .show(left_ui, |ui| {
                         ui.horizontal(|ui| {
-                            ui.style_mut().spacing.item_spacing = egui::vec2(10.0, 10.0);
+                            ui.style_mut().spacing.item_spacing = emath::vec2(10.0, 10.0);
 
                             for offset_idx in 0..fixture_selection.num_offsets() {
                                 ui.vertical(|ui| {
-                                    ui.allocate_ui(egui::vec2(ELEMENT_SIZE, 10.0), |ui| {
+                                    ui.allocate_ui(emath::vec2(ELEMENT_SIZE, 10.0), |ui| {
                                         ui.centered_and_justified(|ui| {
                                             ui.label(offset_idx.to_string());
                                         });
@@ -38,14 +29,14 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                                         // let _ = ui.button(format!("{}", fixture_id));
                                         let (response, painter) = ui.allocate_painter(
-                                            egui::vec2(ELEMENT_SIZE, ELEMENT_SIZE),
+                                            emath::vec2(ELEMENT_SIZE, ELEMENT_SIZE),
                                             egui::Sense::hover(),
                                         );
 
                                         painter.rect_filled(
                                             response.rect,
                                             2.0,
-                                            egui::Color32::WHITE,
+                                            ecolor::Color32::WHITE,
                                         );
                                         painter_layout_centered(
                                             &painter,
@@ -53,7 +44,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                                                 .map(|f| f.name().to_owned())
                                                 .unwrap_or_else(|| fixture_id.to_string()),
                                             egui::FontId::proportional(10.0),
-                                            egui::Color32::BLACK,
+                                            ecolor::Color32::BLACK,
                                             response.rect.shrink(5.0),
                                         );
                                     }
@@ -179,6 +170,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                 });
             },
         );
+        */
+        fixture_selection_editor(ui, fixture_selection, &fixture_handler);
     } else {
         ui.centered_and_justified(|ui| {
             ui.label("No fixtures selected");

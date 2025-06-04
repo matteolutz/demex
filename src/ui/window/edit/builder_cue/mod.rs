@@ -1,6 +1,9 @@
-use crate::fixture::{
-    presets::preset::FixturePresetId,
-    sequence::cue::{Cue, CueBuilderEntry, CueDataMode},
+use crate::{
+    fixture::{
+        presets::preset::FixturePresetId,
+        sequence::cue::{Cue, CueBuilderEntry, CueDataMode},
+    },
+    ui::utils::vec::with_index_mut,
 };
 
 pub struct DisplayEntry {
@@ -26,9 +29,10 @@ pub fn edit_builder_cue_ui(
 
     if let CueDataMode::Builder(data) = cue.data_mut() {
         egui_extras::TableBuilder::new(ui)
+            .auto_shrink([false, true])
             .striped(true)
             .column(egui_extras::Column::auto())
-            .columns(egui_extras::Column::auto().at_least(200.0), 2)
+            .columns(egui_extras::Column::remainder().at_least(200.0), 2)
             .column(egui_extras::Column::auto())
             .header(20.0, |mut ui| {
                 ui.col(|ui| {
@@ -46,8 +50,7 @@ pub fn edit_builder_cue_ui(
                 ui.col(|_| {});
             })
             .body(|mut ui| {
-                let mut idx = 0usize;
-                data.retain_mut(|entry| {
+                data.retain_mut(with_index_mut(|idx, entry: &mut CueBuilderEntry| {
                     let mut retain = true;
 
                     ui.row(20.0, |mut ui| {
@@ -120,9 +123,8 @@ pub fn edit_builder_cue_ui(
                         });
                     });
 
-                    idx += 1;
                     retain
-                });
+                }));
             });
 
         if ui.button("+").clicked() {
@@ -131,6 +133,9 @@ pub fn edit_builder_cue_ui(
 
         ui.add_space(20.0);
     } else {
-        ui.colored_label(egui::Color32::LIGHT_RED, "Error: Cue is not a builder cue.");
+        ui.colored_label(
+            ecolor::Color32::LIGHT_RED,
+            "Error: Cue is not a builder cue.",
+        );
     }
 }

@@ -1,7 +1,7 @@
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone, EguiProbe, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum EffectSpeedScale {
     Div128,
     Div64,
@@ -45,7 +45,8 @@ impl EffectSpeedScale {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, EguiProbe, Default, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum EffectSpeedSyncMode {
     #[default]
     None,
@@ -60,7 +61,8 @@ impl EffectSpeedSyncMode {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, EguiProbe)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum EffectSpeed {
     Bpm(f32),
     SpeedMaster {

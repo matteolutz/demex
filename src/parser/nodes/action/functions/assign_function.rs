@@ -1,3 +1,5 @@
+use std::time;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -5,7 +7,7 @@ use crate::{
         patch::Patch,
         presets::{preset::FixturePresetId, PresetHandler},
         timing::TimingHandler,
-        updatables::{error::UpdatableHandlerError, UpdatableHandler},
+        updatables::UpdatableHandler,
     },
     input::{button::DemexInputButton, error::DemexInputDeviceError, fader::DemexInputFader},
     lexer::token::Token,
@@ -19,13 +21,12 @@ use super::FunctionArgs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AssignButtonArgsMode {
-    ExecutorStartAndNext(u32),
+    ExecutorGo(u32),
     ExecutorStop(u32),
     ExecutorFlash {
         id: u32,
         stomp: bool,
     },
-    FaderGo(u32),
     FixtureSelector(FixtureSelector),
     SelectivePreset {
         preset_id_range: ValueOrRange<FixturePresetId>,
@@ -42,18 +43,9 @@ impl AssignButtonArgsMode {
         updatable_handler: &UpdatableHandler,
     ) -> Result<(), ActionRunError> {
         match self {
-            Self::ExecutorStop(id)
-            | Self::ExecutorFlash { id, .. }
-            | Self::ExecutorStartAndNext(id) => {
+            Self::ExecutorStop(id) | Self::ExecutorFlash { id, .. } | Self::ExecutorGo(id) => {
                 updatable_handler
                     .executor(*id)
-                    .ok_or(ActionRunError::UpdatableHandlerError(
-                        UpdatableHandlerError::UpdatableNotFound(*id),
-                    ))?;
-            }
-            Self::FaderGo(id) => {
-                updatable_handler
-                    .fader(*id)
                     .map_err(ActionRunError::UpdatableHandlerError)?;
             }
             Self::SelectivePreset {
@@ -78,8 +70,8 @@ impl AssignButtonArgsMode {
         fixture_selector_context: FixtureSelectorContext,
     ) -> Result<Vec<DemexInputButton>, ActionRunError> {
         match &self {
-            AssignButtonArgsMode::ExecutorStartAndNext(executor_id) => {
-                Ok(vec![DemexInputButton::ExecutorStartAndNext(*executor_id)])
+            AssignButtonArgsMode::ExecutorGo(executor_id) => {
+                Ok(vec![DemexInputButton::ExecutorGo(*executor_id)])
             }
             AssignButtonArgsMode::ExecutorStop(executor_id) => {
                 Ok(vec![DemexInputButton::ExecutorStop(*executor_id)])
@@ -89,9 +81,6 @@ impl AssignButtonArgsMode {
                     id: *id,
                     stomp: *stomp,
                 }])
-            }
-            AssignButtonArgsMode::FaderGo(fader_id) => {
-                Ok(vec![DemexInputButton::FaderGo(*fader_id)])
             }
             AssignButtonArgsMode::FixtureSelector(fixture_selector) => {
                 Ok(vec![DemexInputButton::FixtureSelector {
@@ -141,6 +130,7 @@ pub struct AssignButtonArgs {
 impl FunctionArgs for AssignButtonArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         preset_handler: &mut crate::fixture::presets::PresetHandler,
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -181,9 +171,15 @@ impl FunctionArgs for AssignButtonArgs {
     }
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum AssignFaderArgsMode {
+    Executor(u32),
+    Grandmaster,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssignFaderArgs {
-    pub fader_id: u32,
+    pub mode: AssignFaderArgsMode,
     pub device_idx: usize,
     pub input_fader_id: u32,
 }
@@ -191,6 +187,7 @@ pub struct AssignFaderArgs {
 impl FunctionArgs for AssignFaderArgs {
     fn run(
         &self,
+        _issued_at: time::Instant,
         _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
         _preset_handler: &mut crate::fixture::presets::PresetHandler,
         _fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
@@ -199,10 +196,6 @@ impl FunctionArgs for AssignFaderArgs {
         _: &mut TimingHandler,
         _: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
-        let _ = updatable_handler
-            .fader(self.fader_id)
-            .map_err(ActionRunError::UpdatableHandlerError)?;
-
         let device = input_device_handler
             .device_mut(self.device_idx)
             .map_err(ActionRunError::InputDeviceError)?;
@@ -213,10 +206,21 @@ impl FunctionArgs for AssignFaderArgs {
             ));
         }
 
+        let assignment = match self.mode {
+            AssignFaderArgsMode::Executor(executor_id) => {
+                // Verify, taht the executor exists
+                let _ = updatable_handler
+                    .executor(executor_id)
+                    .map_err(ActionRunError::UpdatableHandlerError)?;
+                DemexInputFader::Fader { executor_id }
+            }
+            AssignFaderArgsMode::Grandmaster => DemexInputFader::Grandmaster,
+        };
+
         device
             .config
             .faders_mut()
-            .insert(self.input_fader_id, DemexInputFader::new(self.fader_id));
+            .insert(self.input_fader_id, assignment);
 
         Ok(ActionRunResult::new())
     }

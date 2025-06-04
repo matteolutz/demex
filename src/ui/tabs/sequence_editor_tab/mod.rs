@@ -1,97 +1,106 @@
-use state::SequenceEditorState;
-
 use crate::{
     fixture::sequence::cue::{Cue, CueDataMode},
+    lexer::token::Token,
     ui::{
         context::DemexUiContext,
+        edit_request::UiEditRequest,
         window::{edit::DemexEditWindow, DemexWindow},
     },
 };
 
-mod state;
-
 pub struct SequenceEditorTab<'a> {
     context: &'a mut DemexUiContext,
-    id_source: egui::Id,
 }
 
 impl<'a> SequenceEditorTab<'a> {
-    pub fn new(context: &'a mut DemexUiContext, name: &str) -> Self {
-        Self {
-            context,
-            id_source: egui::Id::new(name),
-        }
+    pub fn new(context: &'a mut DemexUiContext) -> Self {
+        Self { context }
     }
 
-    fn show_selected_sequence(
-        &mut self,
-        ui: &mut egui::Ui,
-        sequence_id: u32,
-        state: &mut SequenceEditorState,
-    ) {
+    fn show_selected_sequence(&mut self, ui: &mut egui::Ui, sequence_id: u32) {
         let mut preset_handler = self.context.preset_handler.write();
         let sequence = preset_handler.get_sequence_mut(sequence_id);
 
-        if ui.button("Back").clicked() {
-            state.selected_sequence = None;
-        }
-
         if let Ok(sequence) = sequence {
-            ui.heading(sequence.name());
+            egui::TextEdit::singleline(sequence.name_mut()).show(ui);
+            ui.add_space(20.0);
+
+            egui_probe::Probe::new(sequence.stop_behavior_mut())
+                .with_header("Stop behavior")
+                .show(ui);
+
+            ui.add_space(20.0);
 
             egui_extras::TableBuilder::new(ui)
-                .columns(egui_extras::Column::auto(), 2)
-                .column(egui_extras::Column::remainder())
-                .columns(egui_extras::Column::auto(), 7)
+                .columns(egui_extras::Column::auto().at_least(20.0), 2)
+                .column(egui_extras::Column::remainder().at_least(100.0))
+                .columns(egui_extras::Column::auto().at_least(20.0), 8)
                 .striped(true)
                 .header(20.0, |mut header| {
                     header.col(|ui| {
-                        ui.heading("Cue Idx");
+                        ui.label("Cue Idx");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Builder");
+                        ui.label("Builder");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Name");
+                        ui.label("Name");
                     });
 
                     header.col(|ui| {
-                        ui.heading("In Delay");
+                        ui.label("In Delay");
                     });
 
                     header.col(|ui| {
-                        ui.heading("In Fade");
+                        ui.label("In Fade");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Out Delay");
+                        ui.label("Snap %");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Out Fade");
+                        ui.label("Timing");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Snap %");
+                        ui.label("Trigger");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Timing");
+                        ui.label("Block");
                     });
 
                     header.col(|ui| {
-                        ui.heading("Trigger");
+                        ui.label("Fading");
+                    });
+
+                    header.col(|ui| {
+                        ui.label("MIB");
                     });
                 })
                 .body(|mut body| {
                     for cue in sequence.cues_mut() {
-                        body.row(20.0, |mut row| {
+                        body.row(60.0, |mut row| {
                             let (cue_idx_major, cue_idx_minor) = cue.cue_idx();
 
                             row.col(|ui| {
-                                ui.label(format!("{}.{}", cue_idx_major, cue_idx_minor));
+                                ui.horizontal(|ui| {
+                                    ui.label(format!("{}.{}", cue_idx_major, cue_idx_minor));
+                                    if ui.button("Sel").clicked() {
+                                        self.context.command.extend_from_slice(&[
+                                            Token::KeywordSequence,
+                                            Token::Integer(sequence_id),
+                                            Token::KeywordCue,
+                                            Token::FloatingPoint(
+                                                0.0,
+                                                (cue_idx_major, cue_idx_minor),
+                                            ),
+                                        ]);
+                                    }
+                                });
                             });
 
                             row.col(|ui| match cue.data() {
@@ -130,18 +139,6 @@ impl<'a> SequenceEditorTab<'a> {
                             });
 
                             row.col(|ui| {
-                                egui_probe::Probe::new(cue.out_delay_mut())
-                                    .with_header("")
-                                    .show(ui);
-                            });
-
-                            row.col(|ui| {
-                                egui_probe::Probe::new(cue.out_fade_mut())
-                                    .with_header("")
-                                    .show(ui);
-                            });
-
-                            row.col(|ui| {
                                 egui_probe::Probe::new(cue.snap_percent_mut())
                                     .with_header("")
                                     .show(ui);
@@ -158,42 +155,47 @@ impl<'a> SequenceEditorTab<'a> {
                                     .with_header("")
                                     .show(ui);
                             });
+
+                            row.col(|ui| {
+                                ui.checkbox(cue.block_mut(), "");
+                            });
+
+                            row.col(|ui| {
+                                egui_probe::Probe::new(cue.fading_function_mut())
+                                    .with_header("")
+                                    .show(ui);
+                            });
+
+                            row.col(|ui| {
+                                ui.checkbox(cue.move_in_black_mut(), "");
+                            });
                         });
                     }
                 });
 
+            ui.add_space(20.0);
             if ui.button("Add Builder Cue").clicked() {
                 sequence.add_cue(Cue::new_default_builder(sequence.next_cue_idx()));
             }
         }
     }
 
-    fn show_sequence_list(&self, ui: &mut egui::Ui, state: &mut SequenceEditorState) {
+    fn show_sequence_list(&mut self, ui: &mut egui::Ui) {
         let preset_handler = self.context.preset_handler.read();
         let sequences = preset_handler.sequences();
 
         for sequence in sequences.values() {
             if ui.button(sequence.name()).clicked() {
-                state.selected_sequence = Some(sequence.id());
+                self.context.global_sequence_select = UiEditRequest::Editing(sequence.id());
             }
         }
     }
 
     pub fn show(&mut self, ui: &mut egui::Ui) {
-        let id = ui.make_persistent_id(self.id_source);
-        let mut state = ui
-            .ctx()
-            .data_mut(|d| d.get_temp::<SequenceEditorState>(id))
-            .unwrap_or_default();
-
-        if let Some(sequence_id) = state.selected_sequence {
-            self.show_selected_sequence(ui, sequence_id, &mut state);
+        if let Some(sequence_id) = self.context.global_sequence_select.option() {
+            self.show_selected_sequence(ui, sequence_id);
         } else {
-            self.show_sequence_list(ui, &mut state);
+            self.show_sequence_list(ui);
         }
-
-        ui.ctx().data_mut(|d| {
-            d.insert_temp(id, state);
-        });
     }
 }

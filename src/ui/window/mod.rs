@@ -7,7 +7,13 @@ use crate::fixture::{
     handler::FixtureHandler, patch::Patch, presets::PresetHandler, updatables::UpdatableHandler,
 };
 
-use super::dlog::dialog::DemexGlobalDialogEntry;
+use super::{
+    components::{
+        button::{icon::DemexIcon, icon_button},
+        separator::padded_separator,
+    },
+    dlog::dialog::DemexGlobalDialogEntry,
+};
 
 pub mod edit;
 
@@ -96,6 +102,13 @@ impl DemexWindow {
             entries.push(entry);
         }
     }
+
+    pub fn should_fullscreen(&self) -> bool {
+        match self {
+            Self::Edit(edit_window) => edit_window.should_fullscreen(),
+            _ => false,
+        }
+    }
 }
 
 impl DemexWindow {
@@ -123,59 +136,86 @@ impl DemexWindow {
         updatable_handler: &mut Arc<RwLock<UpdatableHandler>>,
         patch: &mut Arc<RwLock<Patch>>,
     ) -> bool {
-        egui::Window::new(self.title())
-            .resizable(false)
-            .movable(true)
+        let mut window = egui::Window::new(self.title())
             .interactable(true)
             .collapsible(false)
-            .order(self.order())
+            .scroll(true)
+            .order(self.order());
+
+        window = if self.should_fullscreen() {
+            window.fixed_size(ctx.screen_rect().size())
+        } else {
+            let screen_rect = ctx.screen_rect();
+            let shrunk_rect = screen_rect.shrink2(emath::vec2(
+                screen_rect.width() * 0.25,
+                screen_rect.height() * 0.25,
+            ));
+
+            window.fixed_size(shrunk_rect.size())
+        };
+
+        window
             .show(ctx, |ui| {
-                match self {
-                    Self::Dialog(dialog_entries) => {
-                        ui.vertical(|ui| {
-                            for (idx, entry) in dialog_entries.iter().enumerate() {
-                                entry.window_ui(ui);
+                ui.vertical(|ui| {
+                    let should_close = ui
+                        .with_layout(
+                            egui::Layout::left_to_right(egui::Align::TOP)
+                                .with_main_align(egui::Align::RIGHT),
+                            |ui| icon_button(ui, DemexIcon::Close).clicked(),
+                        )
+                        .inner;
 
-                                if idx < dialog_entries.len() - 1 {
-                                    ui.separator();
-                                }
-                            }
-                        });
-                    }
-                    Self::Edit(edit_window) => {
-                        let mut fixture_handler = fixture_handler.write();
-                        let mut preset_handler = preset_handler.write();
-                        let mut updatable_handler = updatable_handler.write();
-                        let mut patch = patch.write();
+                    padded_separator(ui);
 
-                        if let Err(err) = edit_window.window_ui(
-                            ui,
-                            &mut fixture_handler,
-                            &mut preset_handler,
-                            &mut updatable_handler,
-                            &mut patch,
-                        ) {
+                    match self {
+                        Self::Dialog(dialog_entries) => {
                             ui.vertical(|ui| {
-                                ui.colored_label(egui::Color32::LIGHT_RED, "Something went wrong.");
-                                ui.label(err.to_string());
+                                for (idx, entry) in dialog_entries.iter().enumerate() {
+                                    entry.window_ui(ui);
+
+                                    if idx < dialog_entries.len() - 1 {
+                                        ui.separator();
+                                    }
+                                }
                             });
                         }
-                    }
-                    Self::AboutDemex => {
-                        ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
-                            ui.image(egui::include_image!(
-                                "../../../assets/LogoV1-Wide-Title.png"
-                            ));
-                        });
-                    }
-                };
+                        Self::Edit(edit_window) => {
+                            let mut fixture_handler = fixture_handler.write();
+                            let mut preset_handler = preset_handler.write();
+                            let mut updatable_handler = updatable_handler.write();
+                            let mut patch = patch.write();
 
-                ui.add_space(20.0);
-                if ui.button("Close").clicked() {
-                    return true;
-                }
+                            if let Err(err) = edit_window.window_ui(
+                                ui,
+                                &mut fixture_handler,
+                                &mut preset_handler,
+                                &mut updatable_handler,
+                                &mut patch,
+                            ) {
+                                ui.vertical(|ui| {
+                                    ui.colored_label(
+                                        ecolor::Color32::LIGHT_RED,
+                                        "Something went wrong.",
+                                    );
+                                    ui.label(err.to_string());
+                                });
+                            }
+                        }
+                        Self::AboutDemex => {
+                            ui.with_layout(
+                                egui::Layout::top_down_justified(egui::Align::Min),
+                                |ui| {
+                                    ui.image(egui::include_image!(
+                                        "../../../assets/LogoV1-Wide-Title.png"
+                                    ));
+                                },
+                            );
+                        }
+                    };
 
-                false
+                    should_close
+                })
+                .inner
             })
             .map(|inner| inner.inner)
             .unwrap_or(None)

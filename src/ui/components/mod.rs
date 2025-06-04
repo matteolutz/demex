@@ -1,5 +1,10 @@
+pub mod button;
+pub mod fixture_selection_editor;
+pub mod numpad;
 pub mod position_selector;
 pub mod quick_menu;
+pub mod separator;
 pub mod slider;
 pub mod splitter;
 pub mod tab_viewer;
+pub mod wave_editor;

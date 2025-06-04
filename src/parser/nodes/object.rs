@@ -1,13 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    fixture::{
-        handler::FixtureHandler,
-        presets::{preset::FixturePresetId, PresetHandler},
-        sequence::cue::CueIdx,
-        updatables::UpdatableHandler,
-    },
-    ui::window::edit::DemexEditWindow,
+use crate::fixture::{
+    handler::FixtureHandler,
+    presets::{preset::FixturePresetId, PresetHandler},
+    sequence::cue::CueIdx,
+    updatables::UpdatableHandler,
 };
 
 use super::{
@@ -38,14 +35,15 @@ impl std::error::Error for ObjectError {
 
 pub trait ObjectTrait {
     fn default_action(self) -> Option<Action>;
-    fn edit_window(self) -> Option<DemexEditWindow>;
+
+    #[cfg(feature = "ui")]
+    fn edit_window(self) -> Option<crate::ui::window::edit::DemexEditWindow>;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum HomeableObject {
     FixtureSelector(FixtureSelector),
     Executor(u32),
-    Fader(u32),
     Programmer,
 }
 
@@ -73,15 +71,8 @@ impl HomeableObject {
                 Ok(ActionRunResult::new())
             }
             HomeableObject::Executor(executor_id) => {
-                updatable_handler
-                    .stop_executor(*executor_id, fixture_handler, preset_handler)
-                    .map_err(ActionRunError::UpdatableHandlerError)?;
-
-                Ok(ActionRunResult::new())
-            }
-            HomeableObject::Fader(fader_id) => {
-                if let Ok(fader) = updatable_handler.fader_mut(*fader_id) {
-                    fader.home(fixture_handler, preset_handler);
+                if let Ok(fader) = updatable_handler.executor_mut(*executor_id) {
+                    fader.stop(fixture_handler, preset_handler);
                 }
 
                 Ok(ActionRunResult::new())
@@ -104,13 +95,13 @@ impl ObjectTrait for HomeableObject {
         }
     }
 
-    fn edit_window(self) -> Option<DemexEditWindow> {
+    #[cfg(feature = "ui")]
+    fn edit_window(self) -> Option<crate::ui::window::edit::DemexEditWindow> {
         match self {
-            Self::Executor(id) => Some(DemexEditWindow::EditExecutor(id)),
-            Self::Fader(id) => Some(DemexEditWindow::EditFader(id)),
+            Self::Executor(id) => Some(crate::ui::window::edit::DemexEditWindow::EditExecutor(id)),
             Self::FixtureSelector(fixture_selector) => fixture_selector
                 .try_as_group_id()
-                .map(DemexEditWindow::EditGroup),
+                .map(crate::ui::window::edit::DemexEditWindow::EditGroup),
             Self::Programmer => None,
         }
     }
@@ -118,10 +109,10 @@ impl ObjectTrait for HomeableObject {
 
 impl HomeableObject {
     pub fn rangable_with(&self, other: &HomeableObject) -> bool {
+        #[allow(clippy::match_like_matches_macro)]
         match (self, other) {
             (Self::FixtureSelector(_), Self::FixtureSelector(_)) => true,
             (Self::Executor(_), Self::Executor(_)) => true,
-            (Self::Fader(_), Self::Fader(_)) => true,
             _ => false,
         }
     }
@@ -144,14 +135,17 @@ impl ObjectTrait for Object {
         }
     }
 
-    fn edit_window(self) -> Option<DemexEditWindow> {
+    #[cfg(feature = "ui")]
+    fn edit_window(self) -> Option<crate::ui::window::edit::DemexEditWindow> {
         match self {
             Self::HomeableObject(obj) => obj.edit_window(),
-            Self::Sequence(id) => Some(DemexEditWindow::EditSequence(id)),
-            Self::SequenceCue(sequence_id, cue_idx) => {
-                Some(DemexEditWindow::EditSequenceCue(sequence_id, cue_idx))
-            }
-            Self::Preset(preset_id) => Some(DemexEditWindow::EditPreset(preset_id)),
+            Self::Sequence(id) => Some(crate::ui::window::edit::DemexEditWindow::EditSequence(id)),
+            Self::SequenceCue(sequence_id, cue_idx) => Some(
+                crate::ui::window::edit::DemexEditWindow::EditSequenceCue(sequence_id, cue_idx),
+            ),
+            Self::Preset(preset_id) => Some(crate::ui::window::edit::DemexEditWindow::EditPreset(
+                preset_id,
+            )),
             Self::Macro(_) => None,
         }
     }

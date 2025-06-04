@@ -9,7 +9,7 @@ pub fn ui(ui: &mut egui::Ui, context: &mut DemexUiContext) {
     ui.heading("Fixture Types");
 
     egui_extras::TableBuilder::new(ui)
-        .auto_shrink(egui::Vec2b::new(false, true))
+        .auto_shrink(emath::Vec2b::new(false, true))
         .column(egui_extras::Column::auto())
         .columns(egui_extras::Column::remainder(), 2)
         .striped(true)

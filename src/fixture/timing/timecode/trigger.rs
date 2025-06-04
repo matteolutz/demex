@@ -13,7 +13,7 @@ pub enum TimecodeTriggerType {
         selection: FixtureSelection,
         preset: FixturePresetId,
     },
-    ExecutorStartAndNext(u32),
+    ExecutorGo(u32),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,8 +33,8 @@ impl TimecodeTrigger {
         let time_offset = (new_millis - self.millis) as f32 / 1000.0;
 
         match self.trigger_type {
-            TimecodeTriggerType::ExecutorStartAndNext(executor_id) => {
-                let _ = updatable_handler.start_or_next_executor(
+            TimecodeTriggerType::ExecutorGo(executor_id) => {
+                let _ = updatable_handler.executor_go(
                     executor_id,
                     fixture_handler,
                     preset_handler,

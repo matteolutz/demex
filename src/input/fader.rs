@@ -1,4 +1,3 @@
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
@@ -8,27 +7,31 @@ use crate::fixture::{
 
 use super::error::DemexInputDeviceError;
 
-#[derive(Debug, Serialize, Deserialize, EguiProbe, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum DemexInputFader {
     Fader {
-        fader_id: u32,
+        executor_id: u32,
     },
     SpeedMaster {
         speed_master_id: u32,
         bpm_min: f32,
         bpm_max: f32,
     },
+    Grandmaster,
 }
 
 impl Default for DemexInputFader {
     fn default() -> Self {
-        Self::Fader { fader_id: 0 }
+        Self::Fader { executor_id: 0 }
     }
 }
 
 impl DemexInputFader {
     pub fn new(fader_id: u32) -> Self {
-        Self::Fader { fader_id }
+        Self::Fader {
+            executor_id: fader_id,
+        }
     }
 
     pub fn handle_change(
@@ -40,12 +43,14 @@ impl DemexInputFader {
         timing_handler: &mut TimingHandler,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
-            Self::Fader { fader_id } => {
+            Self::Fader {
+                executor_id: fader_id,
+            } => {
                 let fader = updatable_handler
-                    .fader_mut(*fader_id)
+                    .executor_mut(*fader_id)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
-                fader.set_value(value, fixture_handler, preset_handler);
+                fader.set_value(value, fixture_handler, preset_handler, 0.0);
 
                 Ok(())
             }
@@ -61,6 +66,12 @@ impl DemexInputFader {
                 let value = min_bpm + (max_bpm - min_bpm) * value;
 
                 speed_master.set_bpm(value);
+
+                Ok(())
+            }
+            Self::Grandmaster => {
+                let byte_value = (value * 255.0) as u8;
+                *fixture_handler.grand_master_mut() = byte_value;
 
                 Ok(())
             }

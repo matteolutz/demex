@@ -115,6 +115,7 @@ impl<'a> Lexer<'a> {
                     "next" => Some(Token::KeywordNext),
                     "config" => Some(Token::KeywordConfig),
                     "output" => Some(Token::KeywordOutput),
+                    "patch" => Some(Token::KeywordPatch),
                     "beam" => Some(Token::KeywordBeam),
                     "control" => Some(Token::KeywordControl),
                     "focus" => Some(Token::KeywordFocus),
@@ -130,6 +131,7 @@ impl<'a> Lexer<'a> {
                     "programmer" => Some(Token::KeywordProgrammer),
                     "stomp" => Some(Token::KeywordStomp),
                     "recall" => Some(Token::KeywordRecall),
+                    "grandmaster" | "gm" => Some(Token::KeywordGrandmaster),
                     _ => None,
                 };
 

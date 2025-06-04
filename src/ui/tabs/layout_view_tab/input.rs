@@ -1,7 +1,7 @@
 #[derive(Default)]
 pub struct LayoutViewInputOffset {
     pub zoom: f32,
-    pub center: egui::Vec2,
+    pub center: emath::Vec2,
 }
 
 pub fn read_layout_view_input(ui: &egui::Ui, rect: egui::Rect, zoom: f32) -> LayoutViewInputOffset {
@@ -19,18 +19,18 @@ pub fn read_layout_view_input(ui: &egui::Ui, rect: egui::Rect, zoom: f32) -> Lay
             }
 
             let mut zoom_offset: f32 = 0.0;
-            let mut center_offset: egui::Vec2 = egui::Vec2::ZERO;
+            let mut center_offset: emath::Vec2 = emath::Vec2::ZERO;
 
             let zoom_delta = reader.zoom_delta();
             if zoom_delta != 1.0 && reader.pointer.hover_pos().is_some() {
                 let hover_pos = reader.pointer.hover_pos().unwrap();
-                let center_delta: egui::Vec2 = (hover_pos - (rect.min + rect.size() / 2.0)) / zoom;
+                let center_delta: emath::Vec2 = (hover_pos - (rect.min + rect.size() / 2.0)) / zoom;
 
                 let zoom_amount = zoom_delta - 1.0;
 
                 zoom_offset += zoom_amount;
                 center_offset -= center_delta * ((zoom_amount / 2.0).min(1.0));
-            } else if reader.raw_scroll_delta != egui::Vec2::ZERO {
+            } else if reader.raw_scroll_delta != emath::Vec2::ZERO {
                 let offset = reader.raw_scroll_delta / zoom;
                 center_offset += offset;
             }

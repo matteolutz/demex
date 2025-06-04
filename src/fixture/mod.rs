@@ -1,6 +1,6 @@
-// pub mod channel2;
 pub mod channel3;
 pub mod effect;
+pub mod effect2;
 pub mod error;
 pub mod gdtf;
 pub mod handler;

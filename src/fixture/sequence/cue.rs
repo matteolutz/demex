@@ -3,7 +3,6 @@ use std::{
     time,
 };
 
-use egui_probe::EguiProbe;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -20,7 +19,36 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, EguiProbe)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
+pub enum CueFadingFunction {
+    #[default]
+    Linear,
+
+    EaseInQuad,
+    EaseOutQuad,
+    EaseInOutQuad,
+}
+
+impl CueFadingFunction {
+    pub fn apply(&self, x: f32) -> f32 {
+        match self {
+            Self::Linear => x,
+            Self::EaseInQuad => x * x,
+            Self::EaseOutQuad => 1.0 - (1.0 - x) * (1.0 - x),
+            Self::EaseInOutQuad => {
+                if x < 0.5 {
+                    2.0 * x * x
+                } else {
+                    1.0 - (-2.0 * x + 2.0).powf(2.0) / 2.0
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum CueTrigger {
     /// Cue is triggered manually
     #[default]
@@ -29,9 +57,13 @@ pub enum CueTrigger {
     /// Cue is automatically triggered, after previous cue finished
     /// all of it's fading and delays
     Follow,
+
+    /// Cue is automatically triggered, after a certain time. The time begins with the start of the previous cue
+    Time(f32),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct CueFixtureChannelValue {
     value: FixtureChannelValue3,
     channel_name: String,
@@ -47,6 +79,14 @@ impl CueFixtureChannelValue {
         }
     }
 
+    pub fn with_preset_state(
+        mut self,
+        preset_state: Option<FixtureChannelValue2PresetState>,
+    ) -> Self {
+        self.value = self.value.with_preset_state(preset_state);
+        self
+    }
+
     pub fn value(&self) -> &FixtureChannelValue3 {
         &self.value
     }
@@ -60,14 +100,22 @@ impl CueFixtureChannelValue {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, Default, EguiProbe)]
+impl From<CueFixtureChannelValue> for (String, FixtureChannelValue3) {
+    fn from(value: CueFixtureChannelValue) -> Self {
+        (value.channel_name, value.value)
+    }
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum CueTimingOriginDirection {
     #[default]
     LowToHigh,
     HighToLow,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, EguiProbe)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct CueTiming {
     // Offset (in seconds), that is applied between the fade in and down
     // of each fixture
@@ -106,14 +154,16 @@ impl CueTiming {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct CueBuilderEntry {
     pub group_id: Option<u32>,
     pub preset_feature_group_id: Option<u32>,
     pub preset_id: Option<FixturePresetId>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EguiProbe)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum CueDataMode {
     /// Default mode, where the data is stored as a map of fixture_id -> Vec<channel_values>
     Default(HashMap<u32, Vec<CueFixtureChannelValue>>),
@@ -131,39 +181,45 @@ impl Default for CueDataMode {
 
 pub type CueIdx = (u32, u32);
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, EguiProbe)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct Cue {
-    #[egui_probe(skip)]
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     cue_idx: CueIdx,
 
     #[serde(default)]
     name: String,
 
-    #[egui_probe(skip)]
-    // data: HashMap<u32, Vec<CueFixtureChannelValue>>,
+    #[cfg_attr(feature = "ui", egui_probe(skip))]
     data: CueDataMode,
 
     selection: FixtureSelection,
 
     // Time, to fade into the cue
     in_fade: f32,
-    // Time, to fade out of the cue
-    out_fade: Option<f32>,
 
     // Delay, before the cue starts fading in
     in_delay: f32,
-
-    // Delay, before the cue starts fading out
-    out_delay: Option<f32>,
 
     // When (as a percentage of the in_fade time), snapping of values, that are not
     // being faded, are changed.
     snap_percent: f32,
 
     #[serde(default)]
+    block: bool,
+
+    #[serde(default)]
     timing: CueTiming,
 
     trigger: CueTrigger,
+
+    #[serde(default)]
+    fading_function: CueFadingFunction,
+
+    /// If the true, this cue will also move all channels except the intensity parameters of all fixtures
+    /// in the next cue, that are not active in the current cue.
+    #[serde(default)]
+    move_in_black: bool,
 }
 
 impl Cue {
@@ -204,12 +260,13 @@ impl Cue {
             selection: FixtureSelection::default(),
 
             in_fade: 0.0,
-            out_fade: None,
             in_delay: 0.0,
-            out_delay: None,
             snap_percent: 0.0,
+            block: false,
             timing: CueTiming::default(),
             trigger: CueTrigger::Manual,
+            fading_function: CueFadingFunction::default(),
+            move_in_black: false,
         }
     }
 
@@ -218,9 +275,7 @@ impl Cue {
         data: HashMap<u32, Vec<CueFixtureChannelValue>>,
         selection: FixtureSelection,
         in_fade: f32,
-        out_fade: Option<f32>,
         in_delay: f32,
-        out_delay: Option<f32>,
         snap_percent: f32,
         timing: CueTiming,
         trigger: CueTrigger,
@@ -233,12 +288,13 @@ impl Cue {
             selection,
 
             in_fade,
-            out_fade,
             in_delay,
-            out_delay,
             snap_percent,
+            block: false,
             timing,
             trigger,
+            fading_function: Default::default(),
+            move_in_black: false,
         }
     }
 
@@ -270,14 +326,6 @@ impl Cue {
         &mut self.in_fade
     }
 
-    pub fn out_fade(&self) -> f32 {
-        self.out_fade.unwrap_or(self.in_fade)
-    }
-
-    pub fn out_fade_mut(&mut self) -> &mut Option<f32> {
-        &mut self.out_fade
-    }
-
     pub fn in_delay(&self) -> f32 {
         self.in_delay
     }
@@ -286,20 +334,20 @@ impl Cue {
         &mut self.in_delay
     }
 
-    pub fn out_delay(&self) -> f32 {
-        self.out_delay.unwrap_or(self.in_delay)
-    }
-
-    pub fn out_delay_mut(&mut self) -> &mut Option<f32> {
-        &mut self.out_delay
-    }
-
     pub fn snap_percent(&self) -> f32 {
         self.snap_percent
     }
 
     pub fn snap_percent_mut(&mut self) -> &mut f32 {
         &mut self.snap_percent
+    }
+
+    pub fn block(&self) -> bool {
+        self.block
+    }
+
+    pub fn block_mut(&mut self) -> &mut bool {
+        &mut self.block
     }
 
     pub fn timing(&self) -> &CueTiming {
@@ -318,6 +366,22 @@ impl Cue {
         &mut self.trigger
     }
 
+    pub fn fading_function(&self) -> &CueFadingFunction {
+        &self.fading_function
+    }
+
+    pub fn fading_function_mut(&mut self) -> &mut CueFadingFunction {
+        &mut self.fading_function
+    }
+
+    pub fn move_in_black(&self) -> bool {
+        self.move_in_black
+    }
+
+    pub fn move_in_black_mut(&mut self) -> &mut bool {
+        &mut self.move_in_black
+    }
+
     pub fn total_offset(&self, preset_handler: &PresetHandler) -> f32 {
         self.timing
             .total_offset(self.selection(preset_handler).num_offsets())
@@ -331,6 +395,74 @@ impl Cue {
                 .unwrap_or(0),
             self.selection(preset_handler).num_offsets(),
         )
+    }
+
+    pub fn values_for_fixture(
+        &self,
+        fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
+        preset_handler: &PresetHandler,
+        timing_handler: &TimingHandler,
+        cue_started: Option<time::Instant>,
+    ) -> Vec<CueFixtureChannelValue> {
+        match &self.data {
+            CueDataMode::Default(data) => {
+                let preset_state = cue_started.map(|cue_started| {
+                    FixtureChannelValue2PresetState::new(
+                        cue_started,
+                        self.selection(preset_handler),
+                    )
+                });
+
+                data.get(&fixture.id())
+                    .unwrap_or(&vec![])
+                    .iter()
+                    .map(|value| value.clone().with_preset_state(preset_state.clone()))
+                    .collect()
+            }
+            CueDataMode::Builder(entries) => {
+                for entry in entries {
+                    // if it's an empty entry, skip it
+                    if entry.group_id.is_none() || entry.preset_id.is_none() {
+                        continue;
+                    }
+
+                    let group = preset_handler.get_group(entry.group_id.unwrap());
+                    if let Ok(group) = group {
+                        // if the group doesn't have the fixture, skip it
+                        if !group.fixture_selection().has_fixture(fixture.id()) {
+                            continue;
+                        }
+
+                        let preset_state = cue_started.map(|cue_started| {
+                            FixtureChannelValue2PresetState::new(
+                                cue_started,
+                                group.fixture_selection().clone(),
+                            )
+                        });
+
+                        let preset = preset_handler.get_preset(entry.preset_id.unwrap());
+                        if let Ok(preset) = preset {
+                            return preset
+                                .values(
+                                    fixture,
+                                    fixture_types,
+                                    preset_handler,
+                                    timing_handler,
+                                    preset_state.as_ref(),
+                                )
+                                .into_iter()
+                                .map(|(channel_name, value)| {
+                                    CueFixtureChannelValue::new(value, channel_name, false)
+                                })
+                                .collect::<Vec<_>>();
+                        }
+                    }
+                }
+
+                vec![]
+            }
+        }
     }
 
     pub fn channel_value_for_fixture(
@@ -451,10 +583,6 @@ impl Cue {
 
     pub fn in_time(&self, preset_handler: &PresetHandler) -> f32 {
         self.in_delay + self.in_fade + self.total_offset(preset_handler)
-    }
-
-    pub fn out_time(&self, preset_handler: &PresetHandler) -> f32 {
-        self.out_delay() + self.out_fade() + self.total_offset(preset_handler)
     }
 
     pub fn selection(&self, preset_handler: &PresetHandler) -> FixtureSelection {

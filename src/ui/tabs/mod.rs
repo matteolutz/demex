@@ -1,9 +1,13 @@
 use eframe::egui::{Ui, WidgetText};
 use egui_dock::{DockArea, DockState, Style, TabViewer};
 use serde::{Deserialize, Serialize};
+use strum::{EnumIter, IntoEnumIterator};
 
 use super::DemexUiContext;
 
+pub mod clock_tab;
+pub mod color_picker_tab;
+pub mod empty_tab;
 pub mod encoders_tab;
 pub mod faders_tab;
 pub mod fixture_list_tab;
@@ -15,10 +19,15 @@ pub mod performance_tab;
 pub mod preset_grid_tab;
 pub mod sequence_editor_tab;
 pub mod sequences_list_tab;
-pub mod timecode_clock_tab;
 pub mod timing_tab;
 
-#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, Serialize, Deserialize)]
+pub struct DemexAddedTab {
+    tab: DemexTab,
+    surface: egui_dock::SurfaceIndex,
+    node: egui_dock::NodeIndex,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, Serialize, Deserialize, EnumIter)]
 pub enum DemexTab {
     LayoutView,
     FixtureList,
@@ -31,8 +40,10 @@ pub enum DemexTab {
     Patch,
     Timing,
     FixtureSelection,
+    ColorPicker,
     Logs,
     Performance,
+    Empty,
 }
 
 impl std::fmt::Display for DemexTab {
@@ -49,8 +60,10 @@ impl std::fmt::Display for DemexTab {
             DemexTab::Patch => write!(f, "Patch"),
             DemexTab::Timing => write!(f, "Timing"),
             DemexTab::FixtureSelection => write!(f, "Fixture Selection"),
+            DemexTab::ColorPicker => write!(f, "Color Picker"),
             DemexTab::Logs => write!(f, "Logs"),
             DemexTab::Performance => write!(f, "Performance"),
+            DemexTab::Empty => write!(f, "demex"),
         }
     }
 }
@@ -64,62 +77,71 @@ impl DemexTab {
             DemexTab::Faders => faders_tab::ui(ui, context),
             DemexTab::SequencesList => sequences_list_tab::ui(ui, context),
             DemexTab::SequenceEditor => {
-                sequence_editor_tab::SequenceEditorTab::new(context, "MainSequenceEditor").show(ui)
+                sequence_editor_tab::SequenceEditorTab::new(context).show(ui)
             }
             DemexTab::Encoders => encoders_tab::ui(ui, context),
-            DemexTab::TimecodeClock => timecode_clock_tab::ui(ui, context),
+            DemexTab::TimecodeClock => {
+                clock_tab::ClockComponent::new("DemexClockComponent", context).show(ui)
+            }
             DemexTab::Patch => {
                 let mut patch_view_component = patch_tab::PatchViewComponent::new(context);
                 patch_view_component.show(ui);
             }
             DemexTab::Timing => timing_tab::ui(ui, context),
             DemexTab::FixtureSelection => fixture_selection_tab::ui(ui, context),
+            DemexTab::ColorPicker => color_picker_tab::ColorPickerComponent::new(context).show(ui),
             DemexTab::Logs => logs_tab::ui(ui, context),
             DemexTab::Performance => performance_tab::ui(ui, context),
+            DemexTab::Empty => empty_tab::ui(ui, context),
         }
     }
 }
 
 pub struct DemexTabViewer<'a> {
     context: &'a mut DemexUiContext,
-    #[allow(dead_code)]
-    egui_ctx: &'a eframe::egui::Context,
+    allow_windows: bool,
+    added_nodes: &'a mut Vec<DemexAddedTab>,
 }
 
 impl TabViewer for DemexTabViewer<'_> {
     type Tab = DemexTab;
 
     fn title(&mut self, tab: &mut Self::Tab) -> WidgetText {
-        format!("{:?}", tab).into()
+        tab.to_string().into()
     }
 
     fn ui(&mut self, ui: &mut Ui, tab: &mut Self::Tab) {
         tab.ui(ui, self.context)
     }
 
-    fn context_menu(
+    fn add_popup(
         &mut self,
         ui: &mut Ui,
-        tab: &mut Self::Tab,
-        _surface: egui_dock::SurfaceIndex,
-        _node: egui_dock::NodeIndex,
+        surface: egui_dock::SurfaceIndex,
+        node: egui_dock::NodeIndex,
     ) {
-        if ui.button("Window").clicked() {
-            self.context.ui_config.detached_tabs.insert(*tab);
+        ui.set_min_width(120.0);
+        ui.style_mut().visuals.button_frame = false;
+
+        for tab in DemexTab::iter() {
+            if ui.button(tab.to_string()).clicked() {
+                self.added_nodes.push(DemexAddedTab { tab, surface, node });
+            }
         }
     }
 
-    fn closeable(&mut self, _: &mut Self::Tab) -> bool {
-        false
+    fn allowed_in_windows(&self, _tab: &mut Self::Tab) -> bool {
+        self.allow_windows
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DemexTabs {
     dock_state: DockState<DemexTab>,
 }
 
-impl Default for DemexTabs {
-    fn default() -> Self {
+impl DemexTabs {
+    pub fn main() -> Self {
         let mut dock_state = DockState::new(vec![
             DemexTab::FixtureList,
             DemexTab::SequencesList,
@@ -134,7 +156,7 @@ impl Default for DemexTabs {
             vec![DemexTab::Encoders, DemexTab::Logs],
         );
 
-        let [old_node, _] = surface.split_left(
+        let [old_node, layout_view_node] = surface.split_left(
             old_node,
             0.65,
             vec![
@@ -145,18 +167,44 @@ impl Default for DemexTabs {
             ],
         );
 
+        {
+            let [_, new_node] =
+                surface.split_left(layout_view_node, 0.3, vec![DemexTab::ColorPicker]);
+            surface.split_below(new_node, 0.65, vec![DemexTab::Timing]);
+        }
+
         surface.split_above(
             old_node,
             0.5,
             vec![
                 DemexTab::PresetGrid,
                 DemexTab::Faders,
-                DemexTab::Timing,
                 DemexTab::TimecodeClock,
             ],
         );
 
         Self { dock_state }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.dock_state.surfaces_count() == 0
+    }
+
+    pub fn focus(&mut self, tab: DemexTab) -> bool {
+        if let Some(tab) = self.dock_state.find_tab(&tab) {
+            self.dock_state.set_active_tab(tab);
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl Default for DemexTabs {
+    fn default() -> Self {
+        Self {
+            dock_state: DockState::new(vec![DemexTab::Empty]),
+        }
     }
 }
 
@@ -165,20 +213,30 @@ impl DemexTabs {
         &mut self,
         ui: &mut Ui,
         context: &mut DemexUiContext,
-        egui_ctx: &eframe::egui::Context,
+        id: egui::Id,
+        allow_windows: bool,
     ) {
-        self.dock_state = self
-            .dock_state
-            .filter_tabs(|f| !context.ui_config.detached_tabs.contains(f));
+        let mut added_nodes = Vec::new();
 
         DockArea::new(&mut self.dock_state)
+            .id(id)
             .show_add_buttons(true)
-            .show_close_buttons(false)
+            .show_add_popup(true)
+            .show_close_buttons(true)
             .style(Style::from_egui(ui.style().as_ref()))
-            .show_inside(ui, &mut DemexTabViewer { context, egui_ctx });
-    }
+            .show_inside(
+                ui,
+                &mut DemexTabViewer {
+                    context,
+                    allow_windows,
+                    added_nodes: &mut added_nodes,
+                },
+            );
 
-    pub fn re_attach(&mut self, tab: DemexTab) {
-        self.dock_state.add_window(vec![tab]);
+        added_nodes.drain(..).for_each(|tab| {
+            self.dock_state
+                .set_focused_node_and_surface((tab.surface, tab.node));
+            self.dock_state.push_to_focused_leaf(tab.tab);
+        });
     }
 }

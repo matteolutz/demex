@@ -1,7 +1,6 @@
 use device::{DemexInputDevice, DemexInputDeviceConfig};
 use error::DemexInputDeviceError;
 use message::DemexInputDeviceMessage;
-use profile::DemexInputDeviceProfileType;
 
 use crate::{
     fixture::{
@@ -9,7 +8,7 @@ use crate::{
         timing::TimingHandler, updatables::UpdatableHandler,
     },
     lexer::token::Token,
-    parser::nodes::{action::Action, fixture_selector::FixtureSelectorContext},
+    parser::nodes::{action::queue::ActionQueue, fixture_selector::FixtureSelectorContext},
 };
 
 pub mod button;
@@ -32,8 +31,6 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
     ) -> Result<(), DemexInputDeviceError>;
 
     fn poll(&self) -> Result<Vec<DemexInputDeviceMessage>, DemexInputDeviceError>;
-
-    fn profile_type(&self) -> DemexInputDeviceProfileType;
 
     fn is_enabled(&self) -> bool;
 }
@@ -69,7 +66,7 @@ impl DemexInputDeviceHandler {
         timing_handler: &mut TimingHandler,
         patch: &Patch,
         fixture_selector_context: FixtureSelectorContext,
-        macro_exec_cue: &mut Vec<Action>,
+        macro_exec_cue: &mut ActionQueue,
         global_fixture_selection: &mut Option<FixtureSelection>,
         command_input: &mut Vec<Token>,
     ) -> Result<(), DemexInputDeviceError> {
