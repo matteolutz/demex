@@ -19,6 +19,7 @@ function                    = fixture_selector set_function
                             | "assign" assign_command
                             | "unassign" unassign_command
                             | "recall" recall_command
+                            | "lock"
 
 recall_command              = "sequence" integer "cue" cue_idx
 

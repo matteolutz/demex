@@ -132,6 +132,7 @@ impl<'a> Lexer<'a> {
                     "stomp" => Some(Token::KeywordStomp),
                     "recall" => Some(Token::KeywordRecall),
                     "grandmaster" | "gm" => Some(Token::KeywordGrandmaster),
+                    "lock" => Some(Token::KeywordLock),
                     _ => None,
                 };
 

@@ -46,6 +46,8 @@ pub struct DemexUiContext {
     pub is_command_input_empty: bool,
     pub should_focus_command_input: bool,
 
+    pub ui_locked: bool,
+
     pub fixture_handler: Arc<RwLock<FixtureHandler>>,
     pub preset_handler: Arc<RwLock<PresetHandler>>,
     pub updatable_handler: Arc<RwLock<UpdatableHandler>>,
@@ -155,6 +157,8 @@ impl DemexUiContext {
                     "Check out https://demex.matteolutz.de to get started.".to_owned(),
                 )),
             ],
+
+            ui_locked: false,
 
             is_command_input_empty: true,
             command: Vec::new(),
@@ -366,6 +370,7 @@ impl DemexUiContext {
             ActionRunResult::UpdateSelectedFixtures(selection) => {
                 self.global_fixture_select = selection;
             }
+            ActionRunResult::Lock => self.ui_locked = true,
             ActionRunResult::Default => {}
         }
 

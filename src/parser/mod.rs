@@ -1231,6 +1231,11 @@ impl<'a> Parser2<'a> {
             return self.parse_recall_function();
         }
 
+        if matches!(self.current_token()?, Token::KeywordLock) {
+            self.advance();
+            return Ok(Action::Lock);
+        }
+
         if matches!(self.current_token()?, Token::KeywordTest) {
             self.advance();
 

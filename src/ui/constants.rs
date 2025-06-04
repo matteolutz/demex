@@ -9,3 +9,5 @@ pub const MAX_VIEWPORTS: usize = 4;
 
 pub const MAIN_VIEWPORT_ID: &str = "DemexMainViewport";
 pub const MAIN_VIEWPORT_TOP_BOTTOM_PANEL_ID: &str = "DemexMainViewportTopBottomPanel";
+
+pub const DEMEX_COLOR: ecolor::Color32 = ecolor::Color32::from_rgb(23, 23, 23);

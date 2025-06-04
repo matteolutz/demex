@@ -17,7 +17,8 @@ use crate::{
     },
     show::ui::DemexShowUiConfig,
     ui::{
-        constants::MAIN_VIEWPORT_TOP_BOTTOM_PANEL_ID, viewport::position::DemexViewportPositonState,
+        constants::MAIN_VIEWPORT_TOP_BOTTOM_PANEL_ID, lock::locked_ui,
+        viewport::position::DemexViewportPositonState,
     },
     utils::version::VERSION_STR,
 };
@@ -31,6 +32,7 @@ pub mod edit_request;
 pub mod error;
 pub mod graphics;
 pub mod iimpl;
+pub mod lock;
 pub mod patch;
 pub mod tabs;
 pub mod theme;
@@ -195,6 +197,15 @@ impl eframe::App for DemexUiApp {
             }
 
             ctx.show_viewport_immediate(viewport_id, viewport_builder, |ctx, _| {
+                if self.context.ui_locked {
+                    locked_ui(
+                        ctx,
+                        &mut self.context.ui_locked,
+                        self.ui_config.lock_image.as_ref(),
+                    );
+                    return;
+                }
+
                 let pos = ctx.input(|reader| reader.viewport().outer_rect.map(|r| r.min));
                 let size = ctx.input(|reader| reader.viewport().outer_rect.map(|r| r.size()));
 
@@ -209,97 +220,105 @@ impl eframe::App for DemexUiApp {
             });
         }
 
-        eframe::egui::TopBottomPanel::top(MAIN_VIEWPORT_TOP_BOTTOM_PANEL_ID).show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.heading("demex");
-
-                ui.separator();
-
-                ui.label(format!("v{}", VERSION_STR));
-
-                ui.separator();
-
-                if ui.link("Matteo Lutz").clicked() {
-                    self.context.action_queue.enqueue_now(Action::MatteoLutz);
-                }
-
-                ui.separator();
-
-                if ui.link("About demex").clicked() {
-                    self.context
-                        .window_handler
-                        .add_window(DemexWindow::AboutDemex);
-                }
-
-                ui.separator();
-
-                ui.menu_image_button(
-                    DemexIcon::Draft
-                        .button_image()
-                        .tint(if self.context.show_file.is_some() {
-                            ecolor::Color32::WHITE
-                        } else {
-                            ecolor::Color32::YELLOW
-                        }),
-                    |ui| {
-                        if let Some(show_file) = self.context.show_file.as_ref() {
-                            ui.label(show_file.display().to_string());
-                        } else {
-                            ui.colored_label(ecolor::Color32::YELLOW, "Show not saved");
-                        }
-
-                        ui.separator();
-
-                        if ui.button("Save").clicked() {
-                            ui.close_menu();
-                            self.context.save_show(self.ui_config.clone());
-                        }
-
-                        if ui.button("Open").clicked() {
-                            ui.close_menu();
-                            self.context.open_new_show();
-                        }
-                    },
-                );
-
-                ui.menu_image_button(DemexIcon::Settings.button_image(), |ui| {
-                    ui.menu_button("Config", |ui| {
-                        if ui.button("All").clicked() {
-                            ui.close_menu();
-
-                            self.context.window_handler.add_window(DemexWindow::Edit(
-                                window::edit::DemexEditWindow::ConfigOverview,
-                            ));
-                        }
-
-                        ui.separator();
-
-                        for config_type in ConfigTypeActionData::iter() {
-                            if ui.button(format!("{:?}", config_type)).clicked() {
-                                ui.close_menu();
-
-                                self.context.window_handler.add_window(DemexWindow::Edit(
-                                    window::edit::DemexEditWindow::Config(config_type),
-                                ));
-                            }
-                        }
-                    });
+        if !self.context.ui_locked {
+            eframe::egui::TopBottomPanel::top(MAIN_VIEWPORT_TOP_BOTTOM_PANEL_ID).show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.heading("demex");
 
                     ui.separator();
 
-                    if ui.button("TOP SECRET").clicked() {
-                        ui.close_menu();
-                        let _ = open::that("https://youtu.be/dQw4w9WgXcQ");
+                    ui.label(format!("v{}", VERSION_STR));
+
+                    ui.separator();
+
+                    if ui.link("Matteo Lutz").clicked() {
+                        self.context.action_queue.enqueue_now(Action::MatteoLutz);
                     }
+
+                    ui.separator();
+
+                    if ui.link("About demex").clicked() {
+                        self.context
+                            .window_handler
+                            .add_window(DemexWindow::AboutDemex);
+                    }
+
+                    ui.separator();
+
+                    ui.menu_image_button(
+                        DemexIcon::Draft
+                            .button_image()
+                            .tint(if self.context.show_file.is_some() {
+                                ecolor::Color32::WHITE
+                            } else {
+                                ecolor::Color32::YELLOW
+                            }),
+                        |ui| {
+                            if let Some(show_file) = self.context.show_file.as_ref() {
+                                ui.label(show_file.display().to_string());
+                            } else {
+                                ui.colored_label(ecolor::Color32::YELLOW, "Show not saved");
+                            }
+
+                            ui.separator();
+
+                            if ui.button("Save").clicked() {
+                                ui.close_menu();
+                                self.context.save_show(self.ui_config.clone());
+                            }
+
+                            if ui.button("Open").clicked() {
+                                ui.close_menu();
+                                self.context.open_new_show();
+                            }
+                        },
+                    );
+
+                    ui.menu_image_button(DemexIcon::Settings.button_image(), |ui| {
+                        ui.menu_button("Config", |ui| {
+                            if ui.button("All").clicked() {
+                                ui.close_menu();
+
+                                self.context.window_handler.add_window(DemexWindow::Edit(
+                                    window::edit::DemexEditWindow::ConfigOverview,
+                                ));
+                            }
+
+                            ui.separator();
+
+                            for config_type in ConfigTypeActionData::iter() {
+                                if ui.button(format!("{:?}", config_type)).clicked() {
+                                    ui.close_menu();
+
+                                    self.context.window_handler.add_window(DemexWindow::Edit(
+                                        window::edit::DemexEditWindow::Config(config_type),
+                                    ));
+                                }
+                            }
+                        });
+
+                        ui.separator();
+
+                        if ui.button("TOP SECRET").clicked() {
+                            ui.close_menu();
+                            let _ = open::that("https://youtu.be/dQw4w9WgXcQ");
+                        }
+                    });
                 });
             });
-        });
 
-        ui_command_input(ctx, &mut self.context);
+            ui_command_input(ctx, &mut self.context);
 
-        eframe::egui::CentralPanel::default().show(ctx, |ui| {
-            self.ui_config.viewports[0].ui(ui, &mut self.context);
-        });
+            eframe::egui::CentralPanel::default().show(ctx, |ui| {
+                self.ui_config.viewports[0].ui(ui, &mut self.context);
+            });
+        } else {
+            locked_ui(
+                ctx,
+                &mut self.context.ui_locked,
+                self.ui_config.lock_image.as_ref(),
+            );
+        }
 
         let elapsed = self.last_update.elapsed().as_secs_f64();
         let epxected_elapsed: f64 = 1.0 / self.desired_fps;

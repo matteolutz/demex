@@ -85,6 +85,7 @@ pub enum Token {
     KeywordStomp,
     KeywordRecall,
     KeywordGrandmaster,
+    KeywordLock,
 
     KeywordNuzul,
     KeywordSueud,
@@ -138,6 +139,7 @@ impl Token {
             Token::KeywordAssign => TokenType::ActionKeyword,
             Token::KeywordUnassign => TokenType::ActionKeyword,
             Token::KeywordRecall => TokenType::ActionKeyword,
+            Token::KeywordLock => TokenType::ActionKeyword,
 
             Token::KeywordGroup => TokenType::ObjectKeyword,
             Token::KeywordMacro => TokenType::ObjectKeyword,
@@ -254,6 +256,7 @@ impl std::fmt::Display for Token {
             Token::KeywordStomp => write!(f, "stomp"),
             Token::KeywordRecall => write!(f, "recall"),
             Token::KeywordGrandmaster => write!(f, "grandmaster"),
+            Token::KeywordLock => write!(f, "lock"),
             Token::Eof => write!(f, "Eof"),
         }
     }

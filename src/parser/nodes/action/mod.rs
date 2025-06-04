@@ -146,6 +146,8 @@ pub enum Action {
     InternalExecutorGo(ExecutorGoArgs),
     InternalExecutorStop(ExecutorStopArgs),
 
+    Lock,
+
     #[default]
     MatteoLutz,
 }
@@ -424,6 +426,8 @@ impl Action {
                 timing_handler,
                 patch,
             ),
+
+            Self::Lock => Ok(ActionRunResult::Lock),
 
             #[allow(unreachable_patterns)]
             unimplemented_action => Err(ActionRunError::UnimplementedAction(

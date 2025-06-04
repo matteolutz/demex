@@ -13,6 +13,8 @@ pub enum ActionRunResult {
     EditWindow(crate::ui::window::edit::DemexEditWindow),
 
     UpdateSelectedFixtures(Option<FixtureSelection>),
+
+    Lock,
 }
 
 impl ActionRunResult {
