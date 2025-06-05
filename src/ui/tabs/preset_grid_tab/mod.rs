@@ -226,7 +226,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
         }
 
         // Macros
-        preset_grid_row_ui(ui, "Maros", None, ecolor::Color32::BROWN, |ui| {
+        preset_grid_row_ui(ui, "Macros", None, ecolor::Color32::BROWN, |ui| {
             for id in 0..=preset_handler.next_macro_id().max(min_num_preset_buttons) {
                 let m = preset_handler.get_macro(id);
 
