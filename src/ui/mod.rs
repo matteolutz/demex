@@ -215,6 +215,8 @@ impl eframe::App for DemexUiApp {
                         DemexViewportPositonState::Rendered(egui::Rect::from_min_size(pos, size));
                 }
 
+                ui_command_input(ctx, &mut self.context);
+
                 egui::CentralPanel::default().show(ctx, |ui| {
                     viewport.ui(ui, &mut self.context);
                 });
