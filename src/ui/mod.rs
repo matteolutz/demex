@@ -57,6 +57,8 @@ pub struct DemexUiApp {
 
     is_single_threaded: bool,
     last_single_threaded_update: std::time::Instant,
+
+    fullscreen: bool,
 }
 
 impl DemexUiApp {
@@ -66,6 +68,7 @@ impl DemexUiApp {
         icon: Arc<IconData>,
         is_single_threaded: bool,
         num_additional_viewports: Option<usize>,
+        fullscreen: bool,
     ) -> Self {
         context
             .stats
@@ -86,6 +89,8 @@ impl DemexUiApp {
             num_additional_viewports: num_additional_viewports.unwrap_or(0),
 
             context,
+
+            fullscreen,
         }
     }
 }
@@ -188,6 +193,7 @@ impl eframe::App for DemexUiApp {
             let viewport_id = egui::ViewportId::from_hash_of(viewport_title.as_str());
 
             let mut viewport_builder = egui::ViewportBuilder::default()
+                .with_fullscreen(self.fullscreen)
                 .with_title(&viewport_title)
                 .with_icon(self.icon.clone());
 

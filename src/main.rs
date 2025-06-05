@@ -79,6 +79,10 @@ struct Args {
         conflicts_with = "headless"
     )]
     additional_viewports: Option<usize>,
+
+    /// Fullscreen all viewports in the UI. This is only used if the UI feature is enabled.
+    #[arg(long, conflicts_with = "headless")]
+    fullscreen: bool,
 }
 
 const TEST_MAX_FUPS: f64 = 60.0;
@@ -242,10 +246,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         {
             let icon = Arc::new(load_icon());
 
+            log::info!("Starting UI fullscreen: {}", args.fullscreen);
+
+            let mut viewport_builder = eframe::egui::ViewportBuilder::default()
+                .with_maximized(true)
+                .with_icon(icon.clone());
+            if args.fullscreen {
+                viewport_builder = viewport_builder.with_fullscreen(true);
+            }
+
             let options = eframe::NativeOptions {
-                viewport: eframe::egui::ViewportBuilder::default()
-                    .with_maximized(true)
-                    .with_icon(icon.clone()),
+                viewport: viewport_builder,
                 ..Default::default()
             };
 
@@ -299,6 +310,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         icon,
                         false,
                         args.additional_viewports,
+                        args.fullscreen,
                     );
 
                     Ok(Box::new(ui_app_state))
