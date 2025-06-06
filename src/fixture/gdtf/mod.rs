@@ -832,10 +832,15 @@ impl GdtfFixture {
         timing_handler: &TimingHandler,
         grand_master: f32,
     ) -> Result<Vec<u8>, FixtureError> {
-        let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
+        let (fixture_type, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
 
         let mut data = vec![0u8; self.address_footprint as usize];
-        let mut dynamic_data: HashMap<String, DmxValue> = HashMap::new();
+        let mut dynamic_data: HashMap<String, DmxValue> =
+            HashMap::with_capacity(self.programmer_values().len());
+
+        let _master_geometry = dmx_mode
+            .geometry(fixture_type)
+            .ok_or(FixtureError::GdtfFixtureMasterGeometryNotFound(self.id))?;
 
         // loop through dmx_channels
         for dmx_channel in dmx_mode.dmx_channels.iter() {

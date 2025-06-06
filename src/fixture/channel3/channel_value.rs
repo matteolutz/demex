@@ -311,9 +311,6 @@ impl FixtureChannelValue3 {
         });
         relation.map(|rel| {
             let relation_master = rel.master(dmx_mode).unwrap();
-            if let Some(dynamic_value) = dynamic_data.get(relation_master.name().as_ref()) {
-                return *dynamic_value;
-            }
 
             let relation_master_value = values.get(relation_master.name().as_ref()).unwrap();
 
@@ -375,6 +372,10 @@ impl FixtureChannelValue3 {
         timing_handler: &TimingHandler,
     ) -> Option<gdtf::values::DmxValue> {
         let logical_channel = &dmx_channel.logical_channels[0];
+
+        if let Some(dynamic_value) = dynamic_data.get(dmx_channel.name().as_ref()) {
+            return Some(*dynamic_value);
+        }
 
         let value = match self {
             Self::Home => dmx_channel.initial_function().map(|(_, f)| {

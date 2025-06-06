@@ -151,22 +151,24 @@ impl eframe::App for DemexUiApp {
             }
         }
 
-        if let Err(input_error) = self.context.input_device_handler.update(
-            &mut self.context.fixture_handler.write(),
-            &mut self.context.preset_handler.write(),
-            &mut self.context.updatable_handler.write(),
-            &mut self.context.timing_handler.write(),
-            &self.context.patch.read(),
-            FixtureSelectorContext::new(&self.context.global_fixture_select.clone()),
-            &mut self.context.action_queue,
-            &mut self.context.global_fixture_select,
-            &mut self.context.command,
-        ) {
-            self.context
-                .logs
-                .push(DemexLogEntry::new(DemexLogEntryType::Error(
-                    input_error.to_string(),
-                )));
+        if !self.context.ui_locked {
+            if let Err(input_error) = self.context.input_device_handler.update(
+                &mut self.context.fixture_handler.write(),
+                &mut self.context.preset_handler.write(),
+                &mut self.context.updatable_handler.write(),
+                &mut self.context.timing_handler.write(),
+                &self.context.patch.read(),
+                FixtureSelectorContext::new(&self.context.global_fixture_select.clone()),
+                &mut self.context.action_queue,
+                &mut self.context.global_fixture_select,
+                &mut self.context.command,
+            ) {
+                self.context
+                    .logs
+                    .push(DemexLogEntry::new(DemexLogEntryType::Error(
+                        input_error.to_string(),
+                    )));
+            }
         }
 
         self.context.execute_action_queue(&self.ui_config);

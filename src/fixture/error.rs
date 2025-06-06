@@ -23,6 +23,7 @@ pub enum FixtureError {
     GdtfFixtureCouldNotProduceRgbColor(u32),
     GdtfFixtureHasNoColorWheelColor(u32),
     GdtfFixtureCouldNotProduceDisplayColor(u32),
+    GdtfFixtureMasterGeometryNotFound(u32),
 
     NoDisplayColor(u32),
     PresetHandlerError(Box<PresetHandlerError>),
@@ -102,6 +103,11 @@ impl std::fmt::Display for FixtureError {
             Self::GdtfFixtureCouldNotProduceDisplayColor(fixture_id) => write!(
                 f,
                 "GDTF fixture with id {} could not produce display color value",
+                fixture_id
+            ),
+            Self::GdtfFixtureMasterGeometryNotFound(fixture_id) => write!(
+                f,
+                "GDTF fixture with id {} has no master geometry",
                 fixture_id
             ),
         }
