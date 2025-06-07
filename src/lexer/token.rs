@@ -86,6 +86,8 @@ pub enum Token {
     KeywordRecall,
     KeywordGrandmaster,
     KeywordLock,
+    KeywordSpeedmaster,
+    KeywordTap,
 
     KeywordNuzul,
     KeywordSueud,
@@ -154,6 +156,7 @@ impl Token {
             Token::KeywordButton => TokenType::ObjectKeyword,
             Token::KeywordProgrammer => TokenType::ObjectKeyword,
             Token::KeywordGrandmaster => TokenType::ObjectKeyword,
+            Token::KeywordSpeedmaster => TokenType::ObjectKeyword,
 
             Token::KeywordThru => TokenType::OtherKeyword,
             Token::KeywordFor => TokenType::OtherKeyword,
@@ -172,6 +175,7 @@ impl Token {
             Token::KeywordFlash => TokenType::OtherKeyword,
             Token::KeywordTokens => TokenType::OtherKeyword,
             Token::KeywordStomp => TokenType::OtherKeyword,
+            Token::KeywordTap => TokenType::OtherKeyword,
 
             Token::Eof => TokenType::Eof,
         }
@@ -257,6 +261,8 @@ impl std::fmt::Display for Token {
             Token::KeywordRecall => write!(f, "recall"),
             Token::KeywordGrandmaster => write!(f, "grandmaster"),
             Token::KeywordLock => write!(f, "lock"),
+            Token::KeywordSpeedmaster => write!(f, "speedmaster"),
+            Token::KeywordTap => write!(f, "tap"),
             Token::Eof => write!(f, "Eof"),
         }
     }

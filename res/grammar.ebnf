@@ -32,6 +32,7 @@ assign_function             = "executor" integer ("go" | "stop" | "flash" | "fad
                             | "macro" function "to" float
                             | "tokens" "to" float "with" [*]
                             | "grandmaster" "to" float
+                            | "speedmaster" integer ("fader" | "tap") "to" float
 
 delete_function             = "macro" integer_or_range
                             | sepcific_preset_or_range

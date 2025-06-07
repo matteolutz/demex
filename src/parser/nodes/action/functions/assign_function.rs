@@ -34,6 +34,7 @@ pub enum AssignButtonArgsMode {
     },
     Macro(Box<Action>),
     Tokens(Vec<Token>),
+    SpeedmasterTap(u32),
 }
 
 impl AssignButtonArgsMode {
@@ -41,6 +42,7 @@ impl AssignButtonArgsMode {
         &self,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
     ) -> Result<(), ActionRunError> {
         match self {
             Self::ExecutorStop(id) | Self::ExecutorFlash { id, .. } | Self::ExecutorGo(id) => {
@@ -57,6 +59,11 @@ impl AssignButtonArgsMode {
                 preset_handler
                     .get_preset_range(preset_id_from, preset_id_to)
                     .map_err(ActionRunError::PresetHandlerError)?;
+            }
+            Self::SpeedmasterTap(speed_master_id) => {
+                timing_handler
+                    .get_speed_master_value(*speed_master_id)
+                    .map_err(ActionRunError::TimingHandlerError)?;
             }
             Self::Tokens(_) | Self::FixtureSelector(_) | Self::Macro(_) => {}
         };
@@ -116,6 +123,11 @@ impl AssignButtonArgsMode {
             AssignButtonArgsMode::Tokens(tokens) => Ok(vec![DemexInputButton::TokenInsert {
                 tokens: tokens.clone(),
             }]),
+            AssignButtonArgsMode::SpeedmasterTap(speed_master_id) => {
+                Ok(vec![DemexInputButton::SpeedMasterTap {
+                    speed_master_id: *speed_master_id,
+                }])
+            }
         }
     }
 }
@@ -136,14 +148,14 @@ impl FunctionArgs for AssignButtonArgs {
         fixture_selector_context: crate::parser::nodes::fixture_selector::FixtureSelectorContext,
         updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _: &mut TimingHandler,
+        timing_handler: &mut TimingHandler,
         _: &Patch,
     ) -> Result<
         crate::parser::nodes::action::result::ActionRunResult,
         crate::parser::nodes::action::error::ActionRunError,
     > {
         self.mode
-            .check_existing(preset_handler, updatable_handler)?;
+            .check_existing(preset_handler, updatable_handler, timing_handler)?;
 
         let device = input_device_handler
             .device_mut(self.device_idx)
@@ -175,6 +187,7 @@ impl FunctionArgs for AssignButtonArgs {
 pub enum AssignFaderArgsMode {
     Executor(u32),
     Grandmaster,
+    Speedmaster(u32),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -215,6 +228,11 @@ impl FunctionArgs for AssignFaderArgs {
                 DemexInputFader::Fader { executor_id }
             }
             AssignFaderArgsMode::Grandmaster => DemexInputFader::Grandmaster,
+            AssignFaderArgsMode::Speedmaster(speed_master_id) => DemexInputFader::SpeedMaster {
+                speed_master_id: speed_master_id,
+                bpm_min: 50.0,
+                bpm_max: 300.0,
+            },
         };
 
         device

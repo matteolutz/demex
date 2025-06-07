@@ -1093,6 +1093,44 @@ impl<'a> Parser2<'a> {
                     input_fader_id,
                 }))
             }
+            Token::KeywordSpeedmaster => {
+                self.advance();
+
+                let speed_master_id = self.parse_integer()?;
+
+                match self.current_token()? {
+                    Token::KeywordFader => {
+                        self.advance();
+
+                        expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+
+                        let (device_idx, input_fader_id) = self.parse_float_individual()?;
+
+                        Ok(Action::AssignFader(AssignFaderArgs {
+                            mode: AssignFaderArgsMode::Speedmaster(speed_master_id),
+                            device_idx: device_idx as usize,
+                            input_fader_id,
+                        }))
+                    }
+                    Token::KeywordTap => {
+                        self.advance();
+
+                        expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+
+                        let (device_idx, button_id) = self.parse_float_individual()?;
+
+                        Ok(Action::AssignButton(AssignButtonArgs {
+                            mode: AssignButtonArgsMode::SpeedmasterTap(speed_master_id),
+                            device_idx: device_idx as usize,
+                            button_id,
+                        }))
+                    }
+                    unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                        unexpected_token.clone(),
+                        vec!["\"fader\"", "\"tap\""],
+                    )),
+                }
+            }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
                 vec![
@@ -1102,6 +1140,7 @@ impl<'a> Parser2<'a> {
                     "\"macro\"",
                     "\"tokens\"",
                     "\"grandmaster\"",
+                    "\"speedmaster\"",
                     "fixture selector",
                 ],
             )),
