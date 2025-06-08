@@ -44,6 +44,7 @@ impl FromStr for FixtureChannel3FeatureGroup {
             "Control" => Ok(Self::Control),
             "Shapers" => Ok(Self::Shapers),
             "Video" => Ok(Self::Video),
+            "All" => Ok(Self::All),
             _ => Err(()),
         }
     }
