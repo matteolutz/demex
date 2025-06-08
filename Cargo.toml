@@ -62,3 +62,6 @@ ui = [
     "dep:open",
     "dep:rfd",
 ]
+
+[dev-dependencies]
+approx = "0.5.1"

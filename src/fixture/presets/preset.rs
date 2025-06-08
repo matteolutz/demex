@@ -14,6 +14,7 @@ use crate::{
         effect::feature::runtime::FeatureEffectRuntime,
         gdtf::GdtfFixture,
         handler::{FixtureHandler, FixtureTypeList},
+        keyframe_effect::effect_runtime::KeyframeEffectRuntime,
         selection::FixtureSelection,
         timing::TimingHandler,
     },
@@ -124,6 +125,10 @@ pub enum FixturePresetData {
     },
     FeatureEffect {
         runtime: FeatureEffectRuntime,
+    },
+    KeyframeEffect {
+        #[cfg_attr(feature = "ui", egui_probe(skip))]
+        runtime: KeyframeEffectRuntime,
     },
 }
 
@@ -299,6 +304,22 @@ impl FixturePreset {
                     }
                 }
             }
+            FixturePresetData::KeyframeEffect { runtime } => {
+                for channel in runtime.effect().affected_channels_for_fixture(fixture.id()) {
+                    fixture
+                        .set_programmer_value(
+                            fixture_types,
+                            channel,
+                            FixtureChannelValue3::Preset {
+                                id: self.id,
+                                state: Some(FixtureChannelValue2PresetState::now(
+                                    new_selection.clone(),
+                                )),
+                            },
+                        )
+                        .map_err(PresetHandlerError::FixtureError)?;
+                }
+            }
         }
 
         Ok(())
@@ -321,6 +342,22 @@ impl FixturePreset {
                 }
             }
             FixturePresetData::FeatureEffect { .. } => FixturePresetTarget::AllSelected,
+            FixturePresetData::KeyframeEffect { runtime } => {
+                let affected_fixtures = runtime
+                    .effect()
+                    .affected_fixtures()
+                    .iter()
+                    .filter(|fixture_id| selected_fixtures.contains(fixture_id))
+                    .count();
+
+                if affected_fixtures == 0 {
+                    FixturePresetTarget::None
+                } else if affected_fixtures == selected_fixtures.len() {
+                    FixturePresetTarget::AllSelected
+                } else {
+                    FixturePresetTarget::SomeSelected
+                }
+            }
         }
     }
 
@@ -375,6 +412,7 @@ impl FixturePreset {
                     state.map(|state| state.started()),
                 )
             }
+            FixturePresetData::KeyframeEffect { .. } => todo!(),
         }
     }
 
@@ -402,6 +440,22 @@ impl FixturePreset {
                 .get(&fixture.id())
                 .and_then(|values| values.get(channel_name).cloned()),
             FixturePresetData::FeatureEffect { runtime } => {
+                let fixture_offset = state
+                    .and_then(|state| state.selection().offset(fixture.id()))
+                    .unwrap_or_default();
+
+                runtime
+                    .get_channel_value_with_started(
+                        channel_name,
+                        fixture,
+                        fixture_types,
+                        fixture_offset,
+                        timing_handler,
+                        state.map(|state| state.started()),
+                    )
+                    .ok()
+            }
+            FixturePresetData::KeyframeEffect { runtime } => {
                 let fixture_offset = state
                     .and_then(|state| state.selection().offset(fixture.id()))
                     .unwrap_or_default();
@@ -447,6 +501,7 @@ impl FixturePreset {
                 Ok(updated)
             }
             FixturePresetData::FeatureEffect { .. } => Ok(0),
+            FixturePresetData::KeyframeEffect { .. } => Ok(0),
         }
     }
 }

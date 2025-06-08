@@ -4,6 +4,7 @@ pub mod effect2;
 pub mod error;
 pub mod gdtf;
 pub mod handler;
+pub mod keyframe_effect;
 pub mod layout;
 pub mod patch;
 pub mod presets;
