@@ -1,11 +1,17 @@
-use std::f32;
+use std::{
+    collections::{BTreeSet, HashMap},
+    f32,
+};
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
     channel3::channel_value::FixtureChannelValue3,
-    keyframe_effect::effect_layer::KeyframeEffectLayer,
+    keyframe_effect::{
+        effect_keyframe::KeyframeEffectKeyframe,
+        effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_layer::KeyframeEffectLayer,
+    },
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -14,11 +20,26 @@ pub struct KeyframeEffect {
 }
 
 impl KeyframeEffect {
-    pub fn affected_fixtures(&self) -> Vec<u32> {
+    pub fn form_data(data: HashMap<u32, HashMap<String, FixtureChannelValue3>>) -> Self {
+        let layer = KeyframeEffectLayer::new(vec![KeyframeEffectKeyframe::new(
+            0.0,
+            data,
+            KeyframeEffectKeyframeCurve::default(),
+        )]);
+
+        Self {
+            layers: vec![layer],
+        }
+    }
+
+    pub fn layers_mut(&mut self) -> &mut Vec<KeyframeEffectLayer> {
+        &mut self.layers
+    }
+
+    pub fn affected_fixtures(&self) -> BTreeSet<u32> {
         self.layers
             .iter()
             .flat_map(|layer| layer.affected_fixtures())
-            .dedup()
             .collect()
     }
 

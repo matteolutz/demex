@@ -4,7 +4,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        channel3::feature::feature_type::FixtureChannel3FeatureType,
+        channel3::{
+            attribute::FixtureChannel3Attribute,
+            channel_value::{
+                FixtureChannelValue2PresetState, FixtureChannelValue3, FixtureChannelValue3Discrete,
+            },
+            feature::feature_type::FixtureChannel3FeatureType,
+        },
         patch::Patch,
         presets::{preset::FixturePresetId, PresetHandler},
         selection::FixtureSelection,
@@ -35,7 +41,7 @@ impl FunctionArgs for SetFeatureValueArgs {
         _updatable_handler: &mut crate::fixture::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
-        _: &Patch,
+        patch: &Patch,
     ) -> Result<
         crate::parser::nodes::action::result::ActionRunResult,
         crate::parser::nodes::action::error::ActionRunError,
@@ -48,7 +54,7 @@ impl FunctionArgs for SetFeatureValueArgs {
         for fixture_id in selection.fixtures() {
             let fixture_idx = selection.offset_idx(*fixture_id).unwrap();
 
-            let _discrete_value = match self.feature_value {
+            let discrete_value = match self.feature_value {
                 ValueOrRange::Single(value) => value,
                 ValueOrRange::Thru(start, end) => {
                     let range = end - start;
@@ -57,8 +63,24 @@ impl FunctionArgs for SetFeatureValueArgs {
                 }
             };
 
-            if let Some(_fixture) = fixture_handler.fixture(*fixture_id) {
-                todo!();
+            if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
+                match self.feature_type {
+                    FixtureChannel3FeatureType::Dimmer => {
+                        fixture
+                            .update_programmer_attribute_matches_value(
+                                patch.fixture_types(),
+                                |fixture_attribute_name| {
+                                    FixtureChannel3Attribute::attribute_matches(
+                                        fixture_attribute_name,
+                                        FixtureChannel3Attribute::Dimmer.to_string().as_str(),
+                                    )
+                                },
+                                FixtureChannelValue3Discrete::Value(discrete_value),
+                            )
+                            .map_err(ActionRunError::FixtureError)?;
+                    }
+                    _ => todo!(),
+                }
             }
         }
 
@@ -115,35 +137,54 @@ impl FunctionArgs for SetFixturePresetArgs {
                     .apply_preset(preset_id, fixture_handler, patch.fixture_types(), selection)
                     .map_err(ActionRunError::PresetHandlerError)?;
             }
-            ValueOrRange::Thru(_, _) => {
-                todo!()
-                /*let presets = preset_handler
-                    .get_preset_range(preset_id_from, preset_id_to, channel_type)
+            ValueOrRange::Thru(preset_id_from, preset_id_to) => {
+                let presets = preset_handler
+                    .get_preset_range(preset_id_from, preset_id_to)
                     .map_err(ActionRunError::PresetHandlerError)?;
 
-                for (idx, fixture) in fixtures.iter().enumerate() {
+                for fixture in selection.fixtures().iter() {
+                    let fixture_offset = selection.offset(*fixture).unwrap();
+
                     if let Some(f) = fixture_handler.fixture(*fixture) {
+                        let channels = presets[0].affected_channels(f, patch.fixture_types());
+
                         // get the two relevant indexes from the presets
-                        let preset_idx_fl =
-                            idx as f32 * ((presets.len() - 1) as f32 / fixtures.len() as f32);
+                        let preset_idx_fl = fixture_offset
+                            * ((presets.len() - 1) as f32 / (selection.num_offsets() - 1) as f32);
 
                         let preset_idx_low = preset_idx_fl.floor() as usize;
                         let preset_idx_high = preset_idx_low + 1;
 
-                        let fade = (idx as f32 * ((presets.len()) as f32 / fixtures.len() as f32))
+                        let fade = (fixture_offset
+                            * ((presets.len()) as f32 / (selection.num_offsets() - 1) as f32))
                             - preset_idx_low as f32;
 
-                        let channel_value = FixtureChannelValue::Mix {
-                            a: Box::new(FixtureChannelValue::Preset(presets[preset_idx_low].id())),
-                            b: Box::new(FixtureChannelValue::Preset(presets[preset_idx_high].id())),
+                        let channel_value = FixtureChannelValue3::Mix {
+                            a: Box::new(FixtureChannelValue3::Preset {
+                                id: presets[preset_idx_low].id(),
+                                state: Some(FixtureChannelValue2PresetState::now(
+                                    selection.clone(),
+                                )),
+                            }),
+                            b: Box::new(FixtureChannelValue3::Preset {
+                                id: presets[preset_idx_high].id(),
+                                state: Some(FixtureChannelValue2PresetState::now(
+                                    selection.clone(),
+                                )),
+                            }),
                             mix: fade,
                         };
 
-                        f.set_channel_value(channel_type, channel_value)
+                        for channel in channels {
+                            f.set_programmer_value(
+                                patch.fixture_types(),
+                                &channel,
+                                channel_value.clone(),
+                            )
                             .map_err(ActionRunError::FixtureError)?;
+                        }
                     }
                 }
-                */
             }
         }
 

@@ -864,7 +864,7 @@ impl GdtfFixture {
                     preset_handler,
                     timing_handler,
                 )
-                .ok_or(FixtureError::GdtfChannelValueNotConvertable(
+                .ok_or(FixtureError::GdtfChannelValueNotConvertible(
                     dmx_channel.name().as_ref().to_owned(),
                 ))?;
 

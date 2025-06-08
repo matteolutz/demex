@@ -11,12 +11,17 @@ use crate::{
                 feature_type::FixtureChannel3FeatureType,
             },
         },
-        effect::feature::runtime::FeatureEffectRuntime,
+        effect::{feature::runtime::FeatureEffectRuntime, speed::EffectSpeed},
         gdtf::GdtfFixture,
         handler::{FixtureHandler, FixtureTypeList},
-        keyframe_effect::effect_runtime::KeyframeEffectRuntime,
+        keyframe_effect::{
+            effect::KeyframeEffect, effect_keyframe::KeyframeEffectKeyframe,
+            effect_keyframe_curve::KeyframeEffectKeyframeCurve,
+            effect_runtime::KeyframeEffectRuntime,
+        },
         selection::FixtureSelection,
         timing::TimingHandler,
+        updatables::runtime::RuntimePhase,
     },
     parser::nodes::{
         action::{functions::update_function::UpdateMode, ValueOrRange},
@@ -258,6 +263,32 @@ impl FixturePreset {
         &mut self.data
     }
 
+    pub fn affected_channels(
+        &self,
+        fixture: &GdtfFixture,
+        fixture_types: &FixtureTypeList,
+    ) -> Vec<String> {
+        match &self.data {
+            FixturePresetData::Default { data } => data
+                .get(&fixture.id())
+                .map(|values| values.keys().cloned().collect())
+                .unwrap_or_default(),
+            FixturePresetData::FeatureEffect { runtime } => runtime
+                .effect()
+                .attributes()
+                .flat_map(|attribute| fixture.channels_for_attribute(fixture_types, attribute))
+                .flatten()
+                .map(|(channel, _, _)| channel.name().as_ref().to_string())
+                .collect(),
+            FixturePresetData::KeyframeEffect { runtime } => runtime
+                .effect()
+                .affected_channels_for_fixture(fixture.id())
+                .iter()
+                .map(|channel| channel.to_string())
+                .collect(),
+        }
+    }
+
     pub fn apply(
         &self,
         fixture_types: &FixtureTypeList,
@@ -399,6 +430,8 @@ impl FixturePreset {
                         .collect::<Vec<_>>()
                 })
                 .unwrap_or_default(),
+
+            // TODO: rework this
             FixturePresetData::FeatureEffect { runtime } => {
                 let fixture_offset = state
                     .and_then(|state| state.selection().offset(fixture.id()))
@@ -412,7 +445,32 @@ impl FixturePreset {
                     state.map(|state| state.started()),
                 )
             }
-            FixturePresetData::KeyframeEffect { .. } => todo!(),
+            FixturePresetData::KeyframeEffect { runtime } => {
+                let fixture_offset = state
+                    .and_then(|state| state.selection().offset(fixture.id()))
+                    .unwrap_or_default();
+
+                let channels = runtime.effect().affected_channels_for_fixture(fixture.id());
+
+                channels
+                    .iter()
+                    .map(|channel| {
+                        (
+                            channel.to_string(),
+                            runtime
+                                .get_channel_value_with_started(
+                                    channel,
+                                    fixture,
+                                    fixture_types,
+                                    fixture_offset,
+                                    timing_handler,
+                                    state.map(|state| state.started()),
+                                )
+                                .unwrap(),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            }
         }
     }
 
@@ -475,6 +533,38 @@ impl FixturePreset {
 
         // val.map(|val| ((val as f32 / 255.0) * fade * 255.0) as u8)
         val
+    }
+
+    pub fn record_next(
+        &mut self,
+        data: HashMap<u32, HashMap<String, FixtureChannelValue3>>,
+    ) -> Result<(), PresetHandlerError> {
+        match &mut self.data {
+            FixturePresetData::FeatureEffect { .. } => {
+                Err(PresetHandlerError::PresetCannotRecordNextKeyframe(self.id))
+            }
+            FixturePresetData::KeyframeEffect { runtime } => {
+                runtime.effect_mut().layers_mut()[0].add_keyframe(KeyframeEffectKeyframe::new(
+                    0.0,
+                    data,
+                    KeyframeEffectKeyframeCurve::default(),
+                ));
+
+                Ok(())
+            }
+            FixturePresetData::Default { data } => {
+                let effect_runtime = KeyframeEffectRuntime::new(
+                    KeyframeEffect::form_data(data.clone()),
+                    EffectSpeed::default(),
+                    RuntimePhase::default(),
+                );
+                self.data = FixturePresetData::KeyframeEffect {
+                    runtime: effect_runtime,
+                };
+
+                Ok(())
+            }
+        }
     }
 
     pub fn update(

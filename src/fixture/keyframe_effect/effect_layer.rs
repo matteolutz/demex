@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +14,15 @@ pub struct KeyframeEffectLayer {
 }
 
 impl KeyframeEffectLayer {
-    pub fn affected_fixtures(&self) -> Vec<u32> {
+    pub fn new(keyframes: Vec<KeyframeEffectKeyframe>) -> Self {
+        Self { keyframes }
+    }
+
+    pub fn add_keyframe(&mut self, keyframe: KeyframeEffectKeyframe) {
+        self.keyframes.push(keyframe);
+    }
+
+    pub fn affected_fixtures(&self) -> BTreeSet<u32> {
         self.keyframes
             .iter()
             .flat_map(|kf| kf.affected_fixtures())

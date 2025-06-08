@@ -12,7 +12,7 @@ pub enum FixtureError {
 
     GdtfFixtureTypeNotFound(uuid::Uuid),
     GdtfFixtureDmxModeNotFound(String),
-    GdtfChannelValueNotConvertable(String),
+    GdtfChannelValueNotConvertible(String),
     GdtfMaxDmxOffsetNotFound,
     GdtfChannelNotFound(String),
     GdtfChannelValueNotFound(String),
@@ -55,10 +55,10 @@ impl std::fmt::Display for FixtureError {
             Self::GdtfFixtureDmxModeNotFound(mode) => {
                 write!(f, "GDTF fixture DMX mode {} not found", mode)
             }
-            Self::GdtfChannelValueNotConvertable(dmx_channel_name) => {
+            Self::GdtfChannelValueNotConvertible(dmx_channel_name) => {
                 write!(
                     f,
-                    "GDTF channel value for channel {} not convertable",
+                    "GDTF channel value for channel {} not convertible",
                     dmx_channel_name
                 )
             }

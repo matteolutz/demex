@@ -207,31 +207,31 @@ impl FixtureHandler {
         for f in &mut self.fixtures {
             let fixture_universe_offset = f.start_address() - 1;
 
-            let data_packet = f
-                .generate_data_packet(
-                    fixture_types,
-                    preset_handler,
-                    timing_handler,
-                    self.grand_master as f32 / 255.0,
-                )
-                .map_err(FixtureHandlerError::FixtureError)?;
+            let data_packet = f.generate_data_packet(
+                fixture_types,
+                preset_handler,
+                timing_handler,
+                self.grand_master as f32 / 255.0,
+            );
 
-            if !force
-                && compare_universe_output_data(
-                    self.universe_output_data.get(&f.universe()),
-                    &data_packet,
-                    fixture_universe_offset,
-                )
-            {
-                continue;
-            }
+            if let Ok(data_packet) = data_packet {
+                if !force
+                    && compare_universe_output_data(
+                        self.universe_output_data.get(&f.universe()),
+                        &data_packet,
+                        fixture_universe_offset,
+                    )
+                {
+                    continue;
+                }
 
-            // let universe_data = self.universe_output_data.entry(f.universe()).or_default();
-            let universe_data = self.universe_output_data.get_mut(&f.universe());
+                // let universe_data = self.universe_output_data.entry(f.universe()).or_default();
+                let universe_data = self.universe_output_data.get_mut(&f.universe());
 
-            if let Some(universe_data) = universe_data {
-                write_universe_data(universe_data, &data_packet, fixture_universe_offset);
-                dirty_universes.insert(f.universe());
+                if let Some(universe_data) = universe_data {
+                    write_universe_data(universe_data, &data_packet, fixture_universe_offset);
+                    dirty_universes.insert(f.universe());
+                }
             }
         }
 

@@ -123,14 +123,11 @@ impl PresetHandler {
         fixture_selector_context: FixtureSelectorContext,
         id: FixturePresetId,
         name: Option<String>,
+        should_next: bool,
         fixture_types: &FixtureTypeList,
         fixture_handler: &FixtureHandler,
         timing_handler: &TimingHandler,
     ) -> Result<(), PresetHandlerError> {
-        if self.presets.contains_key(&id) {
-            return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));
-        }
-
         let data = FixturePreset::generate_preset_data(
             fixture_types,
             fixture_handler,
@@ -140,6 +137,15 @@ impl PresetHandler {
             fixture_selector_context,
             id.feature_group,
         )?;
+
+        if let Some(preset) = self.presets.get_mut(&id) {
+            if should_next {
+                preset.record_next(data)?;
+                return Ok(());
+            } else {
+                return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));
+            }
+        }
 
         let preset = FixturePreset::new(id, name, FixturePresetData::Default { data })?;
 

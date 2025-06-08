@@ -364,7 +364,9 @@ impl<'a> Parser2<'a> {
 
         if matches!(self.current_token()?, Token::KeywordThru) {
             self.advance();
-            let end_preset_id = self.parse_preset_id()?;
+
+            let end_preset_id = self.parse_specific_preset()?;
+
             Ok(ValueOrRange::Thru(preset_id, end_preset_id))
         } else {
             Ok(ValueOrRange::Single(preset_id))
@@ -631,10 +633,18 @@ impl<'a> Parser2<'a> {
 
                 let preset_name = self.try_parse(Self::parse_as).ok();
 
+                let should_next = if matches!(self.current_token()?, Token::KeywordNext) {
+                    self.advance();
+                    true
+                } else {
+                    false
+                };
+
                 Ok(Action::RecordPreset(RecordPresetArgs {
                     id,
                     fixture_selector,
                     name: preset_name,
+                    should_next,
                 }))
             }
             Token::KeywordGroup => {

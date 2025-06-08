@@ -30,8 +30,36 @@ pub struct KeyframeEffectRuntime {
 }
 
 impl KeyframeEffectRuntime {
+    pub fn new(effect: KeyframeEffect, speed: EffectSpeed, phase: RuntimePhase) -> Self {
+        Self {
+            effect,
+            speed,
+            phase,
+        }
+    }
+
     pub fn effect(&self) -> &KeyframeEffect {
         &self.effect
+    }
+
+    pub fn effect_mut(&mut self) -> &mut KeyframeEffect {
+        &mut self.effect
+    }
+
+    pub fn speed(&self) -> &EffectSpeed {
+        &self.speed
+    }
+
+    pub fn speed_mut(&mut self) -> &mut EffectSpeed {
+        &mut self.speed
+    }
+
+    pub fn phase(&self) -> &RuntimePhase {
+        &self.phase
+    }
+
+    pub fn phase_mut(&mut self) -> &mut RuntimePhase {
+        &mut self.phase
     }
 
     pub fn get_channel_value_with_started(

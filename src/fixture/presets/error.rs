@@ -11,6 +11,7 @@ use super::preset::FixturePresetId;
 #[derive(Debug)]
 pub enum PresetHandlerError {
     PresetAlreadyExists(u32),
+    PresetCannotRecordNextKeyframe(FixturePresetId),
     FeaturePresetAlreadyExists(FixturePresetId),
     PresetNotFound(u32),
     FeaturePresetNotFound(FixturePresetId),
@@ -32,6 +33,13 @@ impl std::fmt::Display for PresetHandlerError {
                 write!(
                     f,
                     "Object with id {} already exists. Use \"update\" to modify or extend it",
+                    id
+                )
+            }
+            PresetHandlerError::PresetCannotRecordNextKeyframe(id) => {
+                write!(
+                    f,
+                    "Object with id {} cannot record next keyframe. Use \"update\" to modify it",
                     id
                 )
             }

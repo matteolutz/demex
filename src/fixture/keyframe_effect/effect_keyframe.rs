@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 use serde::{Deserialize, Serialize};
 
@@ -27,7 +27,7 @@ impl KeyframeEffectKeyframe {
         }
     }
 
-    pub fn affected_fixtures(&self) -> Vec<u32> {
+    pub fn affected_fixtures(&self) -> BTreeSet<u32> {
         self.values.keys().cloned().collect()
     }
 

@@ -17,6 +17,7 @@ use crate::{
     parser::nodes::action::functions::{
         record_function::RecordChannelTypeSelector, update_function::UpdateMode,
     },
+    utils::ease::{ease_in_out_quad, ease_in_quad, ease_out_quad},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -34,15 +35,9 @@ impl CueFadingFunction {
     pub fn apply(&self, x: f32) -> f32 {
         match self {
             Self::Linear => x,
-            Self::EaseInQuad => x * x,
-            Self::EaseOutQuad => 1.0 - (1.0 - x) * (1.0 - x),
-            Self::EaseInOutQuad => {
-                if x < 0.5 {
-                    2.0 * x * x
-                } else {
-                    1.0 - (-2.0 * x + 2.0).powf(2.0) / 2.0
-                }
-            }
+            Self::EaseInQuad => ease_in_quad(x),
+            Self::EaseOutQuad => ease_out_quad(x),
+            Self::EaseInOutQuad => ease_in_out_quad(x),
         }
     }
 }

@@ -80,7 +80,7 @@ feature_group               = "intensity"
                             | "feature" integer
 
 specific_preset             = "preset" integer
-specific_preset_or_range    = specific_preset ["thru" integer]
+specific_preset_or_range    = specific_preset ["thru" specific_preset]
 
 value_single                = discrete_value_single
                             | discrete_value_single "thru" discrete_value_single

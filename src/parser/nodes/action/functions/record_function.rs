@@ -82,6 +82,9 @@ pub struct RecordPresetArgs {
     pub id: FixturePresetId,
     pub fixture_selector: FixtureSelector,
     pub name: Option<String>,
+
+    /// If true, and the preset already exists and is "Default" or "KeyframeEffect", it will record the next keyframe
+    pub should_next: bool,
 }
 
 impl FunctionArgs for RecordPresetArgs {
@@ -105,6 +108,7 @@ impl FunctionArgs for RecordPresetArgs {
                 fixture_selector_context,
                 self.id,
                 self.name.clone(),
+                self.should_next,
                 patch.fixture_types(),
                 fixture_handler,
                 timing_handler,

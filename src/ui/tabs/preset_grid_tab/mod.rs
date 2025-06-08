@@ -173,6 +173,9 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                     FixturePresetData::FeatureEffect { .. } => {
                                         Some("FeFX".to_owned())
                                     }
+                                    FixturePresetData::KeyframeEffect { .. } => {
+                                        Some("KeyFX".to_owned())
+                                    }
                                     _ => None,
                                 }),
                             },

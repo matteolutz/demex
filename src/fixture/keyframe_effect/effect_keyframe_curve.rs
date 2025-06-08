@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::utils::ease::{ease_in_out_quad, ease_in_quad, ease_out_quad};
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum KeyframeEffectKeyframeCurve {
     #[default]
@@ -22,7 +24,9 @@ impl KeyframeEffectKeyframeCurve {
                     0.0
                 }
             }
-            _ => todo!(),
+            Self::EaseIn => ease_in_quad(t.clamp(0.0, 1.0)),
+            Self::EaseOut => ease_out_quad(t.clamp(0.0, 1.0)),
+            Self::EaseInOut => ease_in_out_quad(t.clamp(0.0, 1.0)),
         }
     }
 }

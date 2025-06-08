@@ -229,7 +229,7 @@ impl FunctionArgs for AssignFaderArgs {
             }
             AssignFaderArgsMode::Grandmaster => DemexInputFader::Grandmaster,
             AssignFaderArgsMode::Speedmaster(speed_master_id) => DemexInputFader::SpeedMaster {
-                speed_master_id: speed_master_id,
+                speed_master_id,
                 bpm_min: 50.0,
                 bpm_max: 300.0,
             },

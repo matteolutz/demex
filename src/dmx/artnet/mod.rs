@@ -167,6 +167,7 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, config: ArtnetOut
                 if let Ok((length, _)) = socket.recv_from(&mut input_buffer) {
                     let command = ArtCommand::from_buffer(&input_buffer[..length]).unwrap();
 
+                    #[allow(clippy::single_match)]
                     match command {
                         ArtCommand::PollReply(poll_reply) => {
                             let net_and_subnet: u16 = ((poll_reply.port_address[0] as u16) << 8)

@@ -18,14 +18,14 @@ use crate::{
     },
 };
 
-pub fn edit_effect_ui(
+pub fn edit_feature_effect_ui(
     ui: &mut egui::Ui,
     top_level_id: String,
     effect_runtime: &mut FeatureEffectRuntime,
     feature_group: FixtureChannel3FeatureGroup,
 ) {
     ui.vertical(|ui| {
-        ui.heading("Effect");
+        ui.heading("Feature Effect");
 
         egui_probe::Probe::new(effect_runtime.phase_mut())
             .with_header("Phase")
