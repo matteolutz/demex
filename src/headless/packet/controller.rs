@@ -1,8 +1,6 @@
 use std::io::{self, Read};
 
-use crate::{
-    headless::sync::DemexProtoSync, parser::nodes::action::DeferredAction, show::DemexNoUiShow,
-};
+use crate::{headless::sync::DemexProtoSync, show::DemexNoUiShow};
 
 use super::{
     demex_proto_read_bytes, demex_proto_read_u64, demex_proto_write_bytes, demex_proto_write_u64,
@@ -15,7 +13,6 @@ const HEADLESS_INFO_REQUEST: u8 = 0x01;
 const SHOW_FILE_UPDATE: u8 = 0x02;
 const SHOW_FILE: u8 = 0x03;
 const SYNC: u8 = 0x04;
-const ACTION: u8 = 0x05;
 
 #[derive(Debug)]
 pub enum DemexProtoControllerPacket {
@@ -23,7 +20,6 @@ pub enum DemexProtoControllerPacket {
     ShowFileUpdate,
     ShowFile { show_file: Box<DemexNoUiShow> },
     Sync { sync: Box<DemexProtoSync> },
-    Action { action: Box<DeferredAction> },
 }
 
 impl From<&DemexProtoControllerPacket> for u8 {
@@ -33,7 +29,6 @@ impl From<&DemexProtoControllerPacket> for u8 {
             DemexProtoControllerPacket::ShowFileUpdate => SHOW_FILE_UPDATE,
             DemexProtoControllerPacket::ShowFile { .. } => SHOW_FILE,
             DemexProtoControllerPacket::Sync { .. } => SYNC,
-            DemexProtoControllerPacket::Action { .. } => ACTION,
         }
     }
 }
@@ -60,13 +55,6 @@ impl DemexProtoSerialize for DemexProtoControllerPacket {
 
                 bytes_written += demex_proto_write_u64(buf, serialized_sync.len() as u64)?;
                 bytes_written += demex_proto_write_bytes(buf, &serialized_sync)?;
-            }
-            Self::Action { action } => {
-                let mut serialized_action = Vec::new();
-                ciborium::into_writer(action, &mut serialized_action).map_err(io::Error::other)?;
-
-                bytes_written += demex_proto_write_u64(buf, serialized_action.len() as u64)?;
-                bytes_written += demex_proto_write_bytes(buf, &serialized_action)?;
             }
         }
 
@@ -99,15 +87,6 @@ impl DemexProtoDeserialize for DemexProtoControllerPacket {
                 let sync = ciborium::from_reader(&sync_buf[..]).map_err(io::Error::other)?;
 
                 Ok(DemexProtoControllerPacket::Sync { sync })
-            }
-            ACTION => {
-                let len = demex_proto_read_u64(buf)?;
-                let mut action_buf = vec![0; len as usize];
-                demex_proto_read_bytes(buf, &mut action_buf)?;
-
-                let action = ciborium::from_reader(&action_buf[..]).map_err(io::Error::other)?;
-
-                Ok(DemexProtoControllerPacket::Action { action })
             }
             _ => Err(io::Error::new(
                 io::ErrorKind::InvalidData,

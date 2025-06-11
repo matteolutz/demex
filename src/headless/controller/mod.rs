@@ -1,10 +1,10 @@
-use std::{collections::HashSet, net, sync::Arc, thread::JoinHandle};
+use std::{collections::HashMap, net, sync::Arc, thread::JoinHandle, time};
 
 use parking_lot::RwLock;
 
 use crate::{
     fixture::patch::SerializablePatch,
-    headless::sync::DemexProtoSync,
+    headless::{sync::DemexProtoSync, DEMEX_HEADLESS_CONTROLLER_UDP_PORT},
     show::{context::ShowContext, DemexNoUiShow},
     utils::{
         thread::{self, DemexThreadStatsHandler},
@@ -26,9 +26,13 @@ enum DemexHeadlessNodeState {
     Verified,
 }
 
+struct DemexHeadlessNode {
+    pub udp_addr: net::SocketAddr,
+}
+
 #[derive(Default)]
 pub struct DemexHeadlessConroller {
-    nodes: Arc<RwLock<HashSet<u32>>>,
+    nodes: Arc<RwLock<HashMap<u32, DemexHeadlessNode>>>,
 }
 
 impl DemexHeadlessConroller {
@@ -38,10 +42,27 @@ impl DemexHeadlessConroller {
         show_context: ShowContext,
     ) -> JoinHandle<()> {
         thread::demex_simple_thread("demex-proto".to_string(), stats, move |_, _| {
-            let listener = net::TcpListener::bind(("0.0.0.0", DEMEX_HEADLESS_TCP_PORT)).unwrap();
-            log::debug!("Started listener");
+            let tcp_listener =
+                net::TcpListener::bind(("0.0.0.0", DEMEX_HEADLESS_TCP_PORT)).unwrap();
+            let udp_socket =
+                net::UdpSocket::bind(("0.0.0.0", DEMEX_HEADLESS_CONTROLLER_UDP_PORT)).unwrap();
 
-            for stream in listener.incoming() {
+            log::debug!("Started TCP listener and created UDP socket for headless controller");
+
+            {
+                let _show_context = show_context.clone();
+                let nodes = self.nodes.clone();
+
+                std::thread::spawn(move || loop {
+                    for (_, node_data) in nodes.read().iter() {
+                        let _ = udp_socket.send_to("demex".as_bytes(), node_data.udp_addr);
+
+                        std::thread::sleep(time::Duration::from_secs_f32(1.0 / 30.0));
+                    }
+                });
+            }
+
+            for stream in tcp_listener.incoming() {
                 let show_context = show_context.clone();
                 let nodes = self.nodes.clone();
 
@@ -61,6 +82,7 @@ impl DemexHeadlessConroller {
                                 DemexProtoHeadlessNodePacket::HeadlessInfoResponse {
                                     id,
                                     version,
+                                    udp_addr,
                                 } => {
                                     if version != VERSION_STR {
                                         log::warn!(
@@ -71,14 +93,18 @@ impl DemexHeadlessConroller {
                                         break;
                                     }
 
-                                    if nodes.read().contains(&id) {
+                                    if nodes.read().contains_key(&id) {
                                         log::warn!("Duplicate node id: {id}, shutting down..");
                                         break;
                                     }
 
+                                    node_state = DemexHeadlessNodeState::Verified;
+                                    nodes.write().insert(id, DemexHeadlessNode { udp_addr });
+
+                                    log::info!("Got new node with udp_addr: {}", udp_addr);
+
                                     let _ = protocol
                                         .send_packet(&DemexProtoControllerPacket::ShowFileUpdate);
-                                    node_state = DemexHeadlessNodeState::Verified;
                                 }
                                 DemexProtoHeadlessNodePacket::ShowFileRequest => {
                                     if node_state != DemexHeadlessNodeState::Verified {

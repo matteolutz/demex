@@ -198,39 +198,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     );
 
-    let fixture_handler_thread_b = context.fixture_handler.clone();
-    let preset_handler_thread_b = context.preset_handler.clone();
-    let updatable_handler_thread_b = context.updatable_handler.clone();
-    let timing_handler_thread_b = context.timing_handler.clone();
-    let patch_thread_b = context.patch.clone();
+    if args.headless.is_none() {
+        let fixture_handler_thread_b = context.fixture_handler.clone();
+        let preset_handler_thread_b = context.preset_handler.clone();
+        let updatable_handler_thread_b = context.updatable_handler.clone();
+        let timing_handler_thread_b = context.timing_handler.clone();
+        let patch_thread_b = context.patch.clone();
 
-    demex_update_thread(
-        "demex-update".to_owned(),
-        stats.clone(),
-        TEST_MAX_FUPS,
-        move |_, _| {
-            let mut fixture_handler = fixture_handler_thread_b.write();
-            let preset_handler = preset_handler_thread_b.read();
-            let mut updatable_handler = updatable_handler_thread_b.write();
-            let timing_handler = timing_handler_thread_b.read();
-            let patch = patch_thread_b.read();
+        demex_update_thread(
+            "demex-update".to_owned(),
+            stats.clone(),
+            TEST_MAX_FUPS,
+            move |_, _| {
+                let mut fixture_handler = fixture_handler_thread_b.write();
+                let preset_handler = preset_handler_thread_b.read();
+                let mut updatable_handler = updatable_handler_thread_b.write();
+                let timing_handler = timing_handler_thread_b.read();
+                let patch = patch_thread_b.read();
 
-            let _ = fixture_handler
-                .update_output_values(
+                let _ = fixture_handler
+                    .update_output_values(
+                        patch.fixture_types(),
+                        &preset_handler,
+                        &updatable_handler,
+                        &timing_handler,
+                    )
+                    .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
+                updatable_handler.update_executors(
                     patch.fixture_types(),
+                    &fixture_handler,
                     &preset_handler,
-                    &updatable_handler,
                     &timing_handler,
-                )
-                .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
-            updatable_handler.update_executors(
-                patch.fixture_types(),
-                &fixture_handler,
-                &preset_handler,
-                &timing_handler,
-            );
-        },
-    );
+                );
+            },
+        );
+    }
 
     if let Some(master_ip) = args.headless {
         log::info!("Running in headless mode, no UI will be shown");

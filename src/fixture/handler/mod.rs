@@ -191,6 +191,10 @@ impl FixtureHandler {
         for f in &mut self.fixtures {
             let fixture_universe_offset = f.start_address() - 1;
 
+            if !self.universe_output_data.contains_key(&f.universe()) {
+                self.universe_output_data.insert(f.universe(), [0; 512]);
+            }
+
             let prev_universe_data = self.universe_output_data.get(&f.universe()).unwrap()
                 [(fixture_universe_offset) as usize
                     ..(fixture_universe_offset + f.address_footprint()) as usize]

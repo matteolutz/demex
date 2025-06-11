@@ -23,6 +23,10 @@ impl Protocol {
         })
     }
 
+    pub fn stream(&self) -> &TcpStream {
+        &self.stream
+    }
+
     /// Establish a connection, wrap stream in BufReader/Writer
     pub fn connect(dest: SocketAddr) -> io::Result<Self> {
         let stream = TcpStream::connect(dest)?;

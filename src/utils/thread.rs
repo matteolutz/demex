@@ -91,18 +91,13 @@ impl DemexThreadStats {
 pub struct DemexThreadStatsHandler {
     stats: HashMap<String, DemexThreadStats>,
     name_to_id: HashMap<String, ThreadId>,
-    output_threads: HashMap<ThreadId, String>,
 }
 
 impl DemexThreadStatsHandler {
     pub fn register_thread(&mut self, name: String, id: ThreadId) {
-        self.name_to_id.insert(name, id);
+        self.name_to_id.insert(name.clone(), id);
+        self.stats.insert(name, DemexThreadStats::new(0.0));
     }
-
-    pub fn register_output_thread(&mut self, id: ThreadId, name: String) {
-        self.output_threads.insert(id, name);
-    }
-
     pub fn update(&mut self, name: &str, dt: f64) {
         if let Some(stats) = self.stats.get_mut(name) {
             stats.dt = dt;
@@ -119,9 +114,5 @@ impl DemexThreadStatsHandler {
 
     pub fn stats(&self) -> &HashMap<String, DemexThreadStats> {
         &self.stats
-    }
-
-    pub fn output_threads(&self) -> &HashMap<ThreadId, String> {
-        &self.output_threads
     }
 }
