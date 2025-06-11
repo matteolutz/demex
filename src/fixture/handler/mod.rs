@@ -17,16 +17,10 @@ pub mod sync;
 pub type FixtureTypeList = [gdtf::fixture_type::FixtureType];
 
 fn compare_universe_output_data(
-    previous_data_option: Option<&[u8; 512]>,
+    previous_data: &[u8; 512],
     fixture_data: &[u8],
     fixture_universe_offset: u16,
 ) -> bool {
-    if previous_data_option.is_none() {
-        return false;
-    }
-
-    let previous_data = previous_data_option.unwrap();
-
     for (i, d) in fixture_data.iter().enumerate() {
         if previous_data[i + fixture_universe_offset as usize] != *d {
             return false;
@@ -34,16 +28,6 @@ fn compare_universe_output_data(
     }
 
     true
-}
-
-fn write_universe_data(
-    universe_data: &mut [u8; 512],
-    fixture_data: &[u8],
-    fixture_universe_offset: u16,
-) {
-    for (i, d) in fixture_data.iter().enumerate() {
-        universe_data[i + fixture_universe_offset as usize] = *d;
-    }
 }
 
 #[derive(Debug)]
@@ -207,31 +191,31 @@ impl FixtureHandler {
         for f in &mut self.fixtures {
             let fixture_universe_offset = f.start_address() - 1;
 
-            let data_packet = f.generate_data_packet(
+            let prev_universe_data = self.universe_output_data.get(&f.universe()).unwrap()
+                [(fixture_universe_offset) as usize
+                    ..(fixture_universe_offset + f.address_footprint()) as usize]
+                .to_vec();
+
+            let fixture_result = f.generate_data_packet(
                 fixture_types,
                 preset_handler,
                 timing_handler,
                 self.grand_master as f32 / 255.0,
+                self.universe_output_data.get_mut(&f.universe()).unwrap(),
             );
 
-            if let Ok(data_packet) = data_packet {
+            if fixture_result.is_ok() {
                 if !force
                     && compare_universe_output_data(
-                        self.universe_output_data.get(&f.universe()),
-                        &data_packet,
+                        self.universe_output_data.get(&f.universe()).unwrap(),
+                        &prev_universe_data,
                         fixture_universe_offset,
                     )
                 {
                     continue;
                 }
 
-                // let universe_data = self.universe_output_data.entry(f.universe()).or_default();
-                let universe_data = self.universe_output_data.get_mut(&f.universe());
-
-                if let Some(universe_data) = universe_data {
-                    write_universe_data(universe_data, &data_packet, fixture_universe_offset);
-                    dirty_universes.insert(f.universe());
-                }
+                dirty_universes.insert(f.universe());
             }
         }
 

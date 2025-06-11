@@ -145,6 +145,15 @@ impl Default for FixturePresetData {
     }
 }
 
+impl FixturePresetData {
+    pub fn is_effect(&self) -> bool {
+        matches!(
+            self,
+            Self::FeatureEffect { .. } | Self::KeyframeEffect { .. }
+        )
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct FixturePreset {
@@ -253,6 +262,10 @@ impl FixturePreset {
             display_color: None,
             fade_up: 0.0,
         })
+    }
+
+    pub fn is_effect(&self) -> bool {
+        self.data.is_effect()
     }
 
     pub fn data(&self) -> &FixturePresetData {
