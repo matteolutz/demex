@@ -804,12 +804,30 @@ impl GdtfFixture {
         Ok(())
     }
 
+    pub fn internal_set_output_value(
+        &mut self,
+        channel_name: &str,
+        value: FixtureChannelValue3,
+    ) -> Result<(), FixtureError> {
+        let (output_value, output_value_state) = self
+            .outputs_values
+            .get_mut(channel_name)
+            .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel_name.to_owned()))?;
+
+        // don't compare the output values, just update them
+        *output_value = value;
+        output_value_state.update();
+
+        Ok(())
+    }
+
     pub fn update_output_values(
         &mut self,
         fixture_types: &FixtureTypeList,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
+        mut updated_values: Option<&mut Vec<(u32, String, FixtureChannelValue3)>>,
     ) -> Result<(), FixtureError> {
         let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
 
@@ -829,6 +847,14 @@ impl GdtfFixture {
 
             if *output_value == new_output_value {
                 continue;
+            }
+
+            if let Some(updated_values) = updated_values.as_mut() {
+                updated_values.push((
+                    self.id,
+                    dmx_channel.name().as_ref().to_string(),
+                    new_output_value.clone(),
+                ));
             }
 
             *output_value = new_output_value;

@@ -2,6 +2,7 @@ use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{self, Read, Write};
 
 pub mod controller;
+pub mod controller_udp;
 pub mod node;
 
 pub fn demex_proto_write_sock_addr(
@@ -84,6 +85,15 @@ pub fn demex_proto_read_string(reader: &mut impl Read) -> io::Result<String> {
     String::from_utf8(buf).map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid UTF-8"))
 }
 
+pub fn demex_proto_write_u8(writer: &mut impl Write, value: u8) -> io::Result<usize> {
+    writer.write_u8(value)?;
+    Ok(1)
+}
+
+pub fn demex_proto_read_u8(reader: &mut impl Read) -> io::Result<u8> {
+    reader.read_u8()
+}
+
 pub fn demex_proto_write_u16(writer: &mut impl Write, value: u16) -> io::Result<usize> {
     writer.write_u16::<NetworkEndian>(value)?;
     Ok(2)
@@ -109,6 +119,15 @@ pub fn demex_proto_write_u64(writer: &mut impl Write, value: u64) -> io::Result<
 
 pub fn demex_proto_read_u64(reader: &mut impl Read) -> io::Result<u64> {
     reader.read_u64::<NetworkEndian>()
+}
+
+pub fn demex_proto_write_f32(writer: &mut impl Write, value: f32) -> io::Result<usize> {
+    writer.write_f32::<NetworkEndian>(value)?;
+    Ok(8)
+}
+
+pub fn demex_proto_read_f32(reader: &mut impl Read) -> io::Result<f32> {
+    reader.read_f32::<NetworkEndian>()
 }
 
 pub fn demex_proto_write_bytes(writer: &mut impl Write, bytes: &[u8]) -> io::Result<usize> {

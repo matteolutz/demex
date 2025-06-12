@@ -31,12 +31,7 @@ impl ShowContext {
             .into_patch(self.patch.read().fixture_types().to_vec());
         let (fixtures, outputs) = patch.into_fixures_and_outputs(own_device_id);
 
-        *self.fixture_handler.write() = FixtureHandler::new(
-            fixtures,
-            outputs,
-            own_device_id == DemexProtoDeviceId::Controller,
-        )
-        .unwrap();
+        *self.fixture_handler.write() = FixtureHandler::new(fixtures, outputs).unwrap();
         *self.preset_handler.write() = show.preset_handler;
         *self.updatable_handler.write() = show.updatable_handler;
         *self.timing_handler.write() = show.timing_handler;
@@ -54,14 +49,8 @@ impl ShowContext {
         let patch = Arc::new(RwLock::new(patch.into_patch(fixture_types)));
         let (fixtures, outputs) = patch.read().into_fixures_and_outputs(own_device_id);
 
-        let fixture_handler = Arc::new(RwLock::new(
-            FixtureHandler::new(
-                fixtures,
-                outputs,
-                own_device_id == DemexProtoDeviceId::Controller,
-            )
-            .unwrap(),
-        ));
+        let fixture_handler =
+            Arc::new(RwLock::new(FixtureHandler::new(fixtures, outputs).unwrap()));
 
         let preset_handler = Arc::new(RwLock::new(preset_handler));
         let updatable_handler = Arc::new(RwLock::new(updatable_handler));

@@ -2,7 +2,10 @@ use std::collections::{BTreeSet, HashMap};
 
 use itertools::Itertools;
 
-use crate::dmx::{DemexDmxOutput, DemexDmxOutputTrait};
+use crate::{
+    dmx::{DemexDmxOutput, DemexDmxOutputTrait},
+    headless::packet::controller_udp::DemexProtoUdpControllerPacket,
+};
 
 use self::error::FixtureHandlerError;
 
@@ -36,7 +39,6 @@ pub struct FixtureHandler {
     outputs: Vec<DemexDmxOutput>,
     universe_output_data: HashMap<u16, [u8; 512]>,
     grand_master: u8,
-    is_controller: bool,
 }
 
 impl FixtureHandler {
@@ -47,7 +49,6 @@ impl FixtureHandler {
     pub fn new(
         fixtures: Vec<GdtfFixture>,
         outputs: Vec<DemexDmxOutput>,
-        is_controller: bool,
     ) -> Result<Self, FixtureHandlerError> {
         // check if the fixtures overlap
 
@@ -87,7 +88,6 @@ impl FixtureHandler {
             universe_output_data,
             fixtures,
             outputs,
-            is_controller,
             grand_master: Self::default_grandmaster_value(),
         })
     }
@@ -149,32 +149,33 @@ impl FixtureHandler {
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
+        udp_tx: Option<&std::sync::mpsc::Sender<DemexProtoUdpControllerPacket>>,
     ) -> Result<(), FixtureHandlerError> {
-        if !self.is_controller {
-            for f in self
-                .fixtures
-                .iter_mut()
-                .filter(|fixture| self.universe_output_data.contains_key(&fixture.universe()))
-            {
-                f.update_output_values(
-                    fixture_types,
-                    preset_handler,
-                    updatable_handler,
-                    timing_handler,
-                )
-                .map_err(FixtureHandlerError::FixtureError)?;
-            }
-        } else {
-            for f in self.fixtures.iter_mut() {
-                f.update_output_values(
-                    fixture_types,
-                    preset_handler,
-                    updatable_handler,
-                    timing_handler,
-                )
-                .map_err(FixtureHandlerError::FixtureError)?;
-            }
-        };
+        let mut updated_values = Vec::new();
+
+        for f in self.fixtures.iter_mut() {
+            f.update_output_values(
+                fixture_types,
+                preset_handler,
+                updatable_handler,
+                timing_handler,
+                if udp_tx.is_some() {
+                    Some(&mut updated_values)
+                } else {
+                    None
+                },
+            )
+            .map_err(FixtureHandlerError::FixtureError)?;
+        }
+
+        if !updated_values.is_empty() && udp_tx.is_some() {
+            let _ =
+                udp_tx
+                    .unwrap()
+                    .send(DemexProtoUdpControllerPacket::FixtureOutputValuesUpdate {
+                        values: updated_values,
+                    });
+        }
 
         Ok(())
     }

@@ -5,7 +5,10 @@ use std::{
 
 use crate::{
     headless::{
-        packet::{controller::DemexProtoControllerPacket, node::DemexProtoHeadlessNodePacket},
+        packet::{
+            controller::DemexProtoControllerPacket, controller_udp::DemexProtoUdpControllerPacket,
+            node::DemexProtoHeadlessNodePacket, DemexProtoDeserialize,
+        },
         protocol::Protocol,
         DEMEX_HEADLESS_CONTROLLER_UDP_PORT, DEMEX_HEADLESS_NODE_UDP_PORT, DEMEX_HEADLESS_TCP_PORT,
     },
@@ -42,18 +45,34 @@ impl DemexHeadlessNode {
             .local_addr()
             .map_err(DemexHeadlessError::IOError)?;
 
-        std::thread::spawn(move || {
-            let mut udp_buffer = [0u8; 1024];
+        {
+            let fixture_handler = show_context.fixture_handler.clone();
 
-            loop {
-                if let Ok(bytes_read) = udp_socket.recv(&mut udp_buffer) {
-                    log::debug!(
-                        "received message from controller: {}",
-                        String::from_utf8_lossy(&udp_buffer[..bytes_read])
-                    );
+            std::thread::spawn(move || {
+                let mut udp_buffer = [0u8; 16_384];
+
+                loop {
+                    if let Ok(packet) = udp_socket.recv(&mut udp_buffer).and_then(|bytes_read| {
+                        DemexProtoUdpControllerPacket::deserialize(
+                            &mut udp_buffer[..bytes_read].as_ref(),
+                        )
+                    }) {
+                        match packet {
+                            DemexProtoUdpControllerPacket::FixtureOutputValuesUpdate { values } => {
+                                let mut fixture_handler = fixture_handler.write();
+
+                                for (fixture_id, channel_name, value) in values {
+                                    if let Some(fixture) = fixture_handler.fixture(fixture_id) {
+                                        let _ =
+                                            fixture.internal_set_output_value(&channel_name, value);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        });
+            });
+        }
 
         let mut proto = Protocol::with_stream(tcp_stream).map_err(DemexHeadlessError::IOError)?;
         let mut last_sync: Option<time::Instant> = None;

@@ -83,6 +83,10 @@ struct Args {
     /// Fullscreen all viewports in the UI. This is only used if the UI feature is enabled.
     #[arg(long, conflicts_with = "headless")]
     fullscreen: bool,
+
+    /// Enable the controller mode, which allows the application to act as a controller for headless nodes.
+    #[arg(long, default_value = "false", conflicts_with = "headless")]
+    controller: bool,
 }
 
 const TEST_MAX_FUPS: f64 = 60.0;
@@ -198,6 +202,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     );
 
+    let (udp_tx, udp_rx) = std::sync::mpsc::channel();
+
     if args.headless.is_none() {
         let fixture_handler_thread_b = context.fixture_handler.clone();
         let preset_handler_thread_b = context.preset_handler.clone();
@@ -222,6 +228,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         &preset_handler,
                         &updatable_handler,
                         &timing_handler,
+                        if args.controller { Some(&udp_tx) } else { None },
                     )
                     .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
                 updatable_handler.update_executors(
@@ -242,7 +249,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             context.clone(),
         )?;
     } else {
-        DemexHeadlessConroller::default().start_controller_thread(stats.clone(), context.clone());
+        if args.controller {
+            log::info!("Running in controller mode.");
+            DemexHeadlessConroller::default().start_controller_thread(
+                stats.clone(),
+                context.clone(),
+                udp_rx,
+            );
+        }
 
         #[cfg(feature = "ui")]
         {

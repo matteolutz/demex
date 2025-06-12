@@ -4,7 +4,11 @@ use parking_lot::RwLock;
 
 use crate::{
     fixture::patch::SerializablePatch,
-    headless::{sync::DemexProtoSync, DEMEX_HEADLESS_CONTROLLER_UDP_PORT},
+    headless::{
+        packet::{controller_udp::DemexProtoUdpControllerPacket, DemexProtoSerialize},
+        sync::DemexProtoSync,
+        DEMEX_HEADLESS_CONTROLLER_UDP_PORT,
+    },
     show::{context::ShowContext, DemexNoUiShow},
     utils::{
         thread::{self, DemexThreadStatsHandler},
@@ -23,7 +27,7 @@ enum DemexHeadlessNodeState {
     #[default]
     NotVerified,
 
-    Verified,
+    Verified(u32),
 }
 
 struct DemexHeadlessNode {
@@ -40,119 +44,172 @@ impl DemexHeadlessConroller {
         self,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
         show_context: ShowContext,
-    ) -> JoinHandle<()> {
-        thread::demex_simple_thread("demex-proto".to_string(), stats, move |_, _| {
-            let tcp_listener =
-                net::TcpListener::bind(("0.0.0.0", DEMEX_HEADLESS_TCP_PORT)).unwrap();
-            let udp_socket =
-                net::UdpSocket::bind(("0.0.0.0", DEMEX_HEADLESS_CONTROLLER_UDP_PORT)).unwrap();
+        udp_receiver: std::sync::mpsc::Receiver<DemexProtoUdpControllerPacket>,
+    ) -> (JoinHandle<()>, JoinHandle<()>) {
+        let udp_thread = {
+            let _show_context = show_context.clone();
+            let nodes = self.nodes.clone();
 
-            log::debug!("Started TCP listener and created UDP socket for headless controller");
+            thread::demex_simple_thread(
+                "demex-proto-udp".to_string(),
+                stats.clone(),
+                move |_, _| {
+                    let udp_socket =
+                        net::UdpSocket::bind(("0.0.0.0", DEMEX_HEADLESS_CONTROLLER_UDP_PORT))
+                            .unwrap();
 
-            {
-                let _show_context = show_context.clone();
-                let nodes = self.nodes.clone();
-
-                std::thread::spawn(move || loop {
-                    for (_, node_data) in nodes.read().iter() {
-                        let _ = udp_socket.send_to("demex".as_bytes(), node_data.udp_addr);
-
-                        std::thread::sleep(time::Duration::from_secs_f32(1.0 / 30.0));
-                    }
-                });
-            }
-
-            for stream in tcp_listener.incoming() {
-                let show_context = show_context.clone();
-                let nodes = self.nodes.clone();
-
-                std::thread::spawn(move || {
-                    let mut node_state = DemexHeadlessNodeState::default();
-
-                    let mut protocol = Protocol::with_stream(stream.unwrap()).unwrap();
-
-                    let _ = protocol.send_packet(&DemexProtoControllerPacket::HeadlessInfoRequest);
+                    let mut packet_buf = [0u8; 16_384];
 
                     loop {
-                        let packet = protocol.read_packet::<DemexProtoHeadlessNodePacket>();
-                        if let Ok(packet) = packet {
-                            log::debug!("Received demex proto packet: {:#x}", u8::from(&packet));
+                        let udp_packet = udp_receiver.try_recv();
 
-                            match packet {
-                                DemexProtoHeadlessNodePacket::HeadlessInfoResponse {
-                                    id,
-                                    version,
-                                    udp_addr,
-                                } => {
-                                    if version != VERSION_STR {
-                                        log::warn!(
+                        if let Ok(udp_packet) = udp_packet {
+                            let packet_size = udp_packet
+                                .serialize(&mut packet_buf.as_mut_slice())
+                                .unwrap();
+
+                            for (_, node_data) in nodes.read().iter() {
+                                let _ = udp_socket
+                                    .send_to(&packet_buf[..packet_size], node_data.udp_addr);
+
+                                std::thread::sleep(time::Duration::from_secs_f32(1.0 / 30.0));
+                            }
+                        }
+                    }
+                },
+            )
+        };
+
+        let tcp_thread = thread::demex_simple_thread(
+            "demex-proto-tcp".to_string(),
+            stats,
+            move |_, _| {
+                let tcp_listener =
+                    net::TcpListener::bind(("0.0.0.0", DEMEX_HEADLESS_TCP_PORT)).unwrap();
+
+                log::debug!("Started TCP listener and created UDP socket for headless controller");
+
+                for stream in tcp_listener.incoming() {
+                    let show_context = show_context.clone();
+                    let nodes = self.nodes.clone();
+
+                    std::thread::spawn(move || {
+                        let mut node_state = DemexHeadlessNodeState::default();
+
+                        let mut protocol = Protocol::with_stream(stream.unwrap()).unwrap();
+
+                        let _ =
+                            protocol.send_packet(&DemexProtoControllerPacket::HeadlessInfoRequest);
+
+                        loop {
+                            let packet = protocol.read_packet::<DemexProtoHeadlessNodePacket>();
+                            if let Ok(packet) = packet {
+                                log::debug!(
+                                    "Received demex proto packet: {:#x}",
+                                    u8::from(&packet)
+                                );
+
+                                match packet {
+                                    DemexProtoHeadlessNodePacket::HeadlessInfoResponse {
+                                        id,
+                                        version,
+                                        udp_addr,
+                                    } => {
+                                        if version != VERSION_STR {
+                                            log::warn!(
                                             "Version mismatch: {} (node) != {} (controller), shutting down..",
                                             version,
                                             VERSION_STR
                                         );
-                                        break;
+                                            break;
+                                        }
+
+                                        if nodes.read().contains_key(&id) {
+                                            log::warn!("Duplicate node id: {id}, shutting down..");
+                                            break;
+                                        }
+
+                                        node_state = DemexHeadlessNodeState::Verified(id);
+                                        nodes.write().insert(id, DemexHeadlessNode { udp_addr });
+
+                                        log::info!("Got new node with udp_addr: {}", udp_addr);
+
+                                        let _ = protocol.send_packet(
+                                            &DemexProtoControllerPacket::ShowFileUpdate,
+                                        );
                                     }
+                                    DemexProtoHeadlessNodePacket::ShowFileRequest => {
+                                        if !matches!(
+                                            node_state,
+                                            DemexHeadlessNodeState::Verified(_)
+                                        ) {
+                                            break;
+                                        }
 
-                                    if nodes.read().contains_key(&id) {
-                                        log::warn!("Duplicate node id: {id}, shutting down..");
-                                        break;
+                                        let show_file = Box::new(DemexNoUiShow {
+                                            preset_handler: show_context
+                                                .preset_handler
+                                                .read()
+                                                .clone(),
+                                            updatable_handler: show_context
+                                                .updatable_handler
+                                                .read()
+                                                .clone(),
+                                            timing_handler: show_context
+                                                .timing_handler
+                                                .read()
+                                                .clone(),
+                                            patch: SerializablePatch::from_patch(
+                                                &show_context.patch.read(),
+                                            ),
+                                        });
+
+                                        protocol
+                                            .send_packet(&DemexProtoControllerPacket::ShowFile {
+                                                show_file,
+                                            })
+                                            .unwrap();
+
+                                        protocol
+                                            .send_packet(&DemexProtoControllerPacket::Sync {
+                                                sync: Box::new(DemexProtoSync::get(&show_context)),
+                                            })
+                                            .unwrap();
                                     }
+                                    DemexProtoHeadlessNodePacket::SyncRequest => {
+                                        if !matches!(
+                                            node_state,
+                                            DemexHeadlessNodeState::Verified(_)
+                                        ) {
+                                            break;
+                                        }
 
-                                    node_state = DemexHeadlessNodeState::Verified;
-                                    nodes.write().insert(id, DemexHeadlessNode { udp_addr });
-
-                                    log::info!("Got new node with udp_addr: {}", udp_addr);
-
-                                    let _ = protocol
-                                        .send_packet(&DemexProtoControllerPacket::ShowFileUpdate);
+                                        protocol
+                                            .send_packet(&DemexProtoControllerPacket::Sync {
+                                                sync: Box::new(DemexProtoSync::get(&show_context)),
+                                            })
+                                            .unwrap();
+                                    }
                                 }
-                                DemexProtoHeadlessNodePacket::ShowFileRequest => {
-                                    if node_state != DemexHeadlessNodeState::Verified {
-                                        break;
-                                    }
-
-                                    let show_file = Box::new(DemexNoUiShow {
-                                        preset_handler: show_context.preset_handler.read().clone(),
-                                        updatable_handler: show_context
-                                            .updatable_handler
-                                            .read()
-                                            .clone(),
-                                        timing_handler: show_context.timing_handler.read().clone(),
-                                        patch: SerializablePatch::from_patch(
-                                            &show_context.patch.read(),
-                                        ),
-                                    });
-
-                                    protocol
-                                        .send_packet(&DemexProtoControllerPacket::ShowFile {
-                                            show_file,
-                                        })
-                                        .unwrap();
-
-                                    protocol
-                                        .send_packet(&DemexProtoControllerPacket::Sync {
-                                            sync: Box::new(DemexProtoSync::get(&show_context)),
-                                        })
-                                        .unwrap();
-                                }
-                                DemexProtoHeadlessNodePacket::SyncRequest => {
-                                    if node_state != DemexHeadlessNodeState::Verified {
-                                        break;
-                                    }
-
-                                    protocol
-                                        .send_packet(&DemexProtoControllerPacket::Sync {
-                                            sync: Box::new(DemexProtoSync::get(&show_context)),
-                                        })
-                                        .unwrap();
-                                }
+                            } else {
+                                // on error, end connection
+                                log::warn!("Error reading packet, ending connection..");
+                                break;
                             }
                         }
-                    }
 
-                    let _ = protocol.shutdown(net::Shutdown::Both);
-                });
-            }
-        })
+                        let _ = protocol.shutdown(net::Shutdown::Both);
+                        match node_state {
+                            DemexHeadlessNodeState::Verified(id) => {
+                                nodes.write().remove(&id);
+                            }
+                            _ => {}
+                        };
+                    });
+                }
+            },
+        );
+
+        (tcp_thread, udp_thread)
     }
 }
