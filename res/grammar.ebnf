@@ -12,7 +12,7 @@ function                    = fixture_selector set_function
                             | "update" update_function
                             | "delete" delete_function "really"
                             | "clear"
-                            | "nuzul" | "sueud"
+                            | "nuzul" | "sueud" | "grandetc"
                             | "save"
                             | "config" ("output" | "patch")
                             | "test" string
