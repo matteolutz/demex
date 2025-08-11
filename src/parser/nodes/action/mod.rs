@@ -20,7 +20,9 @@ use functions::{
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 
-use crate::utils::serde::approx_instant;
+use crate::{
+    parser::nodes::action::functions::move_function::MoveArgs, utils::serde::approx_instant,
+};
 
 use crate::{
     fixture::{
@@ -115,6 +117,9 @@ pub enum Action {
 
     // Delete
     Delete(DeleteArgs),
+
+    // Move
+    Move(MoveArgs),
 
     // Edit
     Edit(Object),
@@ -330,6 +335,18 @@ impl Action {
 
             // Delete
             Self::Delete(args) => args.run(
+                issued_at,
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+                patch,
+            ),
+
+            // Move
+            Self::Move(args) => args.run(
                 issued_at,
                 fixture_handler,
                 preset_handler,

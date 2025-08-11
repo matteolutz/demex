@@ -15,6 +15,7 @@ pub mod assign_function;
 pub mod create_function;
 pub mod delete_function;
 pub mod go_function;
+pub mod move_function;
 pub mod recall_function;
 pub mod record_function;
 pub mod rename_function;

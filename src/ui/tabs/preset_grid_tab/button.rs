@@ -80,8 +80,9 @@ impl PresetGridButton {
         Self {
             quick_menu_actions: match config {
                 PresetGridButtonConfig::Empty { .. } => {
-                    let mut actions =
-                        QuickMenuActions::default().top_left(PresetGridButtonQuickMenuActions::New);
+                    let mut actions = QuickMenuActions::default()
+                        .top_left(PresetGridButtonQuickMenuActions::New)
+                        .top_right(PresetGridButtonQuickMenuActions::Insert);
 
                     if let Some(quick_menu_actions_empty) = quick_menu_actions_empty {
                         actions = actions.with_vec(quick_menu_actions_empty.into());

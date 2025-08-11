@@ -27,7 +27,9 @@ use crate::{
         presets::preset::FixturePresetId, sequence::cue::CueIdx,
     },
     lexer::token::Token,
-    parser::nodes::action::functions::assign_function::AssignFaderArgsMode,
+    parser::nodes::action::functions::{
+        assign_function::AssignFaderArgsMode, move_function::MoveArgs,
+    },
 };
 
 use self::{
@@ -937,6 +939,19 @@ impl<'a> Parser2<'a> {
         Ok(Action::Delete(DeleteArgs { object_range }))
     }
 
+    fn parse_move_function(&mut self) -> Result<Action, ParseError> {
+        let preset_to_move = self.parse_specific_preset()?;
+
+        expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
+
+        let target_preset = self.parse_specific_preset()?;
+
+        Ok(Action::Move(MoveArgs {
+            preset_to_move,
+            target_preset,
+        }))
+    }
+
     fn parse_config_function(&mut self) -> Result<Action, ParseError> {
         match self.current_token()? {
             Token::KeywordOutput => {
@@ -1238,6 +1253,11 @@ impl<'a> Parser2<'a> {
         if matches!(self.current_token()?, Token::KeywordDelete) {
             self.advance();
             return self.parse_delete_function();
+        }
+
+        if matches!(self.current_token()?, Token::KeywordMove) {
+            self.advance();
+            return self.parse_move_function();
         }
 
         if matches!(self.current_token()?, Token::KeywordAssign) {

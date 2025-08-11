@@ -203,6 +203,27 @@ impl PresetHandler {
         Ok(values_updated)
     }
 
+    pub fn move_preset(
+        &mut self,
+        id: FixturePresetId,
+        target_preset: FixturePresetId,
+    ) -> Result<(), PresetHandlerError> {
+        let preset_to_move = self.get_preset(id)?.clone();
+
+        let target_preset_result = self.get_preset(target_preset);
+
+        if let Ok(target_preset) = target_preset_result {
+            return Err(PresetHandlerError::PresetAlreadyExists(
+                target_preset.id().preset_id,
+            ));
+        }
+
+        self.presets.remove(&id);
+        self.presets.insert(target_preset, preset_to_move);
+
+        Ok(())
+    }
+
     pub fn presets_mut(&mut self) -> &mut HashMap<FixturePresetId, FixturePreset> {
         &mut self.presets
     }
