@@ -1,4 +1,9 @@
-use std::io::{self, Read};
+use std::{
+    io::{self, Read},
+    net::SocketAddr,
+};
+
+use crate::headless::packet::{demex_proto_read_sock_addr, demex_proto_write_sock_addr};
 
 use super::{
     demex_proto_read_string, demex_proto_read_u32, demex_proto_write_string, demex_proto_write_u32,
@@ -13,7 +18,11 @@ const SYNC_REQUEST: u8 = 0x03;
 
 #[derive(Debug)]
 pub enum DemexProtoHeadlessNodePacket {
-    HeadlessInfoResponse { id: u32, version: String },
+    HeadlessInfoResponse {
+        id: u32,
+        version: String,
+        udp_addr: SocketAddr,
+    },
     ShowFileRequest,
     SyncRequest,
 }
@@ -34,9 +43,14 @@ impl DemexProtoSerialize for DemexProtoHeadlessNodePacket {
         let mut bytes_written = 1;
 
         match self {
-            Self::HeadlessInfoResponse { id, version } => {
+            Self::HeadlessInfoResponse {
+                id,
+                version,
+                udp_addr,
+            } => {
                 bytes_written += demex_proto_write_u32(buf, *id)?;
-                bytes_written += demex_proto_write_string(buf, version)?
+                bytes_written += demex_proto_write_string(buf, version)?;
+                bytes_written += demex_proto_write_sock_addr(buf, *udp_addr)?;
             }
             Self::ShowFileRequest => {}
             Self::SyncRequest => {}
@@ -54,7 +68,12 @@ impl DemexProtoDeserialize for DemexProtoHeadlessNodePacket {
             HEADLESS_INFO_RESPONSE => {
                 let id = demex_proto_read_u32(buf)?;
                 let version = demex_proto_read_string(buf)?;
-                Ok(DemexProtoHeadlessNodePacket::HeadlessInfoResponse { id, version })
+                let udp_addr = demex_proto_read_sock_addr(buf)?;
+                Ok(DemexProtoHeadlessNodePacket::HeadlessInfoResponse {
+                    id,
+                    version,
+                    udp_addr,
+                })
             }
             SHOW_FILE_REQUEST => Ok(DemexProtoHeadlessNodePacket::ShowFileRequest),
             SYNC_REQUEST => Ok(DemexProtoHeadlessNodePacket::SyncRequest),

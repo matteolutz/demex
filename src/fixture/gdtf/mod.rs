@@ -2,7 +2,10 @@ use gdtf::values::DmxValue;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{color::color_space::RgbValue, utils::color::rgbw_to_rgb};
+use crate::{
+    color::color_space::RgbValue,
+    fixture::channel3::channel_value_state::FixtureChannelValue3State, utils::color::rgbw_to_rgb,
+};
 
 use super::{
     channel3::{
@@ -69,7 +72,7 @@ pub struct GdtfFixture {
     address_footprint: u16,
 
     programmer_values: HashMap<String, FixtureChannelValue3>,
-    outputs_values: HashMap<String, FixtureChannelValue3>,
+    outputs_values: HashMap<String, (FixtureChannelValue3, FixtureChannelValue3State)>,
 
     sources: Vec<FixtureChannelValueSource>,
 }
@@ -116,7 +119,10 @@ impl GdtfFixture {
             start_address,
             address_footprint,
             programmer_values: values.clone(),
-            outputs_values: values,
+            outputs_values: values
+                .into_iter()
+                .map(|(key, value)| (key, (value, FixtureChannelValue3State::new_changed())))
+                .collect(),
             sources: vec![FixtureChannelValueSource::Programmer],
         })
     }
@@ -680,6 +686,7 @@ impl GdtfFixture {
     ) -> Result<FixtureChannelValue3, FixtureError> {
         self.outputs_values
             .get(channel.name().as_ref())
+            .map(|(value, _)| value)
             .ok_or_else(|| {
                 FixtureError::GdtfChannelValueNotFound(channel.name().as_ref().to_owned())
             })
@@ -797,12 +804,30 @@ impl GdtfFixture {
         Ok(())
     }
 
+    pub fn internal_set_output_value(
+        &mut self,
+        channel_name: &str,
+        value: FixtureChannelValue3,
+    ) -> Result<(), FixtureError> {
+        let (output_value, output_value_state) = self
+            .outputs_values
+            .get_mut(channel_name)
+            .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel_name.to_owned()))?;
+
+        // don't compare the output values, just update them
+        *output_value = value;
+        output_value_state.update();
+
+        Ok(())
+    }
+
     pub fn update_output_values(
         &mut self,
         fixture_types: &FixtureTypeList,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
+        mut updated_values: Option<&mut Vec<(u32, String, FixtureChannelValue3)>>,
     ) -> Result<(), FixtureError> {
         let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
 
@@ -815,11 +840,25 @@ impl GdtfFixture {
                 preset_handler,
                 timing_handler,
             )?;
-            let output_value = self
+            let (output_value, output_value_state) = self
                 .outputs_values
                 .get_mut(dmx_channel.name().as_ref())
                 .unwrap();
+
+            if *output_value == new_output_value {
+                continue;
+            }
+
+            if let Some(updated_values) = updated_values.as_mut() {
+                updated_values.push((
+                    self.id,
+                    dmx_channel.name().as_ref().to_string(),
+                    new_output_value.clone(),
+                ));
+            }
+
             *output_value = new_output_value;
+            output_value_state.update();
         }
 
         Ok(())
@@ -831,10 +870,11 @@ impl GdtfFixture {
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         grand_master: f32,
-    ) -> Result<Vec<u8>, FixtureError> {
+        universe_buffer: &mut [u8; 512],
+    ) -> Result<(), FixtureError> {
         let (fixture_type, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
 
-        let mut data = vec![0u8; self.address_footprint as usize];
+        // let mut data = vec![0u8; self.address_footprint as usize];
         let mut dynamic_data: HashMap<String, DmxValue> =
             HashMap::with_capacity(self.programmer_values().len());
 
@@ -849,7 +889,20 @@ impl GdtfFixture {
                 None => continue,
             };
 
-            let value = self
+            {
+                let (value, value_state) = self
+                    .outputs_values
+                    .get_mut(dmx_channel.name().as_ref())
+                    .unwrap();
+
+                if !value.should_output(value_state, preset_handler) {
+                    continue;
+                }
+
+                value_state.reset();
+            }
+
+            let (value, _) = self
                 .outputs_values
                 .get(dmx_channel.name().as_ref())
                 .unwrap();
@@ -873,11 +926,13 @@ impl GdtfFixture {
             let mut real_dmx_value = dmx_value.to(offsets.len() as u8);
 
             for offset in offsets.iter().rev() {
-                data[*offset as usize - 1] = (real_dmx_value & 0xFF) as u8;
+                let universe_offset = (self.start_address - 1) + (*offset as u16 - 1);
+
+                universe_buffer[universe_offset as usize] = (real_dmx_value & 0xFF) as u8;
                 real_dmx_value >>= 8;
             }
         }
 
-        Ok(data)
+        Ok(())
     }
 }

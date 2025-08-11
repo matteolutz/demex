@@ -83,6 +83,10 @@ struct Args {
     /// Fullscreen all viewports in the UI. This is only used if the UI feature is enabled.
     #[arg(long, conflicts_with = "headless")]
     fullscreen: bool,
+
+    /// Enable the controller mode, which allows the application to act as a controller for headless nodes.
+    #[arg(long, default_value = "false", conflicts_with = "headless")]
+    controller: bool,
 }
 
 const TEST_MAX_FUPS: f64 = 60.0;
@@ -198,39 +202,44 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     );
 
-    let fixture_handler_thread_b = context.fixture_handler.clone();
-    let preset_handler_thread_b = context.preset_handler.clone();
-    let updatable_handler_thread_b = context.updatable_handler.clone();
-    let timing_handler_thread_b = context.timing_handler.clone();
-    let patch_thread_b = context.patch.clone();
+    let (udp_tx, udp_rx) = std::sync::mpsc::channel();
 
-    demex_update_thread(
-        "demex-update".to_owned(),
-        stats.clone(),
-        TEST_MAX_FUPS,
-        move |_, _| {
-            let mut fixture_handler = fixture_handler_thread_b.write();
-            let preset_handler = preset_handler_thread_b.read();
-            let mut updatable_handler = updatable_handler_thread_b.write();
-            let timing_handler = timing_handler_thread_b.read();
-            let patch = patch_thread_b.read();
+    if args.headless.is_none() {
+        let fixture_handler_thread_b = context.fixture_handler.clone();
+        let preset_handler_thread_b = context.preset_handler.clone();
+        let updatable_handler_thread_b = context.updatable_handler.clone();
+        let timing_handler_thread_b = context.timing_handler.clone();
+        let patch_thread_b = context.patch.clone();
 
-            let _ = fixture_handler
-                .update_output_values(
+        demex_update_thread(
+            "demex-update".to_owned(),
+            stats.clone(),
+            TEST_MAX_FUPS,
+            move |_, _| {
+                let mut fixture_handler = fixture_handler_thread_b.write();
+                let preset_handler = preset_handler_thread_b.read();
+                let mut updatable_handler = updatable_handler_thread_b.write();
+                let timing_handler = timing_handler_thread_b.read();
+                let patch = patch_thread_b.read();
+
+                let _ = fixture_handler
+                    .update_output_values(
+                        patch.fixture_types(),
+                        &preset_handler,
+                        &updatable_handler,
+                        &timing_handler,
+                        if args.controller { Some(&udp_tx) } else { None },
+                    )
+                    .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
+                updatable_handler.update_executors(
                     patch.fixture_types(),
+                    &fixture_handler,
                     &preset_handler,
-                    &updatable_handler,
                     &timing_handler,
-                )
-                .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
-            updatable_handler.update_executors(
-                patch.fixture_types(),
-                &fixture_handler,
-                &preset_handler,
-                &timing_handler,
-            );
-        },
-    );
+                );
+            },
+        );
+    }
 
     if let Some(master_ip) = args.headless {
         log::info!("Running in headless mode, no UI will be shown");
@@ -240,7 +249,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             context.clone(),
         )?;
     } else {
-        DemexHeadlessConroller::default().start_controller_thread(stats.clone(), context.clone());
+        if args.controller {
+            log::info!("Running in controller mode.");
+            DemexHeadlessConroller::default().start_controller_thread(
+                stats.clone(),
+                context.clone(),
+                udp_rx,
+            );
+        }
 
         #[cfg(feature = "ui")]
         {

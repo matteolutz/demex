@@ -2,7 +2,10 @@ use std::collections::{BTreeSet, HashMap};
 
 use itertools::Itertools;
 
-use crate::dmx::{DemexDmxOutput, DemexDmxOutputTrait};
+use crate::{
+    dmx::{DemexDmxOutput, DemexDmxOutputTrait},
+    headless::packet::controller_udp::DemexProtoUdpControllerPacket,
+};
 
 use self::error::FixtureHandlerError;
 
@@ -17,16 +20,10 @@ pub mod sync;
 pub type FixtureTypeList = [gdtf::fixture_type::FixtureType];
 
 fn compare_universe_output_data(
-    previous_data_option: Option<&[u8; 512]>,
+    previous_data: &[u8; 512],
     fixture_data: &[u8],
     fixture_universe_offset: u16,
 ) -> bool {
-    if previous_data_option.is_none() {
-        return false;
-    }
-
-    let previous_data = previous_data_option.unwrap();
-
     for (i, d) in fixture_data.iter().enumerate() {
         if previous_data[i + fixture_universe_offset as usize] != *d {
             return false;
@@ -36,23 +33,12 @@ fn compare_universe_output_data(
     true
 }
 
-fn write_universe_data(
-    universe_data: &mut [u8; 512],
-    fixture_data: &[u8],
-    fixture_universe_offset: u16,
-) {
-    for (i, d) in fixture_data.iter().enumerate() {
-        universe_data[i + fixture_universe_offset as usize] = *d;
-    }
-}
-
 #[derive(Debug)]
 pub struct FixtureHandler {
     fixtures: Vec<GdtfFixture>,
     outputs: Vec<DemexDmxOutput>,
     universe_output_data: HashMap<u16, [u8; 512]>,
     grand_master: u8,
-    is_controller: bool,
 }
 
 impl FixtureHandler {
@@ -63,7 +49,6 @@ impl FixtureHandler {
     pub fn new(
         fixtures: Vec<GdtfFixture>,
         outputs: Vec<DemexDmxOutput>,
-        is_controller: bool,
     ) -> Result<Self, FixtureHandlerError> {
         // check if the fixtures overlap
 
@@ -103,7 +88,6 @@ impl FixtureHandler {
             universe_output_data,
             fixtures,
             outputs,
-            is_controller,
             grand_master: Self::default_grandmaster_value(),
         })
     }
@@ -165,32 +149,33 @@ impl FixtureHandler {
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
+        udp_tx: Option<&std::sync::mpsc::Sender<DemexProtoUdpControllerPacket>>,
     ) -> Result<(), FixtureHandlerError> {
-        if !self.is_controller {
-            for f in self
-                .fixtures
-                .iter_mut()
-                .filter(|fixture| self.universe_output_data.contains_key(&fixture.universe()))
-            {
-                f.update_output_values(
-                    fixture_types,
-                    preset_handler,
-                    updatable_handler,
-                    timing_handler,
-                )
-                .map_err(FixtureHandlerError::FixtureError)?;
-            }
-        } else {
-            for f in self.fixtures.iter_mut() {
-                f.update_output_values(
-                    fixture_types,
-                    preset_handler,
-                    updatable_handler,
-                    timing_handler,
-                )
-                .map_err(FixtureHandlerError::FixtureError)?;
-            }
-        };
+        let mut updated_values = Vec::new();
+
+        for f in self.fixtures.iter_mut() {
+            f.update_output_values(
+                fixture_types,
+                preset_handler,
+                updatable_handler,
+                timing_handler,
+                if udp_tx.is_some() {
+                    Some(&mut updated_values)
+                } else {
+                    None
+                },
+            )
+            .map_err(FixtureHandlerError::FixtureError)?;
+        }
+
+        if !updated_values.is_empty() && udp_tx.is_some() {
+            let _ =
+                udp_tx
+                    .unwrap()
+                    .send(DemexProtoUdpControllerPacket::FixtureOutputValuesUpdate {
+                        values: updated_values,
+                    });
+        }
 
         Ok(())
     }
@@ -207,31 +192,35 @@ impl FixtureHandler {
         for f in &mut self.fixtures {
             let fixture_universe_offset = f.start_address() - 1;
 
-            let data_packet = f.generate_data_packet(
+            if !self.universe_output_data.contains_key(&f.universe()) {
+                self.universe_output_data.insert(f.universe(), [0; 512]);
+            }
+
+            let prev_universe_data = self.universe_output_data.get(&f.universe()).unwrap()
+                [(fixture_universe_offset) as usize
+                    ..(fixture_universe_offset + f.address_footprint()) as usize]
+                .to_vec();
+
+            let fixture_result = f.generate_data_packet(
                 fixture_types,
                 preset_handler,
                 timing_handler,
                 self.grand_master as f32 / 255.0,
+                self.universe_output_data.get_mut(&f.universe()).unwrap(),
             );
 
-            if let Ok(data_packet) = data_packet {
+            if fixture_result.is_ok() {
                 if !force
                     && compare_universe_output_data(
-                        self.universe_output_data.get(&f.universe()),
-                        &data_packet,
+                        self.universe_output_data.get(&f.universe()).unwrap(),
+                        &prev_universe_data,
                         fixture_universe_offset,
                     )
                 {
                     continue;
                 }
 
-                // let universe_data = self.universe_output_data.entry(f.universe()).or_default();
-                let universe_data = self.universe_output_data.get_mut(&f.universe());
-
-                if let Some(universe_data) = universe_data {
-                    write_universe_data(universe_data, &data_packet, fixture_universe_offset);
-                    dirty_universes.insert(f.universe());
-                }
+                dirty_universes.insert(f.universe());
             }
         }
 

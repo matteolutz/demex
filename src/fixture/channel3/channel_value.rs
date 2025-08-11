@@ -4,6 +4,7 @@ use gdtf::values::DmxValue;
 use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
+    channel3::channel_value_state::FixtureChannelValue3State,
     gdtf::GdtfFixture,
     handler::FixtureTypeList,
     presets::{preset::FixturePresetId, PresetHandler},
@@ -121,6 +122,31 @@ impl PartialEq for FixtureChannelValue3 {
                     channel_function_idx: idx_b,
                 },
             ) => idx_a == idx_b && value_a == value_b,
+
+            (
+                Self::DiscreteSet {
+                    channel_function_idx: idx_a,
+                    channel_set: set_a,
+                },
+                Self::DiscreteSet {
+                    channel_function_idx: idx_b,
+                    channel_set: set_b,
+                },
+            ) => idx_a == idx_b && set_a == set_b,
+
+            (
+                Self::Mix {
+                    a: a_a,
+                    b: a_b,
+                    mix: a_mix,
+                },
+                Self::Mix {
+                    a: b_a,
+                    b: b_b,
+                    mix: b_mix,
+                },
+            ) => (a_mix - b_mix).abs() < f32::EPSILON && a_a == b_a && a_b == b_b,
+
             _ => false,
         }
     }
@@ -131,6 +157,22 @@ impl Eq for FixtureChannelValue3 {}
 impl FixtureChannelValue3 {
     pub fn is_home(&self) -> bool {
         matches!(self, Self::Home)
+    }
+
+    pub fn should_output(
+        &self,
+        state: &FixtureChannelValue3State,
+        preset_handler: &PresetHandler,
+    ) -> bool {
+        match self {
+            Self::Preset { id, .. } => {
+                state.was_updated
+                    || preset_handler
+                        .get_preset(*id)
+                        .is_ok_and(|preset| preset.is_effect())
+            }
+            _ => state.was_updated,
+        }
     }
 
     pub fn with_preset_state(self, preset_state: Option<FixtureChannelValue2PresetState>) -> Self {

@@ -1,7 +1,6 @@
 use std::thread;
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
-    let fixture_handler = context.fixture_handler.read();
     let stats = context.stats.read();
 
     let mut num_threads = 1; // main thread
@@ -27,19 +26,6 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
         num_threads += 1;
     }
-
-    ui.vertical(|ui| {
-        ui.heading("Outputs");
-
-        for output in fixture_handler.outputs() {
-            ui.horizontal(|ui| {
-                ui.label(format!("{:?}", output.config()));
-                ui.label(format!("(Threads: {})", output.config().num_threads()));
-            });
-
-            num_threads += output.config().num_threads();
-        }
-    });
 
     ui.vertical(|ui| {
         ui.separator();

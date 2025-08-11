@@ -109,6 +109,7 @@ impl DemexUiApp {
                 &preset_handler,
                 &updatable_handler,
                 &timing_handler,
+                None,
             )
             .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
         updatable_handler.update_executors(

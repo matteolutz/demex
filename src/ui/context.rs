@@ -211,7 +211,7 @@ impl DemexUiContext {
                 let (fixtures, outputs) =
                     new_patch.into_fixures_and_outputs(DemexProtoDeviceId::Controller);
 
-                *self.fixture_handler.write() = FixtureHandler::new(fixtures, outputs, true)
+                *self.fixture_handler.write() = FixtureHandler::new(fixtures, outputs)
                     .map_err(|err| DemexUiError::RuntimeError(err.to_string()))?;
                 *self.preset_handler.write() = show.preset_handler;
                 *self.updatable_handler.write() = show.updatable_handler;

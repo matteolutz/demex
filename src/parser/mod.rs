@@ -1265,6 +1265,11 @@ impl<'a> Parser2<'a> {
             return Ok(Action::Sueud);
         }
 
+        if matches!(self.current_token()?, Token::KeywordGrandEtc) {
+            self.advance();
+            return Ok(Action::GrandEtc);
+        }
+
         if matches!(self.current_token()?, Token::KeywordSave) {
             self.advance();
             return Ok(Action::Save);

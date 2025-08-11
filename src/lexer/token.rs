@@ -91,6 +91,7 @@ pub enum Token {
 
     KeywordNuzul,
     KeywordSueud,
+    KeywordGrandEtc,
 
     Eof,
 }
@@ -135,6 +136,7 @@ impl Token {
             Token::KeywordUpdate => TokenType::ActionKeyword,
             Token::KeywordNuzul => TokenType::ActionKeyword,
             Token::KeywordSueud => TokenType::ActionKeyword,
+            Token::KeywordGrandEtc => TokenType::ActionKeyword,
             Token::KeywordSave => TokenType::ActionKeyword,
             Token::KeywordDelete => TokenType::ActionKeyword,
             Token::KeywordConfig => TokenType::ActionKeyword,
@@ -237,6 +239,7 @@ impl std::fmt::Display for Token {
             Token::KeywordOverride => write!(f, "override"),
             Token::KeywordNuzul => write!(f, "nuzul"),
             Token::KeywordSueud => write!(f, "sueud"),
+            Token::KeywordGrandEtc => write!(f, "grandetc"),
             Token::KeywordSave => write!(f, "save"),
             Token::KeywordDelete => write!(f, "delete"),
             Token::KeywordReally => write!(f, "really"),

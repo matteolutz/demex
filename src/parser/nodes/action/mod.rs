@@ -141,6 +141,7 @@ pub enum Action {
 
     Nuzul,
     Sueud,
+    GrandEtc,
 
     // Internal
     InternalSetFixtureSelection(Option<FixtureSelection>),
@@ -361,6 +362,7 @@ impl Action {
 
             Self::Nuzul => Ok(ActionRunResult::Info("Going down...".to_owned())),
             Self::Sueud => Ok(ActionRunResult::Info("Going up...".to_owned())),
+            Self::GrandEtc => Ok(ActionRunResult::Warn("Ha ha ha, very funny".to_owned())),
 
             #[cfg(feature = "ui")]
             Self::Config(config_type) => Ok(ActionRunResult::EditWindow(

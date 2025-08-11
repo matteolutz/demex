@@ -135,6 +135,7 @@ impl<'a> Lexer<'a> {
                     "lock" => Some(Token::KeywordLock),
                     "speedmaster" | "sm" => Some(Token::KeywordSpeedmaster),
                     "tap" => Some(Token::KeywordTap),
+                    "grandetc" => Some(Token::KeywordGrandEtc),
                     _ => None,
                 };
 
