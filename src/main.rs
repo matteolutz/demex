@@ -192,7 +192,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     patch.fixture_types(),
                     &preset_handler,
                     &timing_handler,
-                    last_user_update.elapsed().as_secs_f64() > 1.0,
+                    last_user_update.elapsed().as_secs_f64() > 0.1,
                 )
                 .inspect_err(|err| log::error!("Failed to generate output data: {}", err))
                 .is_ok_and(|res| res > 0)
