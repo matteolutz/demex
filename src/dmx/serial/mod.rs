@@ -13,11 +13,14 @@ use super::DmxData;
 pub struct SerialOutputConfig {
     pub serial_port: String,
     pub universe: u16,
+
+    #[serde(default)]
+    pub enable_rts: bool,
 }
 
 pub fn start_serial_output_thread(rx: mpsc::Receiver<DmxData>, config: SerialOutputConfig) {
     thread::spawn(move || {
-        let mut serial = DMXSerial::open(config.serial_port.as_str(), true).unwrap();
+        let mut serial = DMXSerial::open(config.serial_port.as_str(), config.enable_rts).unwrap();
         serial.set_sync();
 
         loop {
