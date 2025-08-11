@@ -17,7 +17,7 @@ pub struct SerialOutputConfig {
 
 pub fn start_serial_output_thread(rx: mpsc::Receiver<DmxData>, config: SerialOutputConfig) {
     thread::spawn(move || {
-        let mut serial = DMXSerial::open(config.serial_port.as_str()).unwrap();
+        let mut serial = DMXSerial::open(config.serial_port.as_str(), true).unwrap();
         serial.set_sync();
 
         loop {

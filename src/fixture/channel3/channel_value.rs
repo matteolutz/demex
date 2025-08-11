@@ -39,7 +39,7 @@ impl FixtureChannelValue3Discrete {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct FixtureChannelValue2PresetState {
     #[serde(with = "approx_instant")]
     started: time::Instant,
@@ -107,10 +107,16 @@ impl PartialEq for FixtureChannelValue3 {
         match (self, other) {
             (Self::Home, Self::Home) => true,
 
-            // TODO: should we compare the state?
-            (Self::Preset { id: preset_a, .. }, Self::Preset { id: preset_b, .. }) => {
-                preset_a == preset_b
-            }
+            (
+                Self::Preset {
+                    id: preset_a,
+                    state: state_a,
+                },
+                Self::Preset {
+                    id: preset_b,
+                    state: state_b,
+                },
+            ) => preset_a == preset_b && state_a == state_b,
 
             (
                 Self::Discrete {

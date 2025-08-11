@@ -3387,8 +3387,7 @@ dependencies = [
 [[package]]
 name = "open_dmx"
 version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7a51347501fdbe46dbb175aa7064ef1d3bb13b4cb42d9fb180f4feb6a0b9a93"
+source = "git+https://github.com/matteolutz/open-dmx#3fa300c06898f97faa7c4bda3239b1b62024c7df"
 dependencies = [
  "serialport",
  "thread-priority",
