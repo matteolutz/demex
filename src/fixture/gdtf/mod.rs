@@ -21,7 +21,10 @@ use super::{
     updatables::UpdatableHandler,
     value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait},
 };
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
+};
 
 pub mod error;
 pub mod sync;
@@ -67,6 +70,8 @@ pub struct GdtfFixture {
     fixture_type_id: uuid::Uuid,
     fixture_type_dmx_mode: String,
 
+    fixture_type_and_mode_hash: u64,
+
     universe: u16,
     start_address: u16,
     address_footprint: u16,
@@ -110,11 +115,17 @@ impl GdtfFixture {
             .copied()
             .ok_or(FixtureError::GdtfMaxDmxOffsetNotFound)?) as u16;
 
+        let mut hasher = std::hash::DefaultHasher::new();
+        fixture_type.fixture_type_id.as_u128().hash(&mut hasher);
+        dmx_mode_name.hash(&mut hasher);
+        let fixture_type_and_mode_hash = hasher.finish();
+
         Ok(Self {
             id,
             name,
             fixture_type_id: fixture_type.fixture_type_id,
             fixture_type_dmx_mode: dmx_mode_name,
+            fixture_type_and_mode_hash,
             universe,
             start_address,
             address_footprint,
@@ -125,6 +136,10 @@ impl GdtfFixture {
                 .collect(),
             sources: vec![FixtureChannelValueSource::Programmer],
         })
+    }
+
+    pub fn type_and_mode_hash(&self) -> u64 {
+        self.fixture_type_and_mode_hash
     }
 
     pub fn id(&self) -> u32 {
