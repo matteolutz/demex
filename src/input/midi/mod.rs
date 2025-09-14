@@ -1,5 +1,8 @@
 use utils::{get_lower_7_bit, get_upper_7_bit};
 
+pub mod device;
+pub mod device_mode;
+pub mod error;
 pub mod utils;
 
 pub(crate) const NOTE_OFF_OP: u8 = 0x8;

@@ -33,7 +33,9 @@ pub struct ApcMiniMk2InputDeviceProfile {
 
 impl std::fmt::Debug for ApcMiniMk2InputDeviceProfile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ApcMiniMk2InputDeviceProfile")
+        f.debug_struct("ApcMiniMk2InputDeviceProfile")
+            .field("apc_midi_name", &self.apc_midi_name)
+            .finish()
     }
 }
 

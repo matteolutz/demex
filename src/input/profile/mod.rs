@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod akai;
+pub mod behringer;
 pub mod midi_timecode;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -9,6 +10,8 @@ pub enum DemexInputDeviceProfileType {
     MidiTimecode { midi_in_device: String },
 
     ApcMiniMk2 { apc_midi: String },
+
+    BehringerXTouchCompact { xtouch_midi: String },
 }
 
 impl Default for DemexInputDeviceProfileType {
