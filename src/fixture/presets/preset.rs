@@ -409,6 +409,10 @@ impl FixturePreset {
         self.id
     }
 
+    pub fn move_to(&mut self, id: FixturePresetId) {
+        self.id = id
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }

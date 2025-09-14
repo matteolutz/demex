@@ -208,7 +208,7 @@ impl PresetHandler {
         id: FixturePresetId,
         target_preset: FixturePresetId,
     ) -> Result<(), PresetHandlerError> {
-        let preset_to_move = self.get_preset(id)?.clone();
+        let mut preset_to_move = self.get_preset(id)?.clone();
 
         let target_preset_result = self.get_preset(target_preset);
 
@@ -218,6 +218,7 @@ impl PresetHandler {
             ));
         }
 
+        preset_to_move.move_to(target_preset);
         self.presets.remove(&id);
         self.presets.insert(target_preset, preset_to_move);
 
