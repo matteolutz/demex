@@ -27,8 +27,9 @@ use crate::{
         presets::preset::FixturePresetId, sequence::cue::CueIdx,
     },
     lexer::token::Token,
-    parser::nodes::action::functions::{
-        assign_function::AssignFaderArgsMode, move_function::MoveArgs,
+    parser::{
+        expected::ExpectedParseSlice,
+        nodes::action::functions::{assign_function::AssignFaderArgsMode, move_function::MoveArgs},
     },
 };
 
@@ -42,6 +43,7 @@ use self::{
 };
 
 pub mod error;
+pub mod expected;
 pub mod nodes;
 
 macro_rules! expect_and_consume_token {
@@ -57,12 +59,12 @@ macro_rules! expect_and_consume_token {
 }
 
 pub struct Parser2<'a> {
-    tokens: &'a Vec<Token>,
+    tokens: &'a [Token],
     current_token_idx: usize,
 }
 
 impl<'a> Parser2<'a> {
-    pub fn new(tokens: &'a Vec<Token>) -> Self {
+    pub fn new(tokens: &'a [Token]) -> Self {
         Self {
             tokens,
             current_token_idx: 0,
@@ -502,6 +504,24 @@ impl<'a> Parser2<'a> {
                 "Expected float".to_string(),
             )),
         }
+    }
+
+    fn parse_button_id(&mut self, is_unassign: bool) -> Result<(u32, u32), ParseError> {
+        self.parse_float_individual().map_err(|err| {
+            ParseError::Expected(
+                err.into(),
+                vec![ExpectedParseSlice::ButtonId { is_unassign }],
+            )
+        })
+    }
+
+    fn parse_fader_id(&mut self, is_unassign: bool) -> Result<(u32, u32), ParseError> {
+        self.parse_float_individual().map_err(|err| {
+            ParseError::Expected(
+                err.into(),
+                vec![ExpectedParseSlice::FaderId { is_unassign }],
+            )
+        })
     }
 
     fn _parse_integer_or_range(&mut self) -> Result<(u32, u32), ParseError> {
@@ -973,7 +993,7 @@ impl<'a> Parser2<'a> {
         if let Ok(fixture_selector) = self.try_parse(Self::parse_fixture_selector) {
             expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
-            let (device_idx, button_id) = self.parse_float_individual()?;
+            let (device_idx, button_id) = self.parse_button_id(false)?;
 
             return Ok(Action::AssignButton(AssignButtonArgs {
                 mode: AssignButtonArgsMode::FixtureSelector(fixture_selector),
@@ -993,7 +1013,7 @@ impl<'a> Parser2<'a> {
 
                     expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
-                    let (device_idx, input_fader_id) = self.parse_float_individual()?;
+                    let (device_idx, input_fader_id) = self.parse_fader_id(false)?;
 
                     Ok(Action::AssignFader(AssignFaderArgs {
                         mode: AssignFaderArgsMode::Executor(executor_id),
@@ -1033,7 +1053,7 @@ impl<'a> Parser2<'a> {
 
                     expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
-                    let (device_idx, button_id) = self.parse_float_individual()?;
+                    let (device_idx, button_id) = self.parse_button_id(false)?;
 
                     Ok(Action::AssignButton(AssignButtonArgs {
                         mode,
@@ -1058,7 +1078,7 @@ impl<'a> Parser2<'a> {
 
                 expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
-                let (device_idx, button_id) = self.parse_float_individual()?;
+                let (device_idx, button_id) = self.parse_button_id(false)?;
 
                 Ok(Action::AssignButton(AssignButtonArgs {
                     mode: AssignButtonArgsMode::SelectivePreset {
@@ -1076,7 +1096,7 @@ impl<'a> Parser2<'a> {
 
                 expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
-                let (device_idx, button_id) = self.parse_float_individual()?;
+                let (device_idx, button_id) = self.parse_button_id(false)?;
 
                 Ok(Action::AssignButton(AssignButtonArgs {
                     mode: AssignButtonArgsMode::Macro(Box::new(command)),
@@ -1089,7 +1109,7 @@ impl<'a> Parser2<'a> {
 
                 expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
-                let (device_idx, button_id) = self.parse_float_individual()?;
+                let (device_idx, button_id) = self.parse_button_id(false)?;
 
                 expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
 
@@ -1110,7 +1130,7 @@ impl<'a> Parser2<'a> {
 
                 expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
-                let (device_idx, input_fader_id) = self.parse_float_individual()?;
+                let (device_idx, input_fader_id) = self.parse_fader_id(false)?;
 
                 Ok(Action::AssignFader(AssignFaderArgs {
                     mode: AssignFaderArgsMode::Grandmaster,
@@ -1129,7 +1149,7 @@ impl<'a> Parser2<'a> {
 
                         expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
-                        let (device_idx, input_fader_id) = self.parse_float_individual()?;
+                        let (device_idx, input_fader_id) = self.parse_fader_id(false)?;
 
                         Ok(Action::AssignFader(AssignFaderArgs {
                             mode: AssignFaderArgsMode::Speedmaster(speed_master_id),
@@ -1142,7 +1162,7 @@ impl<'a> Parser2<'a> {
 
                         expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
-                        let (device_idx, button_id) = self.parse_float_individual()?;
+                        let (device_idx, button_id) = self.parse_button_id(false)?;
 
                         Ok(Action::AssignButton(AssignButtonArgs {
                             mode: AssignButtonArgsMode::SpeedmasterTap(speed_master_id),
@@ -1177,7 +1197,7 @@ impl<'a> Parser2<'a> {
             Token::KeywordButton => {
                 self.advance();
 
-                let (device_idx, button_id) = self.parse_float_individual()?;
+                let (device_idx, button_id) = self.parse_button_id(true)?;
 
                 Ok(Action::UnassignInputButton {
                     device_idx: device_idx as usize,
@@ -1187,7 +1207,7 @@ impl<'a> Parser2<'a> {
             Token::KeywordFader => {
                 self.advance();
 
-                let (device_idx, fader_id) = self.parse_float_individual()?;
+                let (device_idx, fader_id) = self.parse_fader_id(true)?;
 
                 Ok(Action::UnassignInputFader {
                     device_idx: device_idx as usize,

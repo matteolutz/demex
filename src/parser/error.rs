@@ -1,20 +1,41 @@
 use itertools::Itertools;
 
-use crate::lexer::token::Token;
+use crate::{lexer::token::Token, parser::expected::ExpectedParseSlice};
 
 use super::nodes::object::{Object, ObjectError};
 
 #[derive(Debug)]
 pub enum ParseError {
     UnexpectedVariant(Vec<(String, ParseError)>),
+
     UnexpectedToken(Token, String),
     UnexpectedTokenAlternatives(Token, Vec<&'static str>),
+    Expected(Box<ParseError>, Vec<ExpectedParseSlice>),
+
     UnknownAction(String),
     NoDefaultActionForObject(Object),
     ObjectError(ObjectError),
     UnexpectedEndOfInput,
 
     UnexpectedArgs(String),
+}
+
+impl ParseError {
+    pub fn was_expected(&self, expected: ExpectedParseSlice) -> bool {
+        match self {
+            ParseError::UnexpectedVariant(variants) => {
+                variants.iter().any(|(_, e)| e.was_expected(expected))
+            }
+            ParseError::UnexpectedToken(_, _) => false,
+            ParseError::UnexpectedTokenAlternatives(_, _) => false,
+            ParseError::Expected(_, expecteds) => expecteds.contains(&expected),
+            ParseError::UnknownAction(_) => false,
+            ParseError::NoDefaultActionForObject(_) => false,
+            ParseError::ObjectError(_) => false,
+            ParseError::UnexpectedEndOfInput => false,
+            ParseError::UnexpectedArgs(_) => false,
+        }
+    }
 }
 
 impl std::fmt::Display for ParseError {
@@ -44,6 +65,9 @@ impl std::fmt::Display for ParseError {
                     t,
                     e.iter().join(" or ")
                 )
+            }
+            ParseError::Expected(err, e) => {
+                write!(f, "Error: {} (expected {})", err, e.iter().join(" or "))
             }
             ParseError::UnknownAction(a) => write!(f, "Unknown action: {}", a),
             ParseError::UnexpectedEndOfInput => write!(f, "Unexpected end of input"),

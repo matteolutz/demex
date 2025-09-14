@@ -10,9 +10,12 @@ use window::DemexWindow;
 
 use crate::{
     fixture::channel3::attribute::FixtureChannel3Attribute,
-    parser::nodes::{
-        action::{Action, ConfigTypeActionData},
-        fixture_selector::FixtureSelectorContext,
+    parser::{
+        nodes::{
+            action::{Action, ConfigTypeActionData},
+            fixture_selector::FixtureSelectorContext,
+        },
+        Parser2,
     },
     show::ui::DemexShowUiConfig,
     ui::{
@@ -219,6 +222,10 @@ impl eframe::App for DemexUiApp {
                 &mut self.context.action_queue,
                 &mut self.context.global_fixture_select,
                 &mut self.context.command,
+                |tokens| {
+                    let mut parser = Parser2::new(&tokens);
+                    parser.parse().err()
+                },
                 self.context.encoder_channels.as_ref(),
             ) {
                 self.context
