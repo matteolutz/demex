@@ -104,6 +104,16 @@ impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
                     }
 
                     match control_code {
+                        // Fader touch (page A)
+                        101..=109 => Some(DemexInputDeviceMessage::FaderTouch(
+                            control_code as u32 - 101,
+                        )),
+
+                        // Fader touch (page B)
+                        111..=119 => Some(DemexInputDeviceMessage::FaderTouch(
+                            control_code as u32 - (111 - 8),
+                        )),
+
                         // Top encoders turn (page A)
                         10..=17 => Some(DemexInputDeviceMessage::GlobalEncoderValueChanged {
                             encoder_idx: (control_code - 10) as u32,

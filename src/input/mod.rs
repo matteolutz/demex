@@ -137,6 +137,22 @@ impl DemexInputDeviceHandler {
                             updatable_handler,
                         )?;
                     }
+
+                    DemexInputDeviceMessage::FaderTouch(fader_id) => {
+                        let parse_error = parse_command_input(command_input);
+
+                        if parse_error.as_ref().is_some_and(|err| {
+                            err.was_expected(ExpectedParseSlice::FaderId { is_unassign: true })
+                                || err.was_expected(ExpectedParseSlice::FaderId {
+                                    is_unassign: false,
+                                })
+                        }) {
+                            command_input.extend_from_slice(&[Token::FloatingPoint(
+                                0.0,
+                                (device_idx as u32, fader_id),
+                            )]);
+                        }
+                    }
                     DemexInputDeviceMessage::FaderValueChanged(fader_id, value) => {
                         let parse_error = parse_command_input(command_input);
 

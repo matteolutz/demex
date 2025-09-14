@@ -6,6 +6,8 @@ pub enum DemexInputDeviceMessage {
     ButtonReleased(u32),
 
     FaderValueChanged(u32, f32),
+    FaderTouch(u32),
+
     FaderValuesChanged(Vec<(u32, f32)>),
 
     // These encoders are always automatically mapped to the encoders currently visible in the encoder bar
