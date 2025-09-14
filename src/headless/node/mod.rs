@@ -54,7 +54,7 @@ impl DemexHeadlessNode {
                 loop {
                     if let Ok(packet) = udp_socket.recv(&mut udp_buffer).and_then(|bytes_read| {
                         DemexProtoUdpControllerPacket::deserialize(
-                            &mut udp_buffer[..bytes_read].as_ref(),
+                            &mut <[u8] as AsRef<[u8]>>::as_ref(&udp_buffer[..bytes_read]),
                         )
                     }) {
                         match packet {
