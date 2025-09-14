@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use itertools::Itertools;
 use parking_lot::RwLock;
@@ -41,6 +41,8 @@ use super::{
 pub type SaveShowFn =
     fn(DemexShow, Option<&PathBuf>) -> Result<PathBuf, Box<dyn std::error::Error>>;
 
+pub type EncoderChannels = Vec<(&'static str, HashMap<u64, Vec<String>>)>;
+
 pub struct DemexUiContext {
     pub command_input: String,
     pub is_command_input_empty: bool,
@@ -77,6 +79,7 @@ pub struct DemexUiContext {
     pub ui_config: DemexShowUiConfig,
 
     pub encoders_tab_state: EncodersTabState,
+    pub encoder_channels: Option<EncoderChannels>,
 }
 
 impl DemexUiContext {
@@ -167,6 +170,8 @@ impl DemexUiContext {
             action_queue: ActionQueue::default(),
 
             encoders_tab_state: EncodersTabState::default(),
+            encoder_channels: None,
+
             window_handler: DemexWindowHandler::default(),
             global_fixture_select: None,
             global_sequence_select: UiEditRequest::None,

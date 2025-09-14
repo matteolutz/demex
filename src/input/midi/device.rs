@@ -7,8 +7,8 @@ pub struct MidiInOutDevice {
 
     rx: mpsc::Receiver<MidiMessage>,
 
-    in_conn: Option<midir::MidiInputConnection<()>>,
-    out_conn: Option<midir::MidiOutputConnection>,
+    in_conn: Option<(midir::MidiInputPort, midir::MidiInputConnection<()>)>,
+    out_conn: Option<(midir::MidiOutputPort, midir::MidiOutputConnection)>,
 }
 
 impl MidiInOutDevice {
@@ -41,6 +41,8 @@ impl MidiInOutDevice {
     {
         let (tx, rx) = mpsc::channel();
 
+        log::debug!("Connecting to MIDI device \"{}\"", name);
+
         let out_conn = Self::get_out_connection(&name, output_filter)
             .inspect_err(|err| {
                 log::error!(
@@ -50,7 +52,10 @@ impl MidiInOutDevice {
                 )
             })
             .ok()
-            .flatten();
+            .flatten()
+            .inspect(|(port, _)| {
+                log::debug!("Connected to \"{}\" output (Port ID: {})", name, port.id())
+            });
 
         let in_conn = Self::get_in_connection(&name, input_filter, tx)
             .inspect_err(|err| {
@@ -61,7 +66,10 @@ impl MidiInOutDevice {
                 )
             })
             .ok()
-            .flatten();
+            .flatten()
+            .inspect(|(port, _)| {
+                log::debug!("Connected to \"{}\" input (Port ID: {})", name, port.id())
+            });
 
         MidiInOutDevice {
             name,
@@ -76,7 +84,7 @@ impl MidiInOutDevice {
     fn get_out_connection<Filter>(
         name: &str,
         filter: Filter,
-    ) -> Result<Option<midir::MidiOutputConnection>, MidiError>
+    ) -> Result<Option<(midir::MidiOutputPort, midir::MidiOutputConnection)>, MidiError>
     where
         Filter: Fn(&midir::MidiOutput, &midir::MidiOutputPort) -> bool,
     {
@@ -87,11 +95,11 @@ impl MidiInOutDevice {
         let out_port = out_ports.into_iter().find(|port| filter(&midi_out, port));
 
         if let Some(port) = out_port {
-            Ok(Some(
-                midi_out
-                    .connect(&port, format!("demex-midi-output-port-{}", name).as_str())
-                    .map_err(|err| MidiError::MidirError(err.into()))?,
-            ))
+            let connection = midi_out
+                .connect(&port, format!("demex-midi-output-port-{}", name).as_str())
+                .map_err(|err| MidiError::MidirError(err.into()))?;
+
+            Ok(Some((port, connection)))
         } else {
             Ok(None)
         }
@@ -101,7 +109,7 @@ impl MidiInOutDevice {
         name: &str,
         filter: Filter,
         tx: mpsc::Sender<MidiMessage>,
-    ) -> Result<Option<midir::MidiInputConnection<()>>, MidiError>
+    ) -> Result<Option<(midir::MidiInputPort, midir::MidiInputConnection<()>)>, MidiError>
     where
         Filter: Fn(&midir::MidiInput, &midir::MidiInputPort) -> bool,
     {
@@ -112,24 +120,24 @@ impl MidiInOutDevice {
         let in_port = in_ports.into_iter().find(|port| filter(&midi_in, port));
 
         if let Some(port) = in_port {
-            Ok(Some(
-                midi_in
-                    .connect(
-                        &port,
-                        format!("demex-midi-input-port-{}", name).as_str(),
-                        move |_, msg, _| {
-                            if let Some(midi_msg) = MidiMessage::from_bytes(msg) {
-                                let _ = tx.send(midi_msg).inspect_err(|err| {
-                                    log::warn!("Failed to send MIDI message: {}", err)
-                                });
-                            } else {
-                                log::debug!("Failed to deserialize MIDI bytes {:02X?}", msg);
-                            }
-                        },
-                        (),
-                    )
-                    .map_err(|err| MidiError::MidirError(err.into()))?,
-            ))
+            let connection = midi_in
+                .connect(
+                    &port,
+                    format!("demex-midi-input-port-{}", name).as_str(),
+                    move |_, msg, _| {
+                        if let Some(midi_msg) = MidiMessage::from_bytes(msg) {
+                            let _ = tx.send(midi_msg).inspect_err(|err| {
+                                log::warn!("Failed to send MIDI message: {}", err)
+                            });
+                        } else {
+                            log::debug!("Failed to deserialize MIDI bytes {:02X?}", msg);
+                        }
+                    },
+                    (),
+                )
+                .map_err(|err| MidiError::MidirError(err.into()))?;
+
+            Ok(Some((port, connection)))
         } else {
             Ok(None)
         }
@@ -145,11 +153,23 @@ impl MidiInOutDevice {
         self.out_conn.is_some()
     }
 
-    pub fn input(&self) -> Option<&midir::MidiInputConnection<()>> {
-        self.in_conn.as_ref()
+    pub fn name(&self) -> &str {
+        self.name.as_str()
     }
 
     pub fn output(&self) -> Option<&midir::MidiOutputConnection> {
-        self.out_conn.as_ref()
+        self.out_conn.as_ref().map(|(_, conn)| conn)
+    }
+
+    pub fn output_mut(&mut self) -> Option<&mut midir::MidiOutputConnection> {
+        self.out_conn.as_mut().map(|(_, conn)| conn)
+    }
+
+    pub fn input(&self) -> Option<&midir::MidiInputConnection<()>> {
+        self.in_conn.as_ref().map(|(_, conn)| conn)
+    }
+
+    pub fn input_rx(&self) -> &mpsc::Receiver<MidiMessage> {
+        &self.rx
     }
 }

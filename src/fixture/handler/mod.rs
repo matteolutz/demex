@@ -100,6 +100,13 @@ impl FixtureHandler {
         self.fixtures.iter_mut().find(|f| f.id() == fixture_id)
     }
 
+    pub fn selected_fixtures(&self, fixture_selection: &FixtureSelection) -> Vec<&GdtfFixture> {
+        self.fixtures
+            .iter()
+            .filter(|fixture| fixture_selection.has_fixture(fixture.id()))
+            .collect::<Vec<_>>()
+    }
+
     pub fn selected_fixtures_mut(
         &mut self,
         fixture_selection: &FixtureSelection,

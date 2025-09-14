@@ -1,5 +1,3 @@
-use std::sync::mpsc;
-
 use led::{ApcMiniMk2ButtonLedColor, ApcMiniMk2ButtonLedMode};
 
 use crate::{
@@ -10,8 +8,11 @@ use crate::{
         updatables::UpdatableHandler,
     },
     input::{
-        button::DemexInputButton, error::DemexInputDeviceError, message::DemexInputDeviceMessage,
-        midi::MidiMessage, DemexInputDeviceProfile,
+        button::DemexInputButton,
+        error::DemexInputDeviceError,
+        message::DemexInputDeviceMessage,
+        midi::{device::MidiInOutDevice, device_mode::MidiInOutDeviceMode, MidiMessage},
+        DemexInputDeviceProfile,
     },
     parser::nodes::fixture_selector::FixtureSelectorContext,
     utils::version::demex_version,
@@ -26,9 +27,7 @@ pub struct ApcMiniMk2InputDeviceProfile {
     #[allow(dead_code)]
     apc_midi_name: String,
 
-    rx: mpsc::Receiver<MidiMessage>,
-    midi_out: Option<midir::MidiOutputConnection>,
-    _midi_in: Option<midir::MidiInputConnection<()>>,
+    midi: MidiInOutDevice,
 }
 
 impl std::fmt::Debug for ApcMiniMk2InputDeviceProfile {
@@ -40,91 +39,14 @@ impl std::fmt::Debug for ApcMiniMk2InputDeviceProfile {
 }
 
 impl ApcMiniMk2InputDeviceProfile {
-    fn get_conn_out(
-        apc_midi_name: &str,
-    ) -> Result<midir::MidiOutputConnection, DemexInputDeviceError> {
-        let midi_out = midir::MidiOutput::new("demex-midi-output")
-            .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
-
-        let out_ports = midi_out.ports();
-        let out_port = out_ports
-            .iter()
-            .inspect(|p| log::debug!("Found MIDI out port: {:?}", midi_out.port_name(p)))
-            .find(|p| {
-                midi_out.port_name(p).is_ok_and(|port_name| {
-                    port_name.contains("APC mini mk2") && port_name.contains("Contr")
-                })
-            })
-            .ok_or(DemexInputDeviceError::InputDeviceNotFound(
-                apc_midi_name.to_owned(),
-            ))?;
-
-        midi_out
-            .connect(out_port, apc_midi_name)
-            .map_err(|err| DemexInputDeviceError::MidirError(err.into()))
-    }
-
-    fn get_conn_in(
-        apc_midi_name: &str,
-        tx: mpsc::Sender<MidiMessage>,
-    ) -> Result<midir::MidiInputConnection<()>, DemexInputDeviceError> {
-        let midi_in = midir::MidiInput::new("demex-midi-input")
-            .map_err(|err| DemexInputDeviceError::MidirError(err.into()))?;
-
-        let in_ports = midi_in.ports();
-        let in_port = in_ports
-            .iter()
-            .inspect(|p| log::debug!("Found MIDI in port: {:?}", midi_in.port_name(p)))
-            .find(|p| {
-                midi_in.port_name(p).is_ok_and(|port_name| {
-                    port_name.contains("APC mini mk2") && port_name.contains("Contr")
-                })
-            })
-            .ok_or(DemexInputDeviceError::InputDeviceNotFound(
-                apc_midi_name.to_owned(),
-            ))?;
-
-        midi_in
-            .connect(
-                in_port,
-                apc_midi_name,
-                move |_, msg, _| {
-                    if let Some(midi_msg) = MidiMessage::from_bytes(msg) {
-                        tx.send(midi_msg).unwrap();
-                    } else {
-                        log::debug!("failed to deserialize midi bytes: {:02X?}", msg);
-                    }
-                },
-                (),
-            )
-            .map_err(|err| DemexInputDeviceError::MidirError(err.into()))
-    }
-
     pub fn new(apc_midi_name: String) -> Self {
-        let (tx, rx) = mpsc::channel();
-
-        let conn_out = Self::get_conn_out(&apc_midi_name);
-        let conn_in = Self::get_conn_in(&apc_midi_name, tx);
-
         let mut s = Self {
             apc_midi_name,
-            rx,
-            midi_out: conn_out
-                .inspect_err(|err| {
-                    log::warn!(
-                        "Failed to establish APC Mini Mk2 MIDI out connection: {}",
-                        err
-                    )
-                })
-                .ok(),
-            _midi_in: conn_in
-                .inspect_err(|err| {
-                    log::warn!(
-                        "Failed to establish APC Mini Mk2 MIDI in connection: {}",
-                        err
-                    )
-                })
-                .ok(),
+            midi: MidiInOutDevice::new(
+                "APC Mini Mk2".to_owned(),
+                |name| name.contains("APC mini mk2") && name.contains("Contr"),
+                MidiInOutDeviceMode::Both,
+            ),
         };
 
         if let Err(err) = s.init() {
@@ -136,8 +58,8 @@ impl ApcMiniMk2InputDeviceProfile {
 
     pub fn init(&mut self) -> Result<(), DemexInputDeviceError> {
         let midi_out = self
-            .midi_out
-            .as_mut()
+            .midi
+            .output_mut()
             .ok_or(DemexInputDeviceError::OperationNotSupported)?;
 
         let (version_major, version_minor, version_patch) = demex_version();
@@ -228,8 +150,8 @@ impl ApcMiniMk2InputDeviceProfile {
             .ok_or(DemexInputDeviceError::ButtonNotFound(button_id))?;
 
         let midi_out = self
-            .midi_out
-            .as_mut()
+            .midi
+            .output_mut()
             .ok_or(DemexInputDeviceError::OperationNotSupported)?;
 
         match button_id {
@@ -273,7 +195,7 @@ impl ApcMiniMk2InputDeviceProfile {
 
 impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
     fn is_enabled(&self) -> bool {
-        self.midi_out.is_some()
+        self.midi.has_input()
     }
 
     fn update_out(
@@ -426,7 +348,8 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
         crate::input::error::DemexInputDeviceError,
     > {
         let values = self
-            .rx
+            .midi
+            .input_rx()
             .try_iter()
             .flat_map(|midi_msg| match midi_msg {
                 MidiMessage::NoteOn {

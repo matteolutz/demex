@@ -1,4 +1,4 @@
-use std::{sync::Arc, thread, time};
+use std::{collections::HashMap, sync::Arc, thread, time};
 
 use command::ui_command_input;
 use components::button::icon::DemexIcon;
@@ -8,20 +8,21 @@ use egui::IconData;
 use strum::IntoEnumIterator;
 use window::DemexWindow;
 
-#[allow(unused_imports)]
-use crate::{fixture::handler::FixtureHandler, lexer::Lexer};
 use crate::{
+    fixture::channel3::attribute::FixtureChannel3Attribute,
     parser::nodes::{
         action::{Action, ConfigTypeActionData},
         fixture_selector::FixtureSelectorContext,
     },
     show::ui::DemexShowUiConfig,
     ui::{
-        constants::MAIN_VIEWPORT_TOP_BOTTOM_PANEL_ID, lock::locked_ui,
+        constants::MAIN_VIEWPORT_TOP_BOTTOM_PANEL_ID, context::EncoderChannels, lock::locked_ui,
         viewport::position::DemexViewportPositonState,
     },
     utils::version::VERSION_STR,
 };
+#[allow(unused_imports)]
+use crate::{fixture::handler::FixtureHandler, lexer::Lexer};
 
 pub mod command;
 pub mod components;
@@ -132,6 +133,59 @@ impl DemexUiApp {
             self.last_single_threaded_update = time::Instant::now();
         }
     }
+
+    fn update_encoders(&mut self) -> Option<EncoderChannels> {
+        let fixture_handler = self.context.fixture_handler.read();
+        let patch = self.context.patch.read();
+
+        let Some(fixture_selection) = &self.context.global_fixture_select else {
+            return None;
+        };
+
+        let fixtures = fixture_handler.selected_fixtures(fixture_selection);
+
+        Some(
+            self.context
+                .encoders_tab_state
+                .attributes()
+                .iter()
+                .filter_map(|attribute| {
+                    let mut channels = HashMap::new();
+
+                    for fixture in &fixtures {
+                        let fixture_type_hash = fixture.type_and_mode_hash();
+                        if channels.contains_key(&fixture_type_hash) {
+                            continue;
+                        }
+
+                        channels.insert(
+                            fixture_type_hash,
+                            fixture
+                                .channels_for_attribute_matches(
+                                    patch.fixture_types(),
+                                    |fixture_attribute_name| {
+                                        FixtureChannel3Attribute::attribute_matches(
+                                            fixture_attribute_name,
+                                            attribute,
+                                        )
+                                    },
+                                )
+                                .unwrap()
+                                .iter()
+                                .map(|(dmx_channel, _, _)| dmx_channel.name().as_ref().to_owned())
+                                .collect::<Vec<_>>(),
+                        );
+                    }
+
+                    if channels.is_empty() {
+                        None
+                    } else {
+                        Some((*attribute, channels))
+                    }
+                })
+                .collect::<Vec<_>>(),
+        )
+    }
 }
 
 impl eframe::App for DemexUiApp {
@@ -152,6 +206,8 @@ impl eframe::App for DemexUiApp {
             }
         }
 
+        self.context.encoder_channels = self.update_encoders();
+
         if !self.context.ui_locked {
             if let Err(input_error) = self.context.input_device_handler.update(
                 &mut self.context.fixture_handler.write(),
@@ -163,6 +219,7 @@ impl eframe::App for DemexUiApp {
                 &mut self.context.action_queue,
                 &mut self.context.global_fixture_select,
                 &mut self.context.command,
+                self.context.encoder_channels.as_ref(),
             ) {
                 self.context
                     .logs

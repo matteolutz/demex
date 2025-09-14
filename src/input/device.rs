@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::input::profile::behringer::BehringerXTouchCompactDeviceProfile;
+use crate::input::profile::{
+    behringer::BehringerXTouchCompactDeviceProfile, debug::DebugDeviceProfile,
+};
 
 use super::{
     button::DemexInputButton,
@@ -84,6 +86,7 @@ impl From<DemexInputDeviceConfig> for DemexInputDevice {
             DemexInputDeviceProfileType::BehringerXTouchCompact { ref xtouch_midi } => Box::new(
                 BehringerXTouchCompactDeviceProfile::new(xtouch_midi.clone()),
             ),
+            DemexInputDeviceProfileType::Debug => Box::new(DebugDeviceProfile::new()),
         };
 
         DemexInputDevice {

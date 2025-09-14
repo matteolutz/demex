@@ -7,12 +7,15 @@ use crate::{
         handler::FixtureHandler, patch::Patch, presets::PresetHandler, selection::FixtureSelection,
         timing::TimingHandler, updatables::UpdatableHandler,
     },
+    input::encoder::handle_global_encoder_change,
     lexer::token::Token,
     parser::nodes::{action::queue::ActionQueue, fixture_selector::FixtureSelectorContext},
+    ui::context::EncoderChannels,
 };
 
 pub mod button;
 pub mod device;
+pub mod encoder;
 pub mod error;
 pub mod fader;
 pub mod message;
@@ -69,6 +72,7 @@ impl DemexInputDeviceHandler {
         macro_exec_cue: &mut ActionQueue,
         global_fixture_selection: &mut Option<FixtureSelection>,
         command_input: &mut Vec<Token>,
+        encoder_channels: Option<&EncoderChannels>,
     ) -> Result<(), DemexInputDeviceError> {
         for (device_idx, device) in self.devices.iter().enumerate() {
             if !device.profile().is_enabled() {
@@ -158,6 +162,17 @@ impl DemexInputDeviceHandler {
                             preset_handler,
                             updatable_handler,
                         ),
+                    DemexInputDeviceMessage::GlobalEncoderClick(_) => {}
+                    DemexInputDeviceMessage::GlobalEncoderValueChanged { encoder_idx, value } => {
+                        handle_global_encoder_change(
+                            encoder_idx,
+                            value,
+                            fixture_selector_context.clone(),
+                            fixture_handler,
+                            encoder_channels,
+                            patch,
+                        )
+                    }
                 }
             }
         }

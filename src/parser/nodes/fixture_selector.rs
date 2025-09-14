@@ -16,6 +16,10 @@ impl<'a> FixtureSelectorContext<'a> {
             current_fixture_selection,
         }
     }
+
+    pub fn current_fixture(&self) -> Option<&FixtureSelection> {
+        self.current_fixture_selection.as_ref()
+    }
 }
 
 #[derive(Debug)]
