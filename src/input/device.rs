@@ -2,13 +2,12 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::input::profile::{
-    behringer::BehringerXTouchCompactDeviceProfile, debug::DebugDeviceProfile,
+use crate::input::{
+    control::{button::DemexInputButton, fader::DemexInputFader},
+    profile::{behringer::BehringerXTouchCompactDeviceProfile, debug::DebugDeviceProfile},
 };
 
 use super::{
-    button::DemexInputButton,
-    fader::DemexInputFader,
     profile::{
         akai::ApcMiniMk2InputDeviceProfile, midi_timecode::MidiTimecodeProfile,
         DemexInputDeviceProfileType,

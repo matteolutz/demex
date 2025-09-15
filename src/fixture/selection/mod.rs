@@ -1,4 +1,3 @@
-use gdtf::GdtfError;
 use serde::{Deserialize, Serialize};
 
 use crate::{

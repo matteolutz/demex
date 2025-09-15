@@ -2,6 +2,8 @@ use std::time;
 
 use itertools::Itertools;
 
+use crate::input::event::DemexInputDeviceEvent;
+
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let mut timing_handler = context.timing_handler.write();
 
@@ -39,9 +41,18 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     });
 
                     ui.col(|ui| {
-                        egui_probe::Probe::new(speed_master_value.bpm_mut())
+                        let response = egui_probe::Probe::new(speed_master_value.bpm_mut())
                             .with_header("")
                             .show(ui);
+
+                        if response.changed() {
+                            context.device_events.push(
+                                DemexInputDeviceEvent::SpeedmasterFaderValueChanged(
+                                    *speed_master_id,
+                                ),
+                            );
+                        }
+
                         ui.label("bpm");
                     });
 
@@ -56,17 +67,33 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             ))
                             .clicked()
                         {
-                            speed_master_value.tap(time::Instant::now());
+                            if speed_master_value.tap(time::Instant::now()) {
+                                context.device_events.push(
+                                    DemexInputDeviceEvent::SpeedmasterFaderValueChanged(
+                                        *speed_master_id,
+                                    ),
+                                );
+                            }
                         }
                     });
 
                     ui.col(|ui| {
                         if ui.button("/2").clicked() {
                             *speed_master_value.bpm_mut() /= 2.0;
+                            context.device_events.push(
+                                DemexInputDeviceEvent::SpeedmasterFaderValueChanged(
+                                    *speed_master_id,
+                                ),
+                            );
                         }
 
                         if ui.button("*2").clicked() {
                             *speed_master_value.bpm_mut() *= 2.0;
+                            context.device_events.push(
+                                DemexInputDeviceEvent::SpeedmasterFaderValueChanged(
+                                    *speed_master_id,
+                                ),
+                            );
                         }
                     });
                 });

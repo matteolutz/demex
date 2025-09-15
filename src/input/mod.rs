@@ -7,7 +7,11 @@ use crate::{
         handler::FixtureHandler, patch::Patch, presets::PresetHandler, selection::FixtureSelection,
         timing::TimingHandler, updatables::UpdatableHandler,
     },
-    input::encoder::handle_global_encoder_change,
+    input::{
+        control::{button::DemexInputButton, fader::DemexInputFader, DemexInputDeviceControlTrait},
+        encoder::handle_global_encoder_change,
+        event::{DemexInputDeviceControlUpdate, DemexInputDeviceEvent},
+    },
     lexer::token::Token,
     parser::{
         error::ParseError,
@@ -17,27 +21,66 @@ use crate::{
     ui::context::EncoderChannels,
 };
 
-pub mod button;
+pub mod control;
 pub mod device;
 pub mod encoder;
 pub mod error;
-pub mod fader;
+pub mod event;
 pub mod message;
 pub mod midi;
 pub mod profile;
 pub mod timecode;
 
+#[derive(Debug, Clone)]
+pub struct DemexInputDeviceUpdateArgs<'a> {
+    pub device_config: &'a DemexInputDeviceConfig,
+    pub fixture_handler: &'a FixtureHandler,
+    pub preset_handler: &'a PresetHandler,
+    pub updatable_handler: &'a UpdatableHandler,
+    pub timing_handler: &'a TimingHandler,
+    pub global_fixture_selection: &'a Option<FixtureSelection>,
+    pub patch: &'a Patch,
+    pub encoder_channels: Option<&'a EncoderChannels>,
+}
+
 pub trait DemexInputDeviceProfile: std::fmt::Debug {
-    fn update_out(
+    fn handle_button_assign(
         &mut self,
-        device_config: &DemexInputDeviceConfig,
-        fixture_handler: &FixtureHandler,
-        preset_handler: &PresetHandler,
-        updatable_handler: &UpdatableHandler,
-        timing_handler: &TimingHandler,
-        global_fixture_selection: &Option<FixtureSelection>,
-        patch: &Patch,
-        encoder_channels: Option<&EncoderChannels>,
+        _button_id: u32,
+        _button: &DemexInputButton,
+    ) -> Result<(), DemexInputDeviceError> {
+        Ok(())
+    }
+
+    fn handle_button_unassign(
+        &mut self,
+        _button_id: u32,
+        _button: &DemexInputButton,
+    ) -> Result<(), DemexInputDeviceError> {
+        Ok(())
+    }
+
+    fn handle_fader_assign(
+        &mut self,
+        _fader_id: u32,
+        _fader: &DemexInputFader,
+    ) -> Result<(), DemexInputDeviceError> {
+        Ok(())
+    }
+
+    fn handle_fader_unassign(
+        &mut self,
+        _fader_id: u32,
+        _fader: &DemexInputFader,
+    ) -> Result<(), DemexInputDeviceError> {
+        Ok(())
+    }
+
+    fn tick(&mut self, args: DemexInputDeviceUpdateArgs) -> Result<(), DemexInputDeviceError>;
+    fn handle_events(
+        &mut self,
+        args: DemexInputDeviceUpdateArgs,
+        events: &[DemexInputDeviceControlUpdate],
     ) -> Result<(), DemexInputDeviceError>;
 
     fn poll(&self) -> Result<Vec<DemexInputDeviceMessage>, DemexInputDeviceError>;
@@ -48,11 +91,15 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
 #[derive(Default, Debug)]
 pub struct DemexInputDeviceHandler {
     devices: Vec<DemexInputDevice>,
+    has_initialized: bool,
 }
 
 impl DemexInputDeviceHandler {
     pub fn new(devices: Vec<DemexInputDevice>) -> Self {
-        Self { devices }
+        Self {
+            devices,
+            has_initialized: false,
+        }
     }
 
     pub fn device_mut(
@@ -81,6 +128,7 @@ impl DemexInputDeviceHandler {
         command_input: &mut Vec<Token>,
         parse_command_input: F,
         encoder_channels: Option<&EncoderChannels>,
+        events: &mut Vec<DemexInputDeviceEvent>,
     ) -> Result<(), DemexInputDeviceError>
     where
         F: Fn(&[Token]) -> Option<ParseError>,
@@ -108,7 +156,7 @@ impl DemexInputDeviceHandler {
                         let button = device.config().buttons().get(&button_id);
 
                         if let Some(button) = button {
-                            button.handle_press(
+                            if let Some(event) = button.handle_press(
                                 fixture_handler,
                                 preset_handler,
                                 updatable_handler,
@@ -118,7 +166,9 @@ impl DemexInputDeviceHandler {
                                 macro_exec_cue,
                                 global_fixture_selection,
                                 command_input,
-                            )?;
+                            )? {
+                                events.push(event);
+                            }
                         } else if parse_error.is_some_and(|err| {
                             err.was_expected(ExpectedParseSlice::ButtonId { is_unassign: false })
                         }) {
@@ -134,11 +184,14 @@ impl DemexInputDeviceHandler {
                             .buttons()
                             .get(&button_id)
                             .ok_or(DemexInputDeviceError::ButtonNotFound(button_id))?;
-                        button.handle_release(
+
+                        if let Some(event) = button.handle_release(
                             fixture_handler,
                             preset_handler,
                             updatable_handler,
-                        )?;
+                        )? {
+                            events.push(event);
+                        }
                     }
 
                     DemexInputDeviceMessage::FaderTouch(fader_id) => {
@@ -172,13 +225,15 @@ impl DemexInputDeviceHandler {
                         let fader = device.config().faders().get(&fader_id);
 
                         if let Some(fader) = fader {
-                            fader.handle_change(
+                            if let Some(event) = fader.handle_change(
                                 value,
                                 fixture_handler,
                                 preset_handler,
                                 updatable_handler,
                                 timing_handler,
-                            )?;
+                            )? {
+                                events.push(event);
+                            }
                         } else if parse_error.is_some_and(|err| {
                             err.was_expected(ExpectedParseSlice::FaderId { is_unassign: false })
                         }) {
@@ -195,13 +250,16 @@ impl DemexInputDeviceHandler {
                                 .faders()
                                 .get(&fader_id)
                                 .ok_or(DemexInputDeviceError::ButtonNotFound(fader_id))?;
-                            fader.handle_change(
+
+                            if let Some(event) = fader.handle_change(
                                 value,
                                 fixture_handler,
                                 preset_handler,
                                 updatable_handler,
                                 timing_handler,
-                            )?;
+                            )? {
+                                events.push(event);
+                            }
                         }
                     }
                     DemexInputDeviceMessage::Timecode(timecode_packet) => timing_handler
@@ -229,7 +287,7 @@ impl DemexInputDeviceHandler {
                             patch,
                         )
                     }
-                }
+                };
             }
         }
 
@@ -238,8 +296,8 @@ impl DemexInputDeviceHandler {
                 continue;
             }
 
-            device.profile.update_out(
-                &device.config,
+            let args = DemexInputDeviceUpdateArgs {
+                device_config: &device.config,
                 fixture_handler,
                 preset_handler,
                 updatable_handler,
@@ -247,7 +305,57 @@ impl DemexInputDeviceHandler {
                 global_fixture_selection,
                 patch,
                 encoder_channels,
-            )?;
+            };
+
+            let mut device_events = vec![];
+
+            if !self.has_initialized {
+                for (id, button) in device.config.buttons() {
+                    device_events.push(DemexInputDeviceControlUpdate::Button {
+                        id: *id,
+                        button,
+                        update: button.initial_state(args.clone())?,
+                    });
+                }
+
+                for (id, fader) in device.config.faders() {
+                    device_events.push(DemexInputDeviceControlUpdate::Fader {
+                        id: *id,
+                        fader,
+                        update: fader.initial_state(args.clone())?,
+                    });
+                }
+            }
+
+            for event in events.iter() {
+                for (id, button) in device.config.buttons() {
+                    if let Some(update) = button.should_update(args.clone(), event).ok().flatten() {
+                        device_events.push(DemexInputDeviceControlUpdate::Button {
+                            button,
+                            update,
+                            id: *id,
+                        });
+                    }
+                }
+
+                for (id, fader) in device.config.faders() {
+                    if let Some(update) = fader.should_update(args.clone(), event).ok().flatten() {
+                        device_events.push(DemexInputDeviceControlUpdate::Fader {
+                            fader,
+                            update,
+                            id: *id,
+                        });
+                    }
+                }
+            }
+
+            device.profile.handle_events(args.clone(), &device_events)?;
+            device.profile.tick(args)?;
+        }
+
+        events.clear();
+        if !self.has_initialized {
+            self.has_initialized = true;
         }
 
         Ok(())

@@ -1,7 +1,5 @@
-use crate::{
-    fixture::patch::Patch,
-    input::{message::DemexInputDeviceMessage, DemexInputDeviceProfile},
-    ui::context::EncoderChannels,
+use crate::input::{
+    message::DemexInputDeviceMessage, DemexInputDeviceProfile, DemexInputDeviceUpdateArgs,
 };
 
 const ENABLED: bool = false;
@@ -21,16 +19,17 @@ impl DebugDeviceProfile {
 }
 
 impl DemexInputDeviceProfile for DebugDeviceProfile {
-    fn update_out(
+    fn handle_events(
         &mut self,
-        _device_config: &crate::input::device::DemexInputDeviceConfig,
-        _fixture_handler: &crate::fixture::handler::FixtureHandler,
-        _preset_handler: &crate::fixture::presets::PresetHandler,
-        _updatable_handler: &crate::fixture::updatables::UpdatableHandler,
-        _timing_handler: &crate::fixture::timing::TimingHandler,
-        _global_fixture_selection: &Option<crate::fixture::selection::FixtureSelection>,
-        _: &Patch,
-        _: Option<&EncoderChannels>,
+        _args: DemexInputDeviceUpdateArgs,
+        _events: &[crate::input::event::DemexInputDeviceControlUpdate],
+    ) -> Result<(), crate::input::error::DemexInputDeviceError> {
+        Ok(())
+    }
+
+    fn tick(
+        &mut self,
+        _: DemexInputDeviceUpdateArgs,
     ) -> Result<(), crate::input::error::DemexInputDeviceError> {
         Ok(())
     }

@@ -1,15 +1,12 @@
-use crate::{
-    fixture::{handler::FixtureHandler, patch::Patch},
-    input::{
-        encoder::get_global_encoder_value,
-        error::DemexInputDeviceError,
-        message::DemexInputDeviceMessage,
-        midi::{device::MidiInOutDevice, device_mode::MidiInOutDeviceMode, MidiMessage},
-        profile::behringer::encoder::BehringerXTouchCompactEncoderMode,
-        DemexInputDeviceProfile,
+use crate::input::{
+    error::DemexInputDeviceError,
+    event::{
+        DemexInputDeviceButtonUpdate, DemexInputDeviceControlUpdate, DemexInputDeviceFaderUpdate,
     },
-    parser::nodes::fixture_selector::FixtureSelectorContext,
-    ui::context::EncoderChannels,
+    message::DemexInputDeviceMessage,
+    midi::{device::MidiInOutDevice, device_mode::MidiInOutDeviceMode, MidiMessage},
+    profile::behringer::encoder::BehringerXTouchCompactEncoderMode,
+    DemexInputDeviceProfile, DemexInputDeviceUpdateArgs,
 };
 
 mod encoder;
@@ -90,49 +87,85 @@ impl BehringerXTouchCompactDeviceProfile {
             _ => Err(DemexInputDeviceError::EncoderNotInProfile),
         }
     }
+
+    fn send_fader_value(
+        &mut self,
+        fader_id: u32,
+        fader_value: f32,
+    ) -> Result<(), DemexInputDeviceError> {
+        self.midi.send(MidiMessage::ControlChange {
+            channel: GLOBAL_CHANNEL,
+            control_code: self.get_fader_cc(fader_id)?,
+            control_value: (fader_value * 127.0) as u8,
+        })
+    }
 }
 
 impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
-    fn update_out(
+    fn handle_button_assign(
         &mut self,
-        device_config: &crate::input::device::DemexInputDeviceConfig,
-        fixture_handler: &FixtureHandler,
-        preset_handler: &crate::fixture::presets::PresetHandler,
-        updatable_handler: &crate::fixture::updatables::UpdatableHandler,
-        timing_handler: &crate::fixture::timing::TimingHandler,
-        global_fixture_selection: &Option<crate::fixture::selection::FixtureSelection>,
-        patch: &Patch,
-        encoder_channels: Option<&EncoderChannels>,
+        _button_id: u32,
+        _button: &crate::input::control::button::DemexInputButton,
     ) -> Result<(), DemexInputDeviceError> {
-        for (global_encoder_idx, _) in encoder_channels.iter().take(16).enumerate() {
-            let encoder_value = get_global_encoder_value(
-                global_encoder_idx as u32,
-                FixtureSelectorContext::new(global_fixture_selection),
-                fixture_handler,
-                preset_handler,
-                timing_handler,
-                encoder_channels,
-                patch,
-            )
-            .unwrap_or_default();
+        Ok(())
+    }
 
-            self.midi.send(MidiMessage::ControlChange {
-                channel: GLOBAL_CHANNEL,
-                control_code: self.get_encoder_cc(global_encoder_idx as u32)?,
-                control_value: (encoder_value * 127.0) as u8,
-            })?;
+    fn handle_button_unassign(
+        &mut self,
+        _button_id: u32,
+        _button: &crate::input::control::button::DemexInputButton,
+    ) -> Result<(), DemexInputDeviceError> {
+        Ok(())
+    }
+
+    fn handle_fader_assign(
+        &mut self,
+        _fader_id: u32,
+        _fader: &crate::input::control::fader::DemexInputFader,
+    ) -> Result<(), DemexInputDeviceError> {
+        Ok(())
+    }
+
+    fn handle_fader_unassign(
+        &mut self,
+        _fader_id: u32,
+        _fader: &crate::input::control::fader::DemexInputFader,
+    ) -> Result<(), DemexInputDeviceError> {
+        Ok(())
+    }
+
+    fn handle_events(
+        &mut self,
+        _args: DemexInputDeviceUpdateArgs,
+        events: &[DemexInputDeviceControlUpdate],
+    ) -> Result<(), DemexInputDeviceError> {
+        for event in events {
+            match event {
+                DemexInputDeviceControlUpdate::Fader {
+                    id,
+                    fader: _,
+                    update,
+                } => match update {
+                    DemexInputDeviceFaderUpdate::FaderValueChange(value) => {
+                        self.send_fader_value(*id, *value)?;
+                    }
+                },
+                DemexInputDeviceControlUpdate::Button { update, .. } => match update {
+                    DemexInputDeviceButtonUpdate::ButtonActive => {
+                        // TODO
+                    }
+                    DemexInputDeviceButtonUpdate::ButtonInactive => {
+                        // TODO
+                    }
+                },
+            }
         }
 
-        for (fader_idx, fader) in device_config.faders().iter() {
-            let control_value =
-                (fader.value(fixture_handler, updatable_handler, timing_handler)? * 127.0) as u8;
+        Ok(())
+    }
 
-            self.midi.send(MidiMessage::ControlChange {
-                channel: GLOBAL_CHANNEL,
-                control_code: self.get_fader_cc(*fader_idx)?,
-                control_value,
-            })?;
-        }
+    fn tick(&mut self, _args: DemexInputDeviceUpdateArgs) -> Result<(), DemexInputDeviceError> {
+        // TODO: speed master buttons (blinking)
 
         Ok(())
     }

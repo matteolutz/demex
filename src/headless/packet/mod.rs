@@ -36,7 +36,7 @@ pub fn demex_proto_write_sock_addr(
 }
 
 pub fn demex_proto_read_sock_addr(reader: &mut impl Read) -> io::Result<std::net::SocketAddr> {
-    let port = reader.read_u16::<NetworkEndian>()? as u16;
+    let port = reader.read_u16::<NetworkEndian>()?;
 
     let ip_version = reader.read_u8()?;
     let mut ip_bytes = [0; 16];

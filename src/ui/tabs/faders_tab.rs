@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use crate::lexer::token::Token;
+use crate::{input::event::DemexInputDeviceEvent, lexer::token::Token};
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
@@ -37,7 +37,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     .small(),
                 );
 
-                ui.add(
+                let response = ui.add(
                     eframe::egui::Slider::from_get_set(0.0..=1.0, |val| {
                         if let Some(val) = val {
                             // TODO: this is ugly
@@ -53,6 +53,11 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     })
                     .vertical(),
                 );
+                if response.changed() {
+                    context
+                        .device_events
+                        .push(DemexInputDeviceEvent::ExecutorFaderValueChanged(*id));
+                }
 
                 if ui.button("Home").clicked() {
                     updatable_handler
@@ -76,9 +81,16 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
         ui.vertical(|ui| {
             ui.set_min_width(100.0);
             ui.label(egui::RichText::from("Grandmaster").color(ecolor::Color32::LIGHT_RED));
-            ui.add(
+
+            let response = ui.add(
                 eframe::egui::Slider::new(fixture_handler.grand_master_mut(), 0..=255).vertical(),
             );
+
+            if response.changed() {
+                context
+                    .device_events
+                    .push(DemexInputDeviceEvent::GrandmasterFaderValueChanged);
+            }
         });
     });
 }

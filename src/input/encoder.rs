@@ -23,7 +23,7 @@ pub(crate) fn get_global_encoder_value(
     let (_, channel_map) = encoder_channels?.get(encoder_idx as usize)?;
     let channel = channel_map
         .get(&master_fixture.type_and_mode_hash())?
-        .get(0)?;
+        .first()?;
 
     let value = master_fixture
         .get_value(patch.fixture_types(), channel)
@@ -68,7 +68,7 @@ pub(crate) fn handle_global_encoder_change(
         for channel in channels {
             let _ = fixture.update_programmer_value(
                 patch.fixture_types(),
-                &channel,
+                channel,
                 FixtureChannelValue3Discrete::Value(value),
             );
         }

@@ -40,8 +40,10 @@ impl SpeedMasterValue {
         self.tap_chain.last_tap()
     }
 
-    pub fn tap(&mut self, instant: time::Instant) {
+    pub fn tap(&mut self, instant: time::Instant) -> bool {
+        let bpm_before = self.bpm;
         self.bpm = self.tap_chain.tap(instant, self.bpm);
+        self.bpm != bpm_before
     }
 
     pub fn on_beat(&self) -> bool {

@@ -13,7 +13,9 @@ use crate::{
         updatables::UpdatableHandler,
     },
     headless::id::DemexProtoDeviceId,
-    input::{device::DemexInputDeviceConfig, DemexInputDeviceHandler},
+    input::{
+        device::DemexInputDeviceConfig, event::DemexInputDeviceEvent, DemexInputDeviceHandler,
+    },
     lexer::token::Token,
     parser::{
         error::ParseError,
@@ -69,6 +71,7 @@ pub struct DemexUiContext {
     pub logs: Vec<DemexLogEntry>,
 
     pub action_queue: ActionQueue,
+    pub device_events: Vec<DemexInputDeviceEvent>,
 
     pub show_file: Option<PathBuf>,
 
@@ -167,7 +170,9 @@ impl DemexUiContext {
             command: Vec::new(),
             should_focus_command_input: false,
             command_input: String::new(),
+
             action_queue: ActionQueue::default(),
+            device_events: Vec::new(),
 
             encoders_tab_state: EncodersTabState::default(),
             encoder_channels: None,
@@ -289,6 +294,37 @@ impl DemexUiContext {
         }
     }
 
+    fn handle_action_result(&mut self, result: ActionRunResult) {
+        match result {
+            ActionRunResult::Warn(warn) => {
+                self.add_dialog_entry(DemexGlobalDialogEntry::warn(warn.as_str()));
+            }
+            ActionRunResult::Info(info) => {
+                self.add_dialog_entry(DemexGlobalDialogEntry::info(info.as_str()));
+            }
+            ActionRunResult::InfoWithLink(info, link) => {
+                self.add_dialog_entry(DemexGlobalDialogEntry::info_with_link(
+                    info.as_str(),
+                    link.as_str(),
+                ));
+            }
+            ActionRunResult::EditWindow(edit_window) => {
+                let demex_edit_window = DemexWindow::Edit(edit_window);
+
+                self.window_handler.add_window(demex_edit_window);
+            }
+            ActionRunResult::UpdateSelectedFixtures(selection) => {
+                self.global_fixture_select = selection;
+            }
+            ActionRunResult::Lock => self.ui_locked = true,
+            ActionRunResult::WithDeviceEvent { result, event } => {
+                self.device_events.push(event);
+                self.handle_action_result(*result);
+            }
+            ActionRunResult::Default => {}
+        }
+    }
+
     pub fn run_and_handle_action(
         &mut self,
         action: DeferredAction,
@@ -354,30 +390,7 @@ impl DemexUiContext {
             now.elapsed()
         );
 
-        match result {
-            ActionRunResult::Warn(warn) => {
-                self.add_dialog_entry(DemexGlobalDialogEntry::warn(warn.as_str()));
-            }
-            ActionRunResult::Info(info) => {
-                self.add_dialog_entry(DemexGlobalDialogEntry::info(info.as_str()));
-            }
-            ActionRunResult::InfoWithLink(info, link) => {
-                self.add_dialog_entry(DemexGlobalDialogEntry::info_with_link(
-                    info.as_str(),
-                    link.as_str(),
-                ));
-            }
-            ActionRunResult::EditWindow(edit_window) => {
-                let demex_edit_window = DemexWindow::Edit(edit_window);
-
-                self.window_handler.add_window(demex_edit_window);
-            }
-            ActionRunResult::UpdateSelectedFixtures(selection) => {
-                self.global_fixture_select = selection;
-            }
-            ActionRunResult::Lock => self.ui_locked = true,
-            ActionRunResult::Default => {}
-        }
+        self.handle_action_result(result);
 
         Ok(())
     }

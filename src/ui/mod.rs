@@ -226,10 +226,11 @@ impl eframe::App for DemexUiApp {
                 &mut self.context.global_fixture_select,
                 &mut self.context.command,
                 |tokens| {
-                    let mut parser = Parser2::new(&tokens);
+                    let mut parser = Parser2::new(tokens);
                     parser.parse().err()
                 },
                 self.context.encoder_channels.as_ref(),
+                &mut self.context.device_events,
             ) {
                 self.context
                     .logs

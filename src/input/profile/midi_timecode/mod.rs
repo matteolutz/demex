@@ -1,12 +1,8 @@
 use std::sync::mpsc;
 
-use crate::{
-    fixture::patch::Patch,
-    input::{
-        error::DemexInputDeviceError, message::DemexInputDeviceMessage, midi::MidiMessage,
-        timecode::packet::TimecodePacket, DemexInputDeviceProfile,
-    },
-    ui::context::EncoderChannels,
+use crate::input::{
+    error::DemexInputDeviceError, message::DemexInputDeviceMessage, midi::MidiMessage,
+    timecode::packet::TimecodePacket, DemexInputDeviceProfile, DemexInputDeviceUpdateArgs,
 };
 
 pub struct MidiTimecodeProfile {
@@ -79,16 +75,17 @@ impl MidiTimecodeProfile {
 }
 
 impl DemexInputDeviceProfile for MidiTimecodeProfile {
-    fn update_out(
+    fn handle_events(
         &mut self,
-        _: &crate::input::device::DemexInputDeviceConfig,
-        _: &crate::fixture::handler::FixtureHandler,
-        _: &crate::fixture::presets::PresetHandler,
-        _: &crate::fixture::updatables::UpdatableHandler,
-        _: &crate::fixture::timing::TimingHandler,
-        _: &Option<crate::fixture::selection::FixtureSelection>,
-        _: &Patch,
-        _: Option<&EncoderChannels>,
+        _args: DemexInputDeviceUpdateArgs,
+        _events: &[crate::input::event::DemexInputDeviceControlUpdate],
+    ) -> Result<(), DemexInputDeviceError> {
+        Ok(())
+    }
+
+    fn tick(
+        &mut self,
+        _args: DemexInputDeviceUpdateArgs,
     ) -> Result<(), crate::input::error::DemexInputDeviceError> {
         Ok(())
     }

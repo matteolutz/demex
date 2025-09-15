@@ -9,7 +9,10 @@ use crate::{
         timing::TimingHandler,
         updatables::UpdatableHandler,
     },
-    input::{button::DemexInputButton, error::DemexInputDeviceError, fader::DemexInputFader},
+    input::{
+        control::{button::DemexInputButton, fader::DemexInputFader},
+        error::DemexInputDeviceError,
+    },
     lexer::token::Token,
     parser::nodes::{
         action::{error::ActionRunError, result::ActionRunResult, Action, ValueOrRange},
