@@ -77,4 +77,38 @@ impl DemexInputFader {
             }
         }
     }
+
+    pub fn value(
+        &self,
+        fixture_handler: &FixtureHandler,
+        updatable_handler: &UpdatableHandler,
+        timing_handler: &TimingHandler,
+    ) -> Result<f32, DemexInputDeviceError> {
+        match self {
+            Self::Fader {
+                executor_id: fader_id,
+            } => {
+                let executor = updatable_handler
+                    .executor(*fader_id)
+                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+
+                Ok(executor.value())
+            }
+            Self::SpeedMaster {
+                speed_master_id,
+                bpm_min: min_bpm,
+                bpm_max: max_bpm,
+            } => {
+                let speed_master = timing_handler
+                    .get_speed_master_value(*speed_master_id)
+                    .map_err(DemexInputDeviceError::TimingHandlerError)?;
+
+                Ok((speed_master.bpm() - min_bpm) / (max_bpm - min_bpm))
+            }
+            Self::Grandmaster => {
+                let byte_value = fixture_handler.grand_master();
+                Ok(byte_value as f32 / 255.0)
+            }
+        }
+    }
 }

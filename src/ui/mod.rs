@@ -161,23 +161,26 @@ impl DemexUiApp {
                             continue;
                         }
 
-                        channels.insert(
-                            fixture_type_hash,
-                            fixture
-                                .channels_for_attribute_matches(
-                                    patch.fixture_types(),
-                                    |fixture_attribute_name| {
-                                        FixtureChannel3Attribute::attribute_matches(
-                                            fixture_attribute_name,
-                                            attribute,
-                                        )
-                                    },
-                                )
-                                .unwrap()
-                                .iter()
-                                .map(|(dmx_channel, _, _)| dmx_channel.name().as_ref().to_owned())
-                                .collect::<Vec<_>>(),
-                        );
+                        let fixture_channels = fixture
+                            .channels_for_attribute_matches(
+                                patch.fixture_types(),
+                                |fixture_attribute_name| {
+                                    FixtureChannel3Attribute::attribute_matches(
+                                        fixture_attribute_name,
+                                        attribute,
+                                    )
+                                },
+                            )
+                            .unwrap()
+                            .iter()
+                            .map(|(dmx_channel, _, _)| dmx_channel.name().as_ref().to_owned())
+                            .collect::<Vec<_>>();
+
+                        if fixture_channels.is_empty() {
+                            continue;
+                        }
+
+                        channels.insert(fixture_type_hash, fixture_channels);
                     }
 
                     if channels.is_empty() {

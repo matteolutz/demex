@@ -1,6 +1,10 @@
+use gdtf::GdtfError;
 use serde::{Deserialize, Serialize};
 
-use crate::parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext};
+use crate::{
+    fixture::{gdtf::GdtfFixture, handler::FixtureHandler},
+    parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
+};
 
 use super::presets::PresetHandler;
 
@@ -90,6 +94,13 @@ impl FixtureSelection {
         }
 
         self
+    }
+
+    pub fn master_fixture<'a>(
+        &'a self,
+        fixture_handler: &'a FixtureHandler,
+    ) -> Option<&'a GdtfFixture> {
+        fixture_handler.fixture_immut(self.fixtures[0])
     }
 
     pub fn fixtures(&self) -> &[u32] {

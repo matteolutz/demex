@@ -1,4 +1,8 @@
-use crate::input::{message::DemexInputDeviceMessage, DemexInputDeviceProfile};
+use crate::{
+    fixture::patch::Patch,
+    input::{message::DemexInputDeviceMessage, DemexInputDeviceProfile},
+    ui::context::EncoderChannels,
+};
 
 const ENABLED: bool = false;
 const MESSAGES_TO_SEND: &[DemexInputDeviceMessage] =
@@ -20,10 +24,13 @@ impl DemexInputDeviceProfile for DebugDeviceProfile {
     fn update_out(
         &mut self,
         _device_config: &crate::input::device::DemexInputDeviceConfig,
+        _fixture_handler: &crate::fixture::handler::FixtureHandler,
         _preset_handler: &crate::fixture::presets::PresetHandler,
         _updatable_handler: &crate::fixture::updatables::UpdatableHandler,
         _timing_handler: &crate::fixture::timing::TimingHandler,
         _global_fixture_selection: &Option<crate::fixture::selection::FixtureSelection>,
+        _: &Patch,
+        _: Option<&EncoderChannels>,
     ) -> Result<(), crate::input::error::DemexInputDeviceError> {
         Ok(())
     }

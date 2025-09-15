@@ -31,10 +31,13 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
     fn update_out(
         &mut self,
         device_config: &DemexInputDeviceConfig,
+        fixture_handler: &FixtureHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
         global_fixture_selection: &Option<FixtureSelection>,
+        patch: &Patch,
+        encoder_channels: Option<&EncoderChannels>,
     ) -> Result<(), DemexInputDeviceError>;
 
     fn poll(&self) -> Result<Vec<DemexInputDeviceMessage>, DemexInputDeviceError>;
@@ -237,10 +240,13 @@ impl DemexInputDeviceHandler {
 
             device.profile.update_out(
                 &device.config,
+                fixture_handler,
                 preset_handler,
                 updatable_handler,
                 timing_handler,
                 global_fixture_selection,
+                patch,
+                encoder_channels,
             )?;
         }
 

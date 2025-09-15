@@ -1,13 +1,27 @@
-use crate::input::{
-    error::DemexInputDeviceError,
-    message::DemexInputDeviceMessage,
-    midi::{device::MidiInOutDevice, device_mode::MidiInOutDeviceMode, MidiMessage},
-    DemexInputDeviceProfile,
+use crate::{
+    fixture::{handler::FixtureHandler, patch::Patch},
+    input::{
+        encoder::get_global_encoder_value,
+        error::DemexInputDeviceError,
+        message::DemexInputDeviceMessage,
+        midi::{device::MidiInOutDevice, device_mode::MidiInOutDeviceMode, MidiMessage},
+        profile::behringer::encoder::BehringerXTouchCompactEncoderMode,
+        DemexInputDeviceProfile,
+    },
+    parser::nodes::fixture_selector::FixtureSelectorContext,
+    ui::context::EncoderChannels,
 };
 
 mod encoder;
 
-const GLOBAL_CHANNEL: u8 = 1;
+// We receive MIDI messages from the Behringer on this channel,
+// and we also need to send back values changes (faders, encoders, etc.)
+// on this channel.
+const GLOBAL_CHANNEL: u8 = 0;
+
+// On this channel, we only send the configuration messages (given in the documentation)
+// i.e. led ring mode, etc.
+const GLOBAL_CONFIG_CHANNEL: u8 = 1;
 
 // **Ressources**
 // https://media.djmania.net/manuales/pdf/Manual_Behringer_X-Touch_Compact.pdf
@@ -33,7 +47,7 @@ impl BehringerXTouchCompactDeviceProfile {
             xtouch_midi_name,
             midi: MidiInOutDevice::new(
                 "Behringer X-Touch Compact".to_owned(),
-                |_| false,
+                |name| name == "X-TOUCH COMPACT",
                 MidiInOutDeviceMode::Both,
             ),
         };
@@ -49,20 +63,78 @@ impl BehringerXTouchCompactDeviceProfile {
     }
 
     fn init(&mut self) -> Result<(), DemexInputDeviceError> {
+        // Setup top encoders
+        for global_encoder_idx in 0..=15 {
+            self.midi.send(MidiMessage::ControlChange {
+                channel: GLOBAL_CONFIG_CHANNEL,
+                control_code: self.get_encoder_cc(global_encoder_idx)?,
+                control_value: BehringerXTouchCompactEncoderMode::Single.value(),
+            })?;
+        }
+
         Ok(())
+    }
+
+    fn get_fader_cc(&self, fader_idx: u32) -> Result<u8, DemexInputDeviceError> {
+        match fader_idx {
+            0..=8 => Ok(fader_idx as u8 + 1),
+            9..=17 => Ok(fader_idx as u8 + (28 - 9)),
+            _ => Err(DemexInputDeviceError::FaderNotInProfile),
+        }
+    }
+
+    fn get_encoder_cc(&self, encoder_idx: u32) -> Result<u8, DemexInputDeviceError> {
+        match encoder_idx {
+            0..=7 => Ok(encoder_idx as u8 + 10),
+            8..=15 => Ok(encoder_idx as u8 + (37 - 8)),
+            _ => Err(DemexInputDeviceError::EncoderNotInProfile),
+        }
     }
 }
 
 impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
     fn update_out(
         &mut self,
-        _device_config: &crate::input::device::DemexInputDeviceConfig,
-        _preset_handler: &crate::fixture::presets::PresetHandler,
-        _updatable_handler: &crate::fixture::updatables::UpdatableHandler,
-        _timing_handler: &crate::fixture::timing::TimingHandler,
-        _global_fixture_selection: &Option<crate::fixture::selection::FixtureSelection>,
+        device_config: &crate::input::device::DemexInputDeviceConfig,
+        fixture_handler: &FixtureHandler,
+        preset_handler: &crate::fixture::presets::PresetHandler,
+        updatable_handler: &crate::fixture::updatables::UpdatableHandler,
+        timing_handler: &crate::fixture::timing::TimingHandler,
+        global_fixture_selection: &Option<crate::fixture::selection::FixtureSelection>,
+        patch: &Patch,
+        encoder_channels: Option<&EncoderChannels>,
     ) -> Result<(), DemexInputDeviceError> {
-        todo!()
+        for (global_encoder_idx, _) in encoder_channels.iter().take(16).enumerate() {
+            let encoder_value = get_global_encoder_value(
+                global_encoder_idx as u32,
+                FixtureSelectorContext::new(global_fixture_selection),
+                fixture_handler,
+                preset_handler,
+                timing_handler,
+                encoder_channels,
+                patch,
+            )
+            .unwrap_or_default();
+
+            self.midi.send(MidiMessage::ControlChange {
+                channel: GLOBAL_CHANNEL,
+                control_code: self.get_encoder_cc(global_encoder_idx as u32)?,
+                control_value: (encoder_value * 127.0) as u8,
+            })?;
+        }
+
+        for (fader_idx, fader) in device_config.faders().iter() {
+            let control_value =
+                (fader.value(fixture_handler, updatable_handler, timing_handler)? * 127.0) as u8;
+
+            self.midi.send(MidiMessage::ControlChange {
+                channel: GLOBAL_CHANNEL,
+                control_code: self.get_fader_cc(*fader_idx)?,
+                control_value,
+            })?;
+        }
+
+        Ok(())
     }
 
     fn poll(
@@ -76,7 +148,7 @@ impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
                 MidiMessage::NoteOn {
                     channel,
                     note_number,
-                    key_velocity,
+                    key_velocity: _,
                 } => {
                     if channel != GLOBAL_CHANNEL {
                         return None;
@@ -104,6 +176,15 @@ impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
                     }
 
                     match control_code {
+                        1..=9 => Some(DemexInputDeviceMessage::FaderValueChanged(
+                            control_code as u32 - 1,
+                            control_value as f32 / 127.0,
+                        )),
+                        28..=36 => Some(DemexInputDeviceMessage::FaderValueChanged(
+                            control_code as u32 - (28 - 9),
+                            control_value as f32 / 127.0,
+                        )),
+
                         // Fader touch (page A)
                         101..=109 => Some(DemexInputDeviceMessage::FaderTouch(
                             control_code as u32 - 101,
@@ -111,18 +192,18 @@ impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
 
                         // Fader touch (page B)
                         111..=119 => Some(DemexInputDeviceMessage::FaderTouch(
-                            control_code as u32 - (111 - 8),
+                            control_code as u32 - (111 - 9),
                         )),
 
                         // Top encoders turn (page A)
                         10..=17 => Some(DemexInputDeviceMessage::GlobalEncoderValueChanged {
                             encoder_idx: (control_code - 10) as u32,
-                            value: control_value as f32 / 255.0,
+                            value: control_value as f32 / 127.0,
                         }),
                         // Top encoders turn (page B)
                         37..=44 => Some(DemexInputDeviceMessage::GlobalEncoderValueChanged {
                             encoder_idx: control_code as u32 - (37 - 8),
-                            value: control_value as f32 / 255.0,
+                            value: control_value as f32 / 127.0,
                         }),
                         _ => None,
                     }

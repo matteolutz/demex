@@ -1511,7 +1511,7 @@
     {
       "buttons": {},
       "faders": {},
-      "profile_type": "Debug"
+      "profile_type": { "BehringerXTouchCompact": { "xtouch_midi": "" } }
     }
   ],
   "patch": {

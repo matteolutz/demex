@@ -1,6 +1,9 @@
 use std::sync::mpsc;
 
-use crate::input::midi::{device_mode::MidiInOutDeviceMode, error::MidiError, MidiMessage};
+use crate::input::{
+    error::DemexInputDeviceError,
+    midi::{device_mode::MidiInOutDeviceMode, error::MidiError, MidiMessage},
+};
 
 pub struct MidiInOutDevice {
     name: String,
@@ -163,6 +166,16 @@ impl MidiInOutDevice {
 
     pub fn output_mut(&mut self) -> Option<&mut midir::MidiOutputConnection> {
         self.out_conn.as_mut().map(|(_, conn)| conn)
+    }
+
+    pub fn send(&mut self, message: MidiMessage) -> Result<(), DemexInputDeviceError> {
+        let Some(output) = self.output_mut() else {
+            return Err(DemexInputDeviceError::OperationNotSupported);
+        };
+
+        output
+            .send(&message.to_bytes())
+            .map_err(|err| DemexInputDeviceError::MidirError(err.into()))
     }
 
     pub fn input(&self) -> Option<&midir::MidiInputConnection<()>> {

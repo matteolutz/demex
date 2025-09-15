@@ -2,6 +2,8 @@ use led::{ApcMiniMk2ButtonLedColor, ApcMiniMk2ButtonLedMode};
 
 use crate::{
     fixture::{
+        handler::FixtureHandler,
+        patch::Patch,
         presets::{preset::FixturePresetTarget, PresetHandler},
         selection::FixtureSelection,
         timing::TimingHandler,
@@ -15,6 +17,7 @@ use crate::{
         DemexInputDeviceProfile,
     },
     parser::nodes::fixture_selector::FixtureSelectorContext,
+    ui::context::EncoderChannels,
     utils::version::demex_version,
 };
 
@@ -201,10 +204,13 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
     fn update_out(
         &mut self,
         device_config: &crate::input::device::DemexInputDeviceConfig,
+        _fixture_handler: &FixtureHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
         global_fixture_selection: &Option<FixtureSelection>,
+        _: &Patch,
+        _: Option<&EncoderChannels>,
     ) -> Result<(), DemexInputDeviceError> {
         for (button_id, button) in device_config.buttons() {
             match button {
