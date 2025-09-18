@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::input::{
-    control::{button::DemexInputButton, fader::DemexInputFader},
+    control::{button::DemexInputButton, encoder::DemexInputEncoder, fader::DemexInputFader},
     profile::{behringer::BehringerXTouchCompactDeviceProfile, debug::DebugDeviceProfile},
 };
 
@@ -20,6 +20,9 @@ use super::{
 pub struct DemexInputDeviceConfig {
     buttons: HashMap<u32, DemexInputButton>,
     faders: HashMap<u32, DemexInputFader>,
+
+    #[serde(default)]
+    encoders: HashMap<u32, DemexInputEncoder>,
     profile_type: DemexInputDeviceProfileType,
 }
 
@@ -27,11 +30,13 @@ impl DemexInputDeviceConfig {
     pub fn new(
         buttons: HashMap<u32, DemexInputButton>,
         faders: HashMap<u32, DemexInputFader>,
+        encoders: HashMap<u32, DemexInputEncoder>,
         profile_type: DemexInputDeviceProfileType,
     ) -> Self {
         Self {
             buttons,
             faders,
+            encoders,
             profile_type,
         }
     }
@@ -50,6 +55,14 @@ impl DemexInputDeviceConfig {
 
     pub fn faders_mut(&mut self) -> &mut HashMap<u32, DemexInputFader> {
         &mut self.faders
+    }
+
+    pub fn encoders(&self) -> &HashMap<u32, DemexInputEncoder> {
+        &self.encoders
+    }
+
+    pub fn encoders_mut(&mut self) -> &mut HashMap<u32, DemexInputEncoder> {
+        &mut self.encoders
     }
 
     pub fn profile_type(&self) -> &DemexInputDeviceProfileType {

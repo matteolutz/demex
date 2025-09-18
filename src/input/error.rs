@@ -15,6 +15,8 @@ pub enum DemexInputDeviceError {
     FaderNotInProfile,
     EncoderNotInProfile,
 
+    GlobalEncoderValueNotFound(u32),
+
     InputDeviceNotFound(String),
     InputDeviceIdxNotFound(usize),
     OperationNotSupported,
@@ -52,6 +54,10 @@ impl std::fmt::Display for DemexInputDeviceError {
             Self::ButtonNotInProfile => write!(f, "Button not in profile"),
             Self::FaderNotInProfile => write!(f, "Fader not in profile"),
             Self::EncoderNotInProfile => write!(f, "Encoder not in profile"),
+
+            Self::GlobalEncoderValueNotFound(id) => {
+                write!(f, "Global encoder value with id {} not found", id)
+            }
 
             Self::InputDeviceNotFound(name) => write!(f, "Input device \"{}\" not found", name),
             Self::InputDeviceIdxNotFound(idx) => {

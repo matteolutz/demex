@@ -8,8 +8,10 @@ use crate::{
         timing::TimingHandler, updatables::UpdatableHandler,
     },
     input::{
-        control::{button::DemexInputButton, fader::DemexInputFader, DemexInputDeviceControlTrait},
-        encoder::handle_global_encoder_change,
+        control::{
+            button::DemexInputButton, encoder::DemexInputEncoder, fader::DemexInputFader,
+            DemexInputDeviceControlTrait,
+        },
         event::{DemexInputDeviceControlUpdate, DemexInputDeviceEvent},
     },
     lexer::token::Token,
@@ -74,6 +76,10 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
         _fader: &DemexInputFader,
     ) -> Result<(), DemexInputDeviceError> {
         Ok(())
+    }
+
+    fn num_global_encoders(&self) -> u32 {
+        0
     }
 
     fn tick(&mut self, args: DemexInputDeviceUpdateArgs) -> Result<(), DemexInputDeviceError>;
@@ -278,14 +284,19 @@ impl DemexInputDeviceHandler {
                         ),
                     DemexInputDeviceMessage::GlobalEncoderClick(_) => {}
                     DemexInputDeviceMessage::GlobalEncoderValueChanged { encoder_idx, value } => {
-                        handle_global_encoder_change(
-                            encoder_idx,
+                        let encoder = DemexInputEncoder::GlobalEncoder { encoder_idx };
+                        if let Some(event) = encoder.handle_change(
                             value,
                             fixture_selector_context.clone(),
                             fixture_handler,
                             encoder_channels,
+                            preset_handler,
+                            updatable_handler,
+                            timing_handler,
                             patch,
-                        )
+                        )? {
+                            events.push(event);
+                        }
                     }
                 };
             }
@@ -344,6 +355,28 @@ impl DemexInputDeviceHandler {
                             fader,
                             update,
                             id: *id,
+                        });
+                    }
+                }
+
+                for (id, encoder) in device.config.encoders() {
+                    if let Some(update) = encoder.should_update(args.clone(), event).ok().flatten()
+                    {
+                        device_events.push(DemexInputDeviceControlUpdate::Encoder {
+                            encoder,
+                            update,
+                            id: *id,
+                        });
+                    }
+                }
+
+                for encoder_idx in 0..device.profile().num_global_encoders() {
+                    let encoder = DemexInputEncoder::GlobalEncoder { encoder_idx };
+                    if let Some(update) = encoder.should_update(args.clone(), event).ok().flatten()
+                    {
+                        device_events.push(DemexInputDeviceControlUpdate::GlobalEncoder {
+                            update,
+                            id: encoder_idx,
                         });
                     }
                 }

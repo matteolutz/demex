@@ -1,5 +1,7 @@
 use crate::{
-    input::control::{button::DemexInputButton, fader::DemexInputFader},
+    input::control::{
+        button::DemexInputButton, encoder::DemexInputEncoder, fader::DemexInputFader,
+    },
     parser::nodes::fixture_selector::FixtureSelector,
 };
 
@@ -13,6 +15,8 @@ pub enum DemexInputDeviceEvent {
 
     SpeedmasterFaderValueChanged(u32),
 
+    GlobalEncoderValueChanged(u32),
+
     FixtureSelector(FixtureSelector),
 }
 
@@ -23,7 +27,18 @@ pub enum DemexInputDeviceFaderUpdate {
 
 impl Default for DemexInputDeviceFaderUpdate {
     fn default() -> Self {
-        DemexInputDeviceFaderUpdate::FaderValueChange(0.0)
+        Self::FaderValueChange(0.0)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum DemexInputDeviceEncoderUpdate {
+    EncoderValueChange(f32),
+}
+
+impl Default for DemexInputDeviceEncoderUpdate {
+    fn default() -> Self {
+        Self::EncoderValueChange(0.0)
     }
 }
 
@@ -41,6 +56,18 @@ pub enum DemexInputDeviceControlUpdate<'a> {
         id: u32,
         fader: &'a DemexInputFader,
         update: DemexInputDeviceFaderUpdate,
+    },
+
+    Encoder {
+        id: u32,
+        encoder: &'a DemexInputEncoder,
+        update: DemexInputDeviceEncoderUpdate,
+    },
+
+    // This encoder is not user assignable
+    GlobalEncoder {
+        id: u32,
+        update: DemexInputDeviceEncoderUpdate,
     },
 
     Button {

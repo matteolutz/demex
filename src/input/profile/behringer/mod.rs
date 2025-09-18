@@ -1,7 +1,8 @@
 use crate::input::{
     error::DemexInputDeviceError,
     event::{
-        DemexInputDeviceButtonUpdate, DemexInputDeviceControlUpdate, DemexInputDeviceFaderUpdate,
+        DemexInputDeviceButtonUpdate, DemexInputDeviceControlUpdate, DemexInputDeviceEncoderUpdate,
+        DemexInputDeviceFaderUpdate,
     },
     message::DemexInputDeviceMessage,
     midi::{device::MidiInOutDevice, device_mode::MidiInOutDeviceMode, MidiMessage},
@@ -99,6 +100,18 @@ impl BehringerXTouchCompactDeviceProfile {
             control_value: (fader_value * 127.0) as u8,
         })
     }
+
+    fn send_encoder_value(
+        &mut self,
+        fader_id: u32,
+        fader_value: f32,
+    ) -> Result<(), DemexInputDeviceError> {
+        self.midi.send(MidiMessage::ControlChange {
+            channel: GLOBAL_CHANNEL,
+            control_code: self.get_encoder_cc(fader_id)?,
+            control_value: (fader_value * 127.0) as u8,
+        })
+    }
 }
 
 impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
@@ -134,6 +147,10 @@ impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
         Ok(())
     }
 
+    fn num_global_encoders(&self) -> u32 {
+        16
+    }
+
     fn handle_events(
         &mut self,
         _args: DemexInputDeviceUpdateArgs,
@@ -148,6 +165,16 @@ impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
                 } => match update {
                     DemexInputDeviceFaderUpdate::FaderValueChange(value) => {
                         self.send_fader_value(*id, *value)?;
+                    }
+                },
+                DemexInputDeviceControlUpdate::GlobalEncoder { id, update }
+                | DemexInputDeviceControlUpdate::Encoder {
+                    id,
+                    encoder: _,
+                    update,
+                } => match update {
+                    DemexInputDeviceEncoderUpdate::EncoderValueChange(value) => {
+                        self.send_encoder_value(*id, *value)?;
                     }
                 },
                 DemexInputDeviceControlUpdate::Button { update, .. } => match update {

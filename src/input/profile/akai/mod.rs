@@ -269,6 +269,8 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
                         // no motor faders
                     }
                 },
+                DemexInputDeviceControlUpdate::GlobalEncoder { .. }
+                | DemexInputDeviceControlUpdate::Encoder { .. } => {} // we have no encoders
                 DemexInputDeviceControlUpdate::Button { id, button, update } => match update {
                     DemexInputDeviceButtonUpdate::ButtonActive => {
                         let (color, mode) = self.button_color_and_mode(button, true);

@@ -3,6 +3,7 @@ use crate::input::{
 };
 
 pub mod button;
+pub mod encoder;
 pub mod fader;
 
 pub trait DemexInputDeviceControlTrait<T> {
