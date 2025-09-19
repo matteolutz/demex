@@ -336,6 +336,22 @@ impl DemexInputDeviceHandler {
                         update: fader.initial_state(args.clone())?,
                     });
                 }
+
+                for (id, encoder) in device.config.encoders() {
+                    device_events.push(DemexInputDeviceControlUpdate::Encoder {
+                        id: *id,
+                        encoder,
+                        update: encoder.initial_state(args.clone())?,
+                    });
+                }
+
+                for encoder_idx in 0..device.profile.num_global_encoders() {
+                    let encoder = DemexInputEncoder::GlobalEncoder { encoder_idx };
+                    device_events.push(DemexInputDeviceControlUpdate::GlobalEncoder {
+                        id: encoder_idx,
+                        update: encoder.initial_state(args.clone())?,
+                    });
+                }
             }
 
             for event in events.iter() {
