@@ -14,7 +14,8 @@ use crate::{
     },
     headless::id::DemexProtoDeviceId,
     input::{
-        device::DemexInputDeviceConfig, event::DemexInputDeviceEvent, DemexInputDeviceHandler,
+        device::DemexInputDeviceConfig, event::handler::DemexInputDeviceEventHandler,
+        DemexInputDeviceHandler,
     },
     lexer::token::Token,
     parser::{
@@ -57,6 +58,7 @@ pub struct DemexUiContext {
     pub updatable_handler: Arc<RwLock<UpdatableHandler>>,
     pub timing_handler: Arc<RwLock<TimingHandler>>,
     pub patch: Arc<RwLock<Patch>>,
+    pub input_device_event_handler: Arc<RwLock<DemexInputDeviceEventHandler>>,
 
     pub texture_handles: Vec<egui::TextureHandle>,
 
@@ -71,7 +73,6 @@ pub struct DemexUiContext {
     pub logs: Vec<DemexLogEntry>,
 
     pub action_queue: ActionQueue,
-    pub device_events: Vec<DemexInputDeviceEvent>,
 
     pub show_file: Option<PathBuf>,
 
@@ -133,6 +134,7 @@ impl DemexUiContext {
     pub fn load_show(
         show_context: &ShowContext,
         input_device_configs: Vec<DemexInputDeviceConfig>,
+        input_device_event_handler: Arc<RwLock<DemexInputDeviceEventHandler>>,
         ui_config: DemexShowUiConfig,
         show_file: Option<PathBuf>,
         stats: Arc<RwLock<DemexThreadStatsHandler>>,
@@ -172,7 +174,6 @@ impl DemexUiContext {
             command_input: String::new(),
 
             action_queue: ActionQueue::default(),
-            device_events: Vec::new(),
 
             encoders_tab_state: EncodersTabState::default(),
             encoder_channels: None,
@@ -190,6 +191,7 @@ impl DemexUiContext {
             updatable_handler,
             timing_handler,
             patch,
+            input_device_event_handler,
 
             input_device_handler,
 
@@ -318,7 +320,8 @@ impl DemexUiContext {
             }
             ActionRunResult::Lock => self.ui_locked = true,
             ActionRunResult::WithDeviceEvent { result, event } => {
-                self.device_events.push(event);
+                // FIXME: maybe this will cause deadlocks
+                self.input_device_event_handler.write().push_event(event);
                 self.handle_action_result(*result);
             }
             ActionRunResult::Default => {}

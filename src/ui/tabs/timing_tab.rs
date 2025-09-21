@@ -6,6 +6,7 @@ use crate::input::event::DemexInputDeviceEvent;
 
 pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let mut timing_handler = context.timing_handler.write();
+    let mut device_event_handler = context.input_device_event_handler.write();
 
     ui.heading("Speed Masters");
 
@@ -46,7 +47,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             .show(ui);
 
                         if response.changed() {
-                            context.device_events.push(
+                            device_event_handler.push_event(
                                 DemexInputDeviceEvent::SpeedmasterFaderValueChanged(
                                     *speed_master_id,
                                 ),
@@ -68,7 +69,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                             .clicked()
                         {
                             if speed_master_value.tap(time::Instant::now()) {
-                                context.device_events.push(
+                                device_event_handler.push_event(
                                     DemexInputDeviceEvent::SpeedmasterFaderValueChanged(
                                         *speed_master_id,
                                     ),
@@ -80,7 +81,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     ui.col(|ui| {
                         if ui.button("/2").clicked() {
                             *speed_master_value.bpm_mut() /= 2.0;
-                            context.device_events.push(
+                            device_event_handler.push_event(
                                 DemexInputDeviceEvent::SpeedmasterFaderValueChanged(
                                     *speed_master_id,
                                 ),
@@ -89,7 +90,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
 
                         if ui.button("*2").clicked() {
                             *speed_master_value.bpm_mut() *= 2.0;
-                            context.device_events.push(
+                            device_event_handler.push_event(
                                 DemexInputDeviceEvent::SpeedmasterFaderValueChanged(
                                     *speed_master_id,
                                 ),

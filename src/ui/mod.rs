@@ -118,7 +118,7 @@ impl DemexUiApp {
             .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
         updatable_handler.update_executors(
             patch.fixture_types(),
-            &fixture_handler,
+            &mut fixture_handler,
             &preset_handler,
             &timing_handler,
         );
@@ -230,7 +230,7 @@ impl eframe::App for DemexUiApp {
                     parser.parse().err()
                 },
                 self.context.encoder_channels.as_ref(),
-                &mut self.context.device_events,
+                &mut self.context.input_device_event_handler.write(),
             ) {
                 self.context
                     .logs

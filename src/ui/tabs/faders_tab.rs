@@ -6,6 +6,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
     let mut fixture_handler = context.fixture_handler.write();
     let preset_handler = context.preset_handler.read();
     let mut updatable_handler = context.updatable_handler.write();
+    let mut device_event_handler = context.input_device_event_handler.write();
 
     ui.horizontal(|ui| {
         for id in updatable_handler.executor_ids().iter().sorted() {
@@ -54,9 +55,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
                     .vertical(),
                 );
                 if response.changed() {
-                    context
-                        .device_events
-                        .push(DemexInputDeviceEvent::ExecutorFaderValueChanged(*id));
+                    device_event_handler
+                        .push_event(DemexInputDeviceEvent::ExecutorFaderValueChanged(*id));
                 }
 
                 if ui.button("Home").clicked() {
@@ -87,9 +87,8 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut super::DemexUiContext) {
             );
 
             if response.changed() {
-                context
-                    .device_events
-                    .push(DemexInputDeviceEvent::GrandmasterFaderValueChanged);
+                device_event_handler
+                    .push_event(DemexInputDeviceEvent::GrandmasterFaderValueChanged);
             }
         });
     });

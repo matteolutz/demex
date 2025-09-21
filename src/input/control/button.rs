@@ -160,8 +160,8 @@ impl DemexInputButton {
 
     pub fn handle_release(
         &self,
-        fixture_handler: &mut FixtureHandler,
-        preset_handler: &PresetHandler,
+        _fixture_handler: &mut FixtureHandler,
+        _preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
     ) -> Result<Option<DemexInputDeviceEvent>, DemexInputDeviceError> {
         let event = match self {
@@ -174,14 +174,15 @@ impl DemexInputButton {
             }
             Self::ExecutorFlash { id, stomp } => {
                 updatable_handler
-                    .stop_executor(*id, fixture_handler, preset_handler)
+                    .executor_cue_out(*id, 0.0)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
                 if *stomp {
                     updatable_handler.executor_unstomp(*id);
                 }
 
-                Some(DemexInputDeviceEvent::ExecutorStop(*id))
+                // Some(DemexInputDeviceEvent::ExecutorStop(*id))
+                None
             }
             _ => None,
         };

@@ -12,7 +12,7 @@ use crate::{
             button::DemexInputButton, encoder::DemexInputEncoder, fader::DemexInputFader,
             DemexInputDeviceControlTrait,
         },
-        event::{DemexInputDeviceControlUpdate, DemexInputDeviceEvent},
+        event::{handler::DemexInputDeviceEventHandler, DemexInputDeviceControlUpdate},
     },
     lexer::token::Token,
     parser::{
@@ -134,7 +134,7 @@ impl DemexInputDeviceHandler {
         command_input: &mut Vec<Token>,
         parse_command_input: F,
         encoder_channels: Option<&EncoderChannels>,
-        events: &mut Vec<DemexInputDeviceEvent>,
+        event_handler: &mut DemexInputDeviceEventHandler,
     ) -> Result<(), DemexInputDeviceError>
     where
         F: Fn(&[Token]) -> Option<ParseError>,
@@ -173,7 +173,7 @@ impl DemexInputDeviceHandler {
                                 global_fixture_selection,
                                 command_input,
                             )? {
-                                events.push(event);
+                                event_handler.push_event(event);
                             }
                         } else if parse_error.is_some_and(|err| {
                             err.was_expected(ExpectedParseSlice::ButtonId { is_unassign: false })
@@ -196,7 +196,7 @@ impl DemexInputDeviceHandler {
                             preset_handler,
                             updatable_handler,
                         )? {
-                            events.push(event);
+                            event_handler.push_event(event);
                         }
                     }
 
@@ -238,7 +238,7 @@ impl DemexInputDeviceHandler {
                                 updatable_handler,
                                 timing_handler,
                             )? {
-                                events.push(event);
+                                event_handler.push_event(event);
                             }
                         } else if parse_error.is_some_and(|err| {
                             err.was_expected(ExpectedParseSlice::FaderId { is_unassign: false })
@@ -264,7 +264,7 @@ impl DemexInputDeviceHandler {
                                 updatable_handler,
                                 timing_handler,
                             )? {
-                                events.push(event);
+                                event_handler.push_event(event);
                             }
                         }
                     }
@@ -295,7 +295,7 @@ impl DemexInputDeviceHandler {
                             timing_handler,
                             patch,
                         )? {
-                            events.push(event);
+                            event_handler.push_event(event);
                         }
                     }
                 };
@@ -354,7 +354,7 @@ impl DemexInputDeviceHandler {
                 }
             }
 
-            for event in events.iter() {
+            for event in event_handler.events() {
                 for (id, button) in device.config.buttons() {
                     if let Some(update) = button.should_update(args.clone(), event).ok().flatten() {
                         device_events.push(DemexInputDeviceControlUpdate::Button {
@@ -402,7 +402,7 @@ impl DemexInputDeviceHandler {
             device.profile.tick(args)?;
         }
 
-        events.clear();
+        event_handler.clear_events();
         if !self.has_initialized {
             self.has_initialized = true;
         }

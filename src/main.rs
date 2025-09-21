@@ -39,6 +39,8 @@ use utils::{
 
 use clap::Parser;
 
+use crate::input::event::{handler::DemexInputDeviceEventHandler, DemexInputDeviceEvent};
+
 #[cfg(not(feature = "ui"))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
 enum DemexUiThemeAttribute {}
@@ -204,12 +206,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (udp_tx, udp_rx) = std::sync::mpsc::channel();
 
+    let input_device_event_handler = Arc::new(RwLock::new(DemexInputDeviceEventHandler::new()));
+
     if args.headless.is_none() {
         let fixture_handler_thread_b = context.fixture_handler.clone();
         let preset_handler_thread_b = context.preset_handler.clone();
         let updatable_handler_thread_b = context.updatable_handler.clone();
         let timing_handler_thread_b = context.timing_handler.clone();
         let patch_thread_b = context.patch.clone();
+        let input_device_event_handler_thread_b = input_device_event_handler.clone();
 
         demex_update_thread(
             "demex-update".to_owned(),
@@ -221,6 +226,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let mut updatable_handler = updatable_handler_thread_b.write();
                 let timing_handler = timing_handler_thread_b.read();
                 let patch = patch_thread_b.read();
+                let mut input_device_event_handler = input_device_event_handler_thread_b.write();
 
                 let _ = fixture_handler
                     .update_output_values(
@@ -231,11 +237,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         if args.controller { Some(&udp_tx) } else { None },
                     )
                     .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
-                updatable_handler.update_executors(
-                    patch.fixture_types(),
-                    &fixture_handler,
-                    &preset_handler,
-                    &timing_handler,
+
+                input_device_event_handler.push_events(
+                    updatable_handler
+                        .update_executors(
+                            patch.fixture_types(),
+                            &mut fixture_handler,
+                            &preset_handler,
+                            &timing_handler,
+                        )
+                        .into_iter()
+                        .map(DemexInputDeviceEvent::ExecutorStop),
                 );
             },
         );
@@ -317,6 +329,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         DemexUiContext::load_show(
                             &context,
                             show.input_device_configs,
+                            input_device_event_handler,
                             show.ui_config,
                             args.show,
                             stats,

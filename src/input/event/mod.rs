@@ -5,6 +5,8 @@ use crate::{
     parser::nodes::fixture_selector::FixtureSelector,
 };
 
+pub mod handler;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DemexInputDeviceEvent {
     ExecutorGo(u32),

@@ -152,6 +152,10 @@ impl DemexExecutor {
         }
     }
 
+    pub fn cue_out(&mut self, time_offset: f32) {
+        self.runtime.cue_out(time_offset);
+    }
+
     pub fn stop(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
         self.value = 0.0;
         self.runtime.stop();
@@ -203,7 +207,7 @@ impl DemexExecutor {
             .and_then(|attribute| attribute.feature(&fixture_type.attribute_definitions));
 
         self.runtime
-            .channel_value(fixture, channel, self.priority)
+            .channel_value(fixture, channel, self.priority, preset_handler)
             .map(|value| match &self.fader_function {
                 DemexExecutorFaderFunction::FadeAll => value.multiply(self.value),
                 DemexExecutorFaderFunction::Intensity => {
@@ -240,11 +244,11 @@ impl DemexExecutor {
     pub fn update(
         &mut self,
         fixture_types: &FixtureTypeList,
-        fixture_handler: &FixtureHandler,
+        fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
-    ) {
-        self.runtime.update(
+    ) -> bool {
+        let should_stop = self.runtime.update(
             if self.fader_function == DemexExecutorFaderFunction::Speed {
                 self.value
             } else {
@@ -256,5 +260,11 @@ impl DemexExecutor {
             timing_handler,
             self.priority,
         );
+
+        if should_stop {
+            self.stop(fixture_handler, preset_handler);
+        }
+
+        should_stop
     }
 }

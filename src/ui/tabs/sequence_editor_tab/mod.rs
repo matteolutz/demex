@@ -171,6 +171,32 @@ impl<'a> SequenceEditorTab<'a> {
                             });
                         });
                     }
+
+                    body.row(60.0, |mut row| {
+                        row.col(|ui| {
+                            ui.horizontal(|ui| {
+                                ui.label("-");
+                            });
+                        });
+
+                        row.col(|ui| {
+                            ui.label("-");
+                        });
+
+                        row.col(|ui| {
+                            ui.label("Cue Out");
+                        });
+
+                        row.col(|ui| {
+                            ui.label("-");
+                        });
+
+                        row.col(|ui| {
+                            egui_probe::Probe::new(sequence.cue_out_fade_mut())
+                                .with_header("")
+                                .show(ui);
+                        });
+                    });
                 });
 
             ui.add_space(20.0);

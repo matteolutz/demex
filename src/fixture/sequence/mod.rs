@@ -101,6 +101,9 @@ pub struct Sequence {
 
     #[cfg_attr(feature = "ui", egui_probe(skip))]
     cues: Vec<Cue>,
+
+    #[serde(default)]
+    cue_out_fade: f32,
 }
 
 impl Sequence {
@@ -110,6 +113,7 @@ impl Sequence {
             name,
             cues: Vec::new(),
             stop_behavior: SequenceStopBehavior::default(),
+            cue_out_fade: 0.0,
         }
     }
 
@@ -131,6 +135,14 @@ impl Sequence {
 
     pub fn name_mut(&mut self) -> &mut String {
         &mut self.name
+    }
+
+    pub fn cue_out_fade(&self) -> f32 {
+        self.cue_out_fade
+    }
+
+    pub fn cue_out_fade_mut(&mut self) -> &mut f32 {
+        &mut self.cue_out_fade
     }
 
     pub fn add_cue(&mut self, cue: Cue) {

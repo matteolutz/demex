@@ -27,12 +27,17 @@ pub enum SequenceRuntimeState {
         active_cues: Vec<(usize, time::Instant)>,
         current_cue: usize,
     },
+
+    CueOut {
+        cue_out_started: time::Instant,
+    },
 }
 
 impl SequenceRuntimeState {
     pub fn is_started(&self) -> bool {
         match self {
             Self::Cues { .. } => true,
+            Self::CueOut { .. } => true,
             Self::Stopped => false,
         }
     }
@@ -94,9 +99,29 @@ impl SequenceRuntimeState {
         }
     }
 
+    pub fn when_cue_out(&self) -> Option<time::Instant> {
+        match self {
+            Self::CueOut {
+                cue_out_started, ..
+            } => Some(*cue_out_started),
+            _ => None,
+        }
+    }
+
+    pub fn is_cue_out_done(&self, sequence: &Sequence) -> bool {
+        match self {
+            Self::CueOut { cue_out_started } => {
+                let elapsed_time = time::Instant::now() - *cue_out_started;
+                elapsed_time.as_secs_f32() >= sequence.cue_out_fade()
+            }
+            _ => false,
+        }
+    }
+
     pub fn activate_cue(self, cue_idx: usize, activated_at: time::Instant) -> Self {
         match self {
             Self::Stopped => Self::Stopped,
+            Self::CueOut { .. } => self,
             Self::Cues {
                 mut active_cues, ..
             } => {
@@ -119,12 +144,19 @@ impl SequenceRuntimeState {
     ) -> (bool, Self) {
         match self {
             Self::Stopped => (false, Self::start(time_offset)),
+            Self::CueOut { .. } => (false, Self::Stopped),
             Self::Cues {
                 mut active_cues,
                 current_cue,
             } => {
                 if current_cue == num_cues - 1 && stop_behavior != SequenceStopBehavior::Restart {
-                    (false, Self::Stopped)
+                    (
+                        false,
+                        Self::CueOut {
+                            cue_out_started: time::Instant::now()
+                                - time::Duration::from_secs_f32(time_offset),
+                        },
+                    )
                 } else {
                     let should_clear_tracked_values = (current_cue + 1) >= num_cues;
 
@@ -150,7 +182,7 @@ impl SequenceRuntimeState {
     pub fn current_cue_indices(&self) -> Vec<usize> {
         match self {
             Self::Cues { active_cues, .. } => active_cues.iter().map(|(i, _)| *i).collect(),
-            Self::Stopped => vec![],
+            Self::Stopped | Self::CueOut { .. } => vec![],
         }
     }
 }
@@ -203,8 +235,9 @@ impl SequenceRuntime {
         fixture: &GdtfFixture,
         channel: &gdtf::dmx_mode::DmxChannel,
         priority: FixtureChannelValuePriority,
+        preset_handler: &PresetHandler,
     ) -> Option<FadeFixtureChannelValue> {
-        self.tracked_values.get(&fixture.id()).and_then(|values| {
+        let tracked_value = self.tracked_values.get(&fixture.id()).and_then(|values| {
             values.iter().find_map(|(value_channel_name, values)| {
                 if value_channel_name == channel.name().as_ref() {
                     let mut value = FixtureChannelValue3::Home;
@@ -221,6 +254,27 @@ impl SequenceRuntime {
                     None
                 }
             })
+        });
+
+        tracked_value.and_then(|tracked_value| {
+            if let Some(cue_out_started) = self.state.when_cue_out() {
+                let sequence = preset_handler.get_sequence(self.sequence_id).ok()?; // return None, when sequence is not found
+                let cue_out_delta = time::Instant::now()
+                    .duration_since(cue_out_started)
+                    .as_secs_f32();
+                let cue_out_fade = (cue_out_delta / sequence.cue_out_fade()).min(1.0);
+                Some(FadeFixtureChannelValue::new(
+                    FixtureChannelValue3::Mix {
+                        a: Box::new(tracked_value.value().clone()),
+                        b: Box::new(FixtureChannelValue3::Home),
+                        mix: cue_out_fade,
+                    },
+                    1.0,
+                    priority,
+                ))
+            } else {
+                Some(tracked_value)
+            }
         })
     }
 
@@ -461,12 +515,23 @@ impl SequenceRuntime {
 
             active_cues.is_empty()
         } else {
-            true
+            self.state
+                .is_cue_out_done(preset_handler.get_sequence(self.sequence_id).unwrap())
         }
     }
 
     pub fn start(&mut self, time_offset: f32) {
         self.state = SequenceRuntimeState::start(time_offset);
+    }
+
+    pub fn cue_out(&mut self, time_offset: f32) {
+        if !self.state.is_started() {
+            return;
+        }
+
+        self.state = SequenceRuntimeState::CueOut {
+            cue_out_started: time::Instant::now() - time::Duration::from_secs_f32(time_offset),
+        };
     }
 
     pub fn stop(&mut self) {

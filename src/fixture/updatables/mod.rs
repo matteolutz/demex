@@ -96,18 +96,23 @@ impl UpdatableHandler {
     pub fn update_executors(
         &mut self,
         fixture_types: &FixtureTypeList,
-        fixture_handler: &FixtureHandler,
+        fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
-    ) {
-        for (_, fader) in self.executors.iter_mut() {
-            fader.update(
-                fixture_types,
-                fixture_handler,
-                preset_handler,
-                timing_handler,
-            );
-        }
+    ) -> Vec<u32> {
+        self.executors
+            .iter_mut()
+            .filter_map(|(_, executor)| {
+                executor
+                    .update(
+                        fixture_types,
+                        fixture_handler,
+                        preset_handler,
+                        timing_handler,
+                    )
+                    .then(|| executor.id())
+            })
+            .collect()
     }
 
     pub fn delete_executor(&mut self, id: u32) -> Result<(), UpdatableHandlerError> {
@@ -130,6 +135,15 @@ impl UpdatableHandler {
     ) -> Result<(), UpdatableHandlerError> {
         self.executor_mut(id)?
             .start(fixture_handler, preset_handler, time_offset);
+        Ok(())
+    }
+
+    pub fn executor_cue_out(
+        &mut self,
+        id: u32,
+        time_offset: f32,
+    ) -> Result<(), UpdatableHandlerError> {
+        self.executor_mut(id)?.cue_out(time_offset);
         Ok(())
     }
 
