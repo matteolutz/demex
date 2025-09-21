@@ -12,13 +12,19 @@ pub struct TimedTimecodePacket {
     pub received_at: time::Instant,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct TimecodePacket {
     pub rate: TimecodeRate,
     pub hour: u8,
     pub minute: u8,
     pub second: u8,
     pub frame: u8,
+}
+
+impl PartialOrd for TimecodePacket {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl Ord for TimecodePacket {

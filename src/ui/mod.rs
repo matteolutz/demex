@@ -104,8 +104,14 @@ impl DemexUiApp {
         let mut fixture_handler = self.context.fixture_handler.write();
         let preset_handler = self.context.preset_handler.read();
         let mut updatable_handler = self.context.updatable_handler.write();
-        let timing_handler = self.context.timing_handler.read();
+        let mut timing_handler = self.context.timing_handler.write();
         let patch = self.context.patch.read();
+
+        timing_handler.update_running_timecodes(
+            &mut fixture_handler,
+            &preset_handler,
+            &mut updatable_handler,
+        );
 
         let _ = fixture_handler
             .update_output_values(
