@@ -35,7 +35,10 @@ impl<'a> ClockComponent<'a> {
             .selected_tab;
 
             let clock_value: ClockValue = match clock_mode {
-                ClockMode::Timecode => timing_handler.current_timecode_packet().clone().into(),
+                ClockMode::Timecode => timing_handler
+                    .timecode_synchronizer()
+                    .estimated_timecode()
+                    .into(),
                 ClockMode::LocalTime => ClockValue::local_time(),
                 ClockMode::Utc => ClockValue::utc_time(),
             };

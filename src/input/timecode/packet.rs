@@ -1,16 +1,35 @@
+use std::time;
+
 use serde::{Deserialize, Serialize};
 
 use crate::input::midi::MidiQuarterTimecodePiece;
 
 use super::rate::TimecodeRate;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone)]
+pub struct TimedTimecodePacket {
+    pub packet: TimecodePacket,
+    pub received_at: time::Instant,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Serialize, Deserialize, Default)]
 pub struct TimecodePacket {
     pub rate: TimecodeRate,
     pub hour: u8,
     pub minute: u8,
     pub second: u8,
     pub frame: u8,
+}
+
+impl Ord for TimecodePacket {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.rate
+            .cmp(&other.rate)
+            .then_with(|| self.hour.cmp(&other.hour))
+            .then_with(|| self.minute.cmp(&other.minute))
+            .then_with(|| self.second.cmp(&other.second))
+            .then_with(|| self.frame.cmp(&other.frame))
+    }
 }
 
 impl TimecodePacket {
@@ -73,6 +92,25 @@ impl TimecodePacket {
         let minutes = (total_minutes % 60) as u8;
         let seconds = (total_seconds % 60) as u8;
         let frames = (frames % rate.frames_per_second()) as u8;
+
+        Self {
+            rate,
+            hour: hours,
+            minute: minutes,
+            second: seconds,
+            frame: frames,
+        }
+    }
+
+    pub fn from_millis(millis: u64, rate: TimecodeRate) -> Self {
+        let total_seconds = millis / 1000;
+        let total_minutes = total_seconds / 60;
+        let total_hours = total_minutes / 60;
+
+        let hours = total_hours as u8;
+        let minutes = (total_minutes % 60) as u8;
+        let seconds = (total_seconds % 60) as u8;
+        let frames = (millis % 1000 * rate.frames_per_second() / 1000) as u8;
 
         Self {
             rate,

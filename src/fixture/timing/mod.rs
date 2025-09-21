@@ -5,7 +5,10 @@ use serde::{Deserialize, Serialize};
 use speed_master::SpeedMasterValue;
 use timecode::Timecode;
 
-use crate::input::{midi::MidiQuarterTimecodePiece, timecode::packet::TimecodePacket};
+use crate::input::{
+    midi::MidiQuarterTimecodePiece,
+    timecode::{packet::TimecodePacket, synchronizer::TimecodeSynchronizer},
+};
 
 use super::{handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler};
 
@@ -21,7 +24,7 @@ pub struct TimingHandler {
     timecodes: HashMap<u32, Timecode>,
 
     #[serde(default, skip_serializing, skip_deserializing)]
-    current_timecode_packet: TimecodePacket,
+    timecode_synchronizer: TimecodeSynchronizer,
 }
 
 impl Default for TimingHandler {
@@ -31,7 +34,7 @@ impl Default for TimingHandler {
                 (0u32..10u32).map(|id| (id, SpeedMasterValue::default())),
             ),
             timecodes: HashMap::new(),
-            current_timecode_packet: TimecodePacket::default(),
+            timecode_synchronizer: TimecodeSynchronizer::default(),
         }
     }
 }
@@ -86,15 +89,21 @@ impl TimingHandler {
             .ok_or(TimingHandlerError::TimecodeNotFound(id))
     }
 
-    fn update_running_timecodes(
+    pub fn timecode_synchronizer(&self) -> &TimecodeSynchronizer {
+        &self.timecode_synchronizer
+    }
+
+    pub fn update_running_timecodes(
         &mut self,
         fixture_handler: &mut FixtureHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
     ) {
+        self.timecode_synchronizer.update_estimated();
+
         self.timecodes.values_mut().for_each(|timecode| {
             timecode.update(
-                self.current_timecode_packet.millis(),
+                self.timecode_synchronizer.estimated_millis(),
                 fixture_handler,
                 preset_handler,
                 updatable_handler,
@@ -102,31 +111,28 @@ impl TimingHandler {
         });
     }
 
-    pub fn update_timecode(
-        &mut self,
-        timecode_packet: TimecodePacket,
-        fixture_handler: &mut FixtureHandler,
-        preset_handler: &PresetHandler,
-        updatable_handler: &mut UpdatableHandler,
-    ) {
-        self.current_timecode_packet = timecode_packet;
+    fn recalculate_timecode_indices(&mut self) {
+        let current_millis = self.timecode_synchronizer.estimated_millis();
 
-        self.update_running_timecodes(fixture_handler, preset_handler, updatable_handler);
+        self.timecodes.values_mut().for_each(|timecode| {
+            timecode
+                .scheduler_mut()
+                .recalculate_next_trigger(current_millis);
+        });
     }
 
-    pub fn update_timecode_quarter_frame(
-        &mut self,
-        piece: MidiQuarterTimecodePiece,
-        fixture_handler: &mut FixtureHandler,
-        preset_handler: &PresetHandler,
-        updatable_handler: &mut UpdatableHandler,
-    ) {
-        self.current_timecode_packet.update_from(piece);
-
-        self.update_running_timecodes(fixture_handler, preset_handler, updatable_handler);
+    pub fn handle_timecode_packet(&mut self, timecode_packet: TimecodePacket) {
+        if self
+            .timecode_synchronizer
+            .process_new_timecode(timecode_packet)
+        {
+            self.recalculate_timecode_indices();
+        }
     }
 
-    pub fn current_timecode_packet(&self) -> &TimecodePacket {
-        &self.current_timecode_packet
+    pub fn handle_timecode_quarter_frame(&mut self, piece: MidiQuarterTimecodePiece) {
+        if self.timecode_synchronizer.process_new_quarter_frame(piece) {
+            self.recalculate_timecode_indices();
+        }
     }
 }

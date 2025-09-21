@@ -224,9 +224,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let mut fixture_handler = fixture_handler_thread_b.write();
                 let preset_handler = preset_handler_thread_b.read();
                 let mut updatable_handler = updatable_handler_thread_b.write();
-                let timing_handler = timing_handler_thread_b.read();
+                let mut timing_handler = timing_handler_thread_b.write();
                 let patch = patch_thread_b.read();
                 let mut input_device_event_handler = input_device_event_handler_thread_b.write();
+
+                timing_handler.update_running_timecodes(
+                    &mut fixture_handler,
+                    &preset_handler,
+                    &mut updatable_handler,
+                );
 
                 let _ = fixture_handler
                     .update_output_values(

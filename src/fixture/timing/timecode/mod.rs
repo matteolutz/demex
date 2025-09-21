@@ -3,23 +3,63 @@ use state::TimecodeState;
 use trigger::TimecodeTrigger;
 
 use crate::fixture::{
-    handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler,
+    handler::FixtureHandler, presets::PresetHandler,
+    timing::timecode::scheduler::TimecodeTriggerScheduler, updatables::UpdatableHandler,
 };
 
+pub mod scheduler;
 pub mod state;
 pub mod trigger;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SerializableTimecode {
+    id: u32,
+    name: String,
+    triggers: Vec<TimecodeTrigger>,
+}
+
+impl From<&Timecode> for SerializableTimecode {
+    fn from(value: &Timecode) -> Self {
+        Self {
+            id: value.id,
+            name: value.name.clone(),
+            triggers: value.scheduler.triggers().to_vec(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Timecode {
     id: u32,
 
     name: String,
 
-    #[serde(default, skip_serializing, skip_deserializing)]
     state: TimecodeState,
 
-    // Triggers are sorted by their frame
-    triggers: Vec<TimecodeTrigger>,
+    scheduler: TimecodeTriggerScheduler,
+}
+
+impl Serialize for Timecode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        SerializableTimecode::from(self).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Timecode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        SerializableTimecode::deserialize(deserializer).map(|serializable_timecode| Self {
+            id: serializable_timecode.id,
+            name: serializable_timecode.name,
+            state: TimecodeState::default(),
+            scheduler: TimecodeTriggerScheduler::new(serializable_timecode.triggers),
+        })
+    }
 }
 
 impl Timecode {
@@ -35,6 +75,18 @@ impl Timecode {
         &self.state
     }
 
+    pub fn scheduler(&self) -> &TimecodeTriggerScheduler {
+        &self.scheduler
+    }
+
+    pub fn scheduler_mut(&mut self) -> &mut TimecodeTriggerScheduler {
+        &mut self.scheduler
+    }
+
+    pub fn add_trigger(&mut self, trigger: TimecodeTrigger) {
+        self.scheduler.add_trigger(trigger);
+    }
+
     pub fn update(
         &mut self,
         new_millis: u64,
@@ -42,29 +94,17 @@ impl Timecode {
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
     ) {
-        if let TimecodeState::Running {
-            current_trigger_idx,
-            current_millis,
-            ..
-        } = &mut self.state
-        {
-            loop {
-                if *current_trigger_idx >= self.triggers.len()
-                    || self.triggers[*current_trigger_idx].millis > new_millis
-                {
-                    break;
-                }
+        if !self.state.is_running() {
+            return;
+        }
 
-                self.triggers[*current_trigger_idx].update(
-                    new_millis,
-                    fixture_handler,
-                    preset_handler,
-                    updatable_handler,
-                );
-                *current_trigger_idx += 1;
-            }
-
-            *current_millis = new_millis;
+        for trigger in self.scheduler.update(new_millis) {
+            trigger.trigger(
+                new_millis,
+                fixture_handler,
+                preset_handler,
+                updatable_handler,
+            );
         }
     }
 }

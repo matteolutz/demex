@@ -8,8 +8,6 @@ pub enum TimecodeState {
     Stopped,
 
     Running {
-        current_trigger_idx: usize,
-        current_millis: u64,
         timecode_values: HashMap<u32, HashMap<String, FixtureChannelValue3>>,
     },
 }

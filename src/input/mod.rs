@@ -268,20 +268,12 @@ impl DemexInputDeviceHandler {
                             }
                         }
                     }
-                    DemexInputDeviceMessage::Timecode(timecode_packet) => timing_handler
-                        .update_timecode(
-                            timecode_packet,
-                            fixture_handler,
-                            preset_handler,
-                            updatable_handler,
-                        ),
-                    DemexInputDeviceMessage::TimecodeQuarterFrame { piece } => timing_handler
-                        .update_timecode_quarter_frame(
-                            piece,
-                            fixture_handler,
-                            preset_handler,
-                            updatable_handler,
-                        ),
+                    DemexInputDeviceMessage::Timecode(timecode_packet) => {
+                        timing_handler.handle_timecode_packet(timecode_packet)
+                    }
+                    DemexInputDeviceMessage::TimecodeQuarterFrame { piece } => {
+                        timing_handler.handle_timecode_quarter_frame(piece)
+                    }
                     DemexInputDeviceMessage::GlobalEncoderClick(_) => {}
                     DemexInputDeviceMessage::GlobalEncoderValueChanged { encoder_idx, value } => {
                         let encoder = DemexInputEncoder::GlobalEncoder { encoder_idx };
