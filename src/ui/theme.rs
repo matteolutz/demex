@@ -6,6 +6,9 @@ pub enum DemexUiThemeAttribute {
     CatpuccinMacchiato,
     CatpuccinMocha,
     CatpuccinLatte,
+
+    #[cfg(feature = "reui")]
+    ReUi,
 }
 
 impl From<DemexUiThemeAttribute> for DemexUiTheme {
@@ -18,6 +21,9 @@ impl From<DemexUiThemeAttribute> for DemexUiTheme {
             }
             DemexUiThemeAttribute::CatpuccinMocha => Self::Catppuccin(catppuccin_egui::MOCHA),
             DemexUiThemeAttribute::CatpuccinLatte => Self::Catppuccin(catppuccin_egui::LATTE),
+
+            #[cfg(feature = "reui")]
+            DemexUiThemeAttribute::ReUi => Self::ReUi,
         }
     }
 }
@@ -26,13 +32,39 @@ impl From<DemexUiThemeAttribute> for DemexUiTheme {
 pub enum DemexUiTheme {
     Default,
     Catppuccin(catppuccin_egui::Theme),
+
+    #[cfg(feature = "reui")]
+    ReUi,
 }
 
 impl DemexUiTheme {
+    pub fn native_options(&self, viewport: eframe::egui::ViewportBuilder) -> eframe::NativeOptions {
+        match self {
+            Self::Default | Self::Catppuccin(_) => eframe::NativeOptions {
+                viewport,
+                ..Default::default()
+            },
+
+            #[cfg(feature = "reui")]
+            Self::ReUi => eframe::NativeOptions {
+                viewport: viewport
+                    .with_decorations(!re_ui::CUSTOM_WINDOW_DECORATIONS)
+                    .with_titlebar_buttons_shown(!re_ui::CUSTOM_WINDOW_DECORATIONS)
+                    .with_transparent(re_ui::CUSTOM_WINDOW_DECORATIONS),
+                ..Default::default()
+            },
+        }
+    }
+
     pub fn apply(self, ctx: &egui::Context) {
         match self {
             Self::Default => {}
             Self::Catppuccin(theme) => catppuccin_egui::set_theme(ctx, theme),
+
+            #[cfg(feature = "reui")]
+            Self::ReUi => {
+                re_ui::apply_style_and_install_loaders(ctx);
+            }
         }
     }
 }

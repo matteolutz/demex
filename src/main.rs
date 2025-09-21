@@ -283,10 +283,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 viewport_builder = viewport_builder.with_fullscreen(true);
             }
 
-            let options = eframe::NativeOptions {
-                viewport: viewport_builder,
-                ..Default::default()
-            };
+            let ui_theme = args
+                .ui_theme
+                .map(DemexUiTheme::from)
+                .unwrap_or(DemexUiTheme::Default);
+
+            let options = ui_theme.native_options(viewport_builder);
 
             eframe::run_native(
                 APP_ID,
@@ -304,10 +306,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .egui_ctx
                         .set_fonts(ui::utils::load::load_fonts());
 
-                    args.ui_theme
-                        .map(DemexUiTheme::from)
-                        .unwrap_or(DemexUiTheme::Default)
-                        .apply(&creation_context.egui_ctx);
+                    ui_theme.apply(&creation_context.egui_ctx);
 
                     if args.touchscreen_mode {
                         creation_context.egui_ctx.style_mut(|style| {
