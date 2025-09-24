@@ -294,7 +294,7 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
     }
 
     fn poll(
-        &self,
+        &mut self,
     ) -> Result<
         Vec<crate::input::message::DemexInputDeviceMessage>,
         crate::input::error::DemexInputDeviceError,

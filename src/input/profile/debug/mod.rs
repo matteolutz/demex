@@ -35,7 +35,7 @@ impl DemexInputDeviceProfile for DebugDeviceProfile {
     }
 
     fn poll(
-        &self,
+        &mut self,
     ) -> Result<
         Vec<crate::input::message::DemexInputDeviceMessage>,
         crate::input::error::DemexInputDeviceError,

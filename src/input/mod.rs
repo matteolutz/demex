@@ -89,7 +89,7 @@ pub trait DemexInputDeviceProfile: std::fmt::Debug {
         events: &[DemexInputDeviceControlUpdate],
     ) -> Result<(), DemexInputDeviceError>;
 
-    fn poll(&self) -> Result<Vec<DemexInputDeviceMessage>, DemexInputDeviceError>;
+    fn poll(&mut self) -> Result<Vec<DemexInputDeviceMessage>, DemexInputDeviceError>;
 
     fn is_enabled(&self) -> bool;
 }
@@ -139,12 +139,12 @@ impl DemexInputDeviceHandler {
     where
         F: Fn(&[Token]) -> Option<ParseError>,
     {
-        for (device_idx, device) in self.devices.iter().enumerate() {
+        for (device_idx, device) in self.devices.iter_mut().enumerate() {
             if !device.profile().is_enabled() {
                 continue;
             }
 
-            for device_message in device.profile().poll()? {
+            for device_message in device.profile_mut().poll()? {
                 match device_message {
                     DemexInputDeviceMessage::ButtonPressed(button_id) => {
                         let parse_error = parse_command_input(command_input);

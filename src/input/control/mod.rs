@@ -5,6 +5,7 @@ use crate::input::{
 pub mod button;
 pub mod encoder;
 pub mod fader;
+pub mod motorized;
 
 pub trait DemexInputDeviceControlTrait<T> {
     fn should_update(

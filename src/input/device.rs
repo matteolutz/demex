@@ -81,6 +81,10 @@ impl DemexInputDevice {
         self.profile.as_ref()
     }
 
+    pub fn profile_mut(&mut self) -> &mut dyn DemexInputDeviceProfile {
+        self.profile.as_mut()
+    }
+
     pub fn config(&self) -> &DemexInputDeviceConfig {
         &self.config
     }

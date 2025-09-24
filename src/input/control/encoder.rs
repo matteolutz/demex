@@ -62,7 +62,7 @@ impl DemexInputEncoder {
 
     pub fn value(&self, args: DemexInputDeviceUpdateArgs) -> Result<f32, DemexInputDeviceError> {
         match self {
-            Self::GlobalEncoder { encoder_idx } => get_global_encoder_value(
+            Self::GlobalEncoder { encoder_idx } => Ok(get_global_encoder_value(
                 *encoder_idx,
                 FixtureSelectorContext::new(args.global_fixture_selection),
                 args.fixture_handler,
@@ -71,7 +71,7 @@ impl DemexInputEncoder {
                 args.encoder_channels,
                 args.patch,
             )
-            .ok_or_else(|| DemexInputDeviceError::GlobalEncoderValueNotFound(*encoder_idx)),
+            .unwrap_or(0.0)),
         }
     }
 }
