@@ -192,9 +192,32 @@ impl<'a> SequenceEditorTab<'a> {
                         });
 
                         row.col(|ui| {
-                            egui_probe::Probe::new(sequence.cue_out_fade_mut())
+                            egui_probe::Probe::new(&mut sequence.cue_out_mut().fade)
                                 .with_header("")
                                 .show(ui);
+                        });
+
+                        row.col(|ui| {
+                            ui.label("-");
+                        });
+                        row.col(|ui| {
+                            ui.label("-");
+                        });
+                        row.col(|ui| {
+                            ui.label("-");
+                        });
+                        row.col(|ui| {
+                            ui.label("-");
+                        });
+
+                        row.col(|ui| {
+                            egui_probe::Probe::new(&mut sequence.cue_out_mut().fading_function)
+                                .with_header("")
+                                .show(ui);
+                        });
+
+                        row.col(|ui| {
+                            ui.label("-");
                         });
                     });
                 });

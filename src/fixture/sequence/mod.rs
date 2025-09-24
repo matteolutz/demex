@@ -3,6 +3,8 @@ use std::collections::HashSet;
 use cue::{Cue, CueIdx};
 use serde::{Deserialize, Serialize};
 
+use crate::fixture::sequence::cue::CueOut;
+
 use super::{
     channel3::channel_value::FixtureChannelValue3, presets::PresetHandler,
     value_source::FixtureChannelValuePriority,
@@ -103,7 +105,7 @@ pub struct Sequence {
     cues: Vec<Cue>,
 
     #[serde(default)]
-    cue_out_fade: f32,
+    cue_out: CueOut,
 }
 
 impl Sequence {
@@ -113,7 +115,7 @@ impl Sequence {
             name,
             cues: Vec::new(),
             stop_behavior: SequenceStopBehavior::default(),
-            cue_out_fade: 0.0,
+            cue_out: CueOut::default(),
         }
     }
 
@@ -137,12 +139,12 @@ impl Sequence {
         &mut self.name
     }
 
-    pub fn cue_out_fade(&self) -> f32 {
-        self.cue_out_fade
+    pub fn cue_out(&self) -> &CueOut {
+        &self.cue_out
     }
 
-    pub fn cue_out_fade_mut(&mut self) -> &mut f32 {
-        &mut self.cue_out_fade
+    pub fn cue_out_mut(&mut self) -> &mut CueOut {
+        &mut self.cue_out
     }
 
     pub fn add_cue(&mut self, cue: Cue) {

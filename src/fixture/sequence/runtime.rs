@@ -112,7 +112,7 @@ impl SequenceRuntimeState {
         match self {
             Self::CueOut { cue_out_started } => {
                 let elapsed_time = time::Instant::now() - *cue_out_started;
-                elapsed_time.as_secs_f32() >= sequence.cue_out_fade()
+                elapsed_time.as_secs_f32() >= sequence.cue_out().fade
             }
             _ => false,
         }
@@ -262,7 +262,10 @@ impl SequenceRuntime {
                 let cue_out_delta = time::Instant::now()
                     .duration_since(cue_out_started)
                     .as_secs_f32();
-                let cue_out_fade = (cue_out_delta / sequence.cue_out_fade()).min(1.0);
+
+                let mut cue_out_fade = (cue_out_delta / sequence.cue_out().fade).min(1.0);
+                cue_out_fade = sequence.cue_out().fading_function.apply(cue_out_fade);
+
                 Some(FadeFixtureChannelValue::new(
                     FixtureChannelValue3::Mix {
                         a: Box::new(tracked_value.value().clone()),

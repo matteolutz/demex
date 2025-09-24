@@ -20,6 +20,13 @@ use crate::{
     utils::ease::{ease_in_out_quad, ease_in_quad, ease_out_quad},
 };
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
+pub struct CueOut {
+    pub fade: f32,
+    pub fading_function: CueFadingFunction,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum CueFadingFunction {
