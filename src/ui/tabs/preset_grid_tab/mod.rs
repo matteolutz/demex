@@ -436,6 +436,7 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                             PresetGridButtonQuickMenuActions::Custom("Stop"),
                             PresetGridButtonQuickMenuActions::Custom("Edit Sequence"),
                             PresetGridButtonQuickMenuActions::Custom("Insert Sequence"),
+                            PresetGridButtonQuickMenuActions::Custom("Assign"),
                         ]),
                         None,
                     )
@@ -500,6 +501,13 @@ pub fn ui(ui: &mut eframe::egui::Ui, context: &mut DemexUiContext) {
                                             .runtime()
                                             .sequence_id(),
                                     ),
+                                ]);
+                            }
+                            PresetGridButtonQuickMenuActions::Custom("Assign") => {
+                                context.command.extend_from_slice(&[
+                                    Token::KeywordAssign,
+                                    Token::KeywordExecutor,
+                                    Token::Integer(id),
                                 ]);
                             }
                             _ => {}
