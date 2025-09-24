@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+// Inspired by
+// https://help.malighting.com/grandMA3/2.0/HTML/group_master.html
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum GroupMasterMode {
     Positive,
