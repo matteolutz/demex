@@ -25,6 +25,7 @@ pub enum DemexInputFader {
         bpm_max: f32,
     },
     Grandmaster,
+    Groupmaster(u32),
 }
 
 impl Default for DemexInputFader {
@@ -59,6 +60,15 @@ impl DemexInputFader {
                 fader.set_value(value, fixture_handler, preset_handler, 0.0);
 
                 Some(DemexInputDeviceEvent::ExecutorFaderValueChanged(*fader_id))
+            }
+            Self::Groupmaster(id) => {
+                let master = updatable_handler
+                    .group_master_mut(*id)
+                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+
+                *master.value_mut() = value;
+
+                Some(DemexInputDeviceEvent::GroupmasterValueChanged(*id))
             }
             Self::SpeedMaster {
                 speed_master_id,
@@ -103,6 +113,13 @@ impl DemexInputFader {
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
                 Ok(executor.value())
+            }
+            Self::Groupmaster(id) => {
+                let master = updatable_handler
+                    .group_master(*id)
+                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+
+                Ok(master.value())
             }
             Self::SpeedMaster {
                 speed_master_id,
@@ -151,6 +168,20 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceFaderUpdate> for DemexInputFad
                     let value = args
                         .updatable_handler
                         .executor(*executor_id)
+                        .map_err(DemexInputDeviceError::UpdatableHandlerError)?
+                        .value();
+
+                    Some(DemexInputDeviceFaderUpdate::FaderValueChange(value))
+                } else {
+                    None
+                }
+            }
+            Self::Groupmaster(id) => {
+                if matches!(event, DemexInputDeviceEvent::GroupmasterValueChanged(event_id) if event_id == id)
+                {
+                    let value = args
+                        .updatable_handler
+                        .group_master(*id)
                         .map_err(DemexInputDeviceError::UpdatableHandlerError)?
                         .value();
 

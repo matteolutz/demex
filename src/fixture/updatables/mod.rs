@@ -4,6 +4,8 @@ use error::UpdatableHandlerError;
 use executor::{fader_function::DemexExecutorFaderFunction, DemexExecutor};
 use serde::{Deserialize, Serialize};
 
+use crate::fixture::group_master::GroupMaster;
+
 use super::{
     handler::{FixtureHandler, FixtureTypeList},
     presets::PresetHandler,
@@ -23,6 +25,9 @@ pub enum StompSource {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct UpdatableHandler {
     executors: HashMap<u32, DemexExecutor>,
+
+    #[serde(default)]
+    group_masters: HashMap<u32, GroupMaster>,
 
     #[serde(default, skip_serializing, skip_deserializing)]
     stomps: Vec<StompSource>,
@@ -178,5 +183,24 @@ impl UpdatableHandler {
         self.stomps.retain(|v| match v {
             StompSource::Executor(v) => *v != id,
         });
+    }
+}
+
+// Group masters
+impl UpdatableHandler {
+    pub fn group_master(&self, id: u32) -> Result<&GroupMaster, UpdatableHandlerError> {
+        self.group_masters
+            .get(&id)
+            .ok_or(UpdatableHandlerError::UpdatableNotFound(id))
+    }
+
+    pub fn group_master_mut(&mut self, id: u32) -> Result<&mut GroupMaster, UpdatableHandlerError> {
+        self.group_masters
+            .get_mut(&id)
+            .ok_or(UpdatableHandlerError::UpdatableNotFound(id))
+    }
+
+    pub fn group_masters(&self) -> &HashMap<u32, GroupMaster> {
+        &self.group_masters
     }
 }

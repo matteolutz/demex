@@ -3,6 +3,7 @@ pub mod effect;
 pub mod effect2;
 pub mod error;
 pub mod gdtf;
+pub mod group_master;
 pub mod handler;
 pub mod keyframe_effect;
 pub mod layout;

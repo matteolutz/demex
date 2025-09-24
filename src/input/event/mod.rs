@@ -15,6 +15,8 @@ pub enum DemexInputDeviceEvent {
 
     GrandmasterFaderValueChanged,
 
+    GroupmasterValueChanged(u32),
+
     SpeedmasterFaderValueChanged(u32),
 
     GlobalEncoderValueChanged(u32),
