@@ -7,12 +7,15 @@ use mmacro::MMacro;
 use preset::{FixturePreset, FixturePresetData, FixturePresetId};
 use serde::{Deserialize, Serialize};
 
-use crate::command::parser::nodes::{
-    action::{
-        Action,
-        functions::{record_function::RecordChannelTypeSelector, update_function::UpdateMode},
+use crate::{
+    command::parser::nodes::{
+        action::{
+            Action,
+            functions::{record_function::RecordChannelTypeSelector, update_function::UpdateMode},
+        },
+        fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
-    fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    engine::component::Component,
 };
 
 use super::{
@@ -39,6 +42,8 @@ pub mod error;
 pub mod group;
 pub mod mmacro;
 pub mod preset;
+
+impl Component for PresetHandler {}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PresetHandler {

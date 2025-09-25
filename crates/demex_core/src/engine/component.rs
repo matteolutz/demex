@@ -25,9 +25,23 @@ impl<T: Component> ComponentHandle<T> {
         f(component)
     }
 
-    pub(crate) fn update<R, F: FnOnce(&mut T) -> R>(&mut self, f: F) -> R {
+    pub(crate) fn write<R, F: FnOnce(&mut T) -> R>(&mut self, f: F) -> R {
         let mut guard = self.0.lock();
         let component = guard.downcast_mut::<T>().expect("Component type mismatch");
         f(component)
+    }
+
+    pub fn mutex(&self) -> &Arc<Mutex<dyn Any + Send + Sync>> {
+        &self.0
+    }
+
+    pub fn mutex_mut(&mut self) -> &mut Arc<Mutex<dyn Any + Send + Sync>> {
+        &mut self.0
+    }
+}
+
+impl<T: Component> Clone for ComponentHandle<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone(), self.1.clone())
     }
 }

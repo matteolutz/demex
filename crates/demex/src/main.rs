@@ -1,5 +1,6 @@
 #![warn(unused_extern_crates)]
 
+pub mod engine;
 pub mod storage;
 
 #[cfg(feature = "ui")]
@@ -10,6 +11,8 @@ pub mod ui2;
 
 use std::{path::PathBuf, sync::Arc, time};
 
+use demex_core::engine::DemexEngine;
+use demex_core::fixture::handler::FixtureHandler;
 use demex_core::headless::{controller::DemexHeadlessConroller, node::DemexHeadlessNode};
 use demex_core::input::event::DemexInputDeviceEvent;
 use demex_core::input::event::handler::DemexInputDeviceEventHandler;
@@ -31,6 +34,8 @@ use demex_core::utils::{
 };
 
 use clap::Parser;
+
+use crate::engine::DemexEngineHandler;
 
 #[cfg(not(feature = "ui"))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
@@ -153,6 +158,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .flat_map(|file| file.description.fixture_types)
         .collect::<Vec<_>>();
 
+    /*
     let stats = Arc::new(RwLock::new(DemexThreadStatsHandler::default()));
     let context = ShowContext::new(
         fixture_types,
@@ -166,7 +172,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             DemexProtoDeviceId::Controller
         },
     );
+    */
 
+    /*
     let fixture_handler_thread_a = context.fixture_handler.clone();
     let preset_handler_thread_a = context.preset_handler.clone();
     let timing_handler_thread_a = context.timing_handler.clone();
@@ -252,21 +260,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
+    */
+
     if let Some(master_ip) = args.headless {
         log::info!("Running in headless mode, no UI will be shown");
+        /*
         DemexHeadlessNode::default().start_headless_in_current_thread(
             master_ip,
             args.headless_id.unwrap_or_default(),
             context.clone(),
         )?;
+        */
     } else {
         if args.controller {
             log::info!("Running in controller mode.");
+            /*
             DemexHeadlessConroller::default().start_controller_thread(
                 stats.clone(),
                 context.clone(),
                 udp_rx,
             );
+            */
         }
 
         #[cfg(feature = "ui")]
@@ -350,6 +364,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             use gpui::AppContext;
 
             gpui::Application::new().run(|cx: &mut gpui::App| {
+                DemexEngineHandler::init(fixture_types, show, cx).unwrap();
+
                 let bounds =
                     gpui::Bounds::centered(None, gpui::size(gpui::px(500.), gpui::px(500.0)), cx);
                 cx.open_window(

@@ -5,9 +5,12 @@ use serde::{Deserialize, Serialize};
 use speed_master::SpeedMasterValue;
 use timecode::Timecode;
 
-use crate::input::{
-    midi::MidiQuarterTimecodePiece,
-    timecode::{packet::TimecodePacket, synchronizer::TimecodeSynchronizer},
+use crate::{
+    engine::component::Component,
+    input::{
+        midi::MidiQuarterTimecodePiece,
+        timecode::{packet::TimecodePacket, synchronizer::TimecodeSynchronizer},
+    },
 };
 
 use super::{
@@ -18,6 +21,8 @@ pub mod error;
 pub mod speed_master;
 pub mod tap;
 pub mod timecode;
+
+impl Component for TimingHandler {}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TimingHandler {

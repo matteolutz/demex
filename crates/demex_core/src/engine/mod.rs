@@ -20,9 +20,19 @@ use crate::{
 };
 
 pub mod component;
+pub mod error;
+pub mod threads;
 
 pub struct DemexEngine {
     components: HashMap<TypeId, Arc<Mutex<dyn Any + Send + Sync>>>,
+}
+
+impl DemexEngine {
+    pub fn new() -> Self {
+        Self {
+            components: HashMap::new(),
+        }
+    }
 }
 
 impl DemexEngine {
@@ -43,6 +53,8 @@ impl DemexEngine {
             .expect("component not registered");
         ComponentHandle::new(component.clone())
     }
+
+    pub fn start(&mut self) {}
 
     #[inline]
     pub fn fixture_handler(&self) -> ComponentHandle<FixtureHandler> {

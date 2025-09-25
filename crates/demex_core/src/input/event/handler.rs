@@ -1,6 +1,8 @@
-use crate::input::event::DemexInputDeviceEvent;
+use crate::{engine::component::Component, input::event::DemexInputDeviceEvent};
 
-#[derive(Debug)]
+impl Component for DemexInputDeviceEventHandler {}
+
+#[derive(Debug, Default)]
 pub struct DemexInputDeviceEventHandler {
     events: Vec<DemexInputDeviceEvent>,
 }

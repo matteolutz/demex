@@ -7,6 +7,8 @@ use std::{
 
 use parking_lot::RwLock;
 
+use crate::engine::component::{Component, ComponentHandle};
+
 pub fn demex_simple_thread<F: Fn(Arc<RwLock<DemexThreadStatsHandler>>, &str) + Send + 'static>(
     name: String,
     stats: Arc<RwLock<DemexThreadStatsHandler>>,
@@ -26,13 +28,13 @@ pub fn demex_simple_thread<F: Fn(Arc<RwLock<DemexThreadStatsHandler>>, &str) + S
     handle
 }
 
-pub fn demex_update_thread<F: Fn(f64, &mut time::Instant) + Send + 'static>(
+pub fn demex_update_thread<F: FnMut(f64, &mut time::Instant) + Send + 'static>(
     name: String,
-    stats: Arc<RwLock<DemexThreadStatsHandler>>,
+    mut stats: ComponentHandle<DemexThreadStatsHandler>,
     fps: f64,
     f: F,
 ) -> JoinHandle<()> {
-    let stats_cloned = stats.clone();
+    let mut stats_cloned = stats.clone();
     let name_cloned = name.to_owned();
 
     let mut last_user_update = time::Instant::now();
@@ -56,13 +58,11 @@ pub fn demex_update_thread<F: Fn(f64, &mut time::Instant) + Send + 'static>(
 
             f(delta_time, &mut last_user_update);
 
-            stats.write().update(name.as_str(), delta_time);
+            stats.write(|stats| stats.update(name.as_str(), delta_time));
         }
     });
 
-    stats_cloned
-        .write()
-        .register_thread(name_cloned, handle.thread().id());
+    stats_cloned.write(|stats| stats.register_thread(name_cloned, handle.thread().id()));
 
     handle
 }
@@ -86,6 +86,8 @@ impl DemexThreadStats {
         self.max_dt
     }
 }
+
+impl Component for DemexThreadStatsHandler {}
 
 #[derive(Default)]
 pub struct DemexThreadStatsHandler {

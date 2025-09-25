@@ -4,7 +4,7 @@ use error::UpdatableHandlerError;
 use executor::{DemexExecutor, fader_function::DemexExecutorFaderFunction};
 use serde::{Deserialize, Serialize};
 
-use crate::group_master::GroupMaster;
+use crate::{engine::component::Component, group_master::GroupMaster};
 
 use super::{
     fixture::handler::{FixtureHandler, FixtureTypeList},
@@ -21,6 +21,8 @@ pub mod runtime;
 pub enum StompSource {
     Executor(u32),
 }
+
+impl Component for UpdatableHandler {}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct UpdatableHandler {

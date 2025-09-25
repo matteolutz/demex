@@ -8,6 +8,7 @@ demex_headless.workspace = true
 demex_dmx.workspace = true
 
 serde.workspace = true
+serde_json.workspace = true
 byteorder.workspace = true
 strum.workspace = true
 strum_macros.workspace = true

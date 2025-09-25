@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use demex_dmx::{DemexDmxOutput, DemexDmxOutputConfig};
 use demex_headless::id::DemexProtoDeviceId;
 
+use crate::engine::component::Component;
+
 use super::{
     fixture::{GdtfFixture, GdtfFixturePatch, handler::FixtureTypeList},
     layout::FixtureLayout,
@@ -35,6 +37,8 @@ impl SerializablePatch {
         }
     }
 }
+
+impl Component for Patch {}
 
 #[derive(Debug, Clone, Default)]
 pub struct Patch {

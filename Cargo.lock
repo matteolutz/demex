@@ -2086,6 +2086,7 @@ dependencies = [
  "parking_lot",
  "regex",
  "serde",
+ "serde_json",
  "strum 0.27.1",
  "strum_macros 0.27.1",
  "uuid",
