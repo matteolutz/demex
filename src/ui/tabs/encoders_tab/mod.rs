@@ -32,7 +32,6 @@ pub struct ValueSelectionModalState {
 pub struct EncodersTabState {
     pub feature: FixtureChannel3FeatureType,
     pub modal_state: Option<ValueSelectionModalState>,
-    pub test_val: u8,
 }
 
 impl EncodersTabState {
