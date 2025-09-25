@@ -1,5 +1,9 @@
 use std::{f32, time};
 
+pub fn point_lies_in_radius(origin: emath::Pos2, radius: f32, point: emath::Pos2) -> bool {
+    (point.x - origin.x).powf(2.0) + (point.y - origin.y).powf(2.0) < radius.powf(2.0)
+}
+
 pub fn approx_equal(a: f32, b: f32, decimal_places: u8) -> bool {
     let factor = 10.0f32.powi(decimal_places as i32);
     let a = (a * factor).trunc();
@@ -90,11 +94,7 @@ pub fn zero_one_sin_snap_out_end(x: f32) -> f32 {
 pub fn snap_both_start(x: f32) -> f32 {
     let phase = x % (2.0 * f32::consts::PI);
 
-    if phase < f32::consts::PI {
-        1.0
-    } else {
-        0.0
-    }
+    if phase < f32::consts::PI { 1.0 } else { 0.0 }
 }
 
 pub fn instant_diff_secs(later: time::Instant, earlier: time::Instant) -> f64 {

@@ -1,7 +1,7 @@
 [package]
 name = "demex"
 version = "0.1.30"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 catppuccin-egui = { version = "5.5.0", default-features = false, features = [
@@ -41,8 +41,8 @@ parking_lot = { features = ["deadlock_detection"], version = "0.12.3" }
 rand = "0.8.5"
 ref-map = "0.1.3"
 regex = "1.11.1"
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
+serde = { version = "1.0.226", features = ["derive"] }
+serde_json = "1.0.145"
 strum = { version = "0.27.0", features = ["derive"] }
 strum_macros = "0.27.0"
 uuid = "1.16.0"
@@ -50,8 +50,10 @@ ciborium = "0.2.2"
 nalgebra = "0.33.2"
 re_ui = { version = "0.23.4", optional = true }
 
+gpui = { git = "https://github.com/zed-industries/zed", optional = true }
+
 [features]
-default = ["ui"]
+default = ["gpui"]
 ui = [
     "dep:catppuccin-egui",
     "dep:eframe",
@@ -64,6 +66,7 @@ ui = [
     "dep:rfd",
 ]
 reui = ["ui", "dep:re_ui"]
+gpui = ["dep:gpui"]
 
 [dev-dependencies]
 approx = "0.5.1"

@@ -88,7 +88,7 @@ impl RgbValue {
         }
     }
 
-    pub fn from_color(color: egui::Color32, color_space: RgbColorSpace) -> Self {
+    pub fn from_color(color: ecolor::Color32, color_space: RgbColorSpace) -> Self {
         let r = color.r() as f32 / 255.0;
         let g = color.g() as f32 / 255.0;
         let b = color.b() as f32 / 255.0;

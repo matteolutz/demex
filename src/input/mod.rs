@@ -4,15 +4,15 @@ use message::DemexInputDeviceMessage;
 
 use crate::{
     fixture::{
-        handler::FixtureHandler, patch::Patch, presets::PresetHandler, selection::FixtureSelection,
-        timing::TimingHandler, updatables::UpdatableHandler,
+        EncoderChannels, handler::FixtureHandler, patch::Patch, presets::PresetHandler,
+        selection::FixtureSelection, timing::TimingHandler, updatables::UpdatableHandler,
     },
     input::{
         control::{
-            button::DemexInputButton, encoder::DemexInputEncoder, fader::DemexInputFader,
-            DemexInputDeviceControlTrait,
+            DemexInputDeviceControlTrait, button::DemexInputButton, encoder::DemexInputEncoder,
+            fader::DemexInputFader,
         },
-        event::{handler::DemexInputDeviceEventHandler, DemexInputDeviceControlUpdate},
+        event::{DemexInputDeviceControlUpdate, handler::DemexInputDeviceEventHandler},
     },
     lexer::token::Token,
     parser::{
@@ -20,7 +20,6 @@ use crate::{
         expected::ExpectedParseSlice,
         nodes::{action::queue::ActionQueue, fixture_selector::FixtureSelectorContext},
     },
-    ui::context::EncoderChannels,
 };
 
 pub mod control;

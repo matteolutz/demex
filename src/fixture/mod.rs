@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 pub mod channel3;
 pub mod effect;
 pub mod effect2;
@@ -14,3 +16,5 @@ pub mod sequence;
 pub mod timing;
 pub mod updatables;
 pub mod value_source;
+
+pub type EncoderChannels = Vec<(&'static str, HashMap<u64, Vec<String>>)>;

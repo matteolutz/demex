@@ -2,6 +2,7 @@
 
 pub mod color;
 pub mod dmx;
+pub mod engine;
 pub mod fixture;
 pub mod headless;
 pub mod input;
@@ -13,6 +14,9 @@ pub mod storage;
 #[cfg(feature = "ui")]
 pub mod ui;
 
+#[cfg(feature = "gpui")]
+pub mod ui2;
+
 pub mod utils;
 
 use std::{path::PathBuf, sync::Arc, time};
@@ -23,23 +27,22 @@ use headless::{
 };
 use itertools::Itertools;
 use parking_lot::RwLock;
-use show::{context::ShowContext, DemexShow};
+use show::{DemexShow, context::ShowContext};
 
-use ui::utils::load::load_textures;
 #[cfg(feature = "ui")]
 use ui::{
-    context::DemexUiContext, theme::DemexUiTheme, theme::DemexUiThemeAttribute,
-    utils::icon::load_icon, DemexUiApp,
+    DemexUiApp, context::DemexUiContext, theme::DemexUiTheme, theme::DemexUiThemeAttribute,
+    utils::icon::load_icon, utils::load::load_textures,
 };
 
 use utils::{
     deadlock::start_deadlock_checking_thread,
-    thread::{demex_update_thread, DemexThreadStatsHandler},
+    thread::{DemexThreadStatsHandler, demex_update_thread},
 };
 
 use clap::Parser;
 
-use crate::input::event::{handler::DemexInputDeviceEventHandler, DemexInputDeviceEvent};
+use crate::input::event::{DemexInputDeviceEvent, handler::DemexInputDeviceEventHandler};
 
 #[cfg(not(feature = "ui"))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
@@ -99,7 +102,9 @@ const APP_ID: &str = "demex";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "debug");
+        unsafe {
+            std::env::set_var("RUST_LOG", "debug");
+        }
     }
 
     env_logger::init();
@@ -352,9 +357,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             )?;
         }
 
-        #[cfg(not(feature = "ui"))]
+        #[cfg(feature = "gpui")]
         {
-            log::error!("UI feature is not enabled. Please enable the UI feature to run the application with a user interface or run in headless mode.");
+            use gpui::AppContext;
+
+            gpui::Application::new().run(|cx: &mut gpui::App| {
+                let bounds =
+                    gpui::Bounds::centered(None, gpui::size(gpui::px(500.), gpui::px(500.0)), cx);
+                cx.open_window(
+                    gpui::WindowOptions {
+                        window_bounds: Some(gpui::WindowBounds::Windowed(bounds)),
+                        ..Default::default()
+                    },
+                    |_, cx| {
+                        cx.new(|_| ui2::HelloWorld {
+                            text: "World".into(),
+                        })
+                    },
+                )
+                .unwrap();
+            });
+        }
+
+        #[cfg(all(not(feature = "ui"), not(feature = "gpui")))]
+        {
+            log::error!(
+                "UI feature is not enabled. Please enable the UI feature to run the application with a user interface or run in headless mode."
+            );
             std::process::exit(1);
         }
     }

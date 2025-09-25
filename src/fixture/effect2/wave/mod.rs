@@ -22,16 +22,16 @@ impl Default for Effect2Wave {
         Self {
             segments: vec![
                 WaveSegment::new(
-                    egui::pos2(0.0, 0.0),
-                    [egui::pos2(0.0, 0.0), egui::pos2(0.2, 0.0)],
+                    emath::pos2(0.0, 0.0),
+                    [emath::pos2(0.0, 0.0), emath::pos2(0.2, 0.0)],
                 ),
                 WaveSegment::new(
-                    egui::pos2(0.5, 1.0),
-                    [egui::pos2(0.3, 1.0), egui::pos2(0.7, 1.0)],
+                    emath::pos2(0.5, 1.0),
+                    [emath::pos2(0.3, 1.0), emath::pos2(0.7, 1.0)],
                 ),
                 WaveSegment::new(
-                    egui::pos2(1.0, 0.0),
-                    [egui::pos2(0.8, 0.0), egui::pos2(1.0, 0.0)],
+                    emath::pos2(1.0, 0.0),
+                    [emath::pos2(0.8, 0.0), emath::pos2(1.0, 0.0)],
                 ),
             ],
             wave_type: WaveType::Bezier,

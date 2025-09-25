@@ -4,6 +4,7 @@ use itertools::Itertools;
 
 use crate::{
     dmx::{DemexDmxOutput, DemexDmxOutputTrait},
+    engine::component::Component,
     headless::packet::controller_udp::DemexProtoUdpControllerPacket,
 };
 
@@ -33,12 +34,25 @@ fn compare_universe_output_data(
     true
 }
 
+impl Component for FixtureHandler {}
+
 #[derive(Debug)]
 pub struct FixtureHandler {
     fixtures: Vec<GdtfFixture>,
     outputs: Vec<DemexDmxOutput>,
     universe_output_data: HashMap<u16, [u8; 512]>,
     grand_master: u8,
+}
+
+impl Default for FixtureHandler {
+    fn default() -> Self {
+        Self {
+            fixtures: Default::default(),
+            outputs: Default::default(),
+            universe_output_data: Default::default(),
+            grand_master: Self::default_grandmaster_value(),
+        }
+    }
 }
 
 impl FixtureHandler {
@@ -240,7 +254,9 @@ impl FixtureHandler {
                 if let Err(err) = output.send(*universe, data) {
                     log::warn!(
                         "Failed to send data via {:?} for universe {}. Did the corresponding output thread panic?\n{}",
-                        output, universe, err
+                        output,
+                        universe,
+                        err
                     );
                 }
             }

@@ -1,10 +1,9 @@
 use crate::{
     fixture::{
-        channel3::channel_value::FixtureChannelValue3Discrete, handler::FixtureHandler,
-        patch::Patch, presets::PresetHandler, timing::TimingHandler,
+        EncoderChannels, channel3::channel_value::FixtureChannelValue3Discrete,
+        handler::FixtureHandler, patch::Patch, presets::PresetHandler, timing::TimingHandler,
     },
     parser::nodes::fixture_selector::FixtureSelectorContext,
-    ui::context::EncoderChannels,
 };
 
 pub(crate) fn get_global_encoder_value(

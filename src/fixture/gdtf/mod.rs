@@ -327,7 +327,7 @@ impl GdtfFixture {
                 &'a gdtf::dmx_mode::DmxChannel,
                 &'a gdtf::dmx_mode::LogicalChannel,
             ),
-        >,
+        > + use<'a>,
         FixtureError,
     > {
         let (_, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;

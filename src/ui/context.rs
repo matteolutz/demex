@@ -14,19 +14,19 @@ use crate::{
     },
     headless::id::DemexProtoDeviceId,
     input::{
-        device::DemexInputDeviceConfig, event::handler::DemexInputDeviceEventHandler,
-        DemexInputDeviceHandler,
+        DemexInputDeviceHandler, device::DemexInputDeviceConfig,
+        event::handler::DemexInputDeviceEventHandler,
     },
     lexer::token::Token,
     parser::{
+        Parser2,
         error::ParseError,
         nodes::{
-            action::{queue::ActionQueue, result::ActionRunResult, Action, DeferredAction},
+            action::{Action, DeferredAction, queue::ActionQueue, result::ActionRunResult},
             fixture_selector::FixtureSelectorContext,
         },
-        Parser2,
     },
-    show::{context::ShowContext, ui::DemexShowUiConfig, DemexShow},
+    show::{DemexShow, context::ShowContext, ui::DemexShowUiConfig},
     ui::{
         edit_request::{UiEditRequest, UiEditRequestTrait},
         error::DemexUiError,
@@ -36,15 +36,13 @@ use crate::{
 };
 
 use super::{
-    dlog::{dialog::DemexGlobalDialogEntry, DemexLogEntry, DemexLogEntryType},
+    dlog::{DemexLogEntry, DemexLogEntryType, dialog::DemexGlobalDialogEntry},
     tabs::encoders_tab::EncodersTabState,
     window::{DemexWindow, DemexWindowHandler},
 };
 
 pub type SaveShowFn =
     fn(DemexShow, Option<&PathBuf>) -> Result<PathBuf, Box<dyn std::error::Error>>;
-
-pub type EncoderChannels = Vec<(&'static str, HashMap<u64, Vec<String>>)>;
 
 pub struct DemexUiContext {
     pub command_input: String,

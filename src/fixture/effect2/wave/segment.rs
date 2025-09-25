@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::ui::utils::circle::point_lies_in_radius;
+use crate::utils::math::point_lies_in_radius;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum WaveSegmentTouchResult {
@@ -28,8 +28,8 @@ impl WaveSegment {
         Self {
             start_pos,
             control_points: [
-                start_pos + egui::vec2(-0.1, 0.0),
-                start_pos + egui::vec2(0.1, 0.0),
+                start_pos + emath::vec2(-0.1, 0.0),
+                start_pos + emath::vec2(0.1, 0.0),
             ],
         }
     }

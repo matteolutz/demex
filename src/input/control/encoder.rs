@@ -2,18 +2,17 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{
-        handler::FixtureHandler, patch::Patch, presets::PresetHandler, timing::TimingHandler,
-        updatables::UpdatableHandler,
+        EncoderChannels, handler::FixtureHandler, patch::Patch, presets::PresetHandler,
+        timing::TimingHandler, updatables::UpdatableHandler,
     },
     input::{
+        DemexInputDeviceUpdateArgs,
         control::DemexInputDeviceControlTrait,
         encoder::{get_global_encoder_value, handle_global_encoder_change},
         error::DemexInputDeviceError,
         event::{DemexInputDeviceEncoderUpdate, DemexInputDeviceEvent},
-        DemexInputDeviceUpdateArgs,
     },
     parser::nodes::fixture_selector::FixtureSelectorContext,
-    ui::context::EncoderChannels,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
