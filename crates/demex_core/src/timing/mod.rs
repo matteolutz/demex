@@ -10,7 +10,9 @@ use crate::input::{
     timecode::{packet::TimecodePacket, synchronizer::TimecodeSynchronizer},
 };
 
-use super::{handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler};
+use super::{
+    fixture::handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler,
+};
 
 pub mod error;
 pub mod speed_master;

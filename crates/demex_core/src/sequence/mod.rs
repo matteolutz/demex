@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use cue::{Cue, CueIdx};
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::sequence::cue::CueOut;
+use crate::sequence::cue::CueOut;
 
 use super::{
     channel3::channel_value::FixtureChannelValue3, presets::PresetHandler,

@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, str::FromStr};
 
 use fader_function::DemexExecutorFaderFunction;
 use serde::{Deserialize, Serialize};
@@ -7,9 +7,11 @@ pub mod fader_function;
 
 use crate::{
     channel3::feature::feature_type::FixtureChannel3FeatureType,
-    error::FixtureError,
-    gdtf::GdtfFixture,
-    handler::{FixtureHandler, FixtureTypeList},
+    fixture::error::FixtureError,
+    fixture::{
+        GdtfFixture,
+        handler::{FixtureHandler, FixtureTypeList},
+    },
     presets::PresetHandler,
     sequence::{FadeFixtureChannelValue, runtime::SequenceRuntime},
     timing::TimingHandler,

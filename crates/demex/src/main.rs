@@ -1,12 +1,5 @@
 #![warn(unused_extern_crates)]
 
-pub mod color;
-pub mod engine;
-pub mod headless;
-pub mod input;
-pub mod lexer;
-pub mod parser;
-pub mod show;
 pub mod storage;
 
 #[cfg(feature = "ui")]
@@ -15,16 +8,16 @@ pub mod ui;
 #[cfg(feature = "gpui")]
 pub mod ui2;
 
-pub mod utils;
-
 use std::{path::PathBuf, sync::Arc, time};
 
+use demex_core::headless::{controller::DemexHeadlessConroller, node::DemexHeadlessNode};
+use demex_core::input::event::DemexInputDeviceEvent;
+use demex_core::input::event::handler::DemexInputDeviceEventHandler;
+use demex_core::show::{DemexShow, context::ShowContext};
 use demex_headless::id::DemexProtoDeviceId;
 use gdtf::GdtfFile;
-use headless::{controller::DemexHeadlessConroller, node::DemexHeadlessNode};
 use itertools::Itertools;
 use parking_lot::RwLock;
-use show::{DemexShow, context::ShowContext};
 
 #[cfg(feature = "ui")]
 use ui::{
@@ -32,14 +25,12 @@ use ui::{
     utils::icon::load_icon, utils::load::load_textures,
 };
 
-use utils::{
+use demex_core::utils::{
     deadlock::start_deadlock_checking_thread,
     thread::{DemexThreadStatsHandler, demex_update_thread},
 };
 
 use clap::Parser;
-
-use crate::input::event::{DemexInputDeviceEvent, handler::DemexInputDeviceEventHandler};
 
 #[cfg(not(feature = "ui"))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]

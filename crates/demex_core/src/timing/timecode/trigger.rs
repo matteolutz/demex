@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    handler::FixtureHandler,
+    fixture::handler::FixtureHandler,
     presets::{PresetHandler, preset::FixturePresetId},
     selection::FixtureSelection,
     updatables::UpdatableHandler,

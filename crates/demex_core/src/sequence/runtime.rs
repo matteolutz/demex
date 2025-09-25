@@ -4,8 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     channel3::channel_value::FixtureChannelValue3,
-    gdtf::GdtfFixture,
-    handler::{FixtureHandler, FixtureTypeList},
+    fixture::{
+        GdtfFixture,
+        handler::{FixtureHandler, FixtureTypeList},
+    },
     presets::PresetHandler,
     timing::TimingHandler,
     value_source::FixtureChannelValuePriority,

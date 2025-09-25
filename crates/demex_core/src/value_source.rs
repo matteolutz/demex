@@ -2,14 +2,16 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::fixture::{
-    error::FixtureError, presets::PresetHandler, sequence::FadeFixtureChannelValue,
+use crate::{
+    fixture::error::FixtureError, presets::PresetHandler, sequence::FadeFixtureChannelValue,
     updatables::UpdatableHandler,
 };
 
 use super::{
-    channel3::channel_value::FixtureChannelValue3, gdtf::GdtfFixture, handler::FixtureTypeList,
-    timing::TimingHandler, updatables::StompSource,
+    channel3::channel_value::FixtureChannelValue3,
+    fixture::{GdtfFixture, handler::FixtureTypeList},
+    timing::TimingHandler,
+    updatables::StompSource,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]

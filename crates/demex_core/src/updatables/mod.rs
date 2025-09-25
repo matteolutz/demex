@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::group_master::GroupMaster;
 
 use super::{
-    handler::{FixtureHandler, FixtureTypeList},
+    fixture::handler::{FixtureHandler, FixtureTypeList},
     presets::PresetHandler,
     sequence::runtime::SequenceRuntime,
     timing::TimingHandler,

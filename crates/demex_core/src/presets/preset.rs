@@ -3,7 +3,7 @@ use std::{collections::HashMap, f32, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    parser::nodes::{
+    command::parser::nodes::{
         action::{ValueOrRange, functions::update_function::UpdateMode},
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
@@ -16,8 +16,10 @@ use crate::{
             },
         },
         effect::{feature::runtime::FeatureEffectRuntime, speed::EffectSpeed},
-        gdtf::GdtfFixture,
-        handler::{FixtureHandler, FixtureTypeList},
+        fixture::{
+            GdtfFixture,
+            handler::{FixtureHandler, FixtureTypeList},
+        },
         keyframe_effect::{
             effect::KeyframeEffect, effect_keyframe::KeyframeEffectKeyframe,
             effect_keyframe_curve::KeyframeEffectKeyframeCurve,

@@ -6,14 +6,16 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    parser::nodes::action::functions::{
+    command::parser::nodes::action::functions::{
         record_function::RecordChannelTypeSelector, update_function::UpdateMode,
     },
     utils::ease::{ease_in_out_quad, ease_in_quad, ease_out_quad},
     {
         channel3::channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
-        gdtf::GdtfFixture,
-        handler::{FixtureHandler, FixtureTypeList},
+        fixture::{
+            GdtfFixture,
+            handler::{FixtureHandler, FixtureTypeList},
+        },
         presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
         selection::FixtureSelection,
         timing::TimingHandler,

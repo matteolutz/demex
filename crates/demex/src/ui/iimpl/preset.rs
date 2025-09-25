@@ -1,4 +1,4 @@
-use crate::fixture::presets::preset::FixturePresetTarget;
+use crate::presets::preset::FixturePresetTarget;
 
 impl FixturePresetTarget {
     pub fn get_color(&self) -> ecolor::Color32 {

@@ -1,8 +1,11 @@
 use crate::{
-    parser::nodes::{action::error::ActionRunError, fixture_selector::FixtureSelectorError},
+    command::parser::nodes::{
+        action::error::ActionRunError, fixture_selector::FixtureSelectorError,
+    },
     {
-        channel3::feature::feature_group::FixtureChannel3FeatureGroup, error::FixtureError,
-        handler::error::FixtureHandlerError, sequence::cue::CueIdx,
+        channel3::feature::feature_group::FixtureChannel3FeatureGroup,
+        fixture::error::FixtureError, fixture::handler::error::FixtureHandlerError,
+        sequence::cue::CueIdx,
     },
 };
 

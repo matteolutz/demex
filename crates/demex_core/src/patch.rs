@@ -6,8 +6,7 @@ use demex_dmx::{DemexDmxOutput, DemexDmxOutputConfig};
 use demex_headless::id::DemexProtoDeviceId;
 
 use super::{
-    gdtf::{GdtfFixture, GdtfFixturePatch},
-    handler::FixtureTypeList,
+    fixture::{GdtfFixture, GdtfFixturePatch, handler::FixtureTypeList},
     layout::FixtureLayout,
 };
 

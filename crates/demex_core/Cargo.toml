@@ -19,3 +19,10 @@ emath.workspace = true
 ecolor.workspace = true
 itertools.workspace = true
 uuid.workspace = true
+parking_lot.workspace = true
+nalgebra.workspace = true
+log.workspace = true
+midir.workspace = true
+
+[dev-dependencies]
+approx = "0.5.1"

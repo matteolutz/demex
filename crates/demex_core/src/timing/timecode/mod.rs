@@ -3,7 +3,7 @@ use state::TimecodeState;
 use trigger::TimecodeTrigger;
 
 use crate::{
-    handler::FixtureHandler, presets::PresetHandler,
+    fixture::handler::FixtureHandler, presets::PresetHandler,
     timing::timecode::scheduler::TimecodeTriggerScheduler, updatables::UpdatableHandler,
 };
 

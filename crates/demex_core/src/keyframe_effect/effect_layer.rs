@@ -102,7 +102,7 @@ impl KeyframeEffectLayer {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::fixture::keyframe_effect::effect_keyframe_curve::KeyframeEffectKeyframeCurve;
+    use crate::keyframe_effect::effect_keyframe_curve::KeyframeEffectKeyframeCurve;
 
     use super::*;
 

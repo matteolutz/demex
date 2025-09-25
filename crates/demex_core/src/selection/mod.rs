@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
-    {gdtf::GdtfFixture, handler::FixtureHandler},
+    command::parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
+    fixture::{GdtfFixture, handler::FixtureHandler},
 };
 
 use super::presets::PresetHandler;

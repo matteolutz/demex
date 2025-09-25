@@ -7,7 +7,7 @@ use mmacro::MMacro;
 use preset::{FixturePreset, FixturePresetData, FixturePresetId};
 use serde::{Deserialize, Serialize};
 
-use crate::parser::nodes::{
+use crate::command::parser::nodes::{
     action::{
         Action,
         functions::{record_function::RecordChannelTypeSelector, update_function::UpdateMode},
@@ -22,8 +22,10 @@ use super::{
     },
     effect::feature::runtime::FeatureEffectRuntime,
     effect2::effect::Effect2,
-    gdtf::GdtfFixture,
-    handler::{FixtureHandler, FixtureTypeList, error::FixtureHandlerError},
+    fixture::{
+        GdtfFixture,
+        handler::{FixtureHandler, FixtureTypeList, error::FixtureHandlerError},
+    },
     selection::FixtureSelection,
     sequence::{
         Sequence,

@@ -1,5 +1,6 @@
 use crate::{
-    parser::nodes::fixture_selector::FixtureSelectorError, presets::error::PresetHandlerError,
+    command::parser::nodes::fixture_selector::FixtureSelectorError,
+    presets::error::PresetHandlerError,
 };
 
 #[derive(Debug)]

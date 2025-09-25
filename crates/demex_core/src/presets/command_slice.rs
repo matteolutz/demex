@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::lexer::token::Token;
+use crate::command::lexer::token::Token;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CommandSlice {

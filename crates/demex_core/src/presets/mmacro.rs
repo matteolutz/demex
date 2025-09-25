@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::parser::nodes::action::Action;
+use crate::command::parser::nodes::action::Action;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]

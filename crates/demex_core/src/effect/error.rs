@@ -1,4 +1,4 @@
-use crate::error::FixtureError;
+use crate::fixture::error::FixtureError;
 
 #[derive(Debug)]
 pub enum EffectError {

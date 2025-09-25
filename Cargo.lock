@@ -2026,7 +2026,6 @@ checksum = "da692b8d1080ea3045efaab14434d40468c3d8657e42abddfffca87b428f4c1b"
 name = "demex"
 version = "0.1.30"
 dependencies = [
- "approx",
  "byteorder",
  "catppuccin-egui",
  "chrono",
@@ -2071,6 +2070,7 @@ dependencies = [
 name = "demex_core"
 version = "0.1.30"
 dependencies = [
+ "approx",
  "byteorder",
  "ciborium",
  "demex_dmx",
@@ -2080,6 +2080,10 @@ dependencies = [
  "gdtf",
  "itertools 0.13.0",
  "lazy_static",
+ "log",
+ "midir",
+ "nalgebra",
+ "parking_lot",
  "regex",
  "serde",
  "strum 0.27.1",
