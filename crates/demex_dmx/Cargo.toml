@@ -1,0 +1,15 @@
+[package]
+name="demex_dmx"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+open_dmx = { git = "https://github.com/matteolutz/open-dmx" }
+artnet_protocol = { git = "https://github.com/matteolutz/artnet_protocol" }
+nix = { version = "0.30.1", features = ["socket"] }
+
+serde.workspace = true
+itertools.workspace = true
+log.workspace = true
+
+demex_headless.workspace = true
