@@ -56,6 +56,7 @@ nalgebra.workspace = true
 
 demex_headless.workspace = true
 demex_dmx.workspace = true
+demex_core.workspace = true
 
 
 [features]

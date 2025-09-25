@@ -1,9 +1,9 @@
 use std::hash::Hash;
 
 use crate::fixture::effect2::wave::{
+    Effect2Wave,
     segment::{WaveSegment, WaveSegmentTouchResult},
     wave_type::WaveType,
-    Effect2Wave,
 };
 
 const SNAP_DISTANCE: f32 = 15.0;

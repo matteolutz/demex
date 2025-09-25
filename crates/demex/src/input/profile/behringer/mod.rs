@@ -1,4 +1,5 @@
 use crate::input::{
+    DemexInputDeviceProfile, DemexInputDeviceUpdateArgs,
     control::motorized::{
         DemexInputMotorizedControlState, DemexInputMotorizedControlStateListTrait,
     },
@@ -8,11 +9,10 @@ use crate::input::{
         DemexInputDeviceFaderUpdate,
     },
     message::DemexInputDeviceMessage,
-    midi::{device::MidiInOutDevice, device_mode::MidiInOutDeviceMode, MidiMessage},
+    midi::{MidiMessage, device::MidiInOutDevice, device_mode::MidiInOutDeviceMode},
     profile::behringer::encoder::{
         BehringerXTouchCompactButtonLedMode, BehringerXTouchCompactEncoderMode,
     },
-    DemexInputDeviceProfile, DemexInputDeviceUpdateArgs,
 };
 
 mod encoder;

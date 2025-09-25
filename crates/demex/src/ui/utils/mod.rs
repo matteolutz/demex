@@ -1,4 +1,3 @@
-pub mod circle;
 pub mod color;
 pub mod icon;
 pub mod load;

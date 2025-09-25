@@ -8,11 +8,11 @@ use crate::input::{
 };
 
 use super::{
-    profile::{
-        akai::ApcMiniMk2InputDeviceProfile, midi_timecode::MidiTimecodeProfile,
-        DemexInputDeviceProfileType,
-    },
     DemexInputDeviceProfile,
+    profile::{
+        DemexInputDeviceProfileType, akai::ApcMiniMk2InputDeviceProfile,
+        midi_timecode::MidiTimecodeProfile,
+    },
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

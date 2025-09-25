@@ -2,7 +2,7 @@ use dialog::DemexGlobalDialogEntry;
 
 use crate::{
     lexer::token::Token,
-    parser::nodes::action::{result::ActionRunResult, Action},
+    parser::nodes::action::{Action, result::ActionRunResult},
 };
 
 pub mod dialog;

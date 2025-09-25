@@ -6,20 +6,20 @@ use crate::{
     fixture::{
         handler::FixtureHandler,
         patch::Patch,
-        presets::{preset::FixturePresetId, PresetHandler},
+        presets::{PresetHandler, preset::FixturePresetId},
         selection::FixtureSelection,
         timing::TimingHandler,
         updatables::UpdatableHandler,
     },
     input::{
+        DemexInputDeviceUpdateArgs,
         control::DemexInputDeviceControlTrait,
         error::DemexInputDeviceError,
         event::{DemexInputDeviceButtonUpdate, DemexInputDeviceEvent},
-        DemexInputDeviceUpdateArgs,
     },
     lexer::token::Token,
     parser::nodes::{
-        action::{queue::ActionQueue, Action},
+        action::{Action, queue::ActionQueue},
         fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
     },
 };

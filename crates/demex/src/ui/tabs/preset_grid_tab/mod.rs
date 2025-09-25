@@ -12,17 +12,17 @@ use crate::{
     },
     lexer::token::Token,
     parser::nodes::action::{
+        Action, ValueOrRange,
         functions::{
             go_function::ExecutorGoArgs,
             set_function::{SelectionOrSelector, SetFixturePresetArgs},
             stop_function::ExecutorStopArgs,
         },
-        Action, ValueOrRange,
     },
     ui::{
-        edit_request::UiEditRequest,
-        window::{edit::DemexEditWindow, DemexWindow},
         DemexUiContext,
+        edit_request::UiEditRequest,
+        window::{DemexWindow, edit::DemexEditWindow},
     },
 };
 

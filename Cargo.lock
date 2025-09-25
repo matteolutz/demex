@@ -2032,6 +2032,7 @@ dependencies = [
  "chrono",
  "ciborium",
  "clap",
+ "demex_core",
  "demex_dmx",
  "demex_headless",
  "demex_ui",
@@ -2061,6 +2062,26 @@ dependencies = [
  "rfd",
  "serde",
  "serde_json",
+ "strum 0.27.1",
+ "strum_macros 0.27.1",
+ "uuid",
+]
+
+[[package]]
+name = "demex_core"
+version = "0.1.30"
+dependencies = [
+ "byteorder",
+ "ciborium",
+ "demex_dmx",
+ "demex_headless",
+ "ecolor",
+ "emath",
+ "gdtf",
+ "itertools 0.13.0",
+ "lazy_static",
+ "regex",
+ "serde",
  "strum 0.27.1",
  "strum_macros 0.27.1",
  "uuid",

@@ -2,6 +2,7 @@ use led::{ApcMiniMk2ButtonLedColor, ApcMiniMk2ButtonLedMode};
 
 use crate::{
     input::{
+        DemexInputDeviceProfile, DemexInputDeviceUpdateArgs,
         control::button::DemexInputButton,
         error::DemexInputDeviceError,
         event::{
@@ -9,8 +10,7 @@ use crate::{
             DemexInputDeviceFaderUpdate,
         },
         message::DemexInputDeviceMessage,
-        midi::{device::MidiInOutDevice, device_mode::MidiInOutDeviceMode, MidiMessage},
-        DemexInputDeviceProfile, DemexInputDeviceUpdateArgs,
+        midi::{MidiMessage, device::MidiInOutDevice, device_mode::MidiInOutDeviceMode},
     },
     utils::version::demex_version,
 };

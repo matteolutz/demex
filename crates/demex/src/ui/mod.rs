@@ -11,11 +11,11 @@ use window::DemexWindow;
 use crate::{
     fixture::channel3::attribute::FixtureChannel3Attribute,
     parser::{
+        Parser2,
         nodes::{
             action::{Action, ConfigTypeActionData},
             fixture_selector::FixtureSelectorContext,
         },
-        Parser2,
     },
     show::ui::DemexShowUiConfig,
     ui::{

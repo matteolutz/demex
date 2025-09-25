@@ -9,7 +9,7 @@ use crate::{
         gdtf::GdtfFixture,
         handler::{FixtureHandler, FixtureTypeList},
         patch::Patch,
-        presets::{error::PresetHandlerError, preset::FixturePresetId, PresetHandler},
+        presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
         sequence::cue::{CueFixtureChannelValue, CueIdx},
         timing::TimingHandler,
         updatables::error::UpdatableHandlerError,

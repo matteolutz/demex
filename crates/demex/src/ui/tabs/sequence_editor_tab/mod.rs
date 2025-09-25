@@ -4,7 +4,7 @@ use crate::{
     ui::{
         context::DemexUiContext,
         edit_request::UiEditRequest,
-        window::{edit::DemexEditWindow, DemexWindow},
+        window::{DemexWindow, edit::DemexEditWindow},
     },
 };
 

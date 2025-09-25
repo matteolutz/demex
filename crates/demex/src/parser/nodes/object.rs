@@ -2,13 +2,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::fixture::{
     handler::FixtureHandler,
-    presets::{preset::FixturePresetId, PresetHandler},
+    presets::{PresetHandler, preset::FixturePresetId},
     sequence::cue::CueIdx,
     updatables::UpdatableHandler,
 };
 
 use super::{
-    action::{error::ActionRunError, result::ActionRunResult, Action},
+    action::{Action, error::ActionRunError, result::ActionRunResult},
     fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 

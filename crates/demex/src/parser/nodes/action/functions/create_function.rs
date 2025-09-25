@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::{patch::Patch, presets::preset::FixturePresetId, timing::TimingHandler},
-    parser::nodes::action::{error::ActionRunError, result::ActionRunResult, Action},
+    parser::nodes::action::{Action, error::ActionRunError, result::ActionRunResult},
 };
 
 use super::FunctionArgs;

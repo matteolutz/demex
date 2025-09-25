@@ -1,8 +1,21 @@
 [package]
-name="demex_headless"
+name="demex_core"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
+demex_headless.workspace = true
+demex_dmx.workspace = true
+
 serde.workspace = true
 byteorder.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
+lazy_static.workspace = true
+regex.workspace = true
+gdtf.workspace = true
+ciborium.workspace = true
+emath.workspace = true
+ecolor.workspace = true
+itertools.workspace = true
+uuid.workspace = true

@@ -6,10 +6,10 @@ use crate::{
         updatables::UpdatableHandler,
     },
     input::{
+        DemexInputDeviceUpdateArgs,
         control::DemexInputDeviceControlTrait,
         error::DemexInputDeviceError,
         event::{DemexInputDeviceEvent, DemexInputDeviceFaderUpdate},
-        DemexInputDeviceUpdateArgs,
     },
 };
 

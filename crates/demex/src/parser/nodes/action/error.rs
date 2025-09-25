@@ -55,7 +55,11 @@ impl std::fmt::Display for ActionRunError {
                 )
             }
             ActionRunError::SequenceDeleteDependencies(seq_id) => {
-                write!(f, "Sequence with id {} can't be deleted, because there are other objects (executors, faders) referencing it. Delete these first", seq_id)
+                write!(
+                    f,
+                    "Sequence with id {} can't be deleted, because there are other objects (executors, faders) referencing it. Delete these first",
+                    seq_id
+                )
             }
             ActionRunError::ActionNotImplementedForObject(action, object) => {
                 write!(

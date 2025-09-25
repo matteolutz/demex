@@ -17,7 +17,7 @@ use crate::{
     },
 };
 
-use super::{record_function::RecordChannelTypeSelector, FunctionArgs};
+use super::{FunctionArgs, record_function::RecordChannelTypeSelector};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum UpdateMode {

@@ -1,5 +1,6 @@
 use nodes::{
     action::{
+        ConfigTypeActionData, ValueOrRange,
         functions::{
             assign_function::{AssignButtonArgs, AssignButtonArgsMode, AssignFaderArgs},
             create_function::{
@@ -16,7 +17,6 @@ use nodes::{
             set_function::{SelectionOrSelector, SetFeatureValueArgs, SetFixturePresetArgs},
             update_function::{UpdateMode, UpdatePresetArgs, UpdateSequenceCueArgs},
         },
-        ConfigTypeActionData, ValueOrRange,
     },
     object::ObjectRange,
 };

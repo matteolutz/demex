@@ -1,5 +1,5 @@
 use crate::input::{
-    message::DemexInputDeviceMessage, DemexInputDeviceProfile, DemexInputDeviceUpdateArgs,
+    DemexInputDeviceProfile, DemexInputDeviceUpdateArgs, message::DemexInputDeviceMessage,
 };
 
 const ENABLED: bool = false;

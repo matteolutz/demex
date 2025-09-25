@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     fixture::{
         patch::Patch,
-        presets::{preset::FixturePresetId, PresetHandler},
+        presets::{PresetHandler, preset::FixturePresetId},
         timing::TimingHandler,
         updatables::UpdatableHandler,
     },
@@ -15,7 +15,7 @@ use crate::{
     },
     lexer::token::Token,
     parser::nodes::{
-        action::{error::ActionRunError, result::ActionRunResult, Action, ValueOrRange},
+        action::{Action, ValueOrRange, error::ActionRunError, result::ActionRunResult},
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
 };

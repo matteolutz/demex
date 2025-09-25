@@ -2,7 +2,6 @@
 
 pub mod color;
 pub mod engine;
-pub mod fixture;
 pub mod headless;
 pub mod input;
 pub mod lexer;

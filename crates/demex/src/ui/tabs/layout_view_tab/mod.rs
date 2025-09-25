@@ -3,7 +3,7 @@ use state::{LayoutViewDragState, LayoutViewState};
 
 use crate::{
     parser::nodes::action::Action,
-    ui::{graphics::layout_projection::draw_center_of_mass, DemexUiContext},
+    ui::{DemexUiContext, graphics::layout_projection::draw_center_of_mass},
 };
 
 mod decoration;

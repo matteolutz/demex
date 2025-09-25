@@ -1,8 +1,8 @@
 use std::sync::mpsc;
 
 use crate::input::{
-    error::DemexInputDeviceError, message::DemexInputDeviceMessage, midi::MidiMessage,
-    timecode::packet::TimecodePacket, DemexInputDeviceProfile, DemexInputDeviceUpdateArgs,
+    DemexInputDeviceProfile, DemexInputDeviceUpdateArgs, error::DemexInputDeviceError,
+    message::DemexInputDeviceMessage, midi::MidiMessage, timecode::packet::TimecodePacket,
 };
 
 pub struct MidiTimecodeProfile {

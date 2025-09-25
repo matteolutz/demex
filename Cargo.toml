@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/demex_dmx", "crates/demex_headless", "crates/demex_ui", "crates/demex"]
+members = ["crates/demex_dmx", "crates/demex_headless", "crates/demex_ui", "crates/demex_core", "crates/demex"]
 resolver = "3"
 
 [workspace.package]
@@ -9,6 +9,7 @@ edition = "2024"
 [workspace.dependencies]
 demex_dmx = { path = "./crates/demex_dmx" }
 demex_headless = { path = "./crates/demex_headless" }
+demex_core = { path = "./crates/demex_core" }
 demex = { path = "./crates/demex" }
 
 ecolor = { version = "0.31.1", features = ["serde"] }

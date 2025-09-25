@@ -1,6 +1,7 @@
 use std::{ops::RangeInclusive, time};
 
 use functions::{
+    FunctionArgs,
     assign_function::{AssignButtonArgs, AssignFaderArgs},
     create_function::{
         CreateEffectPresetArgs, CreateExecutorArgs, CreateMacroArgs, CreateSequenceArgs,
@@ -15,7 +16,6 @@ use functions::{
     set_function::{SetFeatureValueArgs, SetFixturePresetArgs},
     stop_function::ExecutorStopArgs,
     update_function::{UpdatePresetArgs, UpdateSequenceCueArgs},
-    FunctionArgs,
 };
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
@@ -29,7 +29,7 @@ use crate::{
         handler::FixtureHandler, patch::Patch, presets::PresetHandler, selection::FixtureSelection,
         timing::TimingHandler, updatables::UpdatableHandler,
     },
-    input::{error::DemexInputDeviceError, DemexInputDeviceHandler},
+    input::{DemexInputDeviceHandler, error::DemexInputDeviceError},
 };
 
 use self::{error::ActionRunError, result::ActionRunResult};

@@ -12,12 +12,12 @@ use crate::{
             feature::feature_type::FixtureChannel3FeatureType,
         },
         patch::Patch,
-        presets::{preset::FixturePresetId, PresetHandler},
+        presets::{PresetHandler, preset::FixturePresetId},
         selection::FixtureSelection,
         timing::TimingHandler,
     },
     parser::nodes::{
-        action::{error::ActionRunError, result::ActionRunResult, ValueOrRange},
+        action::{ValueOrRange, error::ActionRunError, result::ActionRunResult},
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
 };

@@ -11,7 +11,7 @@ use crate::{
     },
     ui::{
         components::{
-            numpad::{numpad_ui, NumpadResult},
+            numpad::{NumpadResult, numpad_ui},
             tab_viewer::TabViewer,
         },
         constants::NO_FIXTURES_SELECTED,

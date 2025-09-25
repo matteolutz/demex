@@ -2,7 +2,7 @@ use std::sync::mpsc;
 
 use crate::input::{
     error::DemexInputDeviceError,
-    midi::{device_mode::MidiInOutDeviceMode, error::MidiError, MidiMessage},
+    midi::{MidiMessage, device_mode::MidiInOutDeviceMode, error::MidiError},
 };
 
 pub struct MidiInOutDevice {

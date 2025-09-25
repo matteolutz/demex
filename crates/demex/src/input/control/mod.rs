@@ -1,5 +1,5 @@
 use crate::input::{
-    error::DemexInputDeviceError, event::DemexInputDeviceEvent, DemexInputDeviceUpdateArgs,
+    DemexInputDeviceUpdateArgs, error::DemexInputDeviceError, event::DemexInputDeviceEvent,
 };
 
 pub mod button;

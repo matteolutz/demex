@@ -1,4 +1,4 @@
-use builder_cue::{edit_builder_cue_ui, DisplayEntry, PresetDisplayEntry};
+use builder_cue::{DisplayEntry, PresetDisplayEntry, edit_builder_cue_ui};
 use egui_probe::Probe;
 use group::edit_group_ui;
 use itertools::Itertools;
@@ -8,7 +8,7 @@ use crate::{
     fixture::{
         handler::FixtureHandler,
         patch::Patch,
-        presets::{preset::FixturePresetId, PresetHandler},
+        presets::{PresetHandler, preset::FixturePresetId},
         sequence::cue::CueIdx,
         updatables::UpdatableHandler,
     },

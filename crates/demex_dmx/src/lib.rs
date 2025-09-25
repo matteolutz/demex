@@ -4,7 +4,7 @@ use std::{
 };
 
 use artnet::{
-    start_artnet_output_thread, start_broadcast_artnet_output_thread, ArtnetOutputConfig,
+    ArtnetOutputConfig, start_artnet_output_thread, start_broadcast_artnet_output_thread,
 };
 use debug::DebugOutputVerbosity;
 use serde::{Deserialize, Serialize};
