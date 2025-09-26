@@ -32,7 +32,7 @@ pub fn demex_update_thread<F: FnMut(f64, &mut time::Instant) + Send + 'static>(
     name: String,
     mut stats: ComponentHandle<DemexThreadStatsHandler>,
     fps: f64,
-    f: F,
+    mut f: F,
 ) -> JoinHandle<()> {
     let mut stats_cloned = stats.clone();
     let name_cloned = name.to_owned();
@@ -100,6 +100,7 @@ impl DemexThreadStatsHandler {
         self.name_to_id.insert(name.clone(), id);
         self.stats.insert(name, DemexThreadStats::new(0.0));
     }
+
     pub fn update(&mut self, name: &str, dt: f64) {
         if let Some(stats) = self.stats.get_mut(name) {
             stats.dt = dt;
@@ -116,5 +117,21 @@ impl DemexThreadStatsHandler {
 
     pub fn stats(&self) -> &HashMap<String, DemexThreadStats> {
         &self.stats
+    }
+}
+
+impl std::fmt::Display for DemexThreadStatsHandler {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (name, stats) in &self.stats {
+            writeln!(
+                f,
+                "{}: {:.2}ms ({:.2}fps) (max: {:.2}ms)",
+                name,
+                stats.dt * 1000.0,
+                1.0 / stats.dt,
+                stats.max_dt * 1000.0
+            )?;
+        }
+        Ok(())
     }
 }

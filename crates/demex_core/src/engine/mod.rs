@@ -17,6 +17,12 @@ use parking_lot::Mutex;
 use crate::{
     engine::component::{Component, ComponentHandle},
     fixture::handler::FixtureHandler,
+    input::event::handler::DemexInputDeviceEventHandler,
+    patch::Patch,
+    presets::PresetHandler,
+    timing::TimingHandler,
+    updatables::UpdatableHandler,
+    utils::thread::DemexThreadStatsHandler,
 };
 
 pub mod component;
@@ -25,12 +31,14 @@ pub mod threads;
 
 pub struct DemexEngine {
     components: HashMap<TypeId, Arc<Mutex<dyn Any + Send + Sync>>>,
+    stats: ComponentHandle<DemexThreadStatsHandler>,
 }
 
 impl DemexEngine {
     pub fn new() -> Self {
         Self {
             components: HashMap::new(),
+            stats: ComponentHandle::create_default(),
         }
     }
 }
@@ -50,14 +58,64 @@ impl DemexEngine {
         let component = self
             .components
             .get(&type_id)
-            .expect("component not registered");
+            .expect(format!("Component {:?} not registered", type_id).as_str());
         ComponentHandle::new(component.clone())
     }
 
-    pub fn start(&mut self) {}
+    pub fn start(&mut self) {
+        threads::update::start_demex_update_thread(
+            self.stats(),
+            self.fixture_handler(),
+            self.preset_handler(),
+            self.updatable_handler(),
+            self.timing_handler(),
+            self.patch(),
+            self.input_device_event_handler(),
+        );
+
+        threads::output::start_demex_output_thread(
+            self.stats(),
+            self.fixture_handler(),
+            self.preset_handler(),
+            self.timing_handler(),
+            self.patch(),
+        );
+
+        threads::debug::start_demex_debug_thread(self.stats());
+    }
 
     #[inline]
     pub fn fixture_handler(&self) -> ComponentHandle<FixtureHandler> {
         self.component()
+    }
+
+    #[inline]
+    pub fn preset_handler(&self) -> ComponentHandle<PresetHandler> {
+        self.component()
+    }
+
+    #[inline]
+    pub fn updatable_handler(&self) -> ComponentHandle<UpdatableHandler> {
+        self.component()
+    }
+
+    #[inline]
+    pub fn timing_handler(&self) -> ComponentHandle<TimingHandler> {
+        self.component()
+    }
+
+    #[inline]
+    pub fn patch(&self) -> ComponentHandle<Patch> {
+        self.component()
+    }
+
+    #[inline]
+    pub fn input_device_event_handler(&self) -> ComponentHandle<DemexInputDeviceEventHandler> {
+        self.component()
+    }
+
+    #[inline]
+    pub fn stats(&self) -> ComponentHandle<DemexThreadStatsHandler> {
+        self.stats.clone()
     }
 }

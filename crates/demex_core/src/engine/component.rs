@@ -8,35 +8,41 @@
 
 use std::{any::Any, marker::PhantomData, sync::Arc};
 
-use parking_lot::Mutex;
+use parking_lot::{
+    Mutex, RawMutex,
+    lock_api::{MappedMutexGuard, MutexGuard},
+};
 
 pub trait Component: Send + Sync + Default + 'static {}
 
 pub struct ComponentHandle<T: Component>(Arc<Mutex<dyn Any + Send + Sync>>, PhantomData<T>);
 
 impl<T: Component> ComponentHandle<T> {
+    pub(crate) fn create(component: T) -> Self {
+        Self::new(Arc::new(Mutex::new(component)))
+    }
+
+    pub(crate) fn create_default() -> Self {
+        Self::create(T::default())
+    }
+
     pub(crate) fn new(component: Arc<Mutex<dyn Any + Send + Sync>>) -> Self {
         Self(component, PhantomData::default())
     }
 
     pub fn read<R, F: FnOnce(&T) -> R>(&self, f: F) -> R {
-        let guard = self.0.lock();
-        let component = guard.downcast_ref::<T>().expect("Component type mismatch");
-        f(component)
+        let guard = self.lock();
+        f(&guard)
     }
 
     pub(crate) fn write<R, F: FnOnce(&mut T) -> R>(&mut self, f: F) -> R {
-        let mut guard = self.0.lock();
-        let component = guard.downcast_mut::<T>().expect("Component type mismatch");
-        f(component)
+        let mut guard = self.lock();
+        f(&mut guard)
     }
 
-    pub fn mutex(&self) -> &Arc<Mutex<dyn Any + Send + Sync>> {
-        &self.0
-    }
-
-    pub fn mutex_mut(&mut self) -> &mut Arc<Mutex<dyn Any + Send + Sync>> {
-        &mut self.0
+    pub fn lock(&self) -> MappedMutexGuard<'_, RawMutex, T> {
+        let guard = self.0.lock();
+        MutexGuard::map(guard, |any| any.downcast_mut::<T>().unwrap())
     }
 }
 

@@ -5,8 +5,12 @@ use serde::{Deserialize, Serialize};
 use ui::DemexShowUiConfig;
 
 use crate::{
-    engine::DemexEngine, fixture::handler::FixtureHandler, input::device::DemexInputDeviceConfig,
-    patch::SerializablePatch, presets::PresetHandler, timing::TimingHandler,
+    engine::DemexEngine,
+    fixture::handler::FixtureHandler,
+    input::{device::DemexInputDeviceConfig, event::handler::DemexInputDeviceEventHandler},
+    patch::SerializablePatch,
+    presets::PresetHandler,
+    timing::TimingHandler,
     updatables::UpdatableHandler,
 };
 
@@ -47,5 +51,6 @@ impl DemexShow {
         engine.register_component(self.updatable_handler);
         engine.register_component(self.timing_handler);
         engine.register_component(patch.clone());
+        engine.register_component(DemexInputDeviceEventHandler::new());
     }
 }

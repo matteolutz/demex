@@ -361,25 +361,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         #[cfg(feature = "gpui")]
         {
-            use gpui::AppContext;
-
             gpui::Application::new().run(|cx: &mut gpui::App| {
+                use demex_ui::AppExt;
+
+                use crate::ui2::MainWindow;
+
+                cx.activate(true);
+
+                demex_ui::init(cx);
+
                 DemexEngineHandler::init(fixture_types, show, cx).unwrap();
 
-                let bounds =
-                    gpui::Bounds::centered(None, gpui::size(gpui::px(500.), gpui::px(500.0)), cx);
-                cx.open_window(
-                    gpui::WindowOptions {
-                        window_bounds: Some(gpui::WindowBounds::Windowed(bounds)),
-                        ..Default::default()
-                    },
-                    |_, cx| {
-                        cx.new(|_| ui2::HelloWorld {
-                            text: "World".into(),
-                        })
-                    },
-                )
-                .unwrap();
+                cx.update_wm(|wm, cx| wm.open_singleton_window::<MainWindow>(cx));
+
+                cx.on_window_closed(|cx| {
+                    if cx.windows().is_empty() {
+                        cx.quit();
+                    }
+                })
+                .detach();
             });
         }
 

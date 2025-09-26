@@ -26,9 +26,15 @@ impl DemexEngineHandler {
         let mut engine = DemexEngine::new();
         show.register(global_fixture_types, &mut engine);
 
+        engine.start();
+
         cx.set_global(Self { engine });
 
         Ok(())
+    }
+
+    pub fn engine(&self) -> &DemexEngine {
+        &self.engine
     }
 }
 
