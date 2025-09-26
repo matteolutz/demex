@@ -1,6 +1,6 @@
 use gpui::{
-    App, Bounds, Canvas, Entity, MouseDownEvent, MouseMoveEvent, Pixels, Point, canvas, div, fill,
-    outline, prelude::*, rgb,
+    App, Bounds, Canvas, Entity, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point,
+    canvas, div, fill, outline, prelude::*, rgb,
 };
 
 use demex_ui::{
@@ -162,6 +162,53 @@ impl LayoutViewPage {
     }
 }
 
+impl LayoutViewPage {
+    fn handle_mouse_down(
+        &mut self,
+        event: &MouseDownEvent,
+        _window: &mut gpui::Window,
+        cx: &mut gpui::Context<Self>,
+    ) {
+        self.selection = Some((event.position, event.position));
+        cx.notify();
+    }
+
+    fn handle_mouse_up(
+        &mut self,
+        _event: &MouseUpEvent,
+        _window: &mut gpui::Window,
+        cx: &mut gpui::Context<Self>,
+    ) {
+        if let Some(selection) = self.selection_on_grid(cx)
+            && selection.0 != selection.1
+        {
+            cx.update_wm(|wm, cx| {
+                wm.open_singleton_window::<AddLayoutItemWindow>(
+                    cx,
+                    AddLayoutItemWindowInitData { selection },
+                );
+            });
+        }
+
+        self.selection = None;
+        cx.notify();
+    }
+
+    fn handle_mouse_move(
+        &mut self,
+        event: &MouseMoveEvent,
+        _window: &mut gpui::Window,
+        cx: &mut gpui::Context<Self>,
+    ) {
+        let Some((_, ref mut selection_end)) = self.selection else {
+            return;
+        };
+
+        *selection_end = event.position;
+        cx.notify();
+    }
+}
+
 impl Render for LayoutViewPage {
     fn render(
         &mut self,
@@ -171,37 +218,11 @@ impl Render for LayoutViewPage {
         div()
             .on_mouse_down(
                 gpui::MouseButton::Left,
-                cx.listener(|this, event: &MouseDownEvent, _, cx| {
-                    this.selection = Some((event.position, event.position));
-                    cx.notify();
-                }),
+                cx.listener(Self::handle_mouse_down),
             )
-            .on_mouse_up(
-                gpui::MouseButton::Left,
-                cx.listener(|this, _, _, cx| {
-                    if let Some(selection) = this.selection_on_grid(cx)
-                        && selection.0 != selection.1
-                    {
-                        cx.update_wm(|wm, cx| {
-                            wm.open_singleton_window::<AddLayoutItemWindow>(
-                                cx,
-                                AddLayoutItemWindowInitData { selection },
-                            );
-                        });
-                    }
-
-                    this.selection = None;
-                    cx.notify();
-                }),
-            )
-            .on_mouse_move(cx.listener(|this, event: &MouseMoveEvent, _, cx| {
-                let Some((_, ref mut selection_end)) = this.selection else {
-                    return;
-                };
-
-                *selection_end = event.position;
-                cx.notify();
-            }))
+            .on_mouse_up(gpui::MouseButton::Left, cx.listener(Self::handle_mouse_up))
+            .on_mouse_move(cx.listener(Self::handle_mouse_move))
+            .cursor_crosshair()
             .relative()
             .child(self.render_grid(window, cx).absolute().size_full())
             .child(
@@ -213,12 +234,10 @@ impl Render for LayoutViewPage {
                     .grid_rows(GRID_N_ROWS as u16)
                     .children(self.elements.iter().enumerate().map(|(idx, el)| {
                         interactive_container(idx, None)
-                            .size_full()
                             .col_start(el.from.x as i16 + 1)
                             .row_start(el.from.y as i16 + 1)
                             .col_end(el.to.x as i16 + 1)
                             .row_end(el.to.y as i16 + 1)
-                            .size_auto()
                             .child(el.element_type.clone())
                     })),
             )
