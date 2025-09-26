@@ -1,41 +1,4 @@
-/*
- *
- * This file has been modified from its original version.
- * Original: https://github.com/BaukeWestendorp/radiant
- * License: Apache 2.0 - https://github.com/BaukeWestendorp/radiant/blob/main/LICENCE
- *
- */
-
 use gpui::{Background, Bounds, Canvas, Pixels, Point, canvas, fill, point, px};
-
-/// Creates a canvas that draws a grid of dots.
-/// Author: Matteo Lutz
-pub fn dot_grid_fixed(
-    num_rows: usize,
-    num_cols: usize,
-    color: impl Into<Background>,
-) -> Canvas<()> {
-    let color = color.into();
-
-    canvas(|_, _, _| {}, {
-        move |bounds, _, window, _cx| {
-            let cell_width = bounds.size.width / num_cols as f32;
-            let cell_height = bounds.size.height / num_rows as f32;
-
-            for x in 0..(num_cols) {
-                for y in 0..(num_rows) {
-                    window.paint_quad(fill(
-                        Bounds::centered_at(
-                            point(x as f32 * cell_width, y as f32 * cell_height) + bounds.origin,
-                            gpui::size(px(2.0), px(2.0)),
-                        ),
-                        color,
-                    ));
-                }
-            }
-        }
-    })
-}
 
 /// Creates a canvas that draws a grid of dots.
 pub fn dot_grid(spacing: Pixels, color: impl Into<Background>) -> Canvas<()> {

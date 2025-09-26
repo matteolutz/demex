@@ -1,31 +1,164 @@
-use gpui::prelude::*;
+use gpui::{
+    App, Bounds, Canvas, Entity, MouseDownEvent, MouseMoveEvent, Pixels, Point, canvas, div, fill,
+    outline, prelude::*, rgb,
+};
 
 use demex_ui::{
-    grid::{dot_grid, dot_grid_fixed},
+    AppExt,
+    container::interactive_container,
     theme::ActiveTheme,
+    utils::{SnapModeFunction, snap_point_2},
 };
-use gpui::{Render, px};
+use gpui::{Render, point, px};
 
-use crate::ui2::pane::layout::element::LayoutViewElement;
+use crate::ui2::{
+    pane::layout::element::LayoutViewElement,
+    window::add_layout_item::{AddLayoutItemWindow, AddLayoutItemWindowInitData},
+};
 
-const GRID_N_COLS: usize = 15;
-const GRID_N_ROWS: usize = 15;
+const GRID_N_COLS: u16 = 15;
+const GRID_N_ROWS: u16 = 15;
 
 pub struct LayoutViewPage {
     name: String,
     elements: Vec<LayoutViewElement>,
+    selection: Option<(Point<Pixels>, Point<Pixels>)>,
+
+    canvas_bounds: Entity<Option<Bounds<Pixels>>>,
 }
 
 impl LayoutViewPage {
-    pub fn new(name: impl Into<String>, elements: Vec<LayoutViewElement>) -> Self {
+    pub fn new(cx: &mut App, name: impl Into<String>, elements: Vec<LayoutViewElement>) -> Self {
         Self {
             name: name.into(),
             elements,
+            selection: None,
+            canvas_bounds: cx.new(|_| None),
         }
     }
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+}
+
+impl LayoutViewPage {
+    fn cell_width(&self, cx: &mut gpui::Context<Self>) -> Pixels {
+        let canvas_bounds = self.canvas_bounds.read(cx);
+        canvas_bounds
+            .map(|bounds| bounds.size.width / GRID_N_COLS as f32)
+            .unwrap_or(px(0.0))
+    }
+
+    fn cell_height(&self, cx: &mut gpui::Context<Self>) -> Pixels {
+        let canvas_bounds = self.canvas_bounds.read(cx);
+        canvas_bounds
+            .map(|bounds| bounds.size.height / GRID_N_ROWS as f32)
+            .unwrap_or(px(0.0))
+    }
+
+    fn selection_on_grid(&self, cx: &mut gpui::Context<Self>) -> Option<(Point<u16>, Point<u16>)> {
+        self.selection.and_then(|(from_point, to_point)| {
+            let Some(bounds) = self.canvas_bounds.read(cx).clone() else {
+                return None;
+            };
+
+            let cell_width = self.cell_width(cx);
+            let cell_height = self.cell_height(cx);
+
+            let threshold_point = point(cell_width, cell_height);
+
+            let from_point_snapped = snap_point_2(
+                from_point - bounds.origin,
+                threshold_point,
+                SnapModeFunction::Round,
+            );
+            let to_point_snapped = snap_point_2(
+                to_point - bounds.origin,
+                threshold_point,
+                SnapModeFunction::Round,
+            );
+
+            Some((
+                point(
+                    (from_point_snapped.x.0 / cell_width.0) as u16,
+                    (from_point_snapped.y.0 / cell_height.0) as u16,
+                ),
+                point(
+                    (to_point_snapped.x.0 / cell_width.0) as u16,
+                    (to_point_snapped.y.0 / cell_height.0) as u16,
+                ),
+            ))
+        })
+    }
+
+    fn render_grid(
+        &mut self,
+        _window: &mut gpui::Window,
+        cx: &mut gpui::Context<Self>,
+    ) -> Canvas<()> {
+        let dot_color = cx.theme().accent;
+        let selection_color = cx.theme().accent.opacity(0.4);
+        let selection = self.selection;
+        let bounds = self.canvas_bounds.clone();
+
+        canvas(
+            move |canvas_bounds, _, cx| {
+                bounds.update(cx, |bounds, _| *bounds = Some(canvas_bounds));
+            },
+            {
+                move |canvas_bounds, _, window, cx| {
+                    let cell_width = canvas_bounds.size.width / GRID_N_COLS as f32;
+                    let cell_height = canvas_bounds.size.height / GRID_N_ROWS as f32;
+
+                    for x in 0..=(GRID_N_COLS) {
+                        for y in 0..=(GRID_N_ROWS) {
+                            window.paint_quad(fill(
+                                Bounds::from_corner_and_size(
+                                    gpui::Corner::TopLeft,
+                                    point(x as f32 * cell_width, y as f32 * cell_height)
+                                        + canvas_bounds.origin,
+                                    gpui::size(px(2.0), px(2.0)),
+                                ),
+                                dot_color,
+                            ));
+                        }
+                    }
+
+                    if let Some((from_point, to_point)) = selection {
+                        let threshold_point = point(cell_width, cell_height);
+
+                        let from_point_snapped = snap_point_2(
+                            from_point - canvas_bounds.origin,
+                            threshold_point,
+                            SnapModeFunction::Round,
+                        );
+                        let to_point_snapped = snap_point_2(
+                            to_point - canvas_bounds.origin,
+                            threshold_point,
+                            SnapModeFunction::Round,
+                        );
+
+                        let mut selection_bounds =
+                            Bounds::from_corners(from_point_snapped, to_point_snapped);
+                        selection_bounds.origin += canvas_bounds.origin;
+
+                        window.paint_quad(
+                            fill(selection_bounds, selection_color).corner_radii(cx.theme().radius),
+                        );
+
+                        window.paint_quad(
+                            outline(
+                                Bounds::from_corners(from_point, to_point),
+                                rgb(0xffffff),
+                                gpui::BorderStyle::Dashed,
+                            )
+                            .corner_radii(cx.theme().radius),
+                        );
+                    }
+                }
+            },
+        )
     }
 }
 
@@ -35,9 +168,60 @@ impl Render for LayoutViewPage {
         window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
-        dot_grid_fixed(GRID_N_COLS, GRID_N_ROWS, cx.theme().accent)
+        div()
+            .on_mouse_down(
+                gpui::MouseButton::Left,
+                cx.listener(|this, event: &MouseDownEvent, _, cx| {
+                    this.selection = Some((event.position, event.position));
+                    cx.notify();
+                }),
+            )
+            .on_mouse_up(
+                gpui::MouseButton::Left,
+                cx.listener(|this, _, _, cx| {
+                    if let Some(selection) = this.selection_on_grid(cx)
+                        && selection.0 != selection.1
+                    {
+                        cx.update_wm(|wm, cx| {
+                            wm.open_singleton_window::<AddLayoutItemWindow>(
+                                cx,
+                                AddLayoutItemWindowInitData { selection },
+                            );
+                        });
+                    }
+
+                    this.selection = None;
+                    cx.notify();
+                }),
+            )
+            .on_mouse_move(cx.listener(|this, event: &MouseMoveEvent, _, cx| {
+                let Some((_, ref mut selection_end)) = this.selection else {
+                    return;
+                };
+
+                *selection_end = event.position;
+                cx.notify();
+            }))
+            .relative()
+            .child(self.render_grid(window, cx).absolute().size_full())
+            .child(
+                div()
+                    .absolute()
+                    .size_full()
+                    .grid()
+                    .grid_cols(GRID_N_COLS as u16)
+                    .grid_rows(GRID_N_ROWS as u16)
+                    .children(self.elements.iter().enumerate().map(|(idx, el)| {
+                        interactive_container(idx, None)
+                            .size_full()
+                            .col_start(el.from.x as i16 + 1)
+                            .row_start(el.from.y as i16 + 1)
+                            .col_end(el.to.x as i16 + 1)
+                            .row_end(el.to.y as i16 + 1)
+                            .size_auto()
+                            .child(el.element_type.clone())
+                    })),
+            )
             .size_full()
-            .mx(px(GRID_N_COLS as f32 / 1.0))
-            .my(px(GRID_N_ROWS as f32 / 1.0))
     }
 }

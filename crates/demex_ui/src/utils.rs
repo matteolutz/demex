@@ -24,10 +24,41 @@ pub fn bounds_updater<V: 'static>(
     .size_full()
 }
 
+pub enum SnapModeFunction {
+    Floor,
+    Round,
+    Ceil,
+}
+
+impl SnapModeFunction {
+    pub fn apply(&self, value: f32) -> f32 {
+        match self {
+            SnapModeFunction::Floor => value.floor(),
+            SnapModeFunction::Round => value.round(),
+            SnapModeFunction::Ceil => value.ceil(),
+        }
+    }
+}
+
 /// Snap a point to the nearest multiple of the given threshold.
-pub fn snap_point(mut point: Point<Pixels>, threshold: Pixels) -> Point<Pixels> {
-    point.x = (point.x / threshold).floor() * threshold;
-    point.y = (point.y / threshold).floor() * threshold;
+pub fn snap_point(
+    mut point: Point<Pixels>,
+    threshold: Pixels,
+    mode: SnapModeFunction,
+) -> Point<Pixels> {
+    point.x = mode.apply(point.x / threshold) * threshold;
+    point.y = mode.apply(point.y / threshold) * threshold;
+    point
+}
+
+/// Snap a point to the nearest multiple of the given threshold.
+pub fn snap_point_2(
+    mut point: Point<Pixels>,
+    threshold: Point<Pixels>,
+    mode: SnapModeFunction,
+) -> Point<Pixels> {
+    point.x = mode.apply(point.x / threshold.x) * threshold.x;
+    point.y = mode.apply(point.y / threshold.y) * threshold.y;
     point
 }
 

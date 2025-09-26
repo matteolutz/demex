@@ -37,7 +37,7 @@ impl WindowManager {
         self.quit_when_all_windows_closed = should_quit;
     }
 
-    pub fn open_singleton_window<D: WindowDelegate>(&mut self, cx: &mut App) {
+    pub fn open_singleton_window<D: WindowDelegate>(&mut self, cx: &mut App, data: D::InitData) {
         let type_id = TypeId::of::<D>();
 
         if self.singleton_windows.contains_key(&type_id) {
@@ -55,7 +55,7 @@ impl WindowManager {
                 })
             });
 
-            D::create(window, cx)
+            D::create(window, cx, data)
         });
 
         self.singleton_windows.insert(type_id, handle.into());

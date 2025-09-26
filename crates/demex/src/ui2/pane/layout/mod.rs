@@ -1,9 +1,12 @@
 use std::ops::Range;
 
 use demex_ui::{button::button, container::container};
-use gpui::{App, Entity, Pixels, div, prelude::*, px, rgb, uniform_list};
+use gpui::{App, Entity, Pixels, div, point, prelude::*, px, uniform_list};
 
-use crate::ui2::pane::layout::page::LayoutViewPage;
+use crate::ui2::pane::layout::{
+    element::{LayoutViewElement, LayoutViewElementType},
+    page::LayoutViewPage,
+};
 
 pub mod element;
 pub mod page;
@@ -19,8 +22,16 @@ impl LayoutViewPane {
     pub fn new(cx: &mut App) -> Self {
         Self {
             pages: vec![
-                cx.new(|_| LayoutViewPage::new("Programming", vec![])),
-                cx.new(|_| LayoutViewPage::new("Playback", vec![])),
+                cx.new(|cx| {
+                    let elements = vec![LayoutViewElement {
+                        from: point(1, 1),
+                        to: point(10, 10),
+                        element_type: cx.new(|_| LayoutViewElementType::FixtureSheet),
+                    }];
+
+                    LayoutViewPage::new(cx, "Programming", elements)
+                }),
+                cx.new(|cx| LayoutViewPage::new(cx, "Playback", vec![])),
             ],
             selected_page: 0,
         }

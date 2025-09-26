@@ -1,10 +1,10 @@
 use std::ops::{Deref, DerefMut};
 
-use gpui::prelude::*;
 use gpui::{
     App, FontWeight, Pixels, TitlebarOptions, Window, WindowControlArea, WindowHandle,
     WindowOptions, div, point, px,
 };
+use gpui::{WindowBounds, prelude::*};
 
 use crate::theme::{ActiveTheme, InteractiveColor};
 
@@ -12,7 +12,9 @@ pub const TRAFFIC_LIGHT_WIDTH: Pixels = px(14.0);
 pub const TRAFFIC_LIGHT_SPACING: Pixels = px(9.0);
 
 pub trait WindowDelegate: 'static {
-    fn create(window: &mut Window, cx: &mut App) -> Self
+    type InitData: 'static + Send;
+
+    fn create(window: &mut Window, cx: &mut App, data: Self::InitData) -> Self
     where
         Self: Sized;
 
@@ -26,6 +28,10 @@ pub trait WindowDelegate: 'static {
     where
         Self: Sized,
     {
+    }
+
+    fn window_bounds(_cx: &mut App) -> Option<WindowBounds> {
+        None
     }
 
     fn render_content(
@@ -44,7 +50,9 @@ pub struct WindowWrapper<D: WindowDelegate> {
 
 impl<D: WindowDelegate> WindowWrapper<D> {
     pub fn open<F: FnOnce(&mut Window, &mut App) -> D>(cx: &mut App, f: F) -> WindowHandle<Self> {
-        cx.open_window(window_options(), |window, cx| {
+        let window_bounds = D::window_bounds(cx);
+
+        cx.open_window(window_options(window_bounds), |window, cx| {
             let delegate = f(window, cx);
             cx.new(|_| Self {
                 delegate,
@@ -88,9 +96,9 @@ impl<D: WindowDelegate> DerefMut for WindowWrapper<D> {
     }
 }
 
-pub fn window_options() -> WindowOptions {
+pub fn window_options(window_bounds: Option<WindowBounds>) -> WindowOptions {
     WindowOptions {
-        window_bounds: None,
+        window_bounds,
         titlebar: Some(TitlebarOptions {
             appears_transparent: true,
             traffic_light_position: Some(point(TRAFFIC_LIGHT_SPACING, TRAFFIC_LIGHT_SPACING)),

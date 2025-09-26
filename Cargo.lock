@@ -2119,6 +2119,7 @@ version = "0.1.30"
 dependencies = [
  "eyre",
  "gpui",
+ "log",
  "rust-embed",
  "smallvec",
 ]

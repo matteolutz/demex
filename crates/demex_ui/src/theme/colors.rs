@@ -91,8 +91,10 @@ pub struct ThemeColors {
 impl ThemeColors {
     pub fn dark() -> Self {
         Self {
-            accent: rgb(0xee5622).into(),
-            accent_foreground: rgb(0xee5622).into(),
+            /*accent: rgb(0xee5622).into(),
+            accent_foreground: rgb(0xee5622).into(),*/
+            accent: rgb(0xadee22).into(),
+            accent_foreground: rgb(0xadee22).into(),
 
             background: rgb(0x000000).into(),
 
@@ -125,8 +127,10 @@ impl ThemeColors {
             secondary: rgb(0x101010).into(),
             secondary_foreground: rgb(0xffffff).into(),
 
-            selected: Hsla::from(rgb(0xee5622)).with_opacity(0.4),
-            selected_border: rgb(0xee5622).into(),
+            /*selected: Hsla::from(rgb(0xee5622)).with_opacity(0.4),
+            selected_border: rgb(0xee5622).into(),*/
+            selected: Hsla::from(rgb(0xadee22)).with_opacity(0.4),
+            selected_border: rgb(0xadee22).into(),
 
             table: rgb(0x000000).into(),
             table_even: rgb(0x141414).into(),

@@ -372,7 +372,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 DemexEngineHandler::init(fixture_types, show, cx).unwrap();
 
-                cx.update_wm(|wm, cx| wm.open_singleton_window::<MainWindow>(cx));
+                cx.update_wm(|wm, cx| wm.open_singleton_window::<MainWindow>(cx, ()));
 
                 cx.on_window_closed(|cx| {
                     if cx.windows().is_empty() {

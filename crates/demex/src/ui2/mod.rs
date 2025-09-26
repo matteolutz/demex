@@ -2,6 +2,7 @@ use demex_ui::wm::WindowDelegate;
 use gpui::{App, Context, Entity, Window, prelude::*};
 
 pub mod pane;
+pub mod window;
 
 use crate::ui2::pane::layout::LayoutViewPane;
 
@@ -10,7 +11,9 @@ pub struct MainWindow {
 }
 
 impl WindowDelegate for MainWindow {
-    fn create(window: &mut Window, cx: &mut App) -> Self
+    type InitData = ();
+
+    fn create(window: &mut Window, cx: &mut App, _: Self::InitData) -> Self
     where
         Self: Sized,
     {
@@ -24,8 +27,8 @@ impl WindowDelegate for MainWindow {
 
     fn render_content(
         &mut self,
-        window: &mut Window,
-        cx: &mut Context<demex_ui::wm::WindowWrapper<Self>>,
+        _window: &mut Window,
+        _cx: &mut Context<demex_ui::wm::WindowWrapper<Self>>,
     ) -> impl IntoElement
     where
         Self: Sized,
