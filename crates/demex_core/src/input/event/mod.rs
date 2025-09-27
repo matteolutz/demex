@@ -1,28 +1,8 @@
-use crate::{
-    command::parser::nodes::fixture_selector::FixtureSelector,
-    input::control::{
-        button::DemexInputButton, encoder::DemexInputEncoder, fader::DemexInputFader,
-    },
+use crate::input::control::{
+    button::DemexInputButton, encoder::DemexInputEncoder, fader::DemexInputFader,
 };
 
 pub mod handler;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DemexInputDeviceEvent {
-    ExecutorGo(u32),
-    ExecutorStop(u32),
-    ExecutorFaderValueChanged(u32),
-
-    GrandmasterFaderValueChanged,
-
-    GroupmasterValueChanged(u32),
-
-    SpeedmasterFaderValueChanged(u32),
-
-    GlobalEncoderValueChanged(u32),
-
-    FixtureSelector(FixtureSelector),
-}
 
 #[derive(Debug, Clone)]
 pub enum DemexInputDeviceFaderUpdate {

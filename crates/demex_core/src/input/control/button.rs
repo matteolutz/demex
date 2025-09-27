@@ -10,12 +10,11 @@ use crate::{
             fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
         },
     },
+    event::DemexEvent,
     fixture::handler::FixtureHandler,
     input::{
-        DemexInputDeviceUpdateArgs,
-        control::DemexInputDeviceControlTrait,
-        error::DemexInputDeviceError,
-        event::{DemexInputDeviceButtonUpdate, DemexInputDeviceEvent},
+        DemexInputDeviceUpdateArgs, control::DemexInputDeviceControlTrait,
+        error::DemexInputDeviceError, event::DemexInputDeviceButtonUpdate,
     },
     patch::Patch,
     presets::{PresetHandler, preset::FixturePresetId},
@@ -76,7 +75,7 @@ impl DemexInputButton {
         action_queue: &mut ActionQueue,
         global_fixture_selection: &mut Option<FixtureSelection>,
         command_input: &mut Vec<Token>,
-    ) -> Result<Option<DemexInputDeviceEvent>, DemexInputDeviceError> {
+    ) -> Result<Option<DemexEvent>, DemexInputDeviceError> {
         let event = match self {
             Self::ExecutorFlash { id, stomp } => {
                 updatable_handler
@@ -87,21 +86,21 @@ impl DemexInputButton {
                     updatable_handler.executor_stomp(*id);
                 }
 
-                Some(DemexInputDeviceEvent::ExecutorGo(*id))
+                Some(DemexEvent::ExecutorGo(*id))
             }
             Self::ExecutorGo(executor_id) => {
                 updatable_handler
                     .executor_go(*executor_id, fixture_handler, preset_handler, 0.0)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
-                Some(DemexInputDeviceEvent::ExecutorGo(*executor_id))
+                Some(DemexEvent::ExecutorGo(*executor_id))
             }
             Self::ExecutorStop(executor_id) => {
                 updatable_handler
                     .stop_executor(*executor_id, fixture_handler, preset_handler)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
-                Some(DemexInputDeviceEvent::ExecutorStop(*executor_id))
+                Some(DemexEvent::ExecutorStop(*executor_id))
             }
             Self::SelectivePreset {
                 selection,
@@ -138,7 +137,7 @@ impl DemexInputButton {
                         .map_err(DemexInputDeviceError::FixtureSelectorError)?,
                 );
 
-                Some(DemexInputDeviceEvent::FixtureSelector(
+                Some(DemexEvent::FixtureSelectionChanged(
                     fixture_selector.clone(),
                 ))
             }
@@ -163,7 +162,7 @@ impl DemexInputButton {
         _fixture_handler: &mut FixtureHandler,
         _preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
-    ) -> Result<Option<DemexInputDeviceEvent>, DemexInputDeviceError> {
+    ) -> Result<Option<DemexEvent>, DemexInputDeviceError> {
         let event = match self {
             Self::ExecutorGo(executor_id) => {
                 let _executor = updatable_handler
@@ -181,7 +180,7 @@ impl DemexInputButton {
                     updatable_handler.executor_unstomp(*id);
                 }
 
-                // Some(DemexInputDeviceEvent::ExecutorStop(*id))
+                // Some(DemexEvent::ExecutorStop(*id))
                 None
             }
             _ => None,
@@ -216,15 +215,15 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceButtonUpdate> for DemexInputBu
     fn should_update(
         &self,
         _args: DemexInputDeviceUpdateArgs,
-        event: &DemexInputDeviceEvent,
+        event: &DemexEvent,
     ) -> Result<Option<DemexInputDeviceButtonUpdate>, DemexInputDeviceError> {
         let update = match self {
             Self::ExecutorFlash { id, .. } | Self::ExecutorGo(id) | Self::ExecutorStop(id) => {
                 match event {
-                    DemexInputDeviceEvent::ExecutorGo(event_id) if event_id == id => {
+                    DemexEvent::ExecutorGo(event_id) if event_id == id => {
                         Some(DemexInputDeviceButtonUpdate::ButtonActive)
                     }
-                    DemexInputDeviceEvent::ExecutorStop(event_id) if event_id == id => {
+                    DemexEvent::ExecutorStop(event_id) if event_id == id => {
                         Some(DemexInputDeviceButtonUpdate::ButtonInactive)
                     }
                     _ => None,

@@ -5,7 +5,7 @@ use gpui::{
 
 use demex_ui::{
     AppExt,
-    container::interactive_container,
+    container::container,
     theme::ActiveTheme,
     utils::{SnapModeFunction, snap_point_2},
 };
@@ -233,12 +233,14 @@ impl Render for LayoutViewPage {
                     .grid_cols(GRID_N_COLS as u16)
                     .grid_rows(GRID_N_ROWS as u16)
                     .children(self.elements.iter().enumerate().map(|(idx, el)| {
-                        interactive_container(idx, None)
+                        container(window, cx)
+                            .cursor_default()
+                            .occlude()
                             .col_start(el.from.x as i16 + 1)
                             .row_start(el.from.y as i16 + 1)
                             .col_end(el.to.x as i16 + 1)
                             .row_end(el.to.y as i16 + 1)
-                            .child(el.element_type.clone())
+                            .child(el.element_type.render())
                     })),
             )
             .size_full()

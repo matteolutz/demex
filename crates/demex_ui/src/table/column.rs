@@ -1,14 +1,24 @@
+/*
+ *
+ * This file has been modified from its original version.
+ * Original: https://github.com/BaukeWestendorp/radiant
+ * License: Apache 2.0 - https://github.com/BaukeWestendorp/radiant/blob/main/LICENCE
+ *
+ */
+
+use std::hash::Hash;
+
 use gpui::{Pixels, SharedString, px};
 
 #[derive(Debug, Clone)]
-pub struct Column {
-    pub id: SharedString,
+pub struct Column<I: Clone + Eq + Hash> {
+    pub id: I,
     pub label: SharedString,
     pub width: Pixels,
 }
 
-impl Column {
-    pub fn new(id: impl Into<SharedString>, label: impl Into<SharedString>) -> Self {
+impl<I: Clone + Eq + Hash> Column<I> {
+    pub fn new(id: impl Into<I>, label: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
             label: label.into(),

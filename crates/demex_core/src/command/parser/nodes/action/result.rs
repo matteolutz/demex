@@ -1,4 +1,4 @@
-use crate::{input::event::DemexInputDeviceEvent, selection::FixtureSelection};
+use crate::{event::DemexEvent, selection::FixtureSelection};
 
 #[derive(Debug, Clone, Default)]
 pub enum ActionRunResult {
@@ -16,9 +16,9 @@ pub enum ActionRunResult {
 
     Lock,
 
-    WithDeviceEvent {
+    WithEvent {
         result: Box<ActionRunResult>,
-        event: DemexInputDeviceEvent,
+        event: DemexEvent,
     },
 }
 
@@ -27,8 +27,8 @@ impl ActionRunResult {
         Self::Default
     }
 
-    pub fn device_event(event: DemexInputDeviceEvent) -> Self {
-        Self::WithDeviceEvent {
+    pub fn device_event(event: DemexEvent) -> Self {
+        Self::WithEvent {
             result: Box::new(Self::new()),
             event,
         }

@@ -1,12 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    event::DemexEvent,
     fixture::handler::FixtureHandler,
     input::{
-        DemexInputDeviceUpdateArgs,
-        control::DemexInputDeviceControlTrait,
-        error::DemexInputDeviceError,
-        event::{DemexInputDeviceEvent, DemexInputDeviceFaderUpdate},
+        DemexInputDeviceUpdateArgs, control::DemexInputDeviceControlTrait,
+        error::DemexInputDeviceError, event::DemexInputDeviceFaderUpdate,
     },
     presets::PresetHandler,
     timing::TimingHandler,
@@ -48,7 +47,7 @@ impl DemexInputFader {
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         timing_handler: &mut TimingHandler,
-    ) -> Result<Option<DemexInputDeviceEvent>, DemexInputDeviceError> {
+    ) -> Result<Option<DemexEvent>, DemexInputDeviceError> {
         let event = match self {
             Self::Fader {
                 executor_id: fader_id,
@@ -59,7 +58,7 @@ impl DemexInputFader {
 
                 fader.set_value(value, fixture_handler, preset_handler, 0.0);
 
-                Some(DemexInputDeviceEvent::ExecutorFaderValueChanged(*fader_id))
+                Some(DemexEvent::ExecutorFaderValueChanged(*fader_id))
             }
             Self::Groupmaster(id) => {
                 let master = updatable_handler
@@ -68,7 +67,7 @@ impl DemexInputFader {
 
                 *master.value_mut() = value;
 
-                Some(DemexInputDeviceEvent::GroupmasterValueChanged(*id))
+                Some(DemexEvent::GroupmasterValueChanged(*id))
             }
             Self::SpeedMaster {
                 speed_master_id,
@@ -83,15 +82,13 @@ impl DemexInputFader {
 
                 speed_master.set_bpm(value);
 
-                Some(DemexInputDeviceEvent::SpeedmasterFaderValueChanged(
-                    *speed_master_id,
-                ))
+                Some(DemexEvent::SpeedmasterFaderValueChanged(*speed_master_id))
             }
             Self::Grandmaster => {
                 let byte_value = (value * 255.0) as u8;
                 *fixture_handler.grand_master_mut() = byte_value;
 
-                Some(DemexInputDeviceEvent::GrandmasterFaderValueChanged)
+                Some(DemexEvent::GrandmasterFaderValueChanged)
             }
         };
 
@@ -156,14 +153,14 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceFaderUpdate> for DemexInputFad
     fn should_update(
         &self,
         args: DemexInputDeviceUpdateArgs,
-        event: &crate::input::event::DemexInputDeviceEvent,
+        event: &DemexEvent,
     ) -> Result<Option<DemexInputDeviceFaderUpdate>, DemexInputDeviceError> {
         let update = match self {
             Self::Fader { executor_id } => {
                 if matches!(event,
-                    DemexInputDeviceEvent::ExecutorFaderValueChanged(event_executor_id)
-                    | DemexInputDeviceEvent::ExecutorGo(event_executor_id)
-                    | DemexInputDeviceEvent::ExecutorStop(event_executor_id) if event_executor_id == executor_id
+                    DemexEvent::ExecutorFaderValueChanged(event_executor_id)
+                    | DemexEvent::ExecutorGo(event_executor_id)
+                    | DemexEvent::ExecutorStop(event_executor_id) if event_executor_id == executor_id
                 ) {
                     let value = args
                         .updatable_handler
@@ -177,7 +174,7 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceFaderUpdate> for DemexInputFad
                 }
             }
             Self::Groupmaster(id) => {
-                if matches!(event, DemexInputDeviceEvent::GroupmasterValueChanged(event_id) if event_id == id)
+                if matches!(event, DemexEvent::GroupmasterValueChanged(event_id) if event_id == id)
                 {
                     let value = args
                         .updatable_handler
@@ -191,7 +188,7 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceFaderUpdate> for DemexInputFad
                 }
             }
             Self::Grandmaster => {
-                if matches!(event, DemexInputDeviceEvent::GrandmasterFaderValueChanged) {
+                if matches!(event, DemexEvent::GrandmasterFaderValueChanged) {
                     Some(DemexInputDeviceFaderUpdate::FaderValueChange(
                         args.fixture_handler.grand_master() as f32 / 255.0,
                     ))
@@ -204,7 +201,7 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceFaderUpdate> for DemexInputFad
                 bpm_min,
                 bpm_max,
             } => {
-                if matches!(event, DemexInputDeviceEvent::SpeedmasterFaderValueChanged(event_speed_master_id) if event_speed_master_id == speed_master_id)
+                if matches!(event, DemexEvent::SpeedmasterFaderValueChanged(event_speed_master_id) if event_speed_master_id == speed_master_id)
                 {
                     let speed_master_value = args
                         .timing_handler

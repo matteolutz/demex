@@ -4,6 +4,7 @@ pub mod container;
 pub mod divider;
 pub mod error;
 pub mod event;
+pub mod fader;
 pub mod grid;
 pub mod infobar;
 pub mod input;

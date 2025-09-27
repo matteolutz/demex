@@ -8,6 +8,7 @@
 
 use demex_core::{
     engine::{DemexEngine, error::DemexEngineError},
+    fixture::GdtfFixture,
     show::DemexShow,
 };
 use gdtf::fixture_type::FixtureType;
@@ -33,8 +34,19 @@ impl DemexEngineHandler {
         Ok(())
     }
 
-    pub fn engine(&self) -> &DemexEngine {
-        &self.engine
+    pub fn engine(cx: &App) -> &DemexEngine {
+        let this: &Self = cx.global();
+        &this.engine
+    }
+
+    pub fn read_fixture<R>(
+        cx: &App,
+        fixture_id: u32,
+        f: impl FnOnce(&GdtfFixture) -> R,
+    ) -> Option<R> {
+        Self::engine(cx)
+            .fixture_handler()
+            .read(|fh| fh.fixture_immut(fixture_id).map(|fixture| f(fixture)))
     }
 }
 

@@ -1,5 +1,6 @@
-use crate::input::{
-    DemexInputDeviceUpdateArgs, error::DemexInputDeviceError, event::DemexInputDeviceEvent,
+use crate::{
+    event::DemexEvent,
+    input::{DemexInputDeviceUpdateArgs, error::DemexInputDeviceError},
 };
 
 pub mod button;
@@ -11,7 +12,7 @@ pub trait DemexInputDeviceControlTrait<T> {
     fn should_update(
         &self,
         args: DemexInputDeviceUpdateArgs,
-        event: &DemexInputDeviceEvent,
+        event: &DemexEvent,
     ) -> Result<Option<T>, DemexInputDeviceError>;
 
     fn initial_state(&self, args: DemexInputDeviceUpdateArgs) -> Result<T, DemexInputDeviceError>;

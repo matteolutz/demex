@@ -3,13 +3,14 @@ use serde::{Deserialize, Serialize};
 use crate::{
     EncoderChannels,
     command::parser::nodes::fixture_selector::FixtureSelectorContext,
+    event::DemexEvent,
     fixture::handler::FixtureHandler,
     input::{
         DemexInputDeviceUpdateArgs,
         control::DemexInputDeviceControlTrait,
         encoder::{get_global_encoder_value, handle_global_encoder_change},
         error::DemexInputDeviceError,
-        event::{DemexInputDeviceEncoderUpdate, DemexInputDeviceEvent},
+        event::DemexInputDeviceEncoderUpdate,
     },
     patch::Patch,
     presets::PresetHandler,
@@ -40,7 +41,7 @@ impl DemexInputEncoder {
         _updatable_handler: &mut UpdatableHandler,
         _timing_handler: &mut TimingHandler,
         patch: &Patch,
-    ) -> Result<Option<DemexInputDeviceEvent>, DemexInputDeviceError> {
+    ) -> Result<Option<DemexEvent>, DemexInputDeviceError> {
         let event = match self {
             Self::GlobalEncoder { encoder_idx } => {
                 handle_global_encoder_change(
@@ -52,9 +53,7 @@ impl DemexInputEncoder {
                     patch,
                 );
 
-                Some(DemexInputDeviceEvent::GlobalEncoderValueChanged(
-                    *encoder_idx,
-                ))
+                Some(DemexEvent::GlobalEncoderValueChanged(*encoder_idx))
             }
         };
 
@@ -81,12 +80,12 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceEncoderUpdate> for DemexInputE
     fn should_update(
         &self,
         args: crate::input::DemexInputDeviceUpdateArgs,
-        event: &crate::input::event::DemexInputDeviceEvent,
+        event: &DemexEvent,
     ) -> Result<Option<DemexInputDeviceEncoderUpdate>, crate::input::error::DemexInputDeviceError>
     {
         let update = match self {
             Self::GlobalEncoder { encoder_idx } => {
-                if matches!(event, DemexInputDeviceEvent::GlobalEncoderValueChanged(event_encoder_idx) if event_encoder_idx == encoder_idx)
+                if matches!(event, DemexEvent::GlobalEncoderValueChanged(event_encoder_idx) if event_encoder_idx == encoder_idx)
                 {
                     let value = get_global_encoder_value(
                         *encoder_idx,

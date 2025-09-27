@@ -1,10 +1,12 @@
 use std::ops::Range;
 
 use demex_ui::{button::button, container::container};
-use gpui::{App, Entity, Pixels, div, point, prelude::*, px, uniform_list};
+use gpui::{App, Entity, Pixels, Window, div, point, prelude::*, px, uniform_list};
 
 use crate::ui2::pane::layout::{
-    element::{LayoutViewElement, LayoutViewElementType},
+    element::{
+        LayoutViewElement, LayoutViewElementType, fixture_sheet::FixtureSheet, playback::Playback,
+    },
     page::LayoutViewPage,
 };
 
@@ -19,15 +21,26 @@ pub struct LayoutViewPane {
 }
 
 impl LayoutViewPane {
-    pub fn new(cx: &mut App) -> Self {
+    pub fn new(window: &mut Window, cx: &mut App) -> Self {
         Self {
             pages: vec![
                 cx.new(|cx| {
-                    let elements = vec![LayoutViewElement {
-                        from: point(1, 1),
-                        to: point(10, 10),
-                        element_type: cx.new(|_| LayoutViewElementType::FixtureSheet),
-                    }];
+                    let elements = vec![
+                        LayoutViewElement {
+                            from: point(0, 0),
+                            to: point(10, 10),
+                            element_type: LayoutViewElementType::FixtureSheet(
+                                cx.new(|cx| FixtureSheet::new(window, cx)),
+                            ),
+                        },
+                        LayoutViewElement {
+                            from: point(0, 10),
+                            to: point(15, 15),
+                            element_type: LayoutViewElementType::Playback(
+                                cx.new(|cx| Playback::new(window, cx)),
+                            ),
+                        },
+                    ];
 
                     LayoutViewPage::new(cx, "Programming", elements)
                 }),

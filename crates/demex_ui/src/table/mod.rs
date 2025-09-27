@@ -1,9 +1,18 @@
+/*
+ *
+ * This file has been modified from its original version.
+ * Original: https://github.com/BaukeWestendorp/radiant
+ * License: Apache 2.0 - https://github.com/BaukeWestendorp/radiant/blob/main/LICENCE
+ *
+ */
+
+use std::hash::Hash;
 use std::ops::{Deref, DerefMut, Range};
 
 use gpui::prelude::*;
 use gpui::{
     App, Context, EventEmitter, FocusHandle, FontWeight, IntoElement, KeyBinding, MouseButton,
-    Pixels, SharedString, Window, div, uniform_list,
+    Pixels, Window, div, uniform_list,
 };
 
 pub use column::*;
@@ -52,14 +61,14 @@ pub(crate) fn init(cx: &mut App) {
 }
 
 #[derive(Debug, Clone)]
-pub struct Selection {
-    pub column_id: SharedString,
+pub struct Selection<I: Clone + Eq + Hash> {
+    pub column_id: I,
     pub start_ix: usize,
     pub end_ix: usize,
     pub inverted: bool,
 }
 
-impl Selection {
+impl<I: Clone + Eq + Hash> Selection<I> {
     pub fn contains(&self, row_ix: usize) -> bool {
         let (low, high) = if self.start_ix <= self.end_ix {
             (self.start_ix, self.end_ix)
@@ -84,7 +93,7 @@ pub struct Table<D: TableDelegate> {
 
     focus_handle: FocusHandle,
 
-    selection: Option<Selection>,
+    selection: Option<Selection<D::ColId>>,
     is_selecting: bool,
 
     row_height: Pixels,
@@ -120,14 +129,9 @@ impl<D: TableDelegate> Table<D> {
         &mut self.delegate
     }
 
-    pub fn start_selection(
-        &mut self,
-        column_id: impl Into<SharedString>,
-        row_ix: usize,
-        cx: &mut Context<Self>,
-    ) {
+    pub fn start_selection(&mut self, column_id: &D::ColId, row_ix: usize, cx: &mut Context<Self>) {
         self.selection = Some(Selection {
-            column_id: column_id.into(),
+            column_id: column_id.clone(),
             start_ix: row_ix,
             end_ix: row_ix,
             inverted: false,
@@ -151,7 +155,7 @@ impl<D: TableDelegate> Table<D> {
         cx.notify();
     }
 
-    pub fn select_column(&mut self, column_id: impl Into<SharedString>, cx: &mut Context<Self>) {
+    pub fn select_column(&mut self, column_id: &D::ColId, cx: &mut Context<Self>) {
         let row_count = self.sorted_row_ids(cx).len();
         if row_count != 0 {
             self.start_selection(column_id, 0, cx);
@@ -168,7 +172,7 @@ impl<D: TableDelegate> Table<D> {
         };
 
         let column_id = self.column(0, cx).id.clone();
-        self.start_selection(column_id, row_ix, cx);
+        self.start_selection(&column_id, row_ix, cx);
         self.end_selection(row_ix, cx);
     }
 
@@ -178,10 +182,10 @@ impl<D: TableDelegate> Table<D> {
             .is_some_and(|selection| selection.contains(row_ix))
     }
 
-    pub fn selected_column(&self) -> Option<&str> {
+    pub fn selected_column(&self) -> Option<&D::ColId> {
         self.selection
             .as_ref()
-            .map(|selection| selection.column_id.as_str())
+            .map(|selection| &selection.column_id)
     }
 
     pub fn clear_selection(&mut self, cx: &mut Context<Self>) {
@@ -246,7 +250,7 @@ impl<D: TableDelegate> Table<D> {
                 .on_mouse_down(
                     MouseButton::Left,
                     cx.listener({
-                        let column_id = column.id.to_string();
+                        let column_id = column.id.clone();
                         move |this, _, _, cx| {
                             this.select_column(&column_id, cx);
                         }
@@ -255,7 +259,7 @@ impl<D: TableDelegate> Table<D> {
                 .on_mouse_down(
                     MouseButton::Right,
                     cx.listener({
-                        let column_id = column.id.to_string();
+                        let column_id = column.id.clone();
                         move |this, _, window, cx| {
                             this.select_column(&column_id, cx);
                             this.edit_selection(window, cx);
@@ -386,7 +390,7 @@ impl<D: TableDelegate> Table<D> {
                     } else {
                         this.is_selecting = true;
                         this.clear_selection(cx);
-                        this.start_selection(column_id.clone(), row_ix, cx);
+                        this.start_selection(&column_id, row_ix, cx);
                     }
                 }
             }),
@@ -397,7 +401,7 @@ impl<D: TableDelegate> Table<D> {
                 let column_id = column.id.clone();
                 move |this, _, window, cx| {
                     if this.selection.as_ref().is_some_and(|s| s.size() <= 1) {
-                        this.start_selection(column_id.clone(), row_ix, cx);
+                        this.start_selection(&column_id, row_ix, cx);
                         this.edit_selection(window, cx);
                     }
                 }
@@ -433,9 +437,9 @@ impl<D: TableDelegate> Table<D> {
                 selection.column_id = id;
             }
         } else if offset < 0 {
-            self.select_column(self.column(last_col_ix, cx).id.clone(), cx);
+            self.select_column(&self.column(last_col_ix, cx).id.clone(), cx);
         } else {
-            self.select_column(self.column(0, cx).id.clone(), cx);
+            self.select_column(&self.column(0, cx).id.clone(), cx);
         };
 
         cx.notify();
@@ -459,7 +463,7 @@ impl<D: TableDelegate> Table<D> {
             (self.column(0, cx).id.clone(), 0)
         };
         let target_ix = target_ix.clamp(0, last_row_ix as isize) as usize;
-        self.start_selection(column_id, target_ix, cx);
+        self.start_selection(&column_id, target_ix, cx);
         cx.notify();
     }
 

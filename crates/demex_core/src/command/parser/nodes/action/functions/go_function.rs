@@ -1,6 +1,6 @@
 use crate::{
     command::parser::nodes::action::{error::ActionRunError, result::ActionRunResult},
-    input::event::DemexInputDeviceEvent,
+    event::DemexEvent,
 };
 
 use super::FunctionArgs;
@@ -35,8 +35,6 @@ impl FunctionArgs for ExecutorGoArgs {
                 issued_at.elapsed().as_secs_f32(),
             )
             .map_err(ActionRunError::UpdatableHandlerError)
-            .map(|_| {
-                ActionRunResult::device_event(DemexInputDeviceEvent::ExecutorGo(self.executor_id))
-            })
+            .map(|_| ActionRunResult::device_event(DemexEvent::ExecutorGo(self.executor_id)))
     }
 }

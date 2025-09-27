@@ -6,6 +6,7 @@ pub mod command;
 pub mod effect;
 pub mod effect2;
 pub mod engine;
+pub mod event;
 pub mod fixture;
 pub mod group_master;
 pub mod headless;

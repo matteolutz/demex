@@ -1,7 +1,8 @@
 use crate::{
     engine::{component::ComponentHandle, threads::DEMEX_MAX_FUPS},
+    event::DemexEvent,
     fixture::handler::FixtureHandler,
-    input::event::{DemexInputDeviceEvent, handler::DemexInputDeviceEventHandler},
+    input::event::handler::DemexInputDeviceEventHandler,
     patch::Patch,
     presets::PresetHandler,
     timing::TimingHandler,
@@ -58,11 +59,7 @@ pub fn start_demex_update_thread(
             );
 
             input_device_event_handler.write(|handler| {
-                handler.push_events(
-                    uh_events
-                        .into_iter()
-                        .map(DemexInputDeviceEvent::ExecutorStop),
-                )
+                handler.push_events(uh_events.into_iter().map(DemexEvent::ExecutorStop))
             });
         },
     );

@@ -12,9 +12,9 @@ pub mod ui2;
 use std::{path::PathBuf, sync::Arc, time};
 
 use demex_core::engine::DemexEngine;
+use demex_core::event::DemexEvent;
 use demex_core::fixture::handler::FixtureHandler;
 use demex_core::headless::{controller::DemexHeadlessConroller, node::DemexHeadlessNode};
-use demex_core::input::event::DemexInputDeviceEvent;
 use demex_core::input::event::handler::DemexInputDeviceEventHandler;
 use demex_core::show::{DemexShow, context::ShowContext};
 use demex_headless::id::DemexProtoDeviceId;

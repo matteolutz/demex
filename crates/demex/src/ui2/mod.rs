@@ -21,7 +21,7 @@ impl WindowDelegate for MainWindow {
         window.set_window_title("demex");
 
         Self {
-            pane: cx.new(|cx| LayoutViewPane::new(cx)),
+            pane: cx.new(|cx| LayoutViewPane::new(window, cx)),
         }
     }
 

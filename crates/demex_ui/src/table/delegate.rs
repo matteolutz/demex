@@ -1,3 +1,11 @@
+/*
+ *
+ * This file has been modified from its original version.
+ * Original: https://github.com/BaukeWestendorp/radiant
+ * License: Apache 2.0 - https://github.com/BaukeWestendorp/radiant/blob/main/LICENCE
+ *
+ */
+
 use std::hash::Hash;
 
 use gpui::prelude::*;
@@ -7,12 +15,13 @@ use super::{Column, Table};
 
 pub trait TableDelegate: Sized + 'static {
     type RowId: Clone + Eq + Hash;
+    type ColId: Clone + Eq + Hash;
 
     fn column_count(&self, cx: &App) -> usize;
 
-    fn column(&self, col_ix: usize, cx: &App) -> &Column;
+    fn column(&self, col_ix: usize, cx: &App) -> &Column<Self::ColId>;
 
-    fn column_ix(&self, column_id: &str, cx: &App) -> usize;
+    fn column_ix(&self, column_id: &Self::ColId, cx: &App) -> usize;
 
     fn sorted_row_ids(&self, cx: &App) -> Vec<Self::RowId>;
 
@@ -26,7 +35,7 @@ pub trait TableDelegate: Sized + 'static {
 
     fn edit_selection(
         &mut self,
-        _column_id: &str,
+        _column_id: &Self::ColId,
         _row_ids: Vec<Self::RowId>,
         _window: &mut Window,
         _cx: &mut Context<Table<Self>>,
