@@ -1,5 +1,5 @@
 use demex_ui::table::{Column, Table, TableDelegate};
-use gpui::{App, Entity, Window, prelude::*};
+use gpui::{App, Entity, Window, prelude::*, px};
 use gpui::{Render, Styled, div};
 use itertools::Itertools;
 
@@ -44,7 +44,7 @@ impl Default for FixtureSheetTable {
             columns: vec![
                 Column::new(FixtureSheetColumnId::Id, "Id"),
                 Column::new(FixtureSheetColumnId::Patch, "Patch"),
-                Column::new(FixtureSheetColumnId::Name, "Name"),
+                Column::new(FixtureSheetColumnId::Name, "Name").with_width(px(200.0)),
             ],
         }
     }

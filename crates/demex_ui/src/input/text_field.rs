@@ -4,8 +4,8 @@ use gpui::{
     div,
 };
 
+use crate::container::interactive_container;
 use crate::input::{TextInput, TextInputEvent};
-use crate::theme::ActiveTheme;
 
 pub struct TextField {
     input: Entity<TextInput>,
@@ -35,6 +35,10 @@ impl TextField {
         .detach();
 
         Self { input }
+    }
+
+    pub fn input(&self) -> &Entity<TextInput> {
+        &self.input
     }
 
     pub fn value<'a>(&self, cx: &'a App) -> &'a SharedString {
@@ -99,6 +103,43 @@ impl TextField {
         self.set_masked(masked, cx);
         self
     }
+
+    pub fn set_validator<F: Fn(&SharedString) -> bool + 'static>(
+        &self,
+        cx: &mut App,
+        validator: F,
+    ) {
+        self.input
+            .update(cx, |text_field, _cx| text_field.set_validator(validator));
+    }
+
+    pub fn with_validator<F: Fn(&SharedString) -> bool + 'static>(
+        self,
+        cx: &mut App,
+        validator: F,
+    ) -> Self {
+        self.set_validator(cx, validator);
+        self
+    }
+
+    pub fn set_submit_validator<F: Fn(&SharedString) -> bool + 'static>(
+        &self,
+        cx: &mut App,
+        validator: F,
+    ) {
+        self.input.update(cx, |text_field, _cx| {
+            text_field.set_submit_validator(validator)
+        });
+    }
+
+    pub fn with_submit_validator<F: Fn(&SharedString) -> bool + 'static>(
+        self,
+        cx: &mut App,
+        validator: F,
+    ) -> Self {
+        self.set_submit_validator(cx, validator);
+        self
+    }
 }
 
 impl Focusable for TextField {
@@ -111,14 +152,9 @@ impl Render for TextField {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let focus_handle = self.input.read(cx).focus_handle(cx);
 
-        div()
-            .id(ElementId::View(cx.entity_id()))
-            .track_focus(&focus_handle)
-            .bg(cx.theme().input)
-            .border_1()
-            .border_color(cx.theme().input_border)
-            .rounded(cx.theme().radius)
+        interactive_container(ElementId::View(cx.entity_id()), Some(focus_handle))
             .w_full()
+            .disabled(self.disabled(cx))
             .child(div().size_full().p_0p5().child(self.input.clone()))
     }
 }

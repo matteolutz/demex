@@ -2120,6 +2120,7 @@ dependencies = [
  "eyre",
  "gpui",
  "log",
+ "regex",
  "rust-embed",
  "smallvec",
 ]

@@ -1,11 +1,15 @@
 use std::ops::Range;
 
+use demex_core::channel3::feature::feature_group::FixtureChannel3FeatureGroup;
 use demex_ui::{button::button, container::container};
-use gpui::{App, Entity, Pixels, Window, div, point, prelude::*, px, uniform_list};
+use gpui::{App, Bounds, Entity, Pixels, Window, div, point, prelude::*, px, uniform_list};
 
 use crate::ui2::pane::layout::{
     element::{
-        LayoutViewElement, LayoutViewElementType, fixture_sheet::FixtureSheet, playback::Playback,
+        LayoutViewElement, LayoutViewElementType,
+        fixture_sheet::FixtureSheet,
+        playback::Playback,
+        pool::{Pool, preset::PresetPool},
     },
     page::LayoutViewPage,
 };
@@ -14,6 +18,9 @@ pub mod element;
 pub mod page;
 
 const PAGE_SELECTOR_WIDTH: Pixels = px(100.0);
+
+pub(crate) const GRID_N_COLS: u16 = 15;
+pub(crate) const GRID_N_ROWS: u16 = 15;
 
 pub struct LayoutViewPane {
     pages: Vec<Entity<LayoutViewPage>>,
@@ -37,8 +44,32 @@ impl LayoutViewPane {
                             from: point(0, 10),
                             to: point(15, 15),
                             element_type: LayoutViewElementType::Playback(
-                                cx.new(|cx| Playback::new(window, cx)),
+                                cx.new(|cx| Playback::new(window, cx, 0)),
                             ),
+                        },
+                        LayoutViewElement {
+                            from: point(10, 0),
+                            to: point(15, 3),
+                            element_type: LayoutViewElementType::PresetPool(cx.new(|cx| {
+                                Pool::new(
+                                    window,
+                                    cx,
+                                    PresetPool::new(FixtureChannel3FeatureGroup::Dimmer),
+                                    Bounds::from_corners(point(10, 0), point(15, 3)),
+                                )
+                            })),
+                        },
+                        LayoutViewElement {
+                            from: point(10, 4),
+                            to: point(15, 7),
+                            element_type: LayoutViewElementType::PresetPool(cx.new(|cx| {
+                                Pool::new(
+                                    window,
+                                    cx,
+                                    PresetPool::new(FixtureChannel3FeatureGroup::Position),
+                                    Bounds::from_corners(point(10, 5), point(15, 7)),
+                                )
+                            })),
                         },
                     ];
 

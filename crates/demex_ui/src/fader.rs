@@ -23,10 +23,10 @@ pub struct Fader {
 }
 
 impl Fader {
-    pub fn new(_window: &mut Window, cx: &mut App) -> Self {
+    pub fn new(fader_value: Entity<f32>, _window: &mut Window, cx: &mut App) -> Self {
         Self {
             bounds: cx.new(|_| None),
-            fader_value: cx.new(|_| 0.0),
+            fader_value,
         }
     }
 }

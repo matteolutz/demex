@@ -12,12 +12,9 @@ use demex_ui::{
 use gpui::{Render, point, px};
 
 use crate::ui2::{
-    pane::layout::element::LayoutViewElement,
+    pane::layout::{GRID_N_COLS, GRID_N_ROWS, element::LayoutViewElement},
     window::add_layout_item::{AddLayoutItemWindow, AddLayoutItemWindowInitData},
 };
-
-const GRID_N_COLS: u16 = 15;
-const GRID_N_ROWS: u16 = 15;
 
 pub struct LayoutViewPage {
     name: String,
@@ -232,7 +229,7 @@ impl Render for LayoutViewPage {
                     .grid()
                     .grid_cols(GRID_N_COLS as u16)
                     .grid_rows(GRID_N_ROWS as u16)
-                    .children(self.elements.iter().enumerate().map(|(idx, el)| {
+                    .children(self.elements.iter().enumerate().map(|(_, el)| {
                         container(window, cx)
                             .cursor_default()
                             .occlude()

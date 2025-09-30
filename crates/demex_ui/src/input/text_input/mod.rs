@@ -11,7 +11,7 @@ use std::ops::Range;
 mod blink;
 mod element;
 
-pub mod actions {
+mod actions {
     pub const KEY_CONTEXT: &str = "TextInput";
 
     gpui::actions!(
@@ -117,6 +117,8 @@ pub struct TextInput {
     disabled: bool,
     masked: bool,
     interactive: bool,
+    validator: Option<Box<dyn Fn(&SharedString) -> bool>>,
+    submit_validator: Option<Box<dyn Fn(&SharedString) -> bool>>,
 
     utf16_selection: Range<usize>,
     new_selection_start_utf16_offset: Option<usize>,
@@ -152,6 +154,8 @@ impl TextInput {
             disabled: false,
             masked: false,
             interactive: true,
+            validator: None,
+            submit_validator: None,
 
             utf16_selection: 0..0,
             new_selection_start_utf16_offset: None,
@@ -171,6 +175,13 @@ impl TextInput {
     }
 
     pub fn set_text(&mut self, text: SharedString, cx: &mut Context<Self>) {
+        if let Some(validator) = &self.validator
+            && !text.trim().is_empty()
+            && !validator(&text)
+        {
+            return;
+        }
+
         self.text = text;
         cx.emit(TextInputEvent::Change(self.text.clone()));
         cx.notify();
@@ -205,12 +216,22 @@ impl TextInput {
         self.masked = masked;
     }
 
+    pub fn set_validator<F: Fn(&SharedString) -> bool + 'static>(&mut self, validator: F) {
+        self.validator = Some(Box::new(validator));
+    }
+
+    pub fn set_submit_validator<F: Fn(&SharedString) -> bool + 'static>(&mut self, validator: F) {
+        self.submit_validator = Some(Box::new(validator));
+    }
+
     pub fn is_interactive(&self) -> bool {
         self.interactive
     }
 
-    pub fn interactive(&mut self, interactive: bool) {
+    pub fn set_interactive(&mut self, interactive: bool, cx: &mut Context<Self>) {
         self.interactive = interactive;
+        self.blink_cursor
+            .update(cx, |blink_cursor, cx| blink_cursor.stop(cx));
     }
 
     pub fn is_focused(&self, window: &Window) -> bool {
@@ -744,6 +765,12 @@ impl TextInput {
     }
 
     fn handle_blur(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(submit_validator) = &self.submit_validator
+            && !submit_validator(&self.text)
+        {
+            self.set_text("".into(), cx);
+        }
+
         self.unselect(cx);
         self.blink_cursor.update(cx, |blink_cursor, cx| {
             blink_cursor.stop(cx);

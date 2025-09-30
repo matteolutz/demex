@@ -35,7 +35,7 @@ impl<T: Component> ComponentHandle<T> {
         f(&guard)
     }
 
-    pub(crate) fn write<R, F: FnOnce(&mut T) -> R>(&mut self, f: F) -> R {
+    pub fn write<R, F: FnOnce(&mut T) -> R>(&mut self, f: F) -> R {
         let mut guard = self.lock();
         f(&mut guard)
     }

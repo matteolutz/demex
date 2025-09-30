@@ -2,6 +2,7 @@
 
 pub mod engine;
 pub mod storage;
+pub mod utils;
 
 #[cfg(feature = "ui")]
 pub mod ui;
