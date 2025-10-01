@@ -1,8 +1,14 @@
+use std::sync::mpsc;
+
 use crate::{
+    command::parser::nodes::{
+        action::{queue::ActionQueue, result::ActionRunResult},
+        fixture_selector::FixtureSelectorContext,
+    },
     engine::{component::ComponentHandle, threads::DEMEX_MAX_FUPS},
     event::DemexEvent,
     fixture::handler::FixtureHandler,
-    input::event::handler::DemexInputDeviceEventHandler,
+    input::{DemexInputDeviceHandler, event::handler::DemexInputDeviceEventHandler},
     patch::Patch,
     presets::PresetHandler,
     timing::TimingHandler,
@@ -11,7 +17,9 @@ use crate::{
 };
 
 pub fn start_demex_update_thread(
+    event_bus_tx: mpsc::Sender<DemexEvent>,
     stats: ComponentHandle<DemexThreadStatsHandler>,
+    action_queue: ComponentHandle<ActionQueue>,
     fixture_handler: ComponentHandle<FixtureHandler>,
     preset_handler: ComponentHandle<PresetHandler>,
     updatable_handler: ComponentHandle<UpdatableHandler>,
@@ -24,15 +32,38 @@ pub fn start_demex_update_thread(
         stats.clone(),
         DEMEX_MAX_FUPS,
         move |_, _| {
+            let mut action_queue = action_queue.lock();
+
             let mut fixture_handler = fixture_handler.lock();
 
-            let preset_handler = preset_handler.lock();
+            let mut preset_handler = preset_handler.lock();
 
             let mut updatable_handler = updatable_handler.lock();
 
             let mut timing_handler = timing_handler.lock();
 
             let patch = patch.lock();
+
+            // FIXME: just for testing
+            for action in action_queue.inner_mut().drain(..) {
+                match action.run(
+                    &mut fixture_handler,
+                    &mut preset_handler,
+                    FixtureSelectorContext::new(&None),
+                    &mut updatable_handler,
+                    &mut DemexInputDeviceHandler::new(vec![]),
+                    &mut timing_handler,
+                    &patch,
+                ) {
+                    Ok(result) => match result {
+                        ActionRunResult::WithEvent { result: _, event } => {
+                            event_bus_tx.send(event);
+                        }
+                        _ => {}
+                    },
+                    Err(err) => log::warn!("Failed to run action: {}", err),
+                }
+            }
 
             timing_handler.update_running_timecodes(
                 &mut fixture_handler,

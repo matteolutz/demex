@@ -29,6 +29,10 @@ impl Fader {
             fader_value,
         }
     }
+
+    pub fn fader_value(&self) -> Entity<f32> {
+        self.fader_value.clone()
+    }
 }
 
 impl Render for Fader {

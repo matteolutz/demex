@@ -21,7 +21,9 @@ use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 
 use crate::{
-    command::parser::nodes::action::functions::move_function::MoveArgs,
+    command::parser::nodes::action::{self, functions::move_function::MoveArgs},
+    event::DemexEvent,
+    updatables::error::UpdatableHandlerError,
     utils::serde::approx_instant,
 };
 
@@ -84,6 +86,30 @@ pub struct DeferredAction {
 
     #[serde(with = "approx_instant")]
     pub issued_at: time::Instant,
+}
+
+impl DeferredAction {
+    pub fn run(
+        &self,
+        fixture_handler: &mut FixtureHandler,
+        preset_handler: &mut PresetHandler,
+        fixture_selector_context: FixtureSelectorContext,
+        updatable_handler: &mut UpdatableHandler,
+        input_device_handler: &mut DemexInputDeviceHandler,
+        timing_handler: &mut TimingHandler,
+        patch: &Patch,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        self.action.run(
+            fixture_handler,
+            preset_handler,
+            fixture_selector_context,
+            updatable_handler,
+            input_device_handler,
+            timing_handler,
+            patch,
+            self.issued_at,
+        )
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -155,6 +181,7 @@ pub enum Action {
     InternalSetFixtureSelection(Option<FixtureSelection>),
     InternalExecutorGo(ExecutorGoArgs),
     InternalExecutorStop(ExecutorStopArgs),
+    InternalExecutorSetFaderValue(u32, f32),
 
     Lock,
 
@@ -449,6 +476,21 @@ impl Action {
                 timing_handler,
                 patch,
             ),
+            Self::InternalExecutorSetFaderValue(executor_id, fader_value) => {
+                let executor = updatable_handler
+                    .executor_mut(*executor_id)
+                    .map_err(ActionRunError::UpdatableHandlerError)?;
+                executor.set_value(
+                    *fader_value,
+                    fixture_handler,
+                    preset_handler,
+                    issued_at.elapsed().as_secs_f32(),
+                );
+
+                Ok(ActionRunResult::device_event(
+                    DemexEvent::ExecutorFaderValueChanged(*executor_id),
+                ))
+            }
 
             Self::Lock => Ok(ActionRunResult::Lock),
 

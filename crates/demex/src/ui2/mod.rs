@@ -1,6 +1,7 @@
 use demex_ui::wm::WindowDelegate;
 use gpui::{App, Context, Entity, Window, prelude::*};
 
+pub mod ext;
 pub mod pane;
 pub mod window;
 

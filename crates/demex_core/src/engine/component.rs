@@ -35,12 +35,13 @@ impl<T: Component> ComponentHandle<T> {
         f(&guard)
     }
 
-    pub fn write<R, F: FnOnce(&mut T) -> R>(&mut self, f: F) -> R {
+    // Only allow core_crate to write
+    pub(crate) fn write<R, F: FnOnce(&mut T) -> R>(&mut self, f: F) -> R {
         let mut guard = self.lock();
         f(&mut guard)
     }
 
-    pub fn lock(&self) -> MappedMutexGuard<'_, RawMutex, T> {
+    pub(crate) fn lock(&self) -> MappedMutexGuard<'_, RawMutex, T> {
         let guard = self.0.lock();
         MutexGuard::map(guard, |any| any.downcast_mut::<T>().unwrap())
     }

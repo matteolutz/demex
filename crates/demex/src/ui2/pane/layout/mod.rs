@@ -44,7 +44,7 @@ impl LayoutViewPane {
                             from: point(0, 10),
                             to: point(15, 15),
                             element_type: LayoutViewElementType::Playback(
-                                cx.new(|cx| Playback::new(window, cx, 0)),
+                                cx.new(|cx| Playback::new(window, cx, 1)),
                             ),
                         },
                         LayoutViewElement {

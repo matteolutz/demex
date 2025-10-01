@@ -9,13 +9,15 @@
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
-    sync::Arc,
+    sync::{Arc, mpsc},
 };
 
 use parking_lot::Mutex;
 
 use crate::{
+    command::parser::nodes::action::{Action, queue::ActionQueue},
     engine::component::{Component, ComponentHandle},
+    event::DemexEvent,
     fixture::handler::FixtureHandler,
     input::event::handler::DemexInputDeviceEventHandler,
     patch::Patch,
@@ -32,13 +34,19 @@ pub mod threads;
 pub struct DemexEngine {
     components: HashMap<TypeId, Arc<Mutex<dyn Any + Send + Sync>>>,
     stats: ComponentHandle<DemexThreadStatsHandler>,
+
+    action_queue: ComponentHandle<ActionQueue>,
+
+    event_bus_tx: mpsc::Sender<DemexEvent>,
 }
 
 impl DemexEngine {
-    pub fn new() -> Self {
+    pub fn new(event_bus_tx: mpsc::Sender<DemexEvent>) -> Self {
         Self {
             components: HashMap::new(),
             stats: ComponentHandle::create_default(),
+            action_queue: ComponentHandle::create_default(),
+            event_bus_tx,
         }
     }
 }
@@ -64,7 +72,9 @@ impl DemexEngine {
 
     pub fn start(&mut self) {
         threads::update::start_demex_update_thread(
+            self.event_bus_tx.clone(),
             self.stats(),
+            self.action_queue(),
             self.fixture_handler(),
             self.preset_handler(),
             self.updatable_handler(),
@@ -82,6 +92,16 @@ impl DemexEngine {
         );
 
         threads::debug::start_demex_debug_thread(self.stats());
+    }
+
+    pub fn exec_now(&self, action: Action) {
+        self.action_queue()
+            .write(|action_queue| action_queue.enqueue_now(action));
+    }
+
+    #[inline]
+    pub fn action_queue(&self) -> ComponentHandle<ActionQueue> {
+        self.action_queue.clone()
     }
 
     #[inline]

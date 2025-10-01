@@ -1,6 +1,9 @@
-use std::{collections::VecDeque, time};
+use std::{collections::VecDeque, time, vec::Drain};
 
-use crate::command::parser::nodes::action::{Action, DeferredAction};
+use crate::{
+    command::parser::nodes::action::{Action, DeferredAction},
+    engine::component::Component,
+};
 
 #[derive(Default)]
 pub struct ActionQueue {
@@ -26,4 +29,10 @@ impl ActionQueue {
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
+
+    pub fn inner_mut(&mut self) -> &mut VecDeque<DeferredAction> {
+        &mut self.inner
+    }
 }
+
+impl Component for ActionQueue {}

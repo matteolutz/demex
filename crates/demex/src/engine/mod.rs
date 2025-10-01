@@ -6,16 +6,23 @@
  *
  */
 
+use std::sync::mpsc;
+
 use demex_core::{
     engine::{DemexEngine, error::DemexEngineError},
     fixture::GdtfFixture,
     show::DemexShow,
 };
 use gdtf::fixture_type::FixtureType;
-use gpui::{App, Global};
+use gpui::{App, AppContext, Entity, Global};
+
+use crate::engine::event::DemexEventHandler;
+
+pub mod event;
 
 pub struct DemexEngineHandler {
     engine: DemexEngine,
+    event_handler: Entity<DemexEventHandler>,
 }
 
 impl DemexEngineHandler {
@@ -24,12 +31,19 @@ impl DemexEngineHandler {
         show: DemexShow,
         cx: &mut App,
     ) -> Result<(), DemexEngineError> {
-        let mut engine = DemexEngine::new();
+        let (event_bus_tx, event_bus_rx) = mpsc::channel();
+
+        let mut engine = DemexEngine::new(event_bus_tx);
         show.register(global_fixture_types, &mut engine);
+
+        let event_handler = cx.new(|cx| DemexEventHandler::new(event_bus_rx, cx));
 
         engine.start();
 
-        cx.set_global(Self { engine });
+        cx.set_global(Self {
+            engine,
+            event_handler,
+        });
 
         Ok(())
     }
@@ -37,6 +51,11 @@ impl DemexEngineHandler {
     pub fn engine(cx: &App) -> &DemexEngine {
         let this: &Self = cx.global();
         &this.engine
+    }
+
+    pub fn event_handler(cx: &App) -> Entity<DemexEventHandler> {
+        let this: &Self = cx.global();
+        this.event_handler.clone()
     }
 
     pub fn read_fixture<R>(
