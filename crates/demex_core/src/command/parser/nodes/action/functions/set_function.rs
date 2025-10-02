@@ -13,6 +13,7 @@ use crate::{
     command::parser::nodes::{
         action::{ValueOrRange, error::ActionRunError, result::ActionRunResult},
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
+        object::{Object, ObjectDelegate},
     },
     patch::Patch,
     presets::{PresetHandler, preset::FixturePresetId},
@@ -187,5 +188,33 @@ impl FunctionArgs for SetFixturePresetArgs {
         }
 
         Ok(ActionRunResult::new())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ObjectSetPropertyArgs {
+    pub object: Object,
+    pub key: String,
+    pub value: String,
+}
+
+impl FunctionArgs for ObjectSetPropertyArgs {
+    fn run(
+        &self,
+        _issued_at: time::Instant,
+        _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        preset_handler: &mut PresetHandler,
+        _fixture_selector_context: FixtureSelectorContext,
+        updatable_handler: &mut crate::updatables::UpdatableHandler,
+        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _timing_handler: &mut TimingHandler,
+        _patch: &Patch,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        self.object.clone().set(
+            preset_handler,
+            updatable_handler,
+            self.key.clone(),
+            self.value.clone(),
+        )
     }
 }

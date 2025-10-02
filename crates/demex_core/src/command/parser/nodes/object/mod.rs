@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fixture::handler::FixtureHandler,
-    presets::{PresetHandler, preset::FixturePresetId},
+    presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
     sequence::cue::CueIdx,
     updatables::UpdatableHandler,
 };
@@ -12,29 +12,102 @@ use super::{
     fixture_selector::{FixtureSelector, FixtureSelectorContext},
 };
 
-#[derive(Debug)]
-pub enum ObjectError {
-    ObjectVariantMismatch(Object, Object),
-}
+pub mod error;
+pub use error::*;
 
-impl std::fmt::Display for ObjectError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ObjectError::ObjectVariantMismatch(from, to) => {
-                write!(f, "Object variant mismatch: {:?} != {:?}", from, to)
+#[macro_export]
+macro_rules! implement_set_property {
+    (
+        for $object_type:ident with $property_enum:ty,
+        $(
+            $property_variant:ident => $($field:ident).+ as $field_type:ty
+        ),*
+    ) => {
+        mod property {
+            use super::*;
+            use crate::command::parser::nodes::action::{result::ActionRunResult, error::ActionRunError};
+            use crate::command::parser::nodes::object::{ObjectSetPropertyDelegate, error::ObjectError};
+
+            impl ObjectSetPropertyDelegate for $object_type {
+
+                type ObjectSetPropertyKeyType = $property_enum;
+
+                fn set_property(
+                    &mut self,
+                    key: Self::ObjectSetPropertyKeyType,
+                    value: String,
+                ) -> Result<ActionRunResult, ActionRunError> {
+                    match key {
+                        $(
+                            <$property_enum>::$property_variant => {
+                                self.$($field).+ = value.parse::<$field_type>().map_err(|_| {
+                                    ActionRunError::ObjectError(ObjectError::ObjectSetValueInvalid(
+                                        key.to_string(),
+                                        value,
+                                    ))
+                                })?
+                            }
+                        ),*
+                    };
+
+                    // FIXME: send event
+                    Ok(ActionRunResult::new())
+                }
             }
         }
+    };
+}
+
+pub struct EmptyObjectSetKeyType {}
+impl std::str::FromStr for EmptyObjectSetKeyType {
+    type Err = ();
+
+    fn from_str(_: &str) -> Result<Self, Self::Err> {
+        Err(())
     }
 }
 
-impl std::error::Error for ObjectError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
+pub trait ObjectSetPropertyDelegate: 'static + Sized {
+    type ObjectSetPropertyKeyType: std::str::FromStr + std::fmt::Display;
+
+    fn set_property(
+        &mut self,
+        key: Self::ObjectSetPropertyKeyType,
+        value: String,
+    ) -> Result<ActionRunResult, ActionRunError>;
+}
+
+trait ObjectSetPropertyStringDelegate: 'static + Sized {
+    fn set_property_string(
+        &mut self,
+        key: String,
+        value: String,
+    ) -> Result<ActionRunResult, ActionRunError>;
+}
+
+impl<T: ObjectSetPropertyDelegate> ObjectSetPropertyStringDelegate for T {
+    fn set_property_string(
+        &mut self,
+        key: String,
+        value: String,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let key = key
+            .parse()
+            .map_err(|_| ActionRunError::ObjectError(ObjectError::ObjectSetKeyInvalid(key)))?;
+
+        self.set_property(key, value)
     }
 }
 
-pub trait ObjectTrait {
+pub trait ObjectDelegate: 'static + Sized {
     fn default_action(self) -> Option<Action>;
+    fn set(
+        self,
+        preset_handler: &mut PresetHandler,
+        updatable_handler: &mut UpdatableHandler,
+        key: String,
+        value: String,
+    ) -> Result<ActionRunResult, ActionRunError>;
 
     #[cfg(feature = "ui")]
     fn edit_window(self) -> Option<crate::ui::window::edit::DemexEditWindow>;
@@ -48,7 +121,7 @@ pub enum HomeableObject {
 }
 
 impl HomeableObject {
-    pub fn run_home(
+    pub fn home(
         &self,
         preset_handler: &PresetHandler,
         fixture_handler: &mut FixtureHandler,
@@ -85,13 +158,32 @@ impl HomeableObject {
     }
 }
 
-impl ObjectTrait for HomeableObject {
+impl ObjectDelegate for HomeableObject {
     fn default_action(self) -> Option<Action> {
         match self {
             Self::FixtureSelector(fixture_selector) => {
                 Some(Action::FixtureSelector(fixture_selector))
             }
             _ => Some(Action::Edit(Object::HomeableObject(self))),
+        }
+    }
+
+    fn set(
+        self,
+        _preset_handler: &mut PresetHandler,
+        updatable_handler: &mut UpdatableHandler,
+        key: String,
+        value: String,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        match self {
+            Self::Executor(executor_id) => updatable_handler
+                .executor_mut(executor_id)
+                .map_err(ActionRunError::UpdatableHandlerError)
+                .and_then(|executor| executor.set_property_string(key, value)),
+            unmatched => Err(ActionRunError::ActionNotImplementedForObject(
+                "set".to_string(),
+                Object::HomeableObject(unmatched),
+            )),
         }
     }
 
@@ -127,11 +219,45 @@ pub enum Object {
     Macro(u32),
 }
 
-impl ObjectTrait for Object {
+impl ObjectDelegate for Object {
     fn default_action(self) -> Option<Action> {
         match self {
             Self::HomeableObject(homeable_object) => homeable_object.default_action(),
             _ => Some(Action::Edit(self)),
+        }
+    }
+
+    fn set(
+        self,
+        preset_handler: &mut PresetHandler,
+        updatable_handler: &mut UpdatableHandler,
+        key: String,
+        value: String,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        match self {
+            Self::HomeableObject(object) => {
+                object.set(preset_handler, updatable_handler, key, value)
+            }
+            Self::Macro(macro_id) => preset_handler
+                .get_macro_mut(macro_id)
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|m| m.set_property_string(key, value)),
+            Self::Preset(preset_id) => preset_handler
+                .get_preset_mut(preset_id)
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|preset| preset.set_property_string(key, value)),
+            Self::Sequence(sequence_id) => preset_handler
+                .get_sequence_mut(sequence_id)
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|s| s.set_property_string(key, value)),
+            Self::SequenceCue(sequence_id, cue_idx) => preset_handler
+                .get_sequence_mut(sequence_id)
+                .and_then(|s| {
+                    s.find_cue_mut(cue_idx)
+                        .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_idx))
+                })
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|cue| cue.set_property_string(key, value)),
         }
     }
 

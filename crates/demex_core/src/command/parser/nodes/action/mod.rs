@@ -21,9 +21,10 @@ use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 
 use crate::{
-    command::parser::nodes::action::{self, functions::move_function::MoveArgs},
+    command::parser::nodes::action::functions::{
+        move_function::MoveArgs, set_function::ObjectSetPropertyArgs,
+    },
     event::DemexEvent,
-    updatables::error::UpdatableHandlerError,
     utils::serde::approx_instant,
 };
 
@@ -117,6 +118,7 @@ pub enum Action {
     // Set
     SetFeatureValue(SetFeatureValueArgs),
     SetFixturePreset(SetFixturePresetArgs),
+    ObjectSetProperty(ObjectSetPropertyArgs),
 
     // Home
     Home(HomeableObject),
@@ -225,7 +227,7 @@ impl Action {
             ),
 
             // Home
-            Self::Home(homeable_object) => homeable_object.run_home(
+            Self::Home(homeable_object) => homeable_object.home(
                 preset_handler,
                 fixture_handler,
                 updatable_handler,

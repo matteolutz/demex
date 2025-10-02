@@ -198,6 +198,7 @@ impl WindowManager {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn window_overlays(&self, handle: &AnyWindowHandle) -> Vec<Entity<Overlay>> {
         self.overlays
             .get(&handle)

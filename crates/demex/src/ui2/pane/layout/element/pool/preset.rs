@@ -29,7 +29,7 @@ impl PoolDelegate for PresetPool {
         self.feature_group.to_string()
     }
 
-    fn get_ids(&self, cx: &mut App, range: Range<usize>) -> Vec<Self::PoolItemId> {
+    fn get_ids(&self, _cx: &mut App, range: Range<usize>) -> Vec<Self::PoolItemId> {
         range
             .map(|idx| FixturePresetId {
                 feature_group: self.feature_group,

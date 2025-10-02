@@ -6,20 +6,19 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    channel3::channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
     command::parser::nodes::action::functions::{
         record_function::RecordChannelTypeSelector, update_function::UpdateMode,
     },
-    utils::ease::{ease_in_out_quad, ease_in_quad, ease_out_quad},
-    {
-        channel3::channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
-        fixture::{
-            GdtfFixture,
-            handler::{FixtureHandler, FixtureTypeList},
-        },
-        presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
-        selection::FixtureSelection,
-        timing::TimingHandler,
+    fixture::{
+        GdtfFixture,
+        handler::{FixtureHandler, FixtureTypeList},
     },
+    implement_set_property,
+    presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
+    selection::FixtureSelection,
+    timing::TimingHandler,
+    utils::ease::{ease_in_out_quad, ease_in_quad, ease_out_quad},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -29,7 +28,17 @@ pub struct CueOut {
     pub fading_function: CueFadingFunction,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    Default,
+    strum_macros::EnumString,
+    strum_macros::Display,
+)]
 #[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum CueFadingFunction {
     #[default]
@@ -51,7 +60,16 @@ impl CueFadingFunction {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    Default,
+    strum_macros::EnumString,
+    strum_macros::Display,
+)]
 #[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum CueTrigger {
     /// Cue is triggered manually
@@ -636,4 +654,32 @@ impl Cue {
             CueDataMode::Builder { .. } => {}
         }
     }
+}
+
+#[derive(strum_macros::EnumString, strum_macros::Display)]
+pub enum CueProperty {
+    Name,
+
+    InFade,
+    InDelay,
+    SnapPercent,
+
+    Block,
+    Trigger,
+    FadingFunction,
+    MoveInBlack,
+}
+
+implement_set_property! {
+    for Cue with CueProperty,
+
+    Name => name as String,
+    InFade => in_fade as f32,
+    InDelay => in_delay as f32,
+    SnapPercent => snap_percent as f32,
+
+    Block => block as bool,
+    Trigger => trigger as CueTrigger,
+    FadingFunction => fading_function as CueFadingFunction,
+    MoveInBlack => move_in_black as bool
 }

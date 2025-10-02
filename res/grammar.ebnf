@@ -5,6 +5,7 @@ command                     = function
 
 
 function                    = fixture_selector set_function
+                            | "set" set_property_function
                             | "home" [homeable_object]
                             | "record" record_function
                             | "create" create_function
@@ -27,13 +28,15 @@ recall_command              = "sequence" integer "cue" cue_idx
 unassign_command            = "button" float
                             | "fader" float
 
-assign_function             = "executor" integer ("go" | "stop" | "flash" | "fader") "to" float 
+assign_function             = "executor" integer ("go" | "stop" | "flash" | "fader") "to" float
                             | "preset" integer ["with" fixture_selector] "to" float
                             | fixture_selector "to" float
                             | "macro" function "to" float
                             | "tokens" "to" float "with" [*]
                             | "grandmaster" "to" float
                             | "speedmaster" integer ("fader" | "tap") "to" float
+
+set_property_function       = object string string
 
 move_function               = specific_preset "to" specific_preset
 

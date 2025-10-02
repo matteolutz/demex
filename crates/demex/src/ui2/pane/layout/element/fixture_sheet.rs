@@ -54,15 +54,15 @@ impl TableDelegate for FixtureSheetTable {
     type RowId = u32;
     type ColId = FixtureSheetColumnId;
 
-    fn column_count(&self, cx: &gpui::App) -> usize {
+    fn column_count(&self, _cx: &gpui::App) -> usize {
         3
     }
 
-    fn column(&self, col_ix: usize, cx: &gpui::App) -> &demex_ui::table::Column<Self::ColId> {
+    fn column(&self, col_ix: usize, _cx: &gpui::App) -> &demex_ui::table::Column<Self::ColId> {
         &self.columns[col_ix]
     }
 
-    fn column_ix(&self, column_id: &Self::ColId, cx: &gpui::App) -> usize {
+    fn column_ix(&self, column_id: &Self::ColId, _cx: &gpui::App) -> usize {
         self.columns
             .iter()
             .position(|col| &col.id == column_id)
@@ -83,7 +83,7 @@ impl TableDelegate for FixtureSheetTable {
         &self,
         row_id: &Self::RowId,
         col_ix: usize,
-        window: &mut gpui::Window,
+        _window: &mut gpui::Window,
         cx: &mut Context<demex_ui::table::Table<Self>>,
     ) -> impl IntoElement {
         let render_cell = |content| {

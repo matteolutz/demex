@@ -7,11 +7,12 @@ pub mod fader_function;
 
 use crate::{
     channel3::feature::feature_type::FixtureChannel3FeatureType,
-    fixture::error::FixtureError,
     fixture::{
         GdtfFixture,
+        error::FixtureError,
         handler::{FixtureHandler, FixtureTypeList},
     },
+    implement_set_property,
     presets::PresetHandler,
     sequence::{FadeFixtureChannelValue, runtime::SequenceRuntime},
     timing::TimingHandler,
@@ -269,4 +270,19 @@ impl DemexExecutor {
 
         should_stop
     }
+}
+
+#[derive(strum_macros::EnumString, strum_macros::Display)]
+pub enum DemexExecutorProperty {
+    Priority,
+    FaderFunction,
+    StompProtected,
+}
+
+implement_set_property! {
+    for DemexExecutor with DemexExecutorProperty,
+
+    FaderFunction => fader_function as DemexExecutorFaderFunction,
+    Priority => priority as FixtureChannelValuePriority,
+    StompProtected => stomp_protected as bool
 }

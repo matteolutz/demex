@@ -5,10 +5,10 @@ pub mod ext;
 pub mod pane;
 pub mod window;
 
-use crate::ui2::pane::layout::LayoutViewPane;
+use crate::ui2::pane::MainPane;
 
 pub struct MainWindow {
-    pane: Entity<LayoutViewPane>,
+    pane: Entity<MainPane>,
 }
 
 impl WindowDelegate for MainWindow {
@@ -22,7 +22,7 @@ impl WindowDelegate for MainWindow {
         window.set_window_title("demex");
 
         Self {
-            pane: cx.new(|cx| LayoutViewPane::new(window, cx)),
+            pane: cx.new(|cx| MainPane::new(window, cx)),
         }
     }
 

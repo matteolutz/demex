@@ -3,32 +3,29 @@ use std::{collections::HashMap, f32, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    channel3::{
+        channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
+        feature::{
+            feature_group::FixtureChannel3FeatureGroup, feature_type::FixtureChannel3FeatureType,
+        },
+    },
     command::parser::nodes::{
         action::{ValueOrRange, functions::update_function::UpdateMode},
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
-    {
-        channel3::{
-            channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
-            feature::{
-                feature_group::FixtureChannel3FeatureGroup,
-                feature_type::FixtureChannel3FeatureType,
-            },
-        },
-        effect::{feature::runtime::FeatureEffectRuntime, speed::EffectSpeed},
-        fixture::{
-            GdtfFixture,
-            handler::{FixtureHandler, FixtureTypeList},
-        },
-        keyframe_effect::{
-            effect::KeyframeEffect, effect_keyframe::KeyframeEffectKeyframe,
-            effect_keyframe_curve::KeyframeEffectKeyframeCurve,
-            effect_runtime::KeyframeEffectRuntime,
-        },
-        selection::FixtureSelection,
-        timing::TimingHandler,
-        updatables::runtime::RuntimePhase,
+    effect::{feature::runtime::FeatureEffectRuntime, speed::EffectSpeed},
+    fixture::{
+        GdtfFixture,
+        handler::{FixtureHandler, FixtureTypeList},
     },
+    implement_set_property,
+    keyframe_effect::{
+        effect::KeyframeEffect, effect_keyframe::KeyframeEffectKeyframe,
+        effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_runtime::KeyframeEffectRuntime,
+    },
+    selection::FixtureSelection,
+    timing::TimingHandler,
+    updatables::runtime::RuntimePhase,
 };
 
 use super::{PresetHandler, error::PresetHandlerError};
@@ -613,4 +610,15 @@ impl FixturePreset {
             FixturePresetData::KeyframeEffect { .. } => Ok(0),
         }
     }
+}
+
+#[derive(strum_macros::EnumString, strum_macros::Display)]
+pub enum FixturePresetProperty {
+    Name,
+}
+
+implement_set_property! {
+    for FixturePreset with FixturePresetProperty,
+
+    Name => name as String
 }

@@ -1,7 +1,7 @@
 use crate::{
     command::parser::nodes::{
         fixture_selector::FixtureSelectorError,
-        object::{Object, ObjectRange},
+        object::{Object, ObjectError, ObjectRange},
     },
     fixture::{error::FixtureError, handler::error::FixtureHandlerError},
     input::error::DemexInputDeviceError,
@@ -27,6 +27,8 @@ pub enum ActionRunError {
 
     ActionNotImplementedForObject(String, Object),
     ActionNotImplementedForObjectRange(String, ObjectRange),
+
+    ObjectError(ObjectError),
 
     Todo(String),
 }
@@ -74,6 +76,7 @@ impl std::fmt::Display for ActionRunError {
                     action, object_range
                 )
             }
+            ActionRunError::ObjectError(e) => write!(f, "Object error: {}", e),
             ActionRunError::Todo(s) => write!(f, "To do: {}", s),
         }
     }

@@ -27,8 +27,12 @@ use crate::{
         lexer::token::Token,
         parser::{
             expected::ExpectedParseSlice,
-            nodes::action::functions::{
-                assign_function::AssignFaderArgsMode, move_function::MoveArgs,
+            nodes::{
+                action::functions::{
+                    assign_function::AssignFaderArgsMode, move_function::MoveArgs,
+                    set_function::ObjectSetPropertyArgs,
+                },
+                object::ObjectDelegate,
             },
         },
     },
@@ -41,7 +45,7 @@ use self::{
     nodes::{
         action::Action,
         fixture_selector::{AtomicFixtureSelector, FixtureSelector},
-        object::{HomeableObject, Object, ObjectTrait},
+        object::{HomeableObject, Object},
     },
 };
 
@@ -975,6 +979,19 @@ impl<'a> Parser2<'a> {
         }))
     }
 
+    fn parse_set_property_function(&mut self) -> Result<Action, ParseError> {
+        let object = self.parse_object()?;
+
+        let key = self.parse_string()?;
+        let value = self.parse_string()?;
+
+        Ok(Action::ObjectSetProperty(ObjectSetPropertyArgs {
+            object,
+            key,
+            value,
+        }))
+    }
+
     fn parse_config_function(&mut self) -> Result<Action, ParseError> {
         match self.current_token()? {
             Token::KeywordOutput => {
@@ -1281,6 +1298,11 @@ impl<'a> Parser2<'a> {
         if matches!(self.current_token()?, Token::KeywordMove) {
             self.advance();
             return self.parse_move_function();
+        }
+
+        if matches!(self.current_token()?, Token::KeywordSet) {
+            self.advance();
+            return self.parse_set_property_function();
         }
 
         if matches!(self.current_token()?, Token::KeywordAssign) {

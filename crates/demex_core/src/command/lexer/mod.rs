@@ -137,6 +137,7 @@ impl<'a> Lexer<'a> {
                     "speedmaster" | "sm" => Some(Token::KeywordSpeedmaster),
                     "tap" => Some(Token::KeywordTap),
                     "grandetc" => Some(Token::KeywordGrandEtc),
+                    "set" => Some(Token::KeywordSet),
                     _ => None,
                 };
 

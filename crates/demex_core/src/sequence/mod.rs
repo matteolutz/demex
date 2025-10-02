@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use cue::{Cue, CueIdx};
 use serde::{Deserialize, Serialize};
 
-use crate::sequence::cue::CueOut;
+use crate::{implement_set_property, sequence::cue::CueOut};
 
 use super::{
     channel3::channel_value::FixtureChannelValue3, presets::PresetHandler,
@@ -79,7 +79,18 @@ impl FadeFixtureChannelValue {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    Serialize,
+    Deserialize,
+    Default,
+    PartialEq,
+    Eq,
+    strum_macros::EnumString,
+    strum_macros::Display,
+)]
 #[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum SequenceStopBehavior {
     #[default]
@@ -185,4 +196,23 @@ impl Sequence {
             .flat_map(|c| c.affected_fixtures(preset_handler))
             .collect()
     }
+}
+
+#[derive(strum_macros::EnumString, strum_macros::Display)]
+pub enum SequenceProperty {
+    Name,
+    StopBehavior,
+
+    CueOutFade,
+    CueOutFadingFunction,
+}
+
+implement_set_property! {
+    for Sequence with SequenceProperty,
+
+    Name => name as String,
+    StopBehavior => stop_behavior as SequenceStopBehavior,
+
+    CueOutFade => cue_out.fade as f32,
+    CueOutFadingFunction => cue_out.fading_function as cue::CueFadingFunction
 }

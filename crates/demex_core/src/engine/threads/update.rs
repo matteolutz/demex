@@ -57,7 +57,7 @@ pub fn start_demex_update_thread(
                 ) {
                     Ok(result) => match result {
                         ActionRunResult::WithEvent { result: _, event } => {
-                            event_bus_tx.send(event);
+                            let _ = event_bus_tx.send(event);
                         }
                         _ => {}
                     },
