@@ -2,7 +2,7 @@ use std::sync::mpsc;
 
 use crate::{
     command::parser::nodes::{
-        action::{queue::ActionQueue, result::ActionRunResult},
+        action::{ActionIssuer, queue::ActionQueue, result::ActionRunResult},
         fixture_selector::FixtureSelectorContext,
     },
     engine::{component::ComponentHandle, threads::DEMEX_MAX_FUPS},
@@ -55,12 +55,18 @@ pub fn start_demex_update_thread(
                     &mut timing_handler,
                     &patch,
                 ) {
-                    Ok(result) => match result {
-                        ActionRunResult::WithEvent { result: _, event } => {
-                            let _ = event_bus_tx.send(event);
+                    Ok(result) => {
+                        if action.issuer != ActionIssuer::Ui {
+                            log::debug!("Action run result: {:?}", result);
                         }
-                        _ => {}
-                    },
+
+                        match result {
+                            ActionRunResult::WithEvent { result: _, event } => {
+                                let _ = event_bus_tx.send(event);
+                            }
+                            _ => {}
+                        }
+                    }
                     Err(err) => log::warn!("Failed to run action: {}", err),
                 }
             }

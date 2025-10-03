@@ -1,6 +1,6 @@
 use demex_ui::theme::ActiveTheme;
 use demex_ui::utils::todo;
-use gpui::{App, Bounds, ParentElement, Render, Styled, Window, div};
+use gpui::{Bounds, ParentElement, Render, Styled, Window, div};
 
 use crate::ui2::pane::layout::element::pool::delegate::PoolDelegate;
 
@@ -13,7 +13,7 @@ pub struct Pool<P: PoolDelegate> {
 }
 
 impl<P: PoolDelegate> Pool<P> {
-    pub fn new(_window: &mut Window, _cx: &mut App, pool: P, bounds: Bounds<u16>) -> Self {
+    pub fn new(pool: P, bounds: Bounds<u16>) -> Self {
         Self { pool, bounds }
     }
 }

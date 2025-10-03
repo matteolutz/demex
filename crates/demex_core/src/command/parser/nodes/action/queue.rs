@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, time};
 
 use crate::{
-    command::parser::nodes::action::{Action, DeferredAction},
+    command::parser::nodes::action::{Action, ActionIssuer, DeferredAction},
     engine::component::Component,
 };
 
@@ -11,10 +11,19 @@ pub struct ActionQueue {
 }
 
 impl ActionQueue {
-    pub fn enqueue_now(&mut self, action: Action) {
+    pub fn enqueue_now(&mut self, action: Action, issuer: ActionIssuer) {
         self.enqueue_deferred(DeferredAction {
             action,
             issued_at: time::Instant::now(),
+            issuer,
+        });
+    }
+
+    pub fn enqueue_at(&mut self, action: Action, issued_at: time::Instant, issuer: ActionIssuer) {
+        self.enqueue_deferred(DeferredAction {
+            action,
+            issued_at,
+            issuer,
         });
     }
 

@@ -5,7 +5,7 @@ use itertools::Itertools;
 
 use crate::engine::DemexEngineHandler;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum FixtureSheetColumnId {
     Id,
     Patch,
@@ -55,7 +55,7 @@ impl TableDelegate for FixtureSheetTable {
     type ColId = FixtureSheetColumnId;
 
     fn column_count(&self, _cx: &gpui::App) -> usize {
-        3
+        self.columns.len()
     }
 
     fn column(&self, col_ix: usize, _cx: &gpui::App) -> &demex_ui::table::Column<Self::ColId> {

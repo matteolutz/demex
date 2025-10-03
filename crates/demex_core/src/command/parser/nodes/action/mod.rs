@@ -81,12 +81,21 @@ pub enum ConfigTypeActionData {
     Ui,
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum ActionIssuer {
+    Command,
+    Macro,
+    Ui,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeferredAction {
     pub action: Action,
 
     #[serde(with = "approx_instant")]
     pub issued_at: time::Instant,
+
+    pub issuer: ActionIssuer,
 }
 
 impl DeferredAction {
@@ -216,6 +225,16 @@ impl Action {
                 patch,
             ),
             Self::SetFixturePreset(args) => args.run(
+                issued_at,
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+                patch,
+            ),
+            Self::ObjectSetProperty(args) => args.run(
                 issued_at,
                 fixture_handler,
                 preset_handler,

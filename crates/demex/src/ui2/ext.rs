@@ -1,8 +1,9 @@
 use gpui::{Context, Entity, EventEmitter, Subscription};
 
 pub trait GpuiContextExtension<T> {
-    /// Subscribe to an event type from another entity
-    fn subscribe_with<T2, T3, Evt>(
+    /// Subscribe to an event type from another entity also accepting a second entity
+    /// that will be passed to the event handler.
+    fn subscribe_with_entity<T2, T3, Evt>(
         &mut self,
         entity: &Entity<T2>,
         entity2: Entity<T3>,
@@ -16,7 +17,7 @@ pub trait GpuiContextExtension<T> {
 }
 
 impl<'a, T: 'static> GpuiContextExtension<T> for Context<'a, T> {
-    fn subscribe_with<T2, T3, Evt>(
+    fn subscribe_with_entity<T2, T3, Evt>(
         &mut self,
         entity: &Entity<T2>,
         entity2: Entity<T3>,

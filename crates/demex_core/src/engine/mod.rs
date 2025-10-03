@@ -15,7 +15,13 @@ use std::{
 use parking_lot::Mutex;
 
 use crate::{
-    command::parser::nodes::action::{Action, queue::ActionQueue},
+    command::{
+        lexer::Lexer,
+        parser::{
+            Parser2,
+            nodes::action::{Action, ActionIssuer, queue::ActionQueue},
+        },
+    },
     engine::component::{Component, ComponentHandle},
     event::DemexEvent,
     fixture::handler::FixtureHandler,
@@ -70,7 +76,7 @@ impl DemexEngine {
         ComponentHandle::new(component.clone())
     }
 
-    pub fn start(&mut self) {
+    pub fn start(&mut self, start_debug: bool) {
         threads::update::start_demex_update_thread(
             self.event_bus_tx.clone(),
             self.stats(),
@@ -91,12 +97,29 @@ impl DemexEngine {
             self.patch(),
         );
 
-        threads::debug::start_demex_debug_thread(self.stats());
+        if start_debug {
+            threads::debug::start_demex_debug_thread(self.stats());
+        }
     }
 
-    pub fn exec_now(&self, action: Action) {
+    pub fn exec_command(&self, command: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let now = std::time::Instant::now();
+
+        let mut lexer = Lexer::new(command);
+        let tokens = lexer.tokenize()?;
+
+        let mut parser = Parser2::new(&tokens);
+        let action = parser.parse()?;
+
         self.action_queue()
-            .write(|action_queue| action_queue.enqueue_now(action));
+            .write(|action_queue| action_queue.enqueue_at(action, now, ActionIssuer::Command));
+
+        Ok(())
+    }
+
+    pub fn exec_ui(&self, action: Action) {
+        self.action_queue()
+            .write(|action_queue| action_queue.enqueue_now(action, ActionIssuer::Ui));
     }
 
     #[inline]

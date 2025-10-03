@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    event::DemexEvent,
     fixture::handler::FixtureHandler,
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
     sequence::cue::CueIdx,
@@ -234,7 +235,9 @@ impl ObjectDelegate for Object {
         key: String,
         value: String,
     ) -> Result<ActionRunResult, ActionRunError> {
-        match self {
+        let cloned_key = key.clone();
+
+        let result = match self.clone() {
             Self::HomeableObject(object) => {
                 object.set(preset_handler, updatable_handler, key, value)
             }
@@ -258,7 +261,12 @@ impl ObjectDelegate for Object {
                 })
                 .map_err(ActionRunError::PresetHandlerError)
                 .and_then(|cue| cue.set_property_string(key, value)),
-        }
+        };
+
+        result.map(|result| ActionRunResult::WithEvent {
+            result: Box::new(result),
+            event: DemexEvent::ObjectPropertyChanged(self.clone(), cloned_key),
+        })
     }
 
     #[cfg(feature = "ui")]

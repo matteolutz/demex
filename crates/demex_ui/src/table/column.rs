@@ -26,6 +26,11 @@ impl<I: Clone + Eq + Hash> Column<I> {
         }
     }
 
+    pub fn new_auto(id: impl Into<I> + ToString) -> Self {
+        let name = id.to_string();
+        Self::new(id, name)
+    }
+
     pub fn with_width(mut self, width: Pixels) -> Self {
         self.width = width;
         self

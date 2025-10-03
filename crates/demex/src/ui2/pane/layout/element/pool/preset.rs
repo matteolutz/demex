@@ -2,13 +2,18 @@ use std::ops::Range;
 
 use demex_core::{
     channel3::feature::feature_group::FixtureChannel3FeatureGroup,
+    command::parser::nodes::object::Object,
+    event::DemexEvent,
     presets::preset::{FixturePreset, FixturePresetId},
 };
-use gpui::App;
+use gpui::{App, Context, Window};
 
 use crate::{
     engine::DemexEngineHandler,
-    ui2::pane::layout::element::pool::delegate::{PoolDelegate, PoolItemData},
+    ui2::pane::layout::element::pool::{
+        Pool,
+        delegate::{PoolDelegate, PoolItemData},
+    },
 };
 
 pub struct PresetPool {
@@ -16,7 +21,21 @@ pub struct PresetPool {
 }
 
 impl PresetPool {
-    pub fn new(feature_group: FixtureChannel3FeatureGroup) -> Self {
+    pub fn new(
+        feature_group: FixtureChannel3FeatureGroup,
+        _window: &mut Window,
+        cx: &mut Context<Pool<PresetPool>>,
+    ) -> Self {
+        let event_handler = DemexEngineHandler::event_handler(cx);
+
+        cx.subscribe(&event_handler, |_, _, event, cx| match event {
+            DemexEvent::ObjectPropertyChanged(object, _) if matches!(object, Object::Preset(_)) => {
+                cx.notify();
+            }
+            _ => {}
+        })
+        .detach();
+
         Self { feature_group }
     }
 }

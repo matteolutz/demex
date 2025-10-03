@@ -38,7 +38,7 @@ impl DemexEngineHandler {
 
         let event_handler = cx.new(|cx| DemexEventHandler::new(event_bus_rx, cx));
 
-        engine.start();
+        engine.start(false);
 
         cx.set_global(Self {
             engine,

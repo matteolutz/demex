@@ -67,7 +67,7 @@ pub fn demex_update_thread<F: FnMut(f64, &mut time::Instant) + Send + 'static>(
     handle
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct DemexThreadStats {
     dt: f64,
     max_dt: f64,

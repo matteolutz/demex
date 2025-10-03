@@ -8,6 +8,7 @@ use crate::ui2::pane::layout::{
     element::{
         LayoutViewElement, LayoutViewElementType,
         fixture_sheet::FixtureSheet,
+        performance::Performance,
         playback::Playback,
         pool::{Pool, preset::PresetPool},
     },
@@ -52,9 +53,11 @@ impl LayoutViewPane {
                             to: point(15, 3),
                             element_type: LayoutViewElementType::PresetPool(cx.new(|cx| {
                                 Pool::new(
-                                    window,
-                                    cx,
-                                    PresetPool::new(FixtureChannel3FeatureGroup::Dimmer),
+                                    PresetPool::new(
+                                        FixtureChannel3FeatureGroup::Dimmer,
+                                        window,
+                                        cx,
+                                    ),
                                     Bounds::from_corners(point(10, 0), point(15, 3)),
                                 )
                             })),
@@ -64,12 +67,21 @@ impl LayoutViewPane {
                             to: point(15, 7),
                             element_type: LayoutViewElementType::PresetPool(cx.new(|cx| {
                                 Pool::new(
-                                    window,
-                                    cx,
-                                    PresetPool::new(FixtureChannel3FeatureGroup::Position),
+                                    PresetPool::new(
+                                        FixtureChannel3FeatureGroup::Position,
+                                        window,
+                                        cx,
+                                    ),
                                     Bounds::from_corners(point(10, 5), point(15, 7)),
                                 )
                             })),
+                        },
+                        LayoutViewElement {
+                            from: point(10, 6),
+                            to: point(15, 10),
+                            element_type: LayoutViewElementType::Performance(
+                                cx.new(|cx| Performance::new(window, cx)),
+                            ),
                         },
                     ];
 

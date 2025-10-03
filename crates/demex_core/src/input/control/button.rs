@@ -6,7 +6,7 @@ use crate::{
     command::{
         lexer::token::Token,
         parser::nodes::{
-            action::{Action, queue::ActionQueue},
+            action::{Action, ActionIssuer, queue::ActionQueue},
             fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
         },
     },
@@ -127,7 +127,7 @@ impl DemexInputButton {
                 None
             }
             Self::Macro { action } => {
-                action_queue.enqueue_now(action.clone());
+                action_queue.enqueue_now(action.clone(), ActionIssuer::Macro);
                 None
             }
             Self::FixtureSelector { fixture_selector } => {
