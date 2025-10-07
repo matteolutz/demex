@@ -12,7 +12,7 @@ pub enum ActionRunResult {
     #[cfg(feature = "ui")]
     EditWindow(crate::ui::window::edit::DemexEditWindow),
 
-    UpdateSelectedFixtures(Option<FixtureSelection>),
+    UpdateFixtureSelection(Option<FixtureSelection>),
 
     Lock,
 
@@ -31,6 +31,13 @@ impl ActionRunResult {
         Self::WithEvent {
             result: Box::new(Self::new()),
             event,
+        }
+    }
+
+    pub fn get_event(self) -> (Self, Option<DemexEvent>) {
+        match self {
+            Self::WithEvent { result, event } => (*result, Some(event)),
+            _ => (self, None),
         }
     }
 }

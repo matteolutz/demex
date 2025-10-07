@@ -4,7 +4,7 @@ use crate::ui2::pane::layout::element::{
     fixture_sheet::FixtureSheet,
     performance::Performance,
     playback::Playback,
-    pool::{Pool, preset::PresetPool},
+    pool::{Pool, group::GroupPool, preset::PresetPool},
 };
 
 pub mod fixture_sheet;
@@ -17,6 +17,7 @@ pub enum LayoutViewElementType {
     Playback(Entity<Playback>),
 
     PresetPool(Entity<Pool<PresetPool>>),
+    GroupPool(Entity<Pool<GroupPool>>),
 
     Performance(Entity<Performance>),
 }
@@ -33,6 +34,7 @@ impl LayoutViewElementType {
             Self::FixtureSheet(fixture_sheet) => fixture_sheet.clone().into_any_element(),
             Self::Playback(playback) => playback.clone().into_any_element(),
             Self::PresetPool(preset_pool) => preset_pool.clone().into_any_element(),
+            Self::GroupPool(group_pool) => group_pool.clone().into_any_element(),
             Self::Performance(performance) => performance.clone().into_any_element(),
         }
     }

@@ -6790,8 +6790,8 @@
         "data": {
           "Artnet": {
             "broadcast": true,
-            "broadcast_addresses": ["255.255.255.255"],
-            "bind_ip": "192.168.2.221",
+            "broadcast_addresses": ["192.168.178.255"],
+            "bind_ip": "192.168.178.109",
             "universes": [0, 1]
           }
         },

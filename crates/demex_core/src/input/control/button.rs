@@ -131,15 +131,15 @@ impl DemexInputButton {
                 None
             }
             Self::FixtureSelector { fixture_selector } => {
-                *global_fixture_selection = Some(
+                let selection = Some(
                     fixture_selector
                         .get_selection(preset_handler, fixture_selector_context)
                         .map_err(DemexInputDeviceError::FixtureSelectorError)?,
                 );
 
-                Some(DemexEvent::FixtureSelectionChanged(
-                    fixture_selector.clone(),
-                ))
+                // FIXME: make this an engine method
+                *global_fixture_selection = selection.clone();
+                Some(DemexEvent::FixtureSelectionChanged(selection))
             }
             Self::TokenInsert { tokens } => {
                 command_input.extend_from_slice(tokens);

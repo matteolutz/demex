@@ -15,6 +15,7 @@ use crate::{
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
         object::{Object, ObjectDelegate},
     },
+    event::DemexEvent,
     patch::Patch,
     presets::{PresetHandler, preset::FixturePresetId},
     selection::FixtureSelection,
@@ -91,6 +92,7 @@ impl FunctionArgs for SetFeatureValueArgs {
 pub enum SelectionOrSelector {
     Selection(FixtureSelection),
     Selector(FixtureSelector),
+    Current,
 }
 
 impl SelectionOrSelector {
@@ -104,6 +106,10 @@ impl SelectionOrSelector {
             Self::Selector(selector) => selector
                 .get_selection(preset_handler, fixture_selector_context)
                 .map_err(ActionRunError::FixtureSelectorError),
+            Self::Current => fixture_selector_context
+                .current_fixture()
+                .ok_or(ActionRunError::NoFixtureSelected)
+                .cloned(),
         }
     }
 }
@@ -129,6 +135,8 @@ impl FunctionArgs for SetFixturePresetArgs {
         let selection = self
             .selection_or_selector
             .get_selection(preset_handler, fixture_selector_context)?;
+
+        let fixtures = selection.fixtures().to_vec();
 
         match self.preset_id {
             ValueOrRange::Single(preset_id) => {
@@ -187,7 +195,9 @@ impl FunctionArgs for SetFixturePresetArgs {
             }
         }
 
-        Ok(ActionRunResult::new())
+        Ok(ActionRunResult::device_event(
+            DemexEvent::FixtureValuesChanged(fixtures),
+        ))
     }
 }
 

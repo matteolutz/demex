@@ -28,6 +28,8 @@ pub enum ActionRunError {
     ActionNotImplementedForObject(String, Object),
     ActionNotImplementedForObjectRange(String, ObjectRange),
 
+    NoFixtureSelected,
+
     ObjectError(ObjectError),
 
     Todo(String),
@@ -75,6 +77,9 @@ impl std::fmt::Display for ActionRunError {
                     "Action {:?} is not implemented for object range {:?}",
                     action, object_range
                 )
+            }
+            ActionRunError::NoFixtureSelected => {
+                write!(f, "No fixture selected")
             }
             ActionRunError::ObjectError(e) => write!(f, "Object error: {}", e),
             ActionRunError::Todo(s) => write!(f, "To do: {}", s),

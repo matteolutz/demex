@@ -1,4 +1,6 @@
+use demex_core::event::DemexEvent;
 use demex_ui::table::{Column, Table, TableDelegate};
+use demex_ui::theme::ActiveTheme;
 use gpui::{App, Entity, Window, prelude::*, px};
 use gpui::{Render, Styled, div};
 use itertools::Itertools;
@@ -10,6 +12,7 @@ pub enum FixtureSheetColumnId {
     Id,
     Patch,
     Name,
+    Dimmer,
 }
 
 pub struct FixtureSheet {
@@ -19,7 +22,7 @@ pub struct FixtureSheet {
 impl FixtureSheet {
     pub fn new(window: &mut Window, cx: &mut App) -> Self {
         Self {
-            table: cx.new(|cx| Table::new(FixtureSheetTable::default(), window, cx)),
+            table: cx.new(|cx| Table::new(FixtureSheetTable::new(window, cx), window, cx)),
         }
     }
 }
@@ -34,19 +37,59 @@ impl Render for FixtureSheet {
     }
 }
 
+#[derive(Clone)]
 pub struct FixtureSheetTable {
     columns: Vec<Column<FixtureSheetColumnId>>,
 }
 
-impl Default for FixtureSheetTable {
-    fn default() -> Self {
+impl FixtureSheetTable {
+    pub fn new(window: &mut Window, cx: &mut Context<Table<Self>>) -> Self {
+        let event_handler = DemexEngineHandler::event_handler(cx);
+        cx.subscribe_in(
+            &event_handler,
+            window,
+            |table, _, event, window, cx| match event {
+                DemexEvent::FixtureSelectionChanged(_) | DemexEvent::FixtureValuesChanged(_) => {
+                    table.refresh(window, cx);
+                }
+                _ => {}
+            },
+        )
+        .detach();
+
         Self {
             columns: vec![
                 Column::new(FixtureSheetColumnId::Id, "Id"),
                 Column::new(FixtureSheetColumnId::Patch, "Patch"),
                 Column::new(FixtureSheetColumnId::Name, "Name").with_width(px(200.0)),
+                Column::new(FixtureSheetColumnId::Dimmer, "Dimmer"),
             ],
         }
+    }
+
+    fn get_attribute_value(
+        &self,
+        fixture_id: u32,
+        attribute: &str,
+        cx: &mut App,
+    ) -> (bool, Option<String>) {
+        let attribute_value =
+            DemexEngineHandler::read_fixture_and_patch(cx, fixture_id, |f, patch| {
+                f.get_attribute_value(patch.fixture_types(), attribute).ok()
+            })
+            .flatten();
+
+        let is_active = attribute_value
+            .as_ref()
+            .is_some_and(|value| !value.is_home());
+
+        let attribute_value_string = attribute_value.map(|value| {
+            DemexEngineHandler::engine(cx)
+                .preset_handler()
+                .read(|ph| value.to_string(ph))
+        });
+
+        (is_active, attribute_value_string)
     }
 }
 
@@ -76,6 +119,15 @@ impl TableDelegate for FixtureSheetTable {
                 .map(|f| f.id())
                 .sorted()
                 .collect::<Vec<_>>()
+        })
+    }
+
+    fn highlighted_row_ids(&self, cx: &App) -> Option<Vec<Self::RowId>> {
+        DemexEngineHandler::engine(cx).state().read(|state| {
+            state
+                .fixture_selection
+                .as_ref()
+                .map(|selection| selection.fixtures().to_vec())
         })
     }
 
@@ -115,6 +167,19 @@ impl TableDelegate for FixtureSheetTable {
                     .unwrap()
                     .to_string(),
             ),
+            &FixtureSheetColumnId::Dimmer => {
+                let (is_active, dimmer_value_string) =
+                    self.get_attribute_value(*row_id, "Dimmer", cx);
+
+                div()
+                    .size_full()
+                    .flex()
+                    .items_center()
+                    .px_1()
+                    .when(is_active, |this| this.text_color(cx.theme().yellow))
+                    .child(dimmer_value_string.unwrap_or_else(|| "N/A".to_string()))
+                    .into_any_element()
+            }
         }
     }
 }

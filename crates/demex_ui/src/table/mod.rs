@@ -281,14 +281,20 @@ impl<D: TableDelegate> Table<D> {
 
     fn render_body(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let row_count = self.sorted_row_ids(cx).len();
+        let highlighted_row_ids = self.highlighted_row_ids(cx);
+
         uniform_list(
             "table_list",
             row_count,
-            cx.processor(|this, range: Range<usize>, window, cx| {
+            cx.processor(move |this, range: Range<usize>, window, cx| {
                 range
                     .map(|row_ix| {
                         let row_id = this.row_id(row_ix, cx).unwrap();
-                        this.render_row(&row_id, row_ix, window, cx)
+                        let is_highlighted = highlighted_row_ids
+                            .as_ref()
+                            .is_some_and(|ids| ids.contains(&row_id));
+
+                        this.render_row(&row_id, row_ix, is_highlighted, window, cx)
                             .into_any_element()
                     })
                     .collect()
@@ -302,6 +308,7 @@ impl<D: TableDelegate> Table<D> {
         &mut self,
         row_id: &D::RowId,
         row_ix: usize,
+        is_highlighted: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
@@ -309,6 +316,8 @@ impl<D: TableDelegate> Table<D> {
 
         let bg_color = if selected {
             cx.theme().selected
+        } else if is_highlighted {
+            cx.theme().table_highlighted
         } else {
             if row_ix % 2 == 1 {
                 cx.theme().table_even

@@ -418,7 +418,7 @@ impl Action {
                 ))
                 .map(ActionRunResult::EditWindow),
 
-            Self::ClearAll => Ok(ActionRunResult::new()),
+            Self::ClearAll => Ok(ActionRunResult::UpdateFixtureSelection(None)),
             Self::FixtureSelector(fixture_selector) => self.run_fixture_selector(
                 fixture_selector,
                 fixture_selector_context,
@@ -475,7 +475,7 @@ impl Action {
             } => self.run_unassign_input_fader(input_device_handler, *device_idx, *fader_id),
 
             Self::InternalSetFixtureSelection(selection) => {
-                Ok(ActionRunResult::UpdateSelectedFixtures(selection.clone()))
+                Ok(ActionRunResult::UpdateFixtureSelection(selection.clone()))
             }
             Self::InternalExecutorGo(args) => args.run(
                 issued_at,
@@ -563,7 +563,7 @@ impl Action {
             ));
         }
 
-        Ok(ActionRunResult::UpdateSelectedFixtures(Some(selection)))
+        Ok(ActionRunResult::UpdateFixtureSelection(Some(selection)))
     }
 
     pub fn run_delete_macro(

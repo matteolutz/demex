@@ -25,6 +25,10 @@ pub trait TableDelegate: Sized + 'static {
 
     fn sorted_row_ids(&self, cx: &App) -> Vec<Self::RowId>;
 
+    fn highlighted_row_ids(&self, _cx: &App) -> Option<Vec<Self::RowId>> {
+        None
+    }
+
     fn can_select_multiple_rows(&self, _cx: &App) -> bool {
         true
     }

@@ -369,9 +369,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 cx.activate(true);
 
-                demex_ui::init(cx);
+                demex_ui::init(cx).expect("Failed to initialize UI");
 
-                DemexEngineHandler::init(fixture_types, show, cx).unwrap();
+                DemexEngineHandler::init(fixture_types, show, cx)
+                    .expect("Failed to initialize engine");
 
                 cx.update_wm(|wm, cx| wm.open_singleton_window::<MainWindow>(cx, ()));
 

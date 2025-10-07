@@ -22,7 +22,10 @@ use crate::{
             nodes::action::{Action, ActionIssuer, queue::ActionQueue},
         },
     },
-    engine::component::{Component, ComponentHandle},
+    engine::{
+        component::{Component, ComponentHandle},
+        state::DemexEngineState,
+    },
     event::DemexEvent,
     fixture::handler::FixtureHandler,
     input::event::handler::DemexInputDeviceEventHandler,
@@ -35,6 +38,7 @@ use crate::{
 
 pub mod component;
 pub mod error;
+pub mod state;
 pub mod threads;
 
 pub struct DemexEngine {
@@ -42,6 +46,8 @@ pub struct DemexEngine {
     stats: ComponentHandle<DemexThreadStatsHandler>,
 
     action_queue: ComponentHandle<ActionQueue>,
+
+    state: ComponentHandle<DemexEngineState>,
 
     event_bus_tx: mpsc::Sender<DemexEvent>,
 }
@@ -52,6 +58,7 @@ impl DemexEngine {
             components: HashMap::new(),
             stats: ComponentHandle::create_default(),
             action_queue: ComponentHandle::create_default(),
+            state: ComponentHandle::create_default(),
             event_bus_tx,
         }
     }
@@ -87,6 +94,7 @@ impl DemexEngine {
             self.timing_handler(),
             self.patch(),
             self.input_device_event_handler(),
+            self.state(),
         );
 
         threads::output::start_demex_output_thread(
@@ -155,6 +163,11 @@ impl DemexEngine {
     #[inline]
     pub fn input_device_event_handler(&self) -> ComponentHandle<DemexInputDeviceEventHandler> {
         self.component()
+    }
+
+    #[inline]
+    pub fn state(&self) -> ComponentHandle<DemexEngineState> {
+        self.state.clone()
     }
 
     #[inline]

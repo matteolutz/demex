@@ -10,7 +10,7 @@ use crate::ui2::pane::layout::{
         fixture_sheet::FixtureSheet,
         performance::Performance,
         playback::Playback,
-        pool::{Pool, preset::PresetPool},
+        pool::{Pool, group::GroupPool, preset::PresetPool},
     },
     page::LayoutViewPage,
 };
@@ -51,13 +51,9 @@ impl LayoutViewPane {
                         LayoutViewElement {
                             from: point(10, 0),
                             to: point(15, 3),
-                            element_type: LayoutViewElementType::PresetPool(cx.new(|cx| {
+                            element_type: LayoutViewElementType::GroupPool(cx.new(|cx| {
                                 Pool::new(
-                                    PresetPool::new(
-                                        FixtureChannel3FeatureGroup::Dimmer,
-                                        window,
-                                        cx,
-                                    ),
+                                    GroupPool::new(window, cx),
                                     Bounds::from_corners(point(10, 0), point(15, 3)),
                                 )
                             })),
@@ -68,16 +64,16 @@ impl LayoutViewPane {
                             element_type: LayoutViewElementType::PresetPool(cx.new(|cx| {
                                 Pool::new(
                                     PresetPool::new(
-                                        FixtureChannel3FeatureGroup::Position,
+                                        FixtureChannel3FeatureGroup::Dimmer,
                                         window,
                                         cx,
                                     ),
-                                    Bounds::from_corners(point(10, 5), point(15, 7)),
+                                    Bounds::from_corners(point(10, 4), point(15, 7)),
                                 )
                             })),
                         },
                         LayoutViewElement {
-                            from: point(10, 6),
+                            from: point(10, 7),
                             to: point(15, 10),
                             element_type: LayoutViewElementType::Performance(
                                 cx.new(|cx| Performance::new(window, cx)),

@@ -2,7 +2,13 @@ use std::ops::Range;
 
 use demex_core::{
     channel3::feature::feature_group::FixtureChannel3FeatureGroup,
-    command::parser::nodes::object::Object,
+    command::parser::nodes::{
+        action::{
+            Action, ValueOrRange,
+            functions::set_function::{SelectionOrSelector, SetFixturePresetArgs},
+        },
+        object::Object,
+    },
     event::DemexEvent,
     presets::preset::{FixturePreset, FixturePresetId},
 };
@@ -40,9 +46,16 @@ impl PresetPool {
     }
 }
 
+#[derive(Copy, Clone, strum_macros::Display, Default)]
+pub enum PresetPoolAction {
+    #[default]
+    Apply,
+}
+
 impl PoolDelegate for PresetPool {
     type PoolItemId = FixturePresetId;
     type PoolItem = FixturePreset;
+    type PoolItemAction = PresetPoolAction;
 
     fn get_title(&self) -> String {
         self.feature_group.to_string()
@@ -59,13 +72,26 @@ impl PoolDelegate for PresetPool {
 
     fn get_item_data(
         &self,
-        id: &Self::PoolItemId,
+        id: Self::PoolItemId,
         cx: &mut App,
     ) -> Option<super::delegate::PoolItemData> {
         DemexEngineHandler::engine(cx).preset_handler().read(|ph| {
-            ph.get_preset(*id).ok().map(|p| PoolItemData {
+            ph.get_preset(id).ok().map(|p| PoolItemData {
                 name: p.name().to_string(),
             })
         })
+    }
+
+    fn on_action(&self, id: Self::PoolItemId, action: Self::PoolItemAction, cx: &mut App) {
+        match action {
+            PresetPoolAction::Apply => {
+                DemexEngineHandler::engine(cx).exec_ui(Action::SetFixturePreset(
+                    SetFixturePresetArgs {
+                        selection_or_selector: SelectionOrSelector::Current,
+                        preset_id: ValueOrRange::Single(id),
+                    },
+                ));
+            }
+        }
     }
 }

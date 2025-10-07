@@ -67,6 +67,8 @@ pub struct ThemeColors {
     pub table: Hsla,
     /// Stripe background color for even table row.
     pub table_even: Hsla,
+    /// Stripe background color for highlighted table row.
+    pub table_highlighted: Hsla,
     /// Table header background color.
     pub table_header: Hsla,
     /// Table header text color.
@@ -134,6 +136,8 @@ impl ThemeColors {
 
             table: rgb(0x000000).into(),
             table_even: rgb(0x141414).into(),
+            // table_highlighted: rgb(0x282828).into(),
+            table_highlighted: Hsla::from(rgb(0xff4040)).with_opacity(0.5),
             table_header: rgb(0x242424).into(),
             table_header_foreground: rgb(0xffffff).into(),
             table_header_border: rgb(0x383838).into(),

@@ -5,7 +5,7 @@ use crate::{
         action::{ActionIssuer, queue::ActionQueue, result::ActionRunResult},
         fixture_selector::FixtureSelectorContext,
     },
-    engine::{component::ComponentHandle, threads::DEMEX_MAX_FUPS},
+    engine::{component::ComponentHandle, state::DemexEngineState, threads::DEMEX_MAX_FUPS},
     event::DemexEvent,
     fixture::handler::FixtureHandler,
     input::{DemexInputDeviceHandler, event::handler::DemexInputDeviceEventHandler},
@@ -26,6 +26,7 @@ pub fn start_demex_update_thread(
     timing_handler: ComponentHandle<TimingHandler>,
     patch: ComponentHandle<Patch>,
     mut input_device_event_handler: ComponentHandle<DemexInputDeviceEventHandler>,
+    state: ComponentHandle<DemexEngineState>,
 ) {
     demex_update_thread(
         "demex-update".to_owned(),
@@ -44,12 +45,14 @@ pub fn start_demex_update_thread(
 
             let patch = patch.lock();
 
+            let mut state = state.lock();
+
             // FIXME: just for testing
             for action in action_queue.inner_mut().drain(..) {
                 match action.run(
                     &mut fixture_handler,
                     &mut preset_handler,
-                    FixtureSelectorContext::new(&None),
+                    FixtureSelectorContext::new(&state.fixture_selection),
                     &mut updatable_handler,
                     &mut DemexInputDeviceHandler::new(vec![]),
                     &mut timing_handler,
@@ -60,10 +63,18 @@ pub fn start_demex_update_thread(
                             log::debug!("Action run result: {:?}", result);
                         }
 
+                        let (result, event) = result.get_event();
+                        if let Some(event) = event {
+                            let _ = event_bus_tx.send(event);
+                        }
+
                         match result {
-                            ActionRunResult::WithEvent { result: _, event } => {
-                                let _ = event_bus_tx.send(event);
+                            ActionRunResult::UpdateFixtureSelection(selection) => {
+                                state.fixture_selection = selection.clone();
+                                let _ = event_bus_tx
+                                    .send(DemexEvent::FixtureSelectionChanged(selection));
                             }
+                            ActionRunResult::WithEvent { .. } => unreachable!(),
                             _ => {}
                         }
                     }
