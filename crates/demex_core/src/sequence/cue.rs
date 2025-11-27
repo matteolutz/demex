@@ -11,10 +11,11 @@ use crate::{
         record_function::RecordChannelTypeSelector, update_function::UpdateMode,
     },
     fixture::{
-        GdtfFixture,
+        GdtfFixturePatch,
         handler::{FixtureHandler, FixtureTypeList},
     },
     implement_set_property,
+    patch::Patch,
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
     selection::FixtureSelection,
     timing::TimingHandler,
@@ -421,8 +422,8 @@ impl Cue {
 
     pub fn values_for_fixture(
         &self,
-        fixture: &GdtfFixture,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
+        fixture: &GdtfFixturePatch,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         cue_started: Option<time::Instant>,
@@ -467,8 +468,8 @@ impl Cue {
                         if let Ok(preset) = preset {
                             return preset
                                 .values(
+                                    patch,
                                     fixture,
-                                    fixture_types,
                                     preset_handler,
                                     timing_handler,
                                     preset_state.as_ref(),
@@ -489,8 +490,8 @@ impl Cue {
 
     pub fn channel_value_for_fixture(
         &self,
-        fixture: &GdtfFixture,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
+        fixture: &GdtfFixturePatch,
         channel_name: &str,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
@@ -534,8 +535,8 @@ impl Cue {
                         let preset = preset_handler.get_preset(entry.preset_id.unwrap());
                         if let Ok(preset) = preset {
                             return preset.value(
+                                patch,
                                 fixture,
-                                fixture_types,
                                 channel_name,
                                 preset_handler,
                                 timing_handler,

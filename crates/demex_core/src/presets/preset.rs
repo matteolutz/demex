@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     channel3::{
         channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
+        channel_value_discrete::FixtureChannelDiscreteValue,
         feature::{
             feature_group::FixtureChannel3FeatureGroup, feature_type::FixtureChannel3FeatureType,
         },
@@ -15,7 +16,7 @@ use crate::{
     },
     effect::{feature::runtime::FeatureEffectRuntime, speed::EffectSpeed},
     fixture::{
-        GdtfFixture,
+        GdtfFixture, GdtfFixturePatch,
         handler::{FixtureHandler, FixtureTypeList},
     },
     implement_set_property,
@@ -23,6 +24,7 @@ use crate::{
         effect::KeyframeEffect, effect_keyframe::KeyframeEffectKeyframe,
         effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_runtime::KeyframeEffectRuntime,
     },
+    patch::Patch,
     selection::FixtureSelection,
     timing::TimingHandler,
     updatables::runtime::RuntimePhase,
@@ -125,7 +127,7 @@ pub enum FixturePresetTarget {
 pub enum FixturePresetData {
     Default {
         #[cfg_attr(feature = "ui", egui_probe(skip))]
-        data: HashMap<u32, HashMap<String, FixtureChannelValue3>>,
+        data: HashMap<u32, HashMap<String, FixtureChannelDiscreteValue>>,
     },
     FeatureEffect {
         runtime: FeatureEffectRuntime,
@@ -224,16 +226,7 @@ impl FixturePreset {
                             continue;
                         }
 
-                        new_values.insert(
-                            dmx_channel.name().as_ref().to_owned(),
-                            value.clone().to_discrete(
-                                fixture,
-                                fixture_types,
-                                dmx_channel.name().as_ref(),
-                                preset_handler,
-                                timing_handler,
-                            ),
-                        );
+                        new_values.insert(dmx_channel.name().as_ref().to_owned(), value.clone());
                     }
                 }
 
@@ -430,8 +423,8 @@ impl FixturePreset {
 
     pub fn values(
         &self,
-        fixture: &GdtfFixture,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
+        fixture: &GdtfFixturePatch,
         _preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         state: Option<&FixtureChannelValue2PresetState>,
@@ -442,7 +435,12 @@ impl FixturePreset {
                 .map(|values| {
                     values
                         .iter()
-                        .map(|(channel_name, value)| (channel_name.clone(), value.clone()))
+                        .map(|(channel_name, value)| {
+                            (
+                                channel_name.clone(),
+                                FixtureChannelValue3::Discrete(value.clone()),
+                            )
+                        })
                         .collect::<Vec<_>>()
                 })
                 .unwrap_or_default(),
@@ -454,8 +452,8 @@ impl FixturePreset {
                     .unwrap_or_default();
 
                 runtime.get_values_with_started(
+                    patch,
                     fixture,
-                    fixture_types,
                     fixture_offset,
                     timing_handler,
                     state.map(|state| state.started()),
@@ -477,7 +475,6 @@ impl FixturePreset {
                                 .get_channel_value_with_started(
                                     channel,
                                     fixture,
-                                    fixture_types,
                                     fixture_offset,
                                     timing_handler,
                                     state.map(|state| state.started()),
@@ -492,8 +489,8 @@ impl FixturePreset {
 
     pub fn value(
         &self,
-        fixture: &GdtfFixture,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
+        fixture: &GdtfFixturePatch,
         channel_name: &str,
         _preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
@@ -512,7 +509,8 @@ impl FixturePreset {
         let val = match &self.data {
             FixturePresetData::Default { data } => data
                 .get(&fixture.id())
-                .and_then(|values| values.get(channel_name).cloned()),
+                .and_then(|values| values.get(channel_name).cloned())
+                .map(FixtureChannelValue3::Discrete),
             FixturePresetData::FeatureEffect { runtime } => {
                 let fixture_offset = state
                     .and_then(|state| state.selection().offset(fixture.id()))
@@ -521,8 +519,8 @@ impl FixturePreset {
                 runtime
                     .get_channel_value_with_started(
                         channel_name,
+                        patch,
                         fixture,
-                        fixture_types,
                         fixture_offset,
                         timing_handler,
                         state.map(|state| state.started()),
@@ -538,7 +536,6 @@ impl FixturePreset {
                     .get_channel_value_with_started(
                         channel_name,
                         fixture,
-                        fixture_types,
                         fixture_offset,
                         timing_handler,
                         state.map(|state| state.started()),
@@ -585,7 +582,7 @@ impl FixturePreset {
 
     pub fn update(
         &mut self,
-        values_to_update: HashMap<u32, HashMap<String, FixtureChannelValue3>>,
+        values_to_update: HashMap<u32, HashMap<String, FixtureChannelDiscreteValue>>,
         update_mode: UpdateMode,
     ) -> Result<usize, PresetHandlerError> {
         match &mut self.data {

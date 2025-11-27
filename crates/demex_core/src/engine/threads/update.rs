@@ -33,19 +33,19 @@ pub fn start_demex_update_thread(
         stats.clone(),
         DEMEX_MAX_FUPS,
         move |_, _| {
-            let mut action_queue = action_queue.lock();
+            let mut action_queue = action_queue.lock_write();
 
-            let mut fixture_handler = fixture_handler.lock();
+            let mut fixture_handler = fixture_handler.lock_write();
 
-            let mut preset_handler = preset_handler.lock();
+            let mut preset_handler = preset_handler.lock_write();
 
-            let mut updatable_handler = updatable_handler.lock();
+            let mut updatable_handler = updatable_handler.lock_write();
 
-            let mut timing_handler = timing_handler.lock();
+            let mut timing_handler = timing_handler.lock_write();
 
-            let patch = patch.lock();
+            let patch = patch.lock_read();
 
-            let mut state = state.lock();
+            let mut state = state.lock_write();
 
             // FIXME: just for testing
             for action in action_queue.inner_mut().drain(..) {

@@ -102,7 +102,10 @@ impl KeyframeEffectLayer {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::keyframe_effect::effect_keyframe_curve::KeyframeEffectKeyframeCurve;
+    use crate::{
+        channel3::channel_value_discrete::FixtureChannelDiscreteValue,
+        keyframe_effect::effect_keyframe_curve::KeyframeEffectKeyframeCurve,
+    };
 
     use super::*;
 
@@ -125,18 +128,22 @@ mod tests {
             keyframes: vec![
                 KeyframeEffectKeyframe::new(
                     0.0,
-                    get_test_values(FixtureChannelValue3::Discrete {
-                        channel_function_idx: 0,
-                        value: 0.0,
-                    }),
+                    get_test_values(FixtureChannelValue3::Discrete(
+                        FixtureChannelDiscreteValue::Discrete {
+                            channel_function_idx: 0,
+                            value: 0.0,
+                        },
+                    )),
                     KeyframeEffectKeyframeCurve::Linear,
                 ),
                 KeyframeEffectKeyframe::new(
                     0.5,
-                    get_test_values(FixtureChannelValue3::Discrete {
-                        channel_function_idx: 0,
-                        value: 1.0,
-                    }),
+                    get_test_values(FixtureChannelValue3::Discrete(
+                        FixtureChannelDiscreteValue::Discrete {
+                            channel_function_idx: 0,
+                            value: 1.0,
+                        },
+                    )),
                     KeyframeEffectKeyframeCurve::Linear,
                 ),
             ],

@@ -2,7 +2,8 @@ use std::io;
 
 use crate::{
     channel3::{
-        channel_value::FixtureChannelValue3, feature::feature_group::FixtureChannel3FeatureGroup,
+        channel_value::FixtureChannelValue3, channel_value_discrete::FixtureChannelDiscreteValue,
+        feature::feature_group::FixtureChannel3FeatureGroup,
     },
     presets::preset::FixturePresetId,
 };
@@ -20,32 +21,43 @@ const HOME: u8 = 0x01;
 const DISCRETE: u8 = 0x02;
 const DISCRETE_SET: u8 = 0x03;
 const PRESET: u8 = 0x04;
-const MIX: u8 = 0x05;
+const DISCRETE_MIX: u8 = 0x05;
+const MIX: u8 = 0x06;
 
 impl DemexProtoSerialize for FixtureChannelValue3 {
     fn serialize(&self, buf: &mut impl std::io::Write) -> std::io::Result<usize> {
         let mut bytes_written = 0;
 
         match self {
-            Self::Home => {
-                bytes_written += demex_proto_write_u8(buf, HOME)?;
-            }
-            Self::Discrete {
-                channel_function_idx,
-                value,
-            } => {
-                bytes_written += demex_proto_write_u8(buf, DISCRETE)?;
-                bytes_written += demex_proto_write_u64(buf, *channel_function_idx as u64)?;
-                bytes_written += demex_proto_write_f32(buf, *value)?;
-            }
-            Self::DiscreteSet {
-                channel_function_idx,
-                channel_set,
-            } => {
-                bytes_written += demex_proto_write_u8(buf, DISCRETE_SET)?;
-                bytes_written += demex_proto_write_u64(buf, *channel_function_idx as u64)?;
-                bytes_written += demex_proto_write_string(buf, channel_set)?;
-            }
+            Self::Discrete(discrete) => match discrete {
+                FixtureChannelDiscreteValue::Home => {
+                    bytes_written += demex_proto_write_u8(buf, HOME)?;
+                }
+                FixtureChannelDiscreteValue::Discrete {
+                    channel_function_idx,
+                    value,
+                } => {
+                    bytes_written += demex_proto_write_u8(buf, DISCRETE)?;
+                    bytes_written += demex_proto_write_u64(buf, *channel_function_idx as u64)?;
+                    bytes_written += demex_proto_write_f32(buf, *value)?;
+                }
+                FixtureChannelDiscreteValue::DiscreteSet {
+                    channel_function_idx,
+                    channel_set,
+                } => {
+                    bytes_written += demex_proto_write_u8(buf, DISCRETE_SET)?;
+                    bytes_written += demex_proto_write_u64(buf, *channel_function_idx as u64)?;
+                    bytes_written += demex_proto_write_string(buf, channel_set)?;
+                }
+                FixtureChannelDiscreteValue::Mix { a, b, mix } => {
+                    bytes_written += demex_proto_write_u8(buf, DISCRETE_MIX)?;
+                    // TODO: fix this
+                    bytes_written += FixtureChannelValue3::Discrete(*a.clone()).serialize(buf)?;
+                    bytes_written += FixtureChannelValue3::Discrete(*b.clone()).serialize(buf)?;
+                    bytes_written += demex_proto_write_f32(buf, *mix)?;
+                }
+            },
+
             Self::Preset { id, state } => {
                 bytes_written += demex_proto_write_u8(buf, PRESET)?;
 
@@ -77,24 +89,28 @@ impl DemexProtoDeserialize for FixtureChannelValue3 {
 
     fn deserialize(buf: &mut impl io::Read) -> std::io::Result<Self::Output> {
         match buf.read_u8()? {
-            HOME => Ok(Self::Home),
+            HOME => Ok(Self::home()),
             DISCRETE => {
                 let channel_function_idx = demex_proto_read_u64(buf)? as usize;
                 let value = demex_proto_read_f32(buf)?;
 
-                Ok(Self::Discrete {
-                    channel_function_idx,
-                    value,
-                })
+                Ok(FixtureChannelValue3::Discrete(
+                    FixtureChannelDiscreteValue::Discrete {
+                        channel_function_idx,
+                        value,
+                    },
+                ))
             }
             DISCRETE_SET => {
                 let channel_function_idx = demex_proto_read_u64(buf)? as usize;
                 let channel_set = demex_proto_read_string(buf)?;
 
-                Ok(Self::DiscreteSet {
-                    channel_function_idx,
-                    channel_set,
-                })
+                Ok(FixtureChannelValue3::Discrete(
+                    FixtureChannelDiscreteValue::DiscreteSet {
+                        channel_function_idx,
+                        channel_set,
+                    },
+                ))
             }
             PRESET => {
                 let feature_group: FixtureChannel3FeatureGroup =
@@ -119,6 +135,33 @@ impl DemexProtoDeserialize for FixtureChannelValue3 {
                     ciborium::from_reader(&preset_state_buf[..]).map_err(io::Error::other)?;
 
                 Ok(Self::Preset { id, state })
+            }
+            DISCRETE_MIX => {
+                let a = match FixtureChannelValue3::deserialize(buf)? {
+                    Self::Discrete(discrete) => Ok(discrete),
+                    _ => Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Expected discrete value",
+                    )),
+                }?;
+
+                let b = match FixtureChannelValue3::deserialize(buf)? {
+                    Self::Discrete(discrete) => Ok(discrete),
+                    _ => Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Expected discrete value",
+                    )),
+                }?;
+
+                let mix = demex_proto_read_f32(buf)?;
+
+                Ok(FixtureChannelValue3::Discrete(
+                    FixtureChannelDiscreteValue::Mix {
+                        a: Box::new(a),
+                        b: Box::new(b),
+                        mix,
+                    },
+                ))
             }
             MIX => {
                 let a = FixtureChannelValue3::deserialize(buf)?;

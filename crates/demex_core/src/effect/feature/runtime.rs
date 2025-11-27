@@ -3,18 +3,19 @@ use std::{f32, time};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    utils::math::instant_diff_secs,
-    {
-        channel3::channel_value::FixtureChannelValue3,
-        effect::{
-            error::EffectError,
-            speed::{EffectSpeed, EffectSpeedSyncMode},
-        },
-        effect2::effect::Effect2,
-        fixture::{GdtfFixture, handler::FixtureTypeList},
-        timing::TimingHandler,
-        updatables::runtime::RuntimePhase,
+    channel3::{
+        channel_value::FixtureChannelValue3, channel_value_discrete::FixtureChannelDiscreteValue,
     },
+    effect::{
+        error::EffectError,
+        speed::{EffectSpeed, EffectSpeedSyncMode},
+    },
+    effect2::effect::Effect2,
+    fixture::GdtfFixturePatch,
+    patch::Patch,
+    timing::TimingHandler,
+    updatables::runtime::RuntimePhase,
+    utils::math::instant_diff_secs,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -73,24 +74,20 @@ impl FeatureEffectRuntime {
 
     pub fn get_values_with_started(
         &self,
-        fixture: &GdtfFixture,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
+        fixture: &GdtfFixturePatch,
         fixture_offset: f32,
         timing_handler: &TimingHandler,
         started: Option<time::Instant>,
     ) -> Vec<(String, FixtureChannelValue3)> {
         self.effect()
             .attributes()
-            .flat_map(|attribute| {
-                fixture
-                    .channels_for_attribute(fixture_types, attribute)
-                    .unwrap()
-            })
+            .flat_map(|attribute| fixture.channels_for_attribute(patch, attribute).unwrap())
             .filter_map(|(channel, _, _)| {
                 self.get_channel_value_with_started(
                     channel.name().as_ref(),
+                    patch,
                     fixture,
-                    fixture_types,
                     fixture_offset,
                     timing_handler,
                     started,
@@ -104,15 +101,15 @@ impl FeatureEffectRuntime {
     pub fn get_channel_value(
         &self,
         channel_name: &str,
-        fixture: &GdtfFixture,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
+        fixture: &GdtfFixturePatch,
         fixture_offset: f32,
         timing_handler: &TimingHandler,
     ) -> Result<FixtureChannelValue3, EffectError> {
         self.get_channel_value_with_started(
             channel_name,
+            patch,
             fixture,
-            fixture_types,
             fixture_offset,
             timing_handler,
             self.effect_started,
@@ -122,8 +119,8 @@ impl FeatureEffectRuntime {
     pub fn get_channel_value_with_started(
         &self,
         channel_name: &str,
-        fixture: &GdtfFixture,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
+        fixture: &GdtfFixturePatch,
         fixture_offset: f32,
         timing_handler: &TimingHandler,
         started: Option<time::Instant>,
@@ -163,7 +160,7 @@ impl FeatureEffectRuntime {
                 let speed_multiplier = (2.0 * f32::consts::PI) * effective_bps;
 
                 let (_, logical_channel) = fixture
-                    .get_channel(fixture_types, channel_name)
+                    .get_channel(patch, channel_name)
                     .map_err(EffectError::FixtureError)?;
 
                 let mut channel_value = None;
@@ -178,10 +175,12 @@ impl FeatureEffectRuntime {
                     );
 
                     if let Some(attribute_value) = attribute_value {
-                        channel_value = Some(FixtureChannelValue3::Discrete {
-                            channel_function_idx: idx,
-                            value: attribute_value,
-                        });
+                        channel_value = Some(FixtureChannelValue3::Discrete(
+                            FixtureChannelDiscreteValue::Discrete {
+                                channel_function_idx: idx,
+                                value: attribute_value,
+                            },
+                        ));
                         break;
                     }
                 }

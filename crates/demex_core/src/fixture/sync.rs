@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::channel3::{
-    channel_value::FixtureChannelValue3, channel_value_state::FixtureChannelValue3State,
+    channel_value::FixtureChannelValue3, channel_value_state::FixtureChannelOutputValue,
 };
 
 use demex_headless::sync::DemexSync;
@@ -22,7 +22,7 @@ impl DemexSync for GdtfFixture {
         self.outputs_values = sync
             .output_values
             .into_iter()
-            .map(|(channel, value)| (channel, (value, FixtureChannelValue3State::new_changed())))
+            .map(|(channel, value)| (channel, (value, FixtureChannelOutputValue::new_changed())))
             .collect();
     }
 

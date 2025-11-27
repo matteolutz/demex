@@ -54,7 +54,7 @@ impl FunctionArgs for UpdatePresetArgs {
                 &self.fixture_selector,
                 fixture_selector_context,
                 self.id,
-                patch.fixture_types(),
+                patch,
                 fixture_handler,
                 timing_handler,
                 self.update_mode,

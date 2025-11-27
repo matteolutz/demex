@@ -111,7 +111,7 @@ impl FunctionArgs for RecordPresetArgs {
                 self.id,
                 self.name.clone(),
                 self.should_next,
-                patch.fixture_types(),
+                patch,
                 fixture_handler,
                 timing_handler,
             )

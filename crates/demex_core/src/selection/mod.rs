@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     command::parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
-    fixture::{GdtfFixture, handler::FixtureHandler},
+    fixture::GdtfFixturePatch,
+    patch::Patch,
 };
 
 use super::presets::PresetHandler;
@@ -95,11 +96,8 @@ impl FixtureSelection {
         self
     }
 
-    pub fn master_fixture<'a>(
-        &'a self,
-        fixture_handler: &'a FixtureHandler,
-    ) -> Option<&'a GdtfFixture> {
-        fixture_handler.fixture_immut(self.fixtures[0])
+    pub fn master_fixture<'a>(&'a self, patch: &'a Patch) -> Option<&'a GdtfFixturePatch> {
+        patch.fixture(self.fixtures[0]).ok()
     }
 
     pub fn fixtures(&self) -> &[u32] {

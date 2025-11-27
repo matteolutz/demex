@@ -7,7 +7,9 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    channel3::channel_value::FixtureChannelValue3,
+    channel3::{
+        channel_value::FixtureChannelValue3, channel_value_discrete::FixtureChannelDiscreteValue,
+    },
     keyframe_effect::{
         effect_keyframe::KeyframeEffectKeyframe,
         effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_layer::KeyframeEffectLayer,
@@ -20,10 +22,22 @@ pub struct KeyframeEffect {
 }
 
 impl KeyframeEffect {
-    pub fn form_data(data: HashMap<u32, HashMap<String, FixtureChannelValue3>>) -> Self {
+    pub fn form_data(data: HashMap<u32, HashMap<String, FixtureChannelDiscreteValue>>) -> Self {
         let layer = KeyframeEffectLayer::new(vec![KeyframeEffectKeyframe::new(
             0.0,
-            data,
+            data.into_iter()
+                .map(|(f_id, values)| {
+                    (
+                        f_id,
+                        values
+                            .into_iter()
+                            .map(|(channel, value)| {
+                                (channel, FixtureChannelValue3::Discrete(value))
+                            })
+                            .collect::<HashMap<_, _>>(),
+                    )
+                })
+                .collect::<HashMap<_, _>>(),
             KeyframeEffectKeyframeCurve::default(),
         )]);
 

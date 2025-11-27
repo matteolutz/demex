@@ -2,6 +2,8 @@ use crate::{presets::error::PresetHandlerError, updatables::error::UpdatableHand
 
 #[derive(Debug)]
 pub enum FixtureError {
+    NotFound(u32),
+
     NoChannelValueSourceFound,
     EmptyPatch,
     DuplicateChannelType,
@@ -33,6 +35,7 @@ pub enum FixtureError {
 impl std::fmt::Display for FixtureError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::NotFound(id) => write!(f, "Fixture with ID {} not found", id),
             Self::NoChannelValueSourceFound => write!(f, "No channel value source found"),
             Self::EmptyPatch => write!(f, "Patch is empty"),
             Self::DuplicateChannelType => write!(f, "Duplicate channel type"),

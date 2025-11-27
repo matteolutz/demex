@@ -21,10 +21,10 @@ pub fn start_demex_output_thread(
         stats.clone(),
         DEMEX_MAX_OUTPUT_FUPS,
         move |_, last_user_update| {
-            let mut fixture_handler = fixture_handler.lock();
-            let preset_handler = preset_handler.lock();
-            let timing_handler = timing_handler.lock();
-            let patch = patch.lock();
+            let mut fixture_handler = fixture_handler.lock_write();
+            let preset_handler = preset_handler.lock_read();
+            let timing_handler = timing_handler.lock_read();
+            let patch = patch.lock_read();
 
             if fixture_handler
                 .generate_output_data(

@@ -4,7 +4,12 @@ use itertools::Itertools;
 
 use demex_dmx::{DemexDmxOutput, DemexDmxOutputTrait};
 
-use crate::headless::packet::controller_udp::DemexProtoUdpControllerPacket;
+use crate::channel3::channel_value_state::FixtureChannelOutputValue;
+use crate::value_source::FixtureChannelValueSource;
+use crate::{
+    channel3::channel_value::FixtureChannelValue3,
+    headless::packet::controller_udp::DemexProtoUdpControllerPacket,
+};
 
 use crate::engine::component::Component;
 
@@ -34,11 +39,19 @@ fn compare_universe_output_data(
     true
 }
 
+#[derive(Debug)]
+pub struct FixtureState {
+    programmer_values: HashMap<String, FixtureChannelValue3>,
+
+    sources: Vec<FixtureChannelValueSource>,
+    cached_output: HashMap<String, (FixtureChannelValue3, FixtureChannelOutputValue)>,
+}
+
 impl Component for FixtureHandler {}
 
 #[derive(Debug)]
 pub struct FixtureHandler {
-    fixtures: Vec<GdtfFixture>,
+    fixture_states: HashMap<u32, FixtureState>,
     outputs: Vec<DemexDmxOutput>,
     universe_output_data: HashMap<u16, [u8; 512]>,
     grand_master: u8,
@@ -47,7 +60,7 @@ pub struct FixtureHandler {
 impl Default for FixtureHandler {
     fn default() -> Self {
         Self {
-            fixtures: Default::default(),
+            fixture_states: Default::default(),
             outputs: Default::default(),
             universe_output_data: Default::default(),
             grand_master: Self::default_grandmaster_value(),

@@ -8,14 +8,14 @@
 
 use std::{
     any::{Any, TypeId},
-    collections::{HashMap, VecDeque},
+    collections::HashMap,
     sync::{Arc, mpsc},
 };
 
-use parking_lot::Mutex;
+use parking_lot::RwLock;
 
 use crate::{
-    channel3::channel_value_queue::{ChannelValueQueue, ChannelValueQueueEntry},
+    channel3::channel_value_queue::ChannelValueQueue,
     command::{
         lexer::Lexer,
         parser::{
@@ -43,10 +43,11 @@ pub mod state;
 pub mod threads;
 
 pub struct DemexEngine {
-    components: HashMap<TypeId, Arc<Mutex<dyn Any + Send + Sync>>>,
+    components: HashMap<TypeId, Arc<RwLock<dyn Any + Send + Sync>>>,
     stats: ComponentHandle<DemexThreadStatsHandler>,
 
     action_queue: ComponentHandle<ActionQueue>,
+
     value_queue: ComponentHandle<ChannelValueQueue>,
 
     state: ComponentHandle<DemexEngineState>,
@@ -74,7 +75,7 @@ impl DemexEngine {
     {
         let type_id = TypeId::of::<T>();
         self.components
-            .insert(type_id, Arc::new(Mutex::new(component)));
+            .insert(type_id, Arc::new(RwLock::new(component)));
     }
 
     pub fn component<T: Component + 'static>(&self) -> ComponentHandle<T> {

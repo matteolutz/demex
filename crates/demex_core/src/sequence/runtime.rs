@@ -4,10 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     channel3::channel_value::FixtureChannelValue3,
-    fixture::{
-        GdtfFixture,
-        handler::{FixtureHandler, FixtureTypeList},
-    },
+    fixture::handler::{FixtureHandler, FixtureTypeList},
+    patch::Patch,
     presets::PresetHandler,
     timing::TimingHandler,
     value_source::FixtureChannelValuePriority,
@@ -234,15 +232,15 @@ impl SequenceRuntime {
 
     pub fn channel_value(
         &self,
-        fixture: &GdtfFixture,
+        fixture_id: u32,
         channel: &gdtf::dmx_mode::DmxChannel,
         priority: FixtureChannelValuePriority,
         preset_handler: &PresetHandler,
     ) -> Option<FadeFixtureChannelValue> {
-        let tracked_value = self.tracked_values.get(&fixture.id()).and_then(|values| {
+        let tracked_value = self.tracked_values.get(&fixture_id).and_then(|values| {
             values.iter().find_map(|(value_channel_name, values)| {
                 if value_channel_name == channel.name().as_ref() {
-                    let mut value = FixtureChannelValue3::Home;
+                    let mut value = FixtureChannelValue3::home();
                     for (_, v) in values.iter() {
                         value = FixtureChannelValue3::Mix {
                             a: Box::new(value),
@@ -271,7 +269,7 @@ impl SequenceRuntime {
                 Some(FadeFixtureChannelValue::new(
                     FixtureChannelValue3::Mix {
                         a: Box::new(tracked_value.value().clone()),
-                        b: Box::new(FixtureChannelValue3::Home),
+                        b: Box::new(FixtureChannelValue3::home()),
                         mix: cue_out_fade,
                     },
                     1.0,
@@ -290,7 +288,7 @@ impl SequenceRuntime {
         cue: &Cue,
         cue_delta: f32,
         cue_activated_at: &time::Instant,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
         fixture_handler: &FixtureHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
@@ -302,8 +300,8 @@ impl SequenceRuntime {
                 (cue_delta - cue.offset_for_fixture(*fixture_id, preset_handler)).max(0.0);
 
             let cue_values = cue.values_for_fixture(
+                patch,
                 fixture_handler.fixture_immut(*fixture_id).unwrap(),
-                fixture_types,
                 preset_handler,
                 timing_handler,
                 Some(*cue_activated_at),
@@ -326,7 +324,7 @@ impl SequenceRuntime {
                     let attribute = fixture_handler
                         .fixture_immut(*fixture_id)
                         .unwrap()
-                        .get_channel_attribute(fixture_types, value.channel_name());
+                        .get_channel_attribute(patch, value.channel_name());
 
                     if attribute.is_ok_and(|attribute| attribute == "Dimmer") {
                         continue;
@@ -395,7 +393,7 @@ impl SequenceRuntime {
         current_cue_idx: usize,
         next_cue_idx: Option<usize>,
         fixture_handler: &FixtureHandler,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         priority: FixtureChannelValuePriority,
@@ -420,7 +418,7 @@ impl SequenceRuntime {
                 cue,
                 cue_delta,
                 cue_activated_at,
-                fixture_types,
+                patch,
                 fixture_handler,
                 preset_handler,
                 timing_handler,
@@ -442,7 +440,7 @@ impl SequenceRuntime {
                     next_cue,
                     cue_delta,
                     cue_activated_at,
-                    fixture_types,
+                    patch,
                     fixture_handler,
                     preset_handler,
                     timing_handler,
@@ -512,7 +510,7 @@ impl SequenceRuntime {
                 *current_cue_idx,
                 Self::next_cue_idx(sequence, *current_cue_idx),
                 fixture_handler,
-                fixture_types,
+                patch,
                 preset_handler,
                 timing_handler,
                 priority,

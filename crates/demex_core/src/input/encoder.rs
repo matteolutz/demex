@@ -15,7 +15,7 @@ pub(crate) fn get_global_encoder_value(
 ) -> Option<f32> {
     let fixture_selection = fixture_selector_context.current_fixture()?;
 
-    let master_fixture = fixture_selection.master_fixture(fixture_handler)?;
+    let master_fixture = fixture_selection.master_fixture(patch)?;
 
     let (_, channel_map) = encoder_channels?.get(encoder_idx as usize)?;
     let channel = channel_map
@@ -27,8 +27,8 @@ pub(crate) fn get_global_encoder_value(
         .ok()?;
 
     let (_, value) = value.get_as_display(
+        patch,
         master_fixture,
-        patch.fixture_types(),
         channel,
         preset_handler,
         timing_handler,

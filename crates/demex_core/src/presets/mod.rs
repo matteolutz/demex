@@ -16,6 +16,8 @@ use crate::{
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
     engine::component::Component,
+    fixture::GdtfFixturePatch,
+    patch::Patch,
 };
 
 use super::{
@@ -25,10 +27,7 @@ use super::{
     },
     effect::feature::runtime::FeatureEffectRuntime,
     effect2::effect::Effect2,
-    fixture::{
-        GdtfFixture,
-        handler::{FixtureHandler, FixtureTypeList, error::FixtureHandlerError},
-    },
+    fixture::handler::{FixtureHandler, FixtureTypeList, error::FixtureHandlerError},
     selection::FixtureSelection,
     sequence::{
         Sequence,
@@ -131,12 +130,12 @@ impl PresetHandler {
         id: FixturePresetId,
         name: Option<String>,
         should_next: bool,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
         fixture_handler: &FixtureHandler,
         timing_handler: &TimingHandler,
     ) -> Result<(), PresetHandlerError> {
         let data = FixturePreset::generate_preset_data(
-            fixture_types,
+            patch.fixture_types(),
             fixture_handler,
             self,
             timing_handler,
@@ -154,7 +153,33 @@ impl PresetHandler {
             }
         }
 
-        let preset = FixturePreset::new(id, name, FixturePresetData::Default { data })?;
+        let discrete_data = data
+            .into_iter()
+            .map(|(f_id, values)| {
+                let fixture = patch.fixture(f_id).unwrap();
+
+                (
+                    f_id,
+                    values
+                        .into_iter()
+                        .map(|(channel, value)| {
+                            (
+                                channel.clone(),
+                                value.to_discrete(patch, fixture, &channel, self, timing_handler),
+                            )
+                        })
+                        .collect::<HashMap<_, _>>(),
+                )
+            })
+            .collect::<HashMap<_, _>>();
+
+        let preset = FixturePreset::new(
+            id,
+            name,
+            FixturePresetData::Default {
+                data: discrete_data,
+            },
+        )?;
 
         self.presets.insert(id, preset);
         Ok(())
@@ -186,7 +211,7 @@ impl PresetHandler {
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         id: FixturePresetId,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
         fixture_handler: &FixtureHandler,
         timing_handler: &TimingHandler,
         update_mode: UpdateMode,
@@ -194,7 +219,7 @@ impl PresetHandler {
         let preset = self.get_preset(id)?;
 
         let new_data = FixturePreset::generate_preset_data(
-            fixture_types,
+            patch.fixture_types(),
             fixture_handler,
             self,
             timing_handler,
@@ -203,9 +228,29 @@ impl PresetHandler {
             preset.id().feature_group,
         )?;
 
+        let discrete_data = new_data
+            .into_iter()
+            .map(|(f_id, values)| {
+                let fixture = patch.fixture(f_id).unwrap();
+
+                (
+                    f_id,
+                    values
+                        .into_iter()
+                        .map(|(channel, value)| {
+                            (
+                                channel.clone(),
+                                value.to_discrete(patch, fixture, &channel, self, timing_handler),
+                            )
+                        })
+                        .collect::<HashMap<_, _>>(),
+                )
+            })
+            .collect::<HashMap<_, _>>();
+
         let preset = self.get_preset_mut(id)?;
 
-        let values_updated = preset.update(new_data, update_mode)?;
+        let values_updated = preset.update(discrete_data, update_mode)?;
 
         Ok(values_updated)
     }
@@ -316,8 +361,8 @@ impl PresetHandler {
     pub fn get_preset_value_for_fixture(
         &self,
         preset_id: FixturePresetId,
-        fixture: &GdtfFixture,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
+        fixture: &GdtfFixturePatch,
         channel_name: &str,
         timing_handler: &TimingHandler,
         state: Option<&FixtureChannelValue2PresetState>,
@@ -325,14 +370,7 @@ impl PresetHandler {
         let preset = self.get_preset(preset_id);
 
         if let Ok(preset) = preset {
-            preset.value(
-                fixture,
-                fixture_types,
-                channel_name,
-                self,
-                timing_handler,
-                state,
-            )
+            preset.value(patch, fixture, channel_name, self, timing_handler, state)
         } else {
             None
         }

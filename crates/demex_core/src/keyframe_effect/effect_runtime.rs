@@ -3,18 +3,16 @@ use std::{f32, time};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    utils::math::instant_diff_secs,
-    {
-        channel3::channel_value::FixtureChannelValue3,
-        effect::{
-            error::EffectError,
-            speed::{EffectSpeed, EffectSpeedSyncMode},
-        },
-        fixture::{GdtfFixture, handler::FixtureTypeList},
-        keyframe_effect::effect::KeyframeEffect,
-        timing::TimingHandler,
-        updatables::runtime::RuntimePhase,
+    channel3::channel_value::FixtureChannelValue3,
+    effect::{
+        error::EffectError,
+        speed::{EffectSpeed, EffectSpeedSyncMode},
     },
+    fixture::GdtfFixturePatch,
+    keyframe_effect::effect::KeyframeEffect,
+    timing::TimingHandler,
+    updatables::runtime::RuntimePhase,
+    utils::math::instant_diff_secs,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -64,8 +62,7 @@ impl KeyframeEffectRuntime {
     pub fn get_channel_value_with_started(
         &self,
         channel_name: &str,
-        fixture: &GdtfFixture,
-        _fixture_types: &FixtureTypeList,
+        fixture: &GdtfFixturePatch,
         fixture_offset: f32,
         timing_handler: &TimingHandler,
         started: Option<time::Instant>,

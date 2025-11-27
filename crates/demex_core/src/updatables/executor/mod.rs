@@ -8,11 +8,12 @@ pub mod fader_function;
 use crate::{
     channel3::feature::feature_type::FixtureChannel3FeatureType,
     fixture::{
-        GdtfFixture,
+        GdtfFixture, GdtfFixturePatch,
         error::FixtureError,
         handler::{FixtureHandler, FixtureTypeList},
     },
     implement_set_property,
+    patch::Patch,
     presets::PresetHandler,
     sequence::{FadeFixtureChannelValue, runtime::SequenceRuntime},
     timing::TimingHandler,
@@ -174,8 +175,8 @@ impl DemexExecutor {
 
     pub fn channel_value(
         &self,
-        fixture_types: &FixtureTypeList,
-        fixture: &GdtfFixture,
+        patch: &Patch,
+        fixture: &GdtfFixturePatch,
         channel: &gdtf::dmx_mode::DmxChannel,
         preset_handler: &PresetHandler,
         _timing_handler: &TimingHandler,
@@ -203,14 +204,14 @@ impl DemexExecutor {
             1.0
         };
 
-        let (fixture_type, _) = fixture.fixture_type_and_dmx_mode(fixture_types).unwrap();
+        let (fixture_type, _) = patch.fixture_type_and_dmx_mode(fixture).unwrap();
 
         let channel_feature = channel.logical_channels[0]
             .attribute(fixture_type)
             .and_then(|attribute| attribute.feature(&fixture_type.attribute_definitions));
 
         self.runtime
-            .channel_value(fixture, channel, self.priority, preset_handler)
+            .channel_value(fixture.id(), channel, self.priority, preset_handler)
             .map(|value| match &self.fader_function {
                 DemexExecutorFaderFunction::FadeAll => value.multiply(self.value),
                 DemexExecutorFaderFunction::Intensity => {

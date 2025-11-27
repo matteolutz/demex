@@ -1,14 +1,18 @@
-use std::ops::Range;
+use std::{collections::HashMap, ops::Range};
 
 use serde::{Deserialize, Serialize};
 
 use demex_dmx::{DemexDmxOutput, DemexDmxOutputConfig};
 use demex_headless::id::DemexProtoDeviceId;
+use uuid::Uuid;
 
-use crate::engine::component::Component;
+use crate::{
+    engine::component::Component,
+    fixture::{GdtfFixturePatch, error::FixtureError, handler::error::FixtureHandlerError},
+};
 
 use super::{
-    fixture::{GdtfFixture, GdtfFixturePatch, handler::FixtureTypeList},
+    fixture::{GdtfFixture, handler::FixtureTypeList},
     layout::FixtureLayout,
 };
 
@@ -22,8 +26,12 @@ pub struct SerializablePatch {
 impl SerializablePatch {
     pub fn into_patch(self, fixture_types: Vec<gdtf::fixture_type::FixtureType>) -> Patch {
         Patch {
-            fixtures: self.fixtures,
             fixture_types,
+            fixtures: self
+                .fixtures
+                .iter()
+                .map(|fixture| (fixture.id, fixture.clone()))
+                .collect::<HashMap<_, _>>(),
             layout: self.layout,
             outputs: self.outputs,
         }
@@ -31,7 +39,7 @@ impl SerializablePatch {
 
     pub fn from_patch(patch: &Patch) -> Self {
         SerializablePatch {
-            fixtures: patch.fixtures.clone(),
+            fixtures: patch.fixtures,
             layout: patch.layout.clone(),
             outputs: patch.outputs.clone(),
         }
@@ -42,19 +50,23 @@ impl Component for Patch {}
 
 #[derive(Debug, Clone, Default)]
 pub struct Patch {
-    fixtures: Vec<GdtfFixturePatch>,
+    fixtures: HashMap<u32, GdtfFixturePatch>,
     fixture_types: Vec<gdtf::fixture_type::FixtureType>,
     layout: FixtureLayout,
     outputs: Vec<DemexDmxOutputConfig>,
 }
 
 impl Patch {
-    pub fn fixtures(&self) -> &[GdtfFixturePatch] {
-        &self.fixtures
+    pub fn fixtures(&self) -> impl Iterator<Item = &GdtfFixturePatch> {
+        self.fixtures.values()
     }
 
-    pub fn fixtures_mut(&mut self) -> &mut Vec<GdtfFixturePatch> {
-        &mut self.fixtures
+    pub fn fixtures_mut(&mut self) -> impl Iterator<Item = &mut GdtfFixturePatch> {
+        self.fixtures.values_mut()
+    }
+
+    pub fn fixture(&self, id: u32) -> Result<&GdtfFixturePatch, FixtureError> {
+        self.fixtures.get(&id).ok_or(FixtureError::NotFound(id))
     }
 
     pub fn fixture_types(&self) -> &FixtureTypeList {
@@ -63,6 +75,53 @@ impl Patch {
 
     pub fn fixture_types_mut(&mut self) -> &mut Vec<gdtf::fixture_type::FixtureType> {
         &mut self.fixture_types
+    }
+
+    pub fn fixture_type(&self, id: Uuid) -> Option<&gdtf::fixture_type::FixtureType> {
+        self.fixture_types
+            .iter()
+            .find(|ft| ft.fixture_type_id == id)
+    }
+
+    pub fn fixture_type_and_dmx_mode<'a>(
+        &'a self,
+        fixture: &GdtfFixturePatch,
+    ) -> Result<
+        (
+            &'a gdtf::fixture_type::FixtureType,
+            &'a gdtf::dmx_mode::DmxMode,
+        ),
+        FixtureError,
+    > {
+        let fixture_type = self
+            .fixture_types
+            .iter()
+            .find(|ft| ft.fixture_type_id == fixture.fixture_type_id)
+            .ok_or_else(|| FixtureError::GdtfFixtureTypeNotFound(fixture.fixture_type_id))?;
+
+        let dmx_mode = fixture_type
+            .dmx_mode(&fixture.fixture_type_dmx_mode)
+            .ok_or(FixtureError::GdtfFixtureDmxModeNotFound(
+                fixture.fixture_type_dmx_mode.clone(),
+            ))?;
+
+        Ok((fixture_type, dmx_mode))
+    }
+
+    pub fn fixture_type_and_dmx_mode_by_id<'a>(
+        &'a self,
+        fixture_id: u32,
+    ) -> Result<
+        (
+            &'a gdtf::fixture_type::FixtureType,
+            &'a gdtf::dmx_mode::DmxMode,
+            &'a GdtfFixturePatch,
+        ),
+        FixtureError,
+    > {
+        let fixture = self.fixture(fixture_id)?;
+        self.fixture_type_and_dmx_mode(fixture)
+            .map(|(t, m)| (t, m, fixture))
     }
 
     pub fn layout(&self) -> &FixtureLayout {

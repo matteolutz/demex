@@ -1,4 +1,3 @@
-use gdtf::values::DmxValue;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -6,8 +5,8 @@ pub mod error;
 pub mod handler;
 
 use crate::{
-    channel3::channel_value_state::FixtureChannelValue3State, color::color_space::RgbValue,
-    utils::color::rgbw_to_rgb,
+    channel3::channel_value_state::FixtureChannelOutputValue, color::color_space::RgbValue,
+    patch::Patch, utils::color::rgbw_to_rgb,
 };
 
 use handler::FixtureTypeList;
@@ -46,6 +45,108 @@ pub struct GdtfFixturePatch {
 }
 
 impl GdtfFixturePatch {
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn dmx_mode(&self) -> &str {
+        &self.fixture_type_dmx_mode
+    }
+
+    pub fn universe(&self) -> u16 {
+        self.universe
+    }
+
+    pub fn start_address(&self) -> u16 {
+        self.start_address
+    }
+
+    pub fn fixture_type_id(&self) -> uuid::Uuid {
+        self.fixture_type_id
+    }
+
+    pub fn fixture_type_dmx_mode(&self) -> &str {
+        &self.fixture_type_dmx_mode
+    }
+
+    pub fn get_channel<'a>(
+        &self,
+        patch: &'a Patch,
+        channel_name: &str,
+    ) -> Result<
+        (
+            &'a gdtf::dmx_mode::DmxChannel,
+            &'a gdtf::dmx_mode::LogicalChannel,
+        ),
+        FixtureError,
+    > {
+        let (_, dmx_mode) = patch.fixture_type_and_dmx_mode(self)?;
+
+        let dmx_channel = dmx_mode
+            .dmx_channel(channel_name)
+            .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel_name.to_owned()))?;
+
+        Ok((dmx_channel, &dmx_channel.logical_channels[0]))
+    }
+
+    pub fn channels_for_attribute_matches<'a>(
+        &self,
+        patch: &'a Patch,
+        filter: impl Fn(&str) -> bool,
+    ) -> Result<
+        Vec<(
+            &'a gdtf::dmx_mode::DmxChannel,
+            &'a gdtf::dmx_mode::LogicalChannel,
+            Vec<(usize, &'a str)>,
+        )>,
+        FixtureError,
+    > {
+        let (_, dmx_mode) = patch.fixture_type_and_dmx_mode(self)?;
+
+        Ok(dmx_mode
+            .dmx_channels
+            .iter()
+            .map(|dmx_channel| (dmx_channel, &dmx_channel.logical_channels[0]))
+            .filter_map(|(dmx_channel, logical_channel)| {
+                if filter(logical_channel.attribute.first().unwrap().as_ref()) {
+                    return Some((
+                        dmx_channel,
+                        logical_channel,
+                        logical_channel
+                            .channel_functions
+                            .iter()
+                            .enumerate()
+                            .map(|(idx, function)| {
+                                (idx, function.attribute.first().unwrap().as_ref())
+                            })
+                            .collect::<Vec<_>>(),
+                    ));
+                }
+
+                None
+            })
+            .collect())
+    }
+
+    pub fn channels_for_attribute<'a>(
+        &self,
+        patch: &'a Patch,
+        attribute: &str,
+    ) -> Result<
+        Vec<(
+            &'a gdtf::dmx_mode::DmxChannel,
+            &'a gdtf::dmx_mode::LogicalChannel,
+            Vec<(usize, &'a str)>,
+        )>,
+        FixtureError,
+    > {
+        self.channels_for_attribute_matches(patch, |attr| attr == attribute)
+    }
+
     pub fn into_fixture(
         self,
         fixture_types: &[gdtf::fixture_type::FixtureType],
@@ -81,7 +182,7 @@ pub struct GdtfFixture {
     address_footprint: u16,
 
     programmer_values: HashMap<String, FixtureChannelValue3>,
-    outputs_values: HashMap<String, (FixtureChannelValue3, FixtureChannelValue3State)>,
+    outputs_values: HashMap<String, (FixtureChannelValue3, FixtureChannelOutputValue)>,
 
     sources: Vec<FixtureChannelValueSource>,
 }
@@ -136,7 +237,7 @@ impl GdtfFixture {
             programmer_values: values.clone(),
             outputs_values: values
                 .into_iter()
-                .map(|(key, value)| (key, (value, FixtureChannelValue3State::new_changed())))
+                .map(|(key, value)| (key, FixtureChannelOutputValue::new_changed(value)))
                 .collect(),
             sources: vec![FixtureChannelValueSource::Programmer],
         })

@@ -3,10 +3,7 @@ use std::collections::HashMap;
 use gdtf::values::DmxValue;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    channel3::utils::dmx_value_to_f32,
-    fixture::{GdtfFixture, handler::FixtureTypeList},
-};
+use crate::{channel3::utils::dmx_value_to_f32, fixture::GdtfFixturePatch, patch::Patch};
 
 use super::utils::{max_value, mix_dmx_value, multiply_dmx_value, multiply_dmx_value_f32};
 
@@ -32,16 +29,59 @@ pub enum FixtureChannelDiscreteValue {
     },
 }
 
+impl PartialEq for FixtureChannelDiscreteValue {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Home, Self::Home) => true,
+            (
+                Self::Discrete {
+                    channel_function_idx: l_channel_function_idx,
+                    value: l_value,
+                },
+                Self::Discrete {
+                    channel_function_idx: r_channel_function_idx,
+                    value: r_value,
+                },
+            ) => l_channel_function_idx == r_channel_function_idx && l_value == r_value,
+            (
+                Self::DiscreteSet {
+                    channel_function_idx: l_channel_function_idx,
+                    channel_set: l_channel_set,
+                },
+                Self::DiscreteSet {
+                    channel_function_idx: r_channel_function_idx,
+                    channel_set: r_channel_set,
+                },
+            ) => l_channel_function_idx == r_channel_function_idx && l_channel_set == r_channel_set,
+            (
+                Self::Mix {
+                    a: l_a,
+                    b: l_b,
+                    mix: l_mix,
+                },
+                Self::Mix {
+                    a: r_a,
+                    b: r_b,
+                    mix: r_mix,
+                },
+            ) => l_a == r_a && l_b == r_b && (l_mix - r_mix).abs() < f32::EPSILON,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for FixtureChannelDiscreteValue {}
+
 impl FixtureChannelDiscreteValue {
     pub fn get_as_display(
         &self,
-        fixture: &GdtfFixture,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
+        fixture: &GdtfFixturePatch,
         channel_name: &str,
     ) -> (usize, f32) {
         match self {
             Self::Home => {
-                if let Ok((dmx_channel, _)) = fixture.get_channel(fixture_types, channel_name) {
+                if let Ok((dmx_channel, _)) = fixture.get_channel(patch, channel_name) {
                     let (logical_channel, function, default_dmx) = dmx_channel
                         .initial_function()
                         .map(|(logical_channel, function)| {
@@ -68,7 +108,7 @@ impl FixtureChannelDiscreteValue {
                 channel_function_idx,
                 channel_set,
             } => {
-                if let Ok((dmx_channel, _)) = fixture.get_channel(fixture_types, channel_name) {
+                if let Ok((dmx_channel, _)) = fixture.get_channel(patch, channel_name) {
                     let logical_channel = &dmx_channel.logical_channels[0];
 
                     let channel_function =
@@ -96,8 +136,8 @@ impl FixtureChannelDiscreteValue {
                 }
             }
             Self::Mix { a, b, mix } => {
-                let (a_idx, a_val) = a.get_as_display(fixture, fixture_types, channel_name);
-                let (b_idx, b_val) = b.get_as_display(fixture, fixture_types, channel_name);
+                let (a_idx, a_val) = a.get_as_display(patch, fixture, channel_name);
+                let (b_idx, b_val) = b.get_as_display(patch, fixture, channel_name);
 
                 if a_idx == b_idx {
                     (a_idx, (a_val * (1.0 - mix)) + (b_val * mix))
@@ -113,11 +153,12 @@ impl FixtureChannelDiscreteValue {
 
 impl FixtureChannelDiscreteValue {
     fn find_multiply_relation(
-        fixture: &GdtfFixture,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
+        fixture_patch: &GdtfFixturePatch,
+        fixture_output_values: &HashMap<String, FixtureChannelDiscreteValue>,
+
         dmx_mode: &gdtf::dmx_mode::DmxMode,
         dynamic_data: &mut HashMap<String, DmxValue>,
-        values: &HashMap<String, FixtureChannelDiscreteValue>,
         channel_function: &gdtf::dmx_mode::ChannelFunction,
         grand_master: f32,
     ) -> Option<gdtf::values::DmxValue> {
@@ -128,20 +169,24 @@ impl FixtureChannelDiscreteValue {
         relation.map(|rel| {
             let relation_master = rel.master(dmx_mode).unwrap();
 
-            let relation_master_value = values.get(relation_master.name().as_ref()).unwrap();
+            let relation_master_value = fixture_output_values
+                .get(relation_master.name().as_ref())
+                // maybe the relation value is not yet in the output_values map
+                .unwrap_or(&FixtureChannelDiscreteValue::Home);
 
             let value = relation_master_value
                 ._to_dmx(
-                    fixture,
-                    fixture_types,
+                    patch,
+                    fixture_patch,
+                    fixture_output_values,
                     dmx_mode,
                     relation_master,
                     dynamic_data,
-                    values,
                     grand_master,
                 )
                 .unwrap();
             dynamic_data.insert(relation_master.name().as_ref().to_string(), value);
+
             value
         })
     }
@@ -149,34 +194,34 @@ impl FixtureChannelDiscreteValue {
     /// Converts the channel value to a DMX value (0.0..=1.0)
     pub fn to_dmx(
         &self,
-        fixture_types: &FixtureTypeList,
-        fixture: &GdtfFixture,
+        patch: &Patch,
+        fixture_patch: &GdtfFixturePatch,
+        fixture_output_values: &HashMap<String, FixtureChannelDiscreteValue>,
         dmx_channel: &gdtf::dmx_mode::DmxChannel,
         dynamic_data: &mut HashMap<String, DmxValue>,
         grand_master: f32,
     ) -> Option<gdtf::values::DmxValue> {
-        let (_, dmx_mode) = fixture.fixture_type_and_dmx_mode(fixture_types).ok()?;
-        let values = fixture.programmer_values();
+        let (_, dmx_mode) = patch.fixture_type_and_dmx_mode(fixture_patch).ok()?;
 
         self._to_dmx(
-            fixture,
-            fixture_types,
+            patch,
+            fixture_patch,
+            fixture_output_values,
             dmx_mode,
             dmx_channel,
             dynamic_data,
-            values,
             grand_master,
         )
     }
 
     fn _to_dmx(
         &self,
-        fixture: &GdtfFixture,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
+        fixture_patch: &GdtfFixturePatch,
+        fixture_output_values: &HashMap<String, FixtureChannelDiscreteValue>,
         dmx_mode: &gdtf::dmx_mode::DmxMode,
         dmx_channel: &gdtf::dmx_mode::DmxChannel,
         dynamic_data: &mut HashMap<String, DmxValue>,
-        values: &HashMap<String, FixtureChannelDiscreteValue>,
         grand_master: f32,
     ) -> Option<gdtf::values::DmxValue> {
         let logical_channel = &dmx_channel.logical_channels[0];
@@ -188,11 +233,11 @@ impl FixtureChannelDiscreteValue {
         let value = match self {
             Self::Home => dmx_channel.initial_function().map(|(_, f)| {
                 if let Some(relation_value) = Self::find_multiply_relation(
-                    fixture,
-                    fixture_types,
+                    patch,
+                    fixture_patch,
+                    fixture_output_values,
                     dmx_mode,
                     dynamic_data,
-                    values,
                     f,
                     grand_master,
                 ) {
@@ -212,11 +257,11 @@ impl FixtureChannelDiscreteValue {
                     .map(|channel_set| channel_set.dmx_from);
 
                 if let Some(relation_value) = Self::find_multiply_relation(
-                    fixture,
-                    fixture_types,
+                    patch,
+                    fixture_patch,
+                    fixture_output_values,
                     dmx_mode,
                     dynamic_data,
-                    values,
                     channel_function,
                     grand_master,
                 ) {
@@ -249,11 +294,11 @@ impl FixtureChannelDiscreteValue {
                 let value = gdtf::values::DmxValue::new(dmx_value, n_bytes, false);
 
                 if let Some(relation_value) = Self::find_multiply_relation(
-                    fixture,
-                    fixture_types,
+                    patch,
+                    fixture_patch,
+                    fixture_output_values,
                     dmx_mode,
                     dynamic_data,
-                    values,
                     channel_function,
                     grand_master,
                 ) {
@@ -266,42 +311,42 @@ impl FixtureChannelDiscreteValue {
                 if logical_channel.snap {
                     if *mix < 0.5 {
                         a._to_dmx(
-                            fixture,
-                            fixture_types,
+                            patch,
+                            fixture_patch,
+                            fixture_output_values,
                             dmx_mode,
                             dmx_channel,
                             dynamic_data,
-                            values,
                             grand_master,
                         )
                     } else {
                         b._to_dmx(
-                            fixture,
-                            fixture_types,
+                            patch,
+                            fixture_patch,
+                            fixture_output_values,
                             dmx_mode,
                             dmx_channel,
                             dynamic_data,
-                            values,
                             grand_master,
                         )
                     }
                 } else {
                     let a = a._to_dmx(
-                        fixture,
-                        fixture_types,
+                        patch,
+                        fixture_patch,
+                        fixture_output_values,
                         dmx_mode,
                         dmx_channel,
                         dynamic_data,
-                        values,
                         grand_master,
                     )?;
                     let b = b._to_dmx(
-                        fixture,
-                        fixture_types,
+                        patch,
+                        fixture_patch,
+                        fixture_output_values,
                         dmx_mode,
                         dmx_channel,
                         dynamic_data,
-                        values,
                         grand_master,
                     )?;
 
@@ -316,6 +361,39 @@ impl FixtureChannelDiscreteValue {
             value.map(|value| multiply_dmx_value_f32(value, grand_master))
         } else {
             value
+        }
+    }
+}
+
+impl FixtureChannelDiscreteValue {
+    pub fn to_string(&self) -> String {
+        match self {
+            Self::Home => "Home".to_owned(),
+            Self::DiscreteSet {
+                channel_function_idx,
+                channel_set,
+            } => {
+                format!("\"{}\" ({})", channel_set, channel_function_idx)
+            }
+            Self::Discrete {
+                value,
+                channel_function_idx,
+            } => format!("{:.2} ({})", value, channel_function_idx),
+            Self::Mix { a, b, mix } => {
+                if *mix == 0.0 {
+                    a.to_string()
+                } else if *mix == 1.0 {
+                    b.to_string()
+                } else {
+                    format!(
+                        "{} * {:.2} + {} * {:.2}",
+                        a.to_string(),
+                        1.0 - mix,
+                        b.to_string(),
+                        mix
+                    )
+                }
+            }
         }
     }
 }
