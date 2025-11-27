@@ -437,7 +437,7 @@ impl GdtfFixture {
                     let value = self
                         .get_value(fixture_types, dmx_channel.name().as_ref())
                         .unwrap();
-                    let (channel_function_idx, channel_value) = value.get_as_discrete(
+                    let (channel_function_idx, channel_value) = value.get_as_display(
                         self,
                         fixture_types,
                         dmx_channel.name().as_ref(),
@@ -650,7 +650,7 @@ impl GdtfFixture {
 
         let value = self._get_value(channel)?;
 
-        let (value_channel_function_idx, value_f) = value.get_as_discrete(
+        let (value_channel_function_idx, value_f) = value.get_as_display(
             self,
             fixture_types,
             channel.name().as_ref(),

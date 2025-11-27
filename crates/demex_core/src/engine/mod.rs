@@ -8,13 +8,14 @@
 
 use std::{
     any::{Any, TypeId},
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     sync::{Arc, mpsc},
 };
 
 use parking_lot::Mutex;
 
 use crate::{
+    channel3::channel_value_queue::{ChannelValueQueue, ChannelValueQueueEntry},
     command::{
         lexer::Lexer,
         parser::{
@@ -46,6 +47,7 @@ pub struct DemexEngine {
     stats: ComponentHandle<DemexThreadStatsHandler>,
 
     action_queue: ComponentHandle<ActionQueue>,
+    value_queue: ComponentHandle<ChannelValueQueue>,
 
     state: ComponentHandle<DemexEngineState>,
 
@@ -59,6 +61,7 @@ impl DemexEngine {
             stats: ComponentHandle::create_default(),
             action_queue: ComponentHandle::create_default(),
             state: ComponentHandle::create_default(),
+            value_queue: ComponentHandle::create_default(),
             event_bus_tx,
         }
     }

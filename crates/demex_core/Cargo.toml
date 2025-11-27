@@ -4,6 +4,8 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+ringbuf = "0.4.8"
+
 demex_headless.workspace = true
 demex_dmx.workspace = true
 

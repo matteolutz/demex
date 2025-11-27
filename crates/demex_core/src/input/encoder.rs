@@ -26,7 +26,7 @@ pub(crate) fn get_global_encoder_value(
         .get_value(patch.fixture_types(), channel)
         .ok()?;
 
-    let (_, value) = value.get_as_discrete(
+    let (_, value) = value.get_as_display(
         master_fixture,
         patch.fixture_types(),
         channel,
