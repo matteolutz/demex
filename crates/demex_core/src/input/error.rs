@@ -1,7 +1,7 @@
 use crate::{
-    command::parser::nodes::fixture_selector::FixtureSelectorError,
-    fixture::handler::error::FixtureHandlerError, presets::error::PresetHandlerError,
-    timing::error::TimingHandlerError, updatables::error::UpdatableHandlerError,
+    command::parser::nodes::fixture_selector::FixtureSelectorError, fixture::error::FixtureError,
+    presets::error::PresetHandlerError, timing::error::TimingHandlerError,
+    updatables::error::UpdatableHandlerError,
 };
 
 #[derive(Debug)]
@@ -17,7 +17,7 @@ pub enum DemexInputDeviceError {
     InputDeviceIdxNotFound(usize),
     OperationNotSupported,
 
-    FixtureHandlerError(FixtureHandlerError),
+    FixtureError(FixtureError),
     PresetHandlerError(PresetHandlerError),
     UpdatableHandlerError(UpdatableHandlerError),
     FixtureSelectorError(FixtureSelectorError),
@@ -57,7 +57,7 @@ impl std::fmt::Display for DemexInputDeviceError {
             }
             Self::OperationNotSupported => write!(f, "Operation not supported"),
 
-            Self::FixtureHandlerError(err) => write!(f, "Fixture handler error: {}", err),
+            Self::FixtureError(err) => write!(f, "Fixture handler error: {}", err),
             Self::PresetHandlerError(err) => write!(f, "Preset handler error: {}", err),
             Self::UpdatableHandlerError(err) => write!(f, "Updatable handler error: {}", err),
             Self::FixtureSelectorError(err) => write!(f, "Fixture selector error: {}", err),

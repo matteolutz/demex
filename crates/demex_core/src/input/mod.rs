@@ -12,7 +12,6 @@ use crate::{
             nodes::{action::queue::ActionQueue, fixture_selector::FixtureSelectorContext},
         },
     },
-    fixture::handler::FixtureHandler,
     input::{
         control::{
             DemexInputDeviceControlTrait, button::DemexInputButton, encoder::DemexInputEncoder,
@@ -23,6 +22,7 @@ use crate::{
     patch::Patch,
     presets::PresetHandler,
     selection::FixtureSelection,
+    state::fixture_state_handler::FixtureStateHandler,
     timing::TimingHandler,
     updatables::UpdatableHandler,
 };
@@ -40,7 +40,7 @@ pub mod timecode;
 #[derive(Debug, Clone)]
 pub struct DemexInputDeviceUpdateArgs<'a> {
     pub device_config: &'a DemexInputDeviceConfig,
-    pub fixture_handler: &'a FixtureHandler,
+    pub fixture_handler: &'a FixtureStateHandler,
     pub preset_handler: &'a PresetHandler,
     pub updatable_handler: &'a UpdatableHandler,
     pub timing_handler: &'a TimingHandler,
@@ -127,7 +127,7 @@ impl DemexInputDeviceHandler {
 
     pub fn update<F>(
         &mut self,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         timing_handler: &mut TimingHandler,

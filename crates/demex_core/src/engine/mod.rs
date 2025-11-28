@@ -7,12 +7,12 @@
  */
 
 use std::{
-    any::{Any, TypeId},
-    collections::HashMap,
     sync::{Arc, mpsc},
+    thread::JoinHandle,
 };
 
-use parking_lot::RwLock;
+use arc_swap::ArcSwap;
+use gdtf::fixture_type::FixtureType;
 
 use crate::{
     channel3::channel_value_queue::ChannelValueQueue,
@@ -23,17 +23,10 @@ use crate::{
             nodes::action::{Action, ActionIssuer, queue::ActionQueue},
         },
     },
-    engine::{
-        component::{Component, ComponentHandle},
-        state::DemexEngineState,
-    },
+    engine::{component::ComponentHandle, state::DemexEngineState},
     event::DemexEvent,
-    fixture::handler::FixtureHandler,
-    input::event::handler::DemexInputDeviceEventHandler,
     patch::Patch,
-    presets::PresetHandler,
-    timing::TimingHandler,
-    updatables::UpdatableHandler,
+    show::DemexShow,
     utils::thread::DemexThreadStatsHandler,
 };
 
@@ -43,74 +36,75 @@ pub mod state;
 pub mod threads;
 
 pub struct DemexEngine {
-    components: HashMap<TypeId, Arc<RwLock<dyn Any + Send + Sync>>>,
     stats: ComponentHandle<DemexThreadStatsHandler>,
 
+    patch: ArcSwap<Patch>,
+    state: ComponentHandle<DemexEngineState>,
     action_queue: ComponentHandle<ActionQueue>,
 
-    value_queue: ComponentHandle<ChannelValueQueue>,
-
-    state: ComponentHandle<DemexEngineState>,
-
     event_bus_tx: mpsc::Sender<DemexEvent>,
+    threads: Vec<JoinHandle<()>>,
 }
 
 impl DemexEngine {
     pub fn new(event_bus_tx: mpsc::Sender<DemexEvent>) -> Self {
-        Self {
-            components: HashMap::new(),
+        let s = Self {
             stats: ComponentHandle::create_default(),
             action_queue: ComponentHandle::create_default(),
             state: ComponentHandle::create_default(),
-            value_queue: ComponentHandle::create_default(),
             event_bus_tx,
-        }
+            threads: Vec::new(),
+            patch: ArcSwap::from_pointee(Patch::default()),
+        };
+
+        s
     }
 }
 
 impl DemexEngine {
-    pub fn register_component<T>(&mut self, component: T)
-    where
-        T: Component + Send + Sync + 'static,
-    {
-        let type_id = TypeId::of::<T>();
-        self.components
-            .insert(type_id, Arc::new(RwLock::new(component)));
-    }
+    pub fn load_show(
+        &mut self,
+        show: DemexShow,
+        fixture_types: Vec<FixtureType>,
+        start_debug: bool,
+    ) {
+        let patch = show.patch.into_patch(fixture_types);
+        self.patch.store(Arc::new(patch));
 
-    pub fn component<T: Component + 'static>(&self) -> ComponentHandle<T> {
-        let type_id = TypeId::of::<T>();
-        let component = self
-            .components
-            .get(&type_id)
-            .expect(format!("Component {:?} not registered", type_id).as_str());
-        ComponentHandle::new(component.clone())
-    }
+        let (value_queue_tx, value_queue_rx) = mpsc::channel();
 
-    pub fn start(&mut self, start_debug: bool) {
-        threads::update::start_demex_update_thread(
+        let update_thread = threads::update::start_demex_update_thread(
             self.event_bus_tx.clone(),
             self.stats(),
-            self.action_queue(),
-            self.fixture_handler(),
-            self.preset_handler(),
-            self.updatable_handler(),
-            self.timing_handler(),
-            self.patch(),
-            self.input_device_event_handler(),
-            self.state(),
+            self.action_queue.clone(),
+            value_queue_tx,
+            show.preset_handler,
+            show.updatable_handler,
+            show.timing_handler,
+            &self.patch,
         );
+        self.register_thread(update_thread);
 
-        threads::output::start_demex_output_thread(
-            self.stats(),
-            self.fixture_handler(),
-            self.preset_handler(),
-            self.timing_handler(),
-            self.patch(),
+        let output_thread = threads::output::start_demex_output_thread(
+            self.stats.clone(),
+            &self.patch,
+            value_queue_rx,
         );
+        self.register_thread(output_thread);
 
         if start_debug {
-            threads::debug::start_demex_debug_thread(self.stats());
+            let debug_thread = threads::debug::start_demex_debug_thread(self.stats());
+            self.register_thread(debug_thread);
+        }
+    }
+
+    fn register_thread(&mut self, join_handle: JoinHandle<()>) {
+        self.threads.push(join_handle);
+    }
+
+    fn join_threads(&mut self) {
+        for thread in self.threads.drain(..) {
+            thread.join().unwrap();
         }
     }
 
@@ -137,36 +131,6 @@ impl DemexEngine {
     #[inline]
     pub fn action_queue(&self) -> ComponentHandle<ActionQueue> {
         self.action_queue.clone()
-    }
-
-    #[inline]
-    pub fn fixture_handler(&self) -> ComponentHandle<FixtureHandler> {
-        self.component()
-    }
-
-    #[inline]
-    pub fn preset_handler(&self) -> ComponentHandle<PresetHandler> {
-        self.component()
-    }
-
-    #[inline]
-    pub fn updatable_handler(&self) -> ComponentHandle<UpdatableHandler> {
-        self.component()
-    }
-
-    #[inline]
-    pub fn timing_handler(&self) -> ComponentHandle<TimingHandler> {
-        self.component()
-    }
-
-    #[inline]
-    pub fn patch(&self) -> ComponentHandle<Patch> {
-        self.component()
-    }
-
-    #[inline]
-    pub fn input_device_event_handler(&self) -> ComponentHandle<DemexInputDeviceEventHandler> {
-        self.component()
     }
 
     #[inline]

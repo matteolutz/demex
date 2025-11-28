@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fixture::handler::FixtureHandler,
     presets::{PresetHandler, preset::FixturePresetId},
     selection::FixtureSelection,
+    state::fixture_state_handler::FixtureStateHandler,
     updatables::UpdatableHandler,
 };
 
@@ -38,7 +38,7 @@ impl TimecodeTrigger {
     pub fn trigger(
         &self,
         trigger_millis: u64,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
     ) {

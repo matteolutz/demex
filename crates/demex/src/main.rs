@@ -1,46 +1,20 @@
-#![warn(unused_extern_crates)]
-
-pub mod engine;
 pub mod storage;
-pub mod utils;
 
-#[cfg(feature = "ui")]
-pub mod ui;
+use std::{
+    io::{self, BufRead, Write},
+    path::PathBuf,
+    sync::mpsc,
+    thread,
+    time::Duration,
+};
 
-#[cfg(feature = "gpui")]
-pub mod ui2;
-
-use std::{path::PathBuf, sync::Arc, time};
-
-use demex_core::engine::DemexEngine;
-use demex_core::event::DemexEvent;
-use demex_core::fixture::handler::FixtureHandler;
-use demex_core::headless::{controller::DemexHeadlessConroller, node::DemexHeadlessNode};
-use demex_core::input::event::handler::DemexInputDeviceEventHandler;
-use demex_core::show::{DemexShow, context::ShowContext};
-use demex_headless::id::DemexProtoDeviceId;
+use demex_core::{engine::DemexEngine, show::DemexShow};
 use gdtf::GdtfFile;
 use itertools::Itertools;
-use parking_lot::RwLock;
 
-#[cfg(feature = "ui")]
-use ui::{
-    DemexUiApp, context::DemexUiContext, theme::DemexUiTheme, theme::DemexUiThemeAttribute,
-    utils::icon::load_icon, utils::load::load_textures,
-};
-
-use demex_core::utils::{
-    deadlock::start_deadlock_checking_thread,
-    thread::{DemexThreadStatsHandler, demex_update_thread},
-};
+use demex_core::utils::deadlock::start_deadlock_checking_thread;
 
 use clap::Parser;
-
-use crate::engine::DemexEngineHandler;
-
-#[cfg(not(feature = "ui"))]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
-enum DemexUiThemeAttribute {}
 
 /// demex - command based stage lighting control
 #[derive(Parser, Debug)]
@@ -54,6 +28,10 @@ struct Args {
     #[arg(long)]
     deadlock_test: bool,
 
+    /// Start an additional thread to periodically log engine performance
+    #[arg(long)]
+    debug_thread: bool,
+
     /// Run the application in a mode that is more suitable for touchscreen devices (i.e. larger UI elements, ..)
     #[arg(long, conflicts_with = "headless")]
     touchscreen_mode: bool,
@@ -65,10 +43,6 @@ struct Args {
     /// Set a manual node id for the headless node.
     #[arg(long, value_name = "ID")]
     headless_id: Option<u32>,
-
-    /// Set the UI theme to use. This is only used if the UI feature is enabled.
-    #[arg(long, value_name = "THEME", conflicts_with = "headless")]
-    ui_theme: Option<DemexUiThemeAttribute>,
 
     /// Number of additional viewports to create in the UI. This is only used if the UI feature is enabled.
     #[arg(
@@ -87,10 +61,6 @@ struct Args {
     #[arg(long, default_value = "false", conflicts_with = "headless")]
     controller: bool,
 }
-
-const TEST_MAX_FUPS: f64 = 60.0;
-const TEST_MAX_DMX_FPS: f64 = 30.0;
-const TEST_UI_FPS: f64 = 60.0;
 
 const APP_ID: &str = "demex";
 
@@ -159,110 +129,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .flat_map(|file| file.description.fixture_types)
         .collect::<Vec<_>>();
 
-    /*
-    let stats = Arc::new(RwLock::new(DemexThreadStatsHandler::default()));
-    let context = ShowContext::new(
-        fixture_types,
-        show.patch,
-        show.preset_handler,
-        show.updatable_handler,
-        show.timing_handler,
-        if args.headless.is_some() {
-            DemexProtoDeviceId::Node(args.headless_id.unwrap_or_default())
-        } else {
-            DemexProtoDeviceId::Controller
-        },
-    );
-    */
-
-    /*
-    let fixture_handler_thread_a = context.fixture_handler.clone();
-    let preset_handler_thread_a = context.preset_handler.clone();
-    let timing_handler_thread_a = context.timing_handler.clone();
-    let patch_thread_a = context.patch.clone();
-
-    demex_update_thread(
-        "demex-dmx-output".to_owned(),
-        stats.clone(),
-        TEST_MAX_DMX_FPS,
-        move |_, last_user_update| {
-            let mut fixture_handler = fixture_handler_thread_a.write();
-            let preset_handler = preset_handler_thread_a.read();
-            let timing_handler = timing_handler_thread_a.read();
-            let patch = patch_thread_a.read();
-
-            if fixture_handler
-                .generate_output_data(
-                    patch.fixture_types(),
-                    &preset_handler,
-                    &timing_handler,
-                    last_user_update.elapsed().as_secs_f64() > 0.1,
-                )
-                .inspect_err(|err| log::error!("Failed to generate output data: {}", err))
-                .is_ok_and(|res| res > 0)
-            {
-                *last_user_update = time::Instant::now();
-            }
-        },
-    );
-
-    let (udp_tx, udp_rx) = std::sync::mpsc::channel();
-
-    let input_device_event_handler = Arc::new(RwLock::new(DemexInputDeviceEventHandler::new()));
-
-    if args.headless.is_none() {
-        let fixture_handler_thread_b = context.fixture_handler.clone();
-        let preset_handler_thread_b = context.preset_handler.clone();
-        let updatable_handler_thread_b = context.updatable_handler.clone();
-        let timing_handler_thread_b = context.timing_handler.clone();
-        let patch_thread_b = context.patch.clone();
-        let input_device_event_handler_thread_b = input_device_event_handler.clone();
-
-        demex_update_thread(
-            "demex-update".to_owned(),
-            stats.clone(),
-            TEST_MAX_FUPS,
-            move |_, _| {
-                let mut fixture_handler = fixture_handler_thread_b.write();
-                let preset_handler = preset_handler_thread_b.read();
-                let mut updatable_handler = updatable_handler_thread_b.write();
-                let mut timing_handler = timing_handler_thread_b.write();
-                let patch = patch_thread_b.read();
-                let mut input_device_event_handler = input_device_event_handler_thread_b.write();
-
-                timing_handler.update_running_timecodes(
-                    &mut fixture_handler,
-                    &preset_handler,
-                    &mut updatable_handler,
-                );
-
-                let _ = fixture_handler
-                    .update_output_values(
-                        patch.fixture_types(),
-                        &preset_handler,
-                        &updatable_handler,
-                        &timing_handler,
-                        if args.controller { Some(&udp_tx) } else { None },
-                    )
-                    .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
-
-                input_device_event_handler.push_events(
-                    updatable_handler
-                        .update_executors(
-                            patch.fixture_types(),
-                            &mut fixture_handler,
-                            &preset_handler,
-                            &timing_handler,
-                        )
-                        .into_iter()
-                        .map(DemexInputDeviceEvent::ExecutorStop),
-                );
-            },
-        );
-    }
-
-    */
-
     if let Some(master_ip) = args.headless {
         log::info!("Running in headless mode, no UI will be shown");
         /*
@@ -284,113 +150,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             */
         }
 
-        #[cfg(feature = "ui")]
-        {
-            let icon = Arc::new(load_icon());
+        println!("HI");
+        let (tx, _) = mpsc::channel();
+        let mut engine = DemexEngine::new(tx);
+        engine.load_show(show, fixture_types, args.debug_thread);
 
-            log::info!("Starting UI fullscreen: {}", args.fullscreen);
+        loop {
+            print!("[demex] > ");
+            let _ = io::stdout().flush();
 
-            let mut viewport_builder = eframe::egui::ViewportBuilder::default()
-                .with_maximized(true)
-                .with_icon(icon.clone());
-            if args.fullscreen {
-                viewport_builder = viewport_builder.with_fullscreen(true);
+            let mut input = String::new();
+            if let Err(err) = io::stdin().read_line(&mut input) {
+                log::error!("Error reading input: {}", err);
             }
 
-            let ui_theme = args
-                .ui_theme
-                .map(DemexUiTheme::from)
-                .unwrap_or(DemexUiTheme::Default);
-
-            let options = ui_theme.native_options(viewport_builder);
-
-            eframe::run_native(
-                APP_ID,
-                options,
-                Box::new(|creation_context| {
-                    egui_extras::install_image_loaders(&creation_context.egui_ctx);
-
-                    let style = egui::Style {
-                        visuals: egui::Visuals::dark(),
-                        ..egui::Style::default()
-                    };
-
-                    creation_context.egui_ctx.set_style(style);
-                    creation_context
-                        .egui_ctx
-                        .set_fonts(ui::utils::load::load_fonts());
-
-                    ui_theme.apply(&creation_context.egui_ctx);
-
-                    if args.touchscreen_mode {
-                        creation_context.egui_ctx.style_mut(|style| {
-                            style.spacing.button_padding = emath::vec2(10.0, 10.0);
-
-                            style.spacing.indent = 18.0 * 2.0;
-                            style.spacing.icon_width = 14.0 * 2.0;
-                            style.spacing.icon_width_inner = 8.0 * 2.0;
-
-                            // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
-                            //
-                            style.spacing.interact_size = emath::vec2(40.0, 18.0) * 1.5;
-                            style.spacing.slider_rail_height = 8.0 * 2.0;
-                            style.spacing.slider_width = 100.0 * 1.5;
-                        });
-                    }
-
-                    let ui_app_state = DemexUiApp::new(
-                        DemexUiContext::load_show(
-                            &context,
-                            show.input_device_configs,
-                            input_device_event_handler,
-                            show.ui_config,
-                            args.show,
-                            stats,
-                            load_textures(&creation_context.egui_ctx),
-                        ),
-                        TEST_UI_FPS,
-                        icon,
-                        false,
-                        args.additional_viewports,
-                        args.fullscreen,
-                    );
-
-                    Ok(Box::new(ui_app_state))
-                }),
-            )?;
-        }
-
-        #[cfg(feature = "gpui")]
-        {
-            gpui::Application::new().run(|cx: &mut gpui::App| {
-                use demex_ui::AppExt;
-
-                use crate::ui2::MainWindow;
-
-                cx.activate(true);
-
-                demex_ui::init(cx).expect("Failed to initialize UI");
-
-                DemexEngineHandler::init(fixture_types, show, cx)
-                    .expect("Failed to initialize engine");
-
-                cx.update_wm(|wm, cx| wm.open_singleton_window::<MainWindow>(cx, ()));
-
-                cx.on_window_closed(|cx| {
-                    if cx.windows().is_empty() {
-                        cx.quit();
-                    }
-                })
-                .detach();
-            });
-        }
-
-        #[cfg(all(not(feature = "ui"), not(feature = "gpui")))]
-        {
-            log::error!(
-                "UI feature is not enabled. Please enable the UI feature to run the application with a user interface or run in headless mode."
-            );
-            std::process::exit(1);
+            let command_result = engine.exec_command(input.trim());
+            if let Err(err) = command_result {
+                log::error!("Error executing command: {}", err);
+            }
         }
     }
 

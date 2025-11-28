@@ -3,11 +3,8 @@ use std::{collections::HashMap, time};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    channel3::channel_value::FixtureChannelValue3,
-    fixture::handler::{FixtureHandler, FixtureTypeList},
-    patch::Patch,
-    presets::PresetHandler,
-    timing::TimingHandler,
+    channel3::channel_value::FixtureChannelValue3, patch::Patch, presets::PresetHandler,
+    state::fixture_state_handler::FixtureStateHandler, timing::TimingHandler,
     value_source::FixtureChannelValuePriority,
 };
 
@@ -289,7 +286,6 @@ impl SequenceRuntime {
         cue_delta: f32,
         cue_activated_at: &time::Instant,
         patch: &Patch,
-        fixture_handler: &FixtureHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         priority: FixtureChannelValuePriority,
@@ -301,7 +297,7 @@ impl SequenceRuntime {
 
             let cue_values = cue.values_for_fixture(
                 patch,
-                fixture_handler.fixture_immut(*fixture_id).unwrap(),
+                patch.fixture(*fixture_id).unwrap(),
                 preset_handler,
                 timing_handler,
                 Some(*cue_activated_at),
@@ -321,8 +317,8 @@ impl SequenceRuntime {
 
             for value in cue_values {
                 if is_mib {
-                    let attribute = fixture_handler
-                        .fixture_immut(*fixture_id)
+                    let attribute = patch
+                        .fixture(*fixture_id)
                         .unwrap()
                         .get_channel_attribute(patch, value.channel_name());
 
@@ -392,7 +388,7 @@ impl SequenceRuntime {
         active_cues: &[(usize, time::Instant)],
         current_cue_idx: usize,
         next_cue_idx: Option<usize>,
-        fixture_handler: &FixtureHandler,
+        fixture_handler: &FixtureStateHandler,
         patch: &Patch,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
@@ -419,7 +415,6 @@ impl SequenceRuntime {
                 cue_delta,
                 cue_activated_at,
                 patch,
-                fixture_handler,
                 preset_handler,
                 timing_handler,
                 priority,
@@ -441,7 +436,6 @@ impl SequenceRuntime {
                     cue_delta,
                     cue_activated_at,
                     patch,
-                    fixture_handler,
                     preset_handler,
                     timing_handler,
                     priority,
@@ -454,8 +448,8 @@ impl SequenceRuntime {
     pub fn update(
         &mut self,
         _speed_multiplier: f32,
-        fixture_types: &FixtureTypeList,
-        fixture_handler: &FixtureHandler,
+        patch: &Patch,
+        fixture_handler: &FixtureStateHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         priority: FixtureChannelValuePriority,

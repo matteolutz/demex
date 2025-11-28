@@ -1,36 +1,10 @@
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 pub mod error;
-pub mod handler;
 
-use crate::{
-    channel3::channel_value_state::FixtureChannelOutputValue, color::color_space::RgbValue,
-    patch::Patch, utils::color::rgbw_to_rgb,
-};
-
-use handler::FixtureTypeList;
+use crate::patch::Patch;
 
 use error::FixtureError;
-
-use super::{
-    channel3::{
-        attribute::FixtureChannel3Attribute,
-        channel_value::{FixtureChannelValue3, FixtureChannelValue3Discrete},
-        feature::feature_group::FixtureChannel3FeatureGroup,
-        utils::dmx_value_to_f32,
-    },
-    presets::PresetHandler,
-    timing::TimingHandler,
-    updatables::UpdatableHandler,
-    value_source::{FixtureChannelValueSource, FixtureChannelValueSourceTrait},
-};
-use std::{
-    collections::HashMap,
-    hash::{Hash, Hasher},
-};
-
-pub mod sync;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GdtfFixturePatch {
@@ -147,26 +121,73 @@ impl GdtfFixturePatch {
         self.channels_for_attribute_matches(patch, |attr| attr == attribute)
     }
 
-    pub fn into_fixture(
-        self,
-        fixture_types: &[gdtf::fixture_type::FixtureType],
-    ) -> Result<GdtfFixture, FixtureError> {
-        let fixture_type = fixture_types
-            .iter()
-            .find(|ft| ft.fixture_type_id == self.fixture_type_id)
-            .ok_or(FixtureError::GdtfFixtureTypeNotFound(self.fixture_type_id))?;
+    pub fn get_channel_attribute(
+        &self,
+        patch: &Patch,
+        channel_name: &str,
+    ) -> Result<String, FixtureError> {
+        let (fixture_type, dmx_mode) = patch.fixture_type_and_dmx_mode(self)?;
 
-        GdtfFixture::new(
-            self.id,
-            self.name,
-            fixture_type,
-            self.fixture_type_dmx_mode,
-            self.universe,
-            self.start_address,
+        let dmx_channel = dmx_mode
+            .dmx_channel(channel_name)
+            .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel_name.to_owned()))?;
+
+        let logical_channel = &dmx_channel.logical_channels[0];
+
+        let attribute = logical_channel
+            .attribute(fixture_type)
+            .ok_or_else(|| FixtureError::GdtfChannelHasNoAttribute(channel_name.to_owned()))?;
+
+        Ok(attribute
+            .name
+            .as_ref()
+            .ok_or(FixtureError::GdtfAtributeHasNoName)?
+            .as_ref()
+            .to_owned())
+    }
+
+    pub fn channels<'a>(
+        &self,
+        patch: &'a Patch,
+    ) -> Result<
+        impl Iterator<
+            Item = (
+                &'a gdtf::dmx_mode::DmxChannel,
+                &'a gdtf::dmx_mode::LogicalChannel,
+            ),
+        > + use<'a>,
+        FixtureError,
+    > {
+        let (_, dmx_mode) = patch.fixture_type_and_dmx_mode(self)?;
+
+        Ok(dmx_mode
+            .dmx_channels
+            .iter()
+            .map(|dmx_channel| (dmx_channel, &dmx_channel.logical_channels[0])))
+    }
+
+    pub fn get_channel_initial_function_idx(
+        &self,
+        patch: &Patch,
+        channel_name: &str,
+    ) -> Result<usize, FixtureError> {
+        let (dmx_channel, logical_channel) = self.get_channel(patch, channel_name)?;
+
+        Ok(
+            if let Some((_, initial_channel_function)) = dmx_channel.initial_function() {
+                logical_channel
+                    .channel_functions
+                    .iter()
+                    .position(|cf| cf == initial_channel_function)
+                    .unwrap()
+            } else {
+                0
+            },
         )
     }
 }
 
+/*
 #[derive(Debug)]
 pub struct GdtfFixture {
     id: u32,
@@ -826,7 +847,7 @@ impl GdtfFixture {
         &mut self,
         fixture_types: &FixtureTypeList,
         filter: impl Fn(&str) -> bool,
-        slider_val: FixtureChannelValue3Discrete,
+        slider_val: FixtureChannelValue3Update,
     ) -> Result<(), FixtureError> {
         for (channel, _, _) in self.channels_for_attribute_matches(fixture_types, filter)? {
             self.update_programmer_value(
@@ -843,7 +864,7 @@ impl GdtfFixture {
         &mut self,
         fixture_types: &FixtureTypeList,
         channel: &str,
-        slider_val: FixtureChannelValue3Discrete,
+        slider_val: FixtureChannelValue3Update,
     ) -> Result<(), FixtureError> {
         let programmer_value = self.get_programmer_value(channel)?;
 
@@ -1056,3 +1077,5 @@ impl GdtfFixture {
         Ok(())
     }
 }
+
+*/

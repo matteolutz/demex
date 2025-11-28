@@ -4,7 +4,6 @@ use crate::{
     EncoderChannels,
     command::parser::nodes::fixture_selector::FixtureSelectorContext,
     event::DemexEvent,
-    fixture::handler::FixtureHandler,
     input::{
         DemexInputDeviceUpdateArgs,
         control::DemexInputDeviceControlTrait,
@@ -14,6 +13,7 @@ use crate::{
     },
     patch::Patch,
     presets::PresetHandler,
+    state::fixture_state_handler::FixtureStateHandler,
     timing::TimingHandler,
     updatables::UpdatableHandler,
 };
@@ -35,7 +35,7 @@ impl DemexInputEncoder {
         &self,
         value: f32,
         fixture_selector_context: FixtureSelectorContext,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         encoder_channels: Option<&EncoderChannels>,
         _preset_handler: &PresetHandler,
         _updatable_handler: &mut UpdatableHandler,

@@ -38,7 +38,7 @@ impl FunctionArgs for UpdatePresetArgs {
     fn run(
         &self,
         _issued_at: time::Instant,
-        fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::updatables::UpdatableHandler,
@@ -104,7 +104,7 @@ impl FunctionArgs for UpdateSequenceCueArgs {
     fn run(
         &self,
         _issued_at: time::Instant,
-        fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
         updatable_handler: &mut crate::updatables::UpdatableHandler,
@@ -129,7 +129,7 @@ impl FunctionArgs for UpdateSequenceCueArgs {
                 fixture_handler,
                 &self.channel_type_selector,
                 self.update_mode,
-                patch.fixture_types(),
+                patch,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 

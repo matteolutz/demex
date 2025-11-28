@@ -4,14 +4,12 @@ use error::UpdatableHandlerError;
 use executor::{DemexExecutor, fader_function::DemexExecutorFaderFunction};
 use serde::{Deserialize, Serialize};
 
-use crate::{engine::component::Component, group_master::GroupMaster};
-
-use super::{
-    fixture::handler::{FixtureHandler, FixtureTypeList},
-    presets::PresetHandler,
-    sequence::runtime::SequenceRuntime,
-    timing::TimingHandler,
+use crate::{
+    engine::component::Component, group_master::GroupMaster, patch::Patch,
+    state::fixture_state_handler::FixtureStateHandler,
 };
+
+use super::{presets::PresetHandler, sequence::runtime::SequenceRuntime, timing::TimingHandler};
 
 pub mod error;
 pub mod executor;
@@ -88,7 +86,7 @@ impl UpdatableHandler {
 
     pub fn executors_stop_all(
         &mut self,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
     ) {
         for (_, fader) in self.executors.iter_mut() {
@@ -102,8 +100,8 @@ impl UpdatableHandler {
 
     pub fn update_executors(
         &mut self,
-        fixture_types: &FixtureTypeList,
-        fixture_handler: &mut FixtureHandler,
+        patch: &Patch,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
     ) -> Vec<u32> {
@@ -111,12 +109,7 @@ impl UpdatableHandler {
             .iter_mut()
             .filter_map(|(_, executor)| {
                 executor
-                    .update(
-                        fixture_types,
-                        fixture_handler,
-                        preset_handler,
-                        timing_handler,
-                    )
+                    .update(patch, fixture_handler, preset_handler, timing_handler)
                     .then(|| executor.id())
             })
             .collect()
@@ -136,7 +129,7 @@ impl UpdatableHandler {
     pub fn start_executor(
         &mut self,
         id: u32,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         time_offset: f32,
     ) -> Result<(), UpdatableHandlerError> {
@@ -157,7 +150,7 @@ impl UpdatableHandler {
     pub fn stop_executor(
         &mut self,
         id: u32,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
     ) -> Result<(), UpdatableHandlerError> {
         self.executor_mut(id)?.stop(fixture_handler, preset_handler);
@@ -167,7 +160,7 @@ impl UpdatableHandler {
     pub fn executor_go(
         &mut self,
         id: u32,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         time_offset: f32,
     ) -> Result<(), UpdatableHandlerError> {

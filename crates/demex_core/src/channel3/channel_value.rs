@@ -17,12 +17,12 @@ use crate::{
 use crate::utils::serde::approx_instant;
 
 #[derive(Debug, Clone)]
-pub enum FixtureChannelValue3Discrete {
+pub enum FixtureChannelValue3Update {
     Value(f32),
     ChannelSet(String),
 }
 
-impl FixtureChannelValue3Discrete {
+impl FixtureChannelValue3Update {
     pub fn get_value(self, channel_function_idx: usize) -> FixtureChannelValue3 {
         match self {
             Self::Value(value) => {

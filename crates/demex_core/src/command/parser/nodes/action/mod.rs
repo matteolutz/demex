@@ -25,11 +25,11 @@ use crate::{
         move_function::MoveArgs, set_function::ObjectSetPropertyArgs,
     },
     event::DemexEvent,
+    state::fixture_state_handler::FixtureStateHandler,
     utils::serde::approx_instant,
 };
 
 use crate::{
-    fixture::handler::FixtureHandler,
     input::{DemexInputDeviceHandler, error::DemexInputDeviceError},
     patch::Patch,
     presets::PresetHandler,
@@ -101,7 +101,7 @@ pub struct DeferredAction {
 impl DeferredAction {
     pub fn run(
         &self,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &mut PresetHandler,
         fixture_selector_context: FixtureSelectorContext,
         updatable_handler: &mut UpdatableHandler,
@@ -203,7 +203,7 @@ pub enum Action {
 impl Action {
     pub fn run(
         &self,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &mut PresetHandler,
         fixture_selector_context: FixtureSelectorContext,
         updatable_handler: &mut UpdatableHandler,
@@ -423,7 +423,7 @@ impl Action {
                 fixture_selector,
                 fixture_selector_context,
                 preset_handler,
-                fixture_handler,
+                patch,
             ),
             Self::Test(_) => Ok(ActionRunResult::new()),
             Self::Save => Ok(ActionRunResult::new()),
@@ -524,11 +524,11 @@ impl Action {
 
     fn run_home_all(
         &self,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
     ) -> Result<ActionRunResult, ActionRunError> {
         fixture_handler
             .home_all(true)
-            .map_err(ActionRunError::FixtureHandlerError)?;
+            .map_err(ActionRunError::FixtureError)?;
 
         Ok(ActionRunResult::new())
     }
@@ -538,11 +538,11 @@ impl Action {
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         preset_handler: &PresetHandler,
-        fixture_handler: &FixtureHandler,
+        patch: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
         // flatten the fixture selector, so we don't have
         // outdated references to the previously selected fixtures
-        let selection = fixture_selector
+        let mut selection = fixture_selector
             .get_selection(preset_handler, fixture_selector_context.clone())
             .map_err(ActionRunError::FixtureSelectorError)?;
 
@@ -552,16 +552,7 @@ impl Action {
             ));
         }
 
-        let unknown_fixtures = selection
-            .fixtures()
-            .iter()
-            .filter(|f_id| !fixture_handler.has_fixture(**f_id))
-            .collect::<Vec<_>>();
-        if !unknown_fixtures.is_empty() {
-            return Err(ActionRunError::FixtureSelectorError(
-                FixtureSelectorError::SomeFixturesFailedToMatch(unknown_fixtures.len()),
-            ));
-        }
+        selection.retain(|id| patch.fixture(*id).is_ok());
 
         Ok(ActionRunResult::UpdateFixtureSelection(Some(selection)))
     }

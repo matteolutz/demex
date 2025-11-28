@@ -11,11 +11,10 @@ use crate::{
         midi::MidiQuarterTimecodePiece,
         timecode::{packet::TimecodePacket, synchronizer::TimecodeSynchronizer},
     },
+    state::fixture_state_handler::FixtureStateHandler,
 };
 
-use super::{
-    fixture::handler::FixtureHandler, presets::PresetHandler, updatables::UpdatableHandler,
-};
+use super::{presets::PresetHandler, updatables::UpdatableHandler};
 
 pub mod error;
 pub mod speed_master;
@@ -102,7 +101,7 @@ impl TimingHandler {
 
     pub fn update_running_timecodes(
         &mut self,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
     ) {

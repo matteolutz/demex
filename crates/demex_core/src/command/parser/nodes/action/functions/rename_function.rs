@@ -23,7 +23,7 @@ impl FunctionArgs for RenameObjectArgs {
     fn run(
         &self,
         _issued_at: time::Instant,
-        _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::updatables::UpdatableHandler,

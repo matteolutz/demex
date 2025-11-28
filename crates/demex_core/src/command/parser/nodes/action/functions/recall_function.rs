@@ -21,7 +21,7 @@ impl FunctionArgs for RecallSequenceCueArgs {
     fn run(
         &self,
         _issued_at: time::Instant,
-        fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::updatables::UpdatableHandler,
@@ -42,7 +42,7 @@ impl FunctionArgs for RecallSequenceCueArgs {
                 PresetHandlerError::CueNotFound(self.sequence_id, self.cue_idx),
             ))?;
 
-        cue.recall(patch.fixture_types(), fixture_handler);
+        cue.recall(patch, fixture_handler);
 
         Ok(ActionRunResult::new())
     }

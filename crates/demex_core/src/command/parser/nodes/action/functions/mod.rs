@@ -2,8 +2,9 @@ use std::time;
 
 use crate::{
     command::parser::nodes::fixture_selector::FixtureSelectorContext,
-    fixture::handler::FixtureHandler, input::DemexInputDeviceHandler, patch::Patch,
-    presets::PresetHandler, timing::TimingHandler, updatables::UpdatableHandler,
+    input::DemexInputDeviceHandler, patch::Patch, presets::PresetHandler,
+    state::fixture_state_handler::FixtureStateHandler, timing::TimingHandler,
+    updatables::UpdatableHandler,
 };
 
 use super::{error::ActionRunError, result::ActionRunResult};
@@ -24,7 +25,7 @@ pub trait FunctionArgs {
     fn run(
         &self,
         issued_at: time::Instant,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &mut PresetHandler,
         fixture_selector_context: FixtureSelectorContext,
         updatable_handler: &mut UpdatableHandler,

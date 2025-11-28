@@ -7,15 +7,12 @@ pub mod fader_function;
 
 use crate::{
     channel3::feature::feature_type::FixtureChannel3FeatureType,
-    fixture::{
-        GdtfFixture, GdtfFixturePatch,
-        error::FixtureError,
-        handler::{FixtureHandler, FixtureTypeList},
-    },
+    fixture::{GdtfFixturePatch, error::FixtureError},
     implement_set_property,
     patch::Patch,
     presets::PresetHandler,
     sequence::{FadeFixtureChannelValue, runtime::SequenceRuntime},
+    state::fixture_state_handler::FixtureStateHandler,
     timing::TimingHandler,
     value_source::{FixtureChannelValuePriority, FixtureChannelValueSource},
 };
@@ -92,7 +89,7 @@ impl DemexExecutor {
 
     pub fn go(
         &mut self,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         time_offset: f32,
     ) {
@@ -109,7 +106,7 @@ impl DemexExecutor {
     pub fn set_value(
         &mut self,
         value: f32,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         time_offset: f32,
     ) {
@@ -138,7 +135,7 @@ impl DemexExecutor {
 
     pub fn start(
         &mut self,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         time_offset: f32,
     ) {
@@ -148,8 +145,8 @@ impl DemexExecutor {
         // self.started_at = Some(time::Instant::now() - time::Duration::from_secs_f32(time_offset));
 
         for fixture_id in self.fixtures(preset_handler) {
-            if let Some(fixture) = fixture_handler.fixture(fixture_id) {
-                fixture.push_value_source(FixtureChannelValueSource::Executor {
+            if let Ok(fixture_state) = fixture_handler.fixture_mut(fixture_id) {
+                fixture_state.push_value_source(FixtureChannelValueSource::Executor {
                     executor_id: self.id,
                 });
             }
@@ -160,13 +157,17 @@ impl DemexExecutor {
         self.runtime.cue_out(time_offset);
     }
 
-    pub fn stop(&mut self, fixture_handler: &mut FixtureHandler, preset_handler: &PresetHandler) {
+    pub fn stop(
+        &mut self,
+        fixture_handler: &mut FixtureStateHandler,
+        preset_handler: &PresetHandler,
+    ) {
         self.value = 0.0;
         self.runtime.stop();
 
         for fixture_id in self.fixtures(preset_handler) {
-            if let Some(fixture) = fixture_handler.fixture(fixture_id) {
-                fixture.remove_value_source(FixtureChannelValueSource::Executor {
+            if let Ok(fixture_state) = fixture_handler.fixture_mut(fixture_id) {
+                fixture_state.remove_value_source(FixtureChannelValueSource::Executor {
                     executor_id: self.id,
                 });
             }
@@ -247,8 +248,8 @@ impl DemexExecutor {
 
     pub fn update(
         &mut self,
-        fixture_types: &FixtureTypeList,
-        fixture_handler: &mut FixtureHandler,
+        patch: &Patch,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
     ) -> bool {
@@ -258,7 +259,7 @@ impl DemexExecutor {
             } else {
                 1.0
             },
-            fixture_types,
+            patch,
             fixture_handler,
             preset_handler,
             timing_handler,

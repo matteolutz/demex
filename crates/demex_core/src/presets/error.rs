@@ -4,8 +4,7 @@ use crate::{
     },
     {
         channel3::feature::feature_group::FixtureChannel3FeatureGroup,
-        fixture::error::FixtureError, fixture::handler::error::FixtureHandlerError,
-        sequence::cue::CueIdx,
+        fixture::error::FixtureError, sequence::cue::CueIdx,
     },
 };
 
@@ -20,7 +19,6 @@ pub enum PresetHandlerError {
     FeaturePresetNotFound(FixturePresetId),
     FeatureGroupMismatch(FixtureChannel3FeatureGroup, FixtureChannel3FeatureGroup),
     FixtureError(FixtureError),
-    FixtureHandlerError(FixtureHandlerError),
     FixtureSelectorError(Box<FixtureSelectorError>),
     MacroExecutionError(Box<ActionRunError>),
     CueAlreadyExists(u32, CueIdx),
@@ -93,9 +91,6 @@ impl std::fmt::Display for PresetHandlerError {
                     "Cue {}.{} in sequence {} is not a default cue and can't be updated",
                     cue_idx_major, cue_idx_minor, sequence_id
                 )
-            }
-            PresetHandlerError::FixtureHandlerError(err) => {
-                write!(f, "Fixture handler error: {}", err)
             }
             PresetHandlerError::InvalidCueRange(
                 (cue_idx_from_major, cue_idx_from_minor),

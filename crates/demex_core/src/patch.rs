@@ -2,19 +2,17 @@ use std::{collections::HashMap, ops::Range};
 
 use serde::{Deserialize, Serialize};
 
-use demex_dmx::{DemexDmxOutput, DemexDmxOutputConfig};
-use demex_headless::id::DemexProtoDeviceId;
+use demex_dmx::DemexDmxOutputConfig;
 use uuid::Uuid;
 
 use crate::{
     engine::component::Component,
-    fixture::{GdtfFixturePatch, error::FixtureError, handler::error::FixtureHandlerError},
+    fixture::{GdtfFixturePatch, error::FixtureError},
 };
 
-use super::{
-    fixture::{GdtfFixture, handler::FixtureTypeList},
-    layout::FixtureLayout,
-};
+use super::layout::FixtureLayout;
+
+pub type FixtureTypeList = [gdtf::fixture_type::FixtureType];
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SerializablePatch {
@@ -39,7 +37,7 @@ impl SerializablePatch {
 
     pub fn from_patch(patch: &Patch) -> Self {
         SerializablePatch {
-            fixtures: patch.fixtures,
+            fixtures: patch.fixtures.values().cloned().collect(),
             layout: patch.layout.clone(),
             outputs: patch.outputs.clone(),
         }
@@ -152,25 +150,5 @@ impl Patch {
         }
         true
         */
-    }
-}
-
-impl Patch {
-    pub fn into_fixures_and_outputs(
-        &self,
-        own_device_id: DemexProtoDeviceId,
-    ) -> (Vec<GdtfFixture>, Vec<DemexDmxOutput>) {
-        (
-            self.fixtures
-                .clone()
-                .into_iter()
-                .map(|f| f.into_fixture(&self.fixture_types).unwrap())
-                .collect(),
-            self.outputs
-                .clone()
-                .into_iter()
-                .map(|output_config| DemexDmxOutput::from_config(output_config, own_device_id))
-                .collect(),
-        )
     }
 }

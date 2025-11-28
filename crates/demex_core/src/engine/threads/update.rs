@@ -1,16 +1,19 @@
-use std::sync::mpsc;
+use std::{sync::mpsc, thread::JoinHandle};
+
+use arc_swap::ArcSwap;
 
 use crate::{
+    channel3::channel_value_queue::ChannelValueQueueEntry,
     command::parser::nodes::{
         action::{ActionIssuer, queue::ActionQueue, result::ActionRunResult},
         fixture_selector::FixtureSelectorContext,
     },
     engine::{component::ComponentHandle, state::DemexEngineState, threads::DEMEX_MAX_FUPS},
     event::DemexEvent,
-    fixture::handler::FixtureHandler,
-    input::{DemexInputDeviceHandler, event::handler::DemexInputDeviceEventHandler},
+    input::DemexInputDeviceHandler,
     patch::Patch,
     presets::PresetHandler,
+    state::fixture_state_handler::FixtureStateHandler,
     timing::TimingHandler,
     updatables::UpdatableHandler,
     utils::thread::{DemexThreadStatsHandler, demex_update_thread},
@@ -20,14 +23,16 @@ pub fn start_demex_update_thread(
     event_bus_tx: mpsc::Sender<DemexEvent>,
     stats: ComponentHandle<DemexThreadStatsHandler>,
     action_queue: ComponentHandle<ActionQueue>,
-    fixture_handler: ComponentHandle<FixtureHandler>,
-    preset_handler: ComponentHandle<PresetHandler>,
-    updatable_handler: ComponentHandle<UpdatableHandler>,
-    timing_handler: ComponentHandle<TimingHandler>,
-    patch: ComponentHandle<Patch>,
-    mut input_device_event_handler: ComponentHandle<DemexInputDeviceEventHandler>,
-    state: ComponentHandle<DemexEngineState>,
-) {
+    value_queue_tx: mpsc::Sender<ChannelValueQueueEntry>,
+    mut preset_handler: PresetHandler,
+    mut updatable_handler: UpdatableHandler,
+    mut timing_handler: TimingHandler,
+    patch: &ArcSwap<Patch>,
+) -> JoinHandle<()> {
+    let patch = patch.load();
+    let mut fixture_state_handler = FixtureStateHandler::new(&patch).unwrap();
+    let mut state = DemexEngineState::default();
+
     demex_update_thread(
         "demex-update".to_owned(),
         stats.clone(),
@@ -35,22 +40,10 @@ pub fn start_demex_update_thread(
         move |_, _| {
             let mut action_queue = action_queue.lock_write();
 
-            let mut fixture_handler = fixture_handler.lock_write();
-
-            let mut preset_handler = preset_handler.lock_write();
-
-            let mut updatable_handler = updatable_handler.lock_write();
-
-            let mut timing_handler = timing_handler.lock_write();
-
-            let patch = patch.lock_read();
-
-            let mut state = state.lock_write();
-
             // FIXME: just for testing
             for action in action_queue.inner_mut().drain(..) {
                 match action.run(
-                    &mut fixture_handler,
+                    &mut fixture_state_handler,
                     &mut preset_handler,
                     FixtureSelectorContext::new(&state.fixture_selection),
                     &mut updatable_handler,
@@ -83,32 +76,31 @@ pub fn start_demex_update_thread(
             }
 
             timing_handler.update_running_timecodes(
-                &mut fixture_handler,
+                &mut fixture_state_handler,
                 &preset_handler,
                 &mut updatable_handler,
             );
 
-            let _ = fixture_handler
-                .update_output_values(
-                    patch.fixture_types(),
-                    &preset_handler,
-                    &updatable_handler,
-                    &timing_handler,
-                    /*if args.controller { Some(&udp_tx) } else { None },*/
-                    None,
-                )
+            let _ = fixture_state_handler
+                .update_output_values(&patch, &preset_handler, &updatable_handler, &timing_handler)
                 .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
 
+            let _ = fixture_state_handler
+                .submit_output_values(&value_queue_tx, &patch, &preset_handler, &timing_handler)
+                .inspect_err(|err| log::error!("Failed to submit output values: {}", err));
+
             let uh_events = updatable_handler.update_executors(
-                patch.fixture_types(),
-                &mut fixture_handler,
+                &patch,
+                &mut fixture_state_handler,
                 &preset_handler,
                 &timing_handler,
             );
 
+            // TODO: move the input device handler to the frontend
+            /*
             input_device_event_handler.write(|handler| {
                 handler.push_events(uh_events.into_iter().map(DemexEvent::ExecutorStop))
-            });
+            });*/
         },
-    );
+    )
 }

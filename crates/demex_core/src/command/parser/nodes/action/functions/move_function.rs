@@ -17,7 +17,7 @@ impl FunctionArgs for MoveArgs {
     fn run(
         &self,
         _: std::time::Instant,
-        _: &mut crate::fixture::handler::FixtureHandler,
+        _: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         _: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
         _: &mut crate::updatables::UpdatableHandler,

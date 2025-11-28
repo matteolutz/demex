@@ -2,12 +2,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     event::DemexEvent,
-    fixture::handler::FixtureHandler,
     input::{
         DemexInputDeviceUpdateArgs, control::DemexInputDeviceControlTrait,
         error::DemexInputDeviceError, event::DemexInputDeviceFaderUpdate,
     },
     presets::PresetHandler,
+    state::fixture_state_handler::FixtureStateHandler,
     timing::TimingHandler,
     updatables::UpdatableHandler,
 };
@@ -43,7 +43,7 @@ impl DemexInputFader {
     pub fn handle_change(
         &self,
         value: f32,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         timing_handler: &mut TimingHandler,
@@ -97,7 +97,7 @@ impl DemexInputFader {
 
     pub fn value(
         &self,
-        fixture_handler: &FixtureHandler,
+        fixture_handler: &FixtureStateHandler,
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
     ) -> Result<f32, DemexInputDeviceError> {

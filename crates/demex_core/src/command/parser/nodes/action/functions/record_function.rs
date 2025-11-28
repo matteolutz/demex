@@ -14,14 +14,11 @@ use crate::{
             },
         },
     },
-    fixture::{
-        GdtfFixture,
-        error::FixtureError,
-        handler::{FixtureHandler, FixtureTypeList},
-    },
+    fixture::{GdtfFixturePatch, error::FixtureError},
     patch::Patch,
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
     sequence::cue::{CueFixtureChannelValue, CueIdx},
+    state::fixture_state_handler::FixtureStateHandler,
     timing::TimingHandler,
     updatables::error::UpdatableHandlerError,
 };
@@ -38,18 +35,21 @@ pub enum RecordChannelTypeSelector {
 impl RecordChannelTypeSelector {
     pub fn get_channel_values(
         &self,
-        fixture_types: &FixtureTypeList,
-        fixture: &GdtfFixture,
+        patch: &Patch,
+        fixture: &GdtfFixturePatch,
+        fixture_state_handler: &FixtureStateHandler,
     ) -> Result<Vec<CueFixtureChannelValue>, FixtureError> {
         let mut values = Vec::new();
 
-        let (_, dmx_mode) = fixture.fixture_type_and_dmx_mode(fixture_types)?;
+        let (_, dmx_mode) = patch.fixture_type_and_dmx_mode(fixture)?;
 
         for dmx_channel in &dmx_mode.dmx_channels {
             match self {
                 Self::All => {
                     values.push(CueFixtureChannelValue::new(
-                        fixture
+                        fixture_state_handler
+                            .fixture(fixture.id())
+                            .unwrap()
                             .get_programmer_value(dmx_channel.name().as_ref())?
                             .clone()
                             .with_preset_state(None),
@@ -58,7 +58,10 @@ impl RecordChannelTypeSelector {
                     ));
                 }
                 Self::Active => {
-                    let value = fixture.get_programmer_value(dmx_channel.name().as_ref())?;
+                    let value = fixture_state_handler
+                        .fixture(fixture.id())
+                        .unwrap()
+                        .get_programmer_value(dmx_channel.name().as_ref())?;
                     if value.is_home() {
                         continue;
                     }
@@ -93,7 +96,7 @@ impl FunctionArgs for RecordPresetArgs {
     fn run(
         &self,
         _issued_at: time::Instant,
-        fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::updatables::UpdatableHandler,
@@ -132,7 +135,7 @@ impl FunctionArgs for RecordGroupArgs {
     fn run(
         &self,
         _issued_at: time::Instant,
-        _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::updatables::UpdatableHandler,
@@ -169,7 +172,7 @@ impl FunctionArgs for RecordSequenceCueArgs {
     fn run(
         &self,
         _issued_at: time::Instant,
-        fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::updatables::UpdatableHandler,
@@ -185,7 +188,7 @@ impl FunctionArgs for RecordSequenceCueArgs {
                 fixture_selector_context,
                 self.cue_idx,
                 &self.channel_type_selector,
-                patch.fixture_types(),
+                patch,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 
@@ -229,10 +232,10 @@ pub struct RecordSequenceCueShorthandArgs {
 impl RecordSequenceCueShorthandArgs {
     fn create_sequence(
         &self,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &mut PresetHandler,
         fixture_selector_context: FixtureSelectorContext,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
         name: String,
     ) -> Result<u32, PresetHandlerError> {
         let sequence_id = preset_handler.next_sequence_id();
@@ -246,7 +249,7 @@ impl RecordSequenceCueShorthandArgs {
             fixture_selector_context,
             self.cue_idx,
             &self.channel_type_selector,
-            fixture_types,
+            patch,
         )?;
 
         Ok(sequence_id)
@@ -257,7 +260,7 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
     fn run(
         &self,
         _issued_at: time::Instant,
-        fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
         updatable_handler: &mut crate::updatables::UpdatableHandler,
@@ -283,7 +286,7 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                             fixture_selector_context,
                             self.cue_idx,
                             &self.channel_type_selector,
-                            patch.fixture_types(),
+                            patch,
                         )
                         .map_err(ActionRunError::PresetHandlerError)?;
                 } else {
@@ -292,7 +295,7 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                             fixture_handler,
                             preset_handler,
                             fixture_selector_context,
-                            patch.fixture_types(),
+                            patch,
                             self.sequence_name.clone().unwrap_or_else(|| {
                                 format!("Sequence {}", preset_handler.next_sequence_id())
                             }),

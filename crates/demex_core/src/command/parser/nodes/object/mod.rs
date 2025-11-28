@@ -2,9 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     event::DemexEvent,
-    fixture::handler::FixtureHandler,
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
     sequence::cue::CueIdx,
+    state::fixture_state_handler::FixtureStateHandler,
     updatables::UpdatableHandler,
 };
 
@@ -125,7 +125,7 @@ impl HomeableObject {
     pub fn home(
         &self,
         preset_handler: &PresetHandler,
-        fixture_handler: &mut FixtureHandler,
+        fixture_state_handler: &mut FixtureStateHandler,
         updatable_handler: &mut UpdatableHandler,
         fixture_selector_context: FixtureSelectorContext,
     ) -> Result<ActionRunResult, ActionRunError> {
@@ -136,9 +136,11 @@ impl HomeableObject {
                     .map_err(ActionRunError::FixtureSelectorError)?;
 
                 for fixture_id in selection.fixtures() {
-                    if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
+                    if let Ok(fixture_state) = fixture_state_handler.fixture_mut(*fixture_id) {
                         // TODO: should we clear the source list here??
-                        fixture.home(false).map_err(ActionRunError::FixtureError)?;
+                        fixture_state
+                            .home(false)
+                            .map_err(ActionRunError::FixtureError)?;
                     }
                 }
 
@@ -146,14 +148,14 @@ impl HomeableObject {
             }
             HomeableObject::Executor(executor_id) => {
                 if let Ok(fader) = updatable_handler.executor_mut(*executor_id) {
-                    fader.stop(fixture_handler, preset_handler);
+                    fader.stop(fixture_state_handler, preset_handler);
                 }
 
                 Ok(ActionRunResult::new())
             }
-            HomeableObject::Programmer => fixture_handler
+            HomeableObject::Programmer => fixture_state_handler
                 .home_all(false)
-                .map_err(ActionRunError::FixtureHandlerError)
+                .map_err(ActionRunError::FixtureError)
                 .map(|_| ActionRunResult::new()),
         }
     }

@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-ringbuf = "0.4.8"
+arc-swap = "1.7.1"
 
 demex_headless.workspace = true
 demex_dmx.workspace = true

@@ -10,14 +10,12 @@ use crate::{
     command::parser::nodes::action::functions::{
         record_function::RecordChannelTypeSelector, update_function::UpdateMode,
     },
-    fixture::{
-        GdtfFixturePatch,
-        handler::{FixtureHandler, FixtureTypeList},
-    },
+    fixture::GdtfFixturePatch,
     implement_set_property,
     patch::Patch,
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
     selection::FixtureSelection,
+    state::fixture_state_handler::FixtureStateHandler,
     timing::TimingHandler,
     utils::ease::{ease_in_out_quad, ease_in_quad, ease_out_quad},
 };
@@ -247,25 +245,27 @@ pub struct Cue {
 
 impl Cue {
     pub fn generate_cue_data(
-        fixture_types: &FixtureTypeList,
-        fixture_handler: &FixtureHandler,
+        patch: &Patch,
+        fixture_handler: &FixtureStateHandler,
         fixture_selection: &FixtureSelection,
         channel_type_selector: &RecordChannelTypeSelector,
     ) -> Result<HashMap<u32, Vec<CueFixtureChannelValue>>, PresetHandlerError> {
         let mut cue_data = HashMap::new();
 
         for fixture_id in fixture_selection.fixtures() {
-            if let Some(fixture) = fixture_handler.fixture_immut(*fixture_id) {
-                let channel_values = channel_type_selector
-                    .get_channel_values(fixture_types, fixture)
-                    .map_err(PresetHandlerError::FixtureError)?;
+            let Ok(fixture) = patch.fixture(*fixture_id) else {
+                continue;
+            };
 
-                if channel_values.is_empty() {
-                    continue;
-                }
+            let channel_values = channel_type_selector
+                .get_channel_values(patch, fixture, fixture_handler)
+                .map_err(PresetHandlerError::FixtureError)?;
 
-                cue_data.insert(*fixture_id, channel_values);
+            if channel_values.is_empty() {
+                continue;
             }
+
+            cue_data.insert(*fixture_id, channel_values);
         }
 
         Ok(cue_data)
@@ -635,15 +635,16 @@ impl Cue {
             .collect()
     }
 
-    pub fn recall(&self, fixture_types: &FixtureTypeList, fixture_handler: &mut FixtureHandler) {
+    pub fn recall(&self, patch: &Patch, fixture_handler: &mut FixtureStateHandler) {
         match self.data {
             CueDataMode::Default(ref data) => {
                 for (fixture_id, data) in data {
-                    if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
+                    if let Ok(fixture_state) = fixture_handler.fixture_mut(*fixture_id) {
                         for value in data {
-                            fixture
+                            fixture_state
                                 .set_programmer_value(
-                                    fixture_types,
+                                    patch,
+                                    patch.fixture(*fixture_id).unwrap(),
                                     value.channel_name(),
                                     value.value().clone(),
                                 )

@@ -1,18 +1,21 @@
 use crate::{
-    EncoderChannels, channel3::channel_value::FixtureChannelValue3Discrete,
-    command::parser::nodes::fixture_selector::FixtureSelectorContext,
-    fixture::handler::FixtureHandler, patch::Patch, presets::PresetHandler, timing::TimingHandler,
+    EncoderChannels, channel3::channel_value::FixtureChannelValue3Update,
+    command::parser::nodes::fixture_selector::FixtureSelectorContext, patch::Patch,
+    presets::PresetHandler, state::fixture_state_handler::FixtureStateHandler,
+    timing::TimingHandler,
 };
 
 pub(crate) fn get_global_encoder_value(
     encoder_idx: u32,
     fixture_selector_context: FixtureSelectorContext,
-    fixture_handler: &FixtureHandler,
+    fixture_handler: &FixtureStateHandler,
     preset_handler: &PresetHandler,
     timing_handler: &TimingHandler,
     encoder_channels: Option<&EncoderChannels>,
     patch: &Patch,
 ) -> Option<f32> {
+    return Some(0.0);
+    /*
     let fixture_selection = fixture_selector_context.current_fixture()?;
 
     let master_fixture = fixture_selection.master_fixture(patch)?;
@@ -35,16 +38,20 @@ pub(crate) fn get_global_encoder_value(
     );
 
     Some(value)
+    */
 }
 
 pub(crate) fn handle_global_encoder_change(
     encoder_idx: u32,
     value: f32,
     fixture_selector_context: FixtureSelectorContext,
-    fixture_handler: &mut FixtureHandler,
+    fixture_handler: &mut FixtureStateHandler,
     encoder_channels: Option<&EncoderChannels>,
     patch: &Patch,
 ) {
+    return;
+
+    /*
     let Some(fixture_selection) = fixture_selector_context.current_fixture() else {
         return;
     };
@@ -66,8 +73,9 @@ pub(crate) fn handle_global_encoder_change(
             let _ = fixture.update_programmer_value(
                 patch.fixture_types(),
                 channel,
-                FixtureChannelValue3Discrete::Value(value),
+                FixtureChannelValue3Update::Value(value),
             );
         }
     }
+    */
 }

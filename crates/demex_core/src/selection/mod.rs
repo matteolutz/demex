@@ -46,6 +46,10 @@ impl FixtureSelection {
         self.fixtures.iter().any(|id| other.has_fixture(*id))
     }
 
+    pub fn retain(&mut self, f: impl Fn(&u32) -> bool) {
+        self.fixtures.retain(f);
+    }
+
     pub fn extend_from(&mut self, other: &FixtureSelection) {
         for fixture in other.fixtures() {
             if self.fixtures.contains(fixture) {

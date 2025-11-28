@@ -3,7 +3,7 @@ use state::TimecodeState;
 use trigger::TimecodeTrigger;
 
 use crate::{
-    fixture::handler::FixtureHandler, presets::PresetHandler,
+    presets::PresetHandler, state::fixture_state_handler::FixtureStateHandler,
     timing::timecode::scheduler::TimecodeTriggerScheduler, updatables::UpdatableHandler,
 };
 
@@ -90,7 +90,7 @@ impl Timecode {
     pub fn update(
         &mut self,
         new_millis: u64,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
     ) {

@@ -18,6 +18,7 @@ use crate::{
     engine::component::Component,
     fixture::GdtfFixturePatch,
     patch::Patch,
+    state::fixture_state_handler::FixtureStateHandler,
 };
 
 use super::{
@@ -27,7 +28,6 @@ use super::{
     },
     effect::feature::runtime::FeatureEffectRuntime,
     effect2::effect::Effect2,
-    fixture::handler::{FixtureHandler, FixtureTypeList, error::FixtureHandlerError},
     selection::FixtureSelection,
     sequence::{
         Sequence,
@@ -131,11 +131,11 @@ impl PresetHandler {
         name: Option<String>,
         should_next: bool,
         patch: &Patch,
-        fixture_handler: &FixtureHandler,
+        fixture_handler: &FixtureStateHandler,
         timing_handler: &TimingHandler,
     ) -> Result<(), PresetHandlerError> {
         let data = FixturePreset::generate_preset_data(
-            patch.fixture_types(),
+            patch,
             fixture_handler,
             self,
             timing_handler,
@@ -212,14 +212,14 @@ impl PresetHandler {
         fixture_selector_context: FixtureSelectorContext,
         id: FixturePresetId,
         patch: &Patch,
-        fixture_handler: &FixtureHandler,
+        fixture_handler: &FixtureStateHandler,
         timing_handler: &TimingHandler,
         update_mode: UpdateMode,
     ) -> Result<usize, PresetHandlerError> {
         let preset = self.get_preset(id)?;
 
         let new_data = FixturePreset::generate_preset_data(
-            patch.fixture_types(),
+            patch,
             fixture_handler,
             self,
             timing_handler,
@@ -379,20 +379,19 @@ impl PresetHandler {
     pub fn apply_preset(
         &self,
         preset_id: FixturePresetId,
-        fixture_handler: &mut FixtureHandler,
-        fixture_types: &FixtureTypeList,
+        fixture_handler: &mut FixtureStateHandler,
+        patch: &Patch,
         selection: FixtureSelection,
     ) -> Result<(), PresetHandlerError> {
         let preset = self.get_preset(preset_id)?;
 
         for fixture_id in selection.fixtures() {
             preset.apply(
-                fixture_types,
-                fixture_handler.fixture(*fixture_id).ok_or(
-                    PresetHandlerError::FixtureHandlerError(FixtureHandlerError::FixtureNotFound(
-                        *fixture_id,
-                    )),
-                )?,
+                patch,
+                *fixture_id,
+                fixture_handler
+                    .fixture_mut(*fixture_id)
+                    .map_err(PresetHandlerError::FixtureError)?,
                 selection.clone(),
             )?;
         }
@@ -552,10 +551,10 @@ impl PresetHandler {
         cue_idx: CueIdx,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
-        fixture_handler: &FixtureHandler,
+        fixture_handler: &FixtureStateHandler,
         channel_type_selector: &RecordChannelTypeSelector,
         update_mode: UpdateMode,
-        fixture_types: &FixtureTypeList,
+        patch: &Patch,
     ) -> Result<usize, PresetHandlerError> {
         let selection = fixture_selector
             .get_selection(self, fixture_selector_context)
@@ -572,12 +571,8 @@ impl PresetHandler {
             .find(|c| c.cue_idx() == cue_idx)
             .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_idx))?;
 
-        let cue_data = Cue::generate_cue_data(
-            fixture_types,
-            fixture_handler,
-            &selection,
-            channel_type_selector,
-        )?;
+        let cue_data =
+            Cue::generate_cue_data(patch, fixture_handler, &selection, channel_type_selector)?;
 
         let values_updated = cue.update(sequence_id, cue_data, &selection, update_mode)?;
 
@@ -587,12 +582,12 @@ impl PresetHandler {
     pub fn record_sequence_cue(
         &mut self,
         sequence_id: u32,
-        fixture_handler: &FixtureHandler,
+        fixture_handler: &FixtureStateHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         cue_idx: Option<CueIdx>,
         channel_type_selector: &RecordChannelTypeSelector,
-        fixture_types: &FixtureTypeList,
+        fixture_types: &Patch,
     ) -> Result<(), PresetHandlerError> {
         // does this cue already exist?
         if let Some(cue_idx) = cue_idx {

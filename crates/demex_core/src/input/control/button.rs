@@ -11,7 +11,6 @@ use crate::{
         },
     },
     event::DemexEvent,
-    fixture::handler::FixtureHandler,
     input::{
         DemexInputDeviceUpdateArgs, control::DemexInputDeviceControlTrait,
         error::DemexInputDeviceError, event::DemexInputDeviceButtonUpdate,
@@ -19,6 +18,7 @@ use crate::{
     patch::Patch,
     presets::{PresetHandler, preset::FixturePresetId},
     selection::FixtureSelection,
+    state::fixture_state_handler::FixtureStateHandler,
     timing::TimingHandler,
     updatables::UpdatableHandler,
 };
@@ -66,7 +66,7 @@ pub enum DemexInputButton {
 impl DemexInputButton {
     pub fn handle_press(
         &self,
-        fixture_handler: &mut FixtureHandler,
+        fixture_handler: &mut FixtureStateHandler,
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         timing_handler: &mut TimingHandler,
@@ -116,12 +116,7 @@ impl DemexInputButton {
                 ))?;
 
                 preset_handler
-                    .apply_preset(
-                        *preset_id,
-                        fixture_handler,
-                        patch.fixture_types(),
-                        selection.clone(),
-                    )
+                    .apply_preset(*preset_id, fixture_handler, patch, selection.clone())
                     .map_err(DemexInputDeviceError::PresetHandlerError)?;
 
                 None
@@ -159,7 +154,7 @@ impl DemexInputButton {
 
     pub fn handle_release(
         &self,
-        _fixture_handler: &mut FixtureHandler,
+        _fixture_handler: &mut FixtureStateHandler,
         _preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
     ) -> Result<Option<DemexEvent>, DemexInputDeviceError> {

@@ -1,9 +1,11 @@
-use std::{collections::HashMap, u8};
+use std::{collections::HashMap, sync::mpsc, u8};
+
+use parking_lot::lock_api::RawRwLockUpgradeTimed;
 
 use crate::{
-    channel3::channel_value_queue::ChannelValueQueue,
+    channel3::channel_value_queue::{ChannelValueQueue, ChannelValueQueueEntry},
     engine::component::Component,
-    fixture::{error::FixtureError, handler::error::FixtureHandlerError},
+    fixture::error::FixtureError,
     patch::Patch,
     presets::PresetHandler,
     state::fixture_state::FixtureState,
@@ -30,7 +32,7 @@ impl Default for FixtureStateHandler {
 }
 
 impl FixtureStateHandler {
-    pub fn new(patch: &Patch) -> Result<Self, FixtureHandlerError> {
+    pub fn new(patch: &Patch) -> Result<Self, FixtureError> {
         // TODO: find a new place for this
         /*
         // check if the fixtures overlap
@@ -91,6 +93,26 @@ impl FixtureStateHandler {
         &mut self.grand_master
     }
 
+    pub fn fixture(&self, fixture_id: u32) -> Result<&FixtureState, FixtureError> {
+        self.fixture_states
+            .get(&fixture_id)
+            .ok_or(FixtureError::NotFound(fixture_id))
+    }
+
+    pub fn fixture_mut(&mut self, fixture_id: u32) -> Result<&mut FixtureState, FixtureError> {
+        self.fixture_states
+            .get_mut(&fixture_id)
+            .ok_or(FixtureError::NotFound(fixture_id))
+    }
+
+    pub fn home_all(&mut self, clear_sources: bool) -> Result<(), FixtureError> {
+        for (_, state) in self.fixture_states.iter_mut() {
+            state.home(clear_sources)?;
+        }
+
+        Ok(())
+    }
+
     pub fn update_output_values(
         &mut self,
         patch: &Patch,
@@ -121,7 +143,7 @@ impl FixtureStateHandler {
                     continue;
                 }
 
-                output_value.update(new_output_value);
+                output_value.update(new_output_value.clone());
             }
         }
 
@@ -130,7 +152,7 @@ impl FixtureStateHandler {
 
     pub fn submit_output_values(
         &mut self,
-        value_queue: &mut ChannelValueQueue,
+        value_queue_tx: &mpsc::Sender<ChannelValueQueueEntry>,
         patch: &Patch,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
@@ -155,7 +177,12 @@ impl FixtureStateHandler {
                 output_value.reset();
             }
 
-            value_queue.enqueue(*id, updated_values);
+            value_queue_tx
+                .send(ChannelValueQueueEntry {
+                    fixture_id: *id,
+                    values: updated_values,
+                })
+                .expect("Output channel has hung up");
         }
 
         Ok(())

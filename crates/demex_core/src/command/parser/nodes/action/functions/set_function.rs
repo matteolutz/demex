@@ -6,7 +6,7 @@ use crate::{
     channel3::{
         attribute::FixtureChannel3Attribute,
         channel_value::{
-            FixtureChannelValue2PresetState, FixtureChannelValue3, FixtureChannelValue3Discrete,
+            FixtureChannelValue2PresetState, FixtureChannelValue3, FixtureChannelValue3Update,
         },
         feature::feature_type::FixtureChannel3FeatureType,
     },
@@ -35,7 +35,7 @@ impl FunctionArgs for SetFeatureValueArgs {
     fn run(
         &self,
         _issued_at: time::Instant,
-        fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::updatables::UpdatableHandler,
@@ -63,19 +63,23 @@ impl FunctionArgs for SetFeatureValueArgs {
                 }
             };
 
-            if let Some(fixture) = fixture_handler.fixture(*fixture_id) {
+            if let (Ok(fixture_state), Ok(fixture)) = (
+                fixture_handler.fixture_mut(*fixture_id),
+                patch.fixture(*fixture_id),
+            ) {
                 match self.feature_type {
                     FixtureChannel3FeatureType::Dimmer => {
-                        fixture
+                        fixture_state
                             .update_programmer_attribute_matches_value(
-                                patch.fixture_types(),
+                                patch,
+                                fixture,
                                 |fixture_attribute_name| {
                                     FixtureChannel3Attribute::attribute_matches(
                                         fixture_attribute_name,
                                         FixtureChannel3Attribute::Dimmer.to_string().as_str(),
                                     )
                                 },
-                                FixtureChannelValue3Discrete::Value(discrete_value),
+                                FixtureChannelValue3Update::Value(discrete_value),
                             )
                             .map_err(ActionRunError::FixtureError)?;
                     }
@@ -124,7 +128,7 @@ impl FunctionArgs for SetFixturePresetArgs {
     fn run(
         &self,
         _issued_at: time::Instant,
-        fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
         _updatable_handler: &mut crate::updatables::UpdatableHandler,
@@ -141,7 +145,7 @@ impl FunctionArgs for SetFixturePresetArgs {
         match self.preset_id {
             ValueOrRange::Single(preset_id) => {
                 preset_handler
-                    .apply_preset(preset_id, fixture_handler, patch.fixture_types(), selection)
+                    .apply_preset(preset_id, fixture_handler, patch, selection)
                     .map_err(ActionRunError::PresetHandlerError)?;
             }
             ValueOrRange::Thru(preset_id_from, preset_id_to) => {
@@ -152,8 +156,11 @@ impl FunctionArgs for SetFixturePresetArgs {
                 for fixture in selection.fixtures().iter() {
                     let fixture_offset = selection.offset(*fixture).unwrap();
 
-                    if let Some(f) = fixture_handler.fixture(*fixture) {
-                        let channels = presets[0].affected_channels(f, patch.fixture_types());
+                    if let (Ok(state), Ok(fixture)) = (
+                        fixture_handler.fixture_mut(*fixture),
+                        patch.fixture(*fixture),
+                    ) {
+                        let channels = presets[0].affected_channels(fixture, patch);
 
                         // get the two relevant indexes from the presets
                         let preset_idx_fl = fixture_offset
@@ -183,12 +190,14 @@ impl FunctionArgs for SetFixturePresetArgs {
                         };
 
                         for channel in channels {
-                            f.set_programmer_value(
-                                patch.fixture_types(),
-                                &channel,
-                                channel_value.clone(),
-                            )
-                            .map_err(ActionRunError::FixtureError)?;
+                            state
+                                .set_programmer_value(
+                                    patch,
+                                    fixture,
+                                    &channel,
+                                    channel_value.clone(),
+                                )
+                                .map_err(ActionRunError::FixtureError)?;
                         }
                     }
                 }
@@ -212,7 +221,7 @@ impl FunctionArgs for ObjectSetPropertyArgs {
     fn run(
         &self,
         _issued_at: time::Instant,
-        _fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut PresetHandler,
         _fixture_selector_context: FixtureSelectorContext,
         updatable_handler: &mut crate::updatables::UpdatableHandler,

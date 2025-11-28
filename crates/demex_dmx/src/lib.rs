@@ -89,7 +89,13 @@ impl DemexDmxOutputTrait for DemexDmxOutputData {
     fn send(&mut self, universe: u16, data: &[u8; 512]) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Self::Artnet { tx, .. } | Self::Serial { tx, .. } => tx.send((universe, *data))?,
-            Self::Debug(_) => (),
+            Self::Debug(verbosity) => match verbosity {
+                DebugOutputVerbosity::Verbose => {
+                    println!("Universe: {}, Data: {:?}", universe, data)
+                }
+                DebugOutputVerbosity::Quiet => println!("Universe: {}", universe),
+                _ => {}
+            },
             Self::None => (),
         }
 

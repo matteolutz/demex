@@ -16,7 +16,7 @@ impl FunctionArgs for ExecutorStopArgs {
     fn run(
         &self,
         _issued_at: std::time::Instant,
-        fixture_handler: &mut crate::fixture::handler::FixtureHandler,
+        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
         updatable_handler: &mut crate::updatables::UpdatableHandler,
