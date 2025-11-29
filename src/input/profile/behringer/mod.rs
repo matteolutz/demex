@@ -51,7 +51,7 @@ impl BehringerXTouchCompactDeviceProfile {
             xtouch_midi_name,
             midi: MidiInOutDevice::new(
                 "Behringer X-Touch Compact".to_owned(),
-                |name| name == "X-TOUCH COMPACT",
+                |name| name.contains("X-TOUCH COMPACT"),
                 MidiInOutDeviceMode::Both,
             ),
             encoder_states: Default::default(),
