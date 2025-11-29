@@ -197,7 +197,6 @@ impl FixtureHandler {
         timing_handler: &TimingHandler,
         force: bool,
     ) -> Result<usize, FixtureHandlerError> {
-        println!("grandmaster value: {}", self.grand_master);
         let mut dirty_universes: BTreeSet<u16> = BTreeSet::new();
 
         let grand_master_changed = self.grand_master != self.old_grand_master;
