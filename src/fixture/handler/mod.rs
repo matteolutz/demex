@@ -38,7 +38,9 @@ pub struct FixtureHandler {
     fixtures: Vec<GdtfFixture>,
     outputs: Vec<DemexDmxOutput>,
     universe_output_data: HashMap<u16, [u8; 512]>,
+
     grand_master: u8,
+    old_grand_master: u8
 }
 
 impl FixtureHandler {
@@ -89,6 +91,7 @@ impl FixtureHandler {
             fixtures,
             outputs,
             grand_master: Self::default_grandmaster_value(),
+            old_grand_master: Self::default_grandmaster_value(),
         })
     }
 
@@ -194,7 +197,11 @@ impl FixtureHandler {
         timing_handler: &TimingHandler,
         force: bool,
     ) -> Result<usize, FixtureHandlerError> {
+        println!("grandmaster value: {}", self.grand_master);
         let mut dirty_universes: BTreeSet<u16> = BTreeSet::new();
+
+        let grand_master_changed = self.grand_master != self.old_grand_master;
+        self.old_grand_master = self.grand_master;
 
         for f in &mut self.fixtures {
             let fixture_universe_offset = f.start_address() - 1;
@@ -213,6 +220,7 @@ impl FixtureHandler {
                 preset_handler,
                 timing_handler,
                 self.grand_master as f32 / 255.0,
+                grand_master_changed,
                 self.universe_output_data.get_mut(&f.universe()).unwrap(),
             );
 

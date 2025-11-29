@@ -885,6 +885,7 @@ impl GdtfFixture {
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         grand_master: f32,
+        grand_master_changed: bool,
         universe_buffer: &mut [u8; 512],
     ) -> Result<(), FixtureError> {
         let (fixture_type, dmx_mode) = self.fixture_type_and_dmx_mode(fixture_types)?;
@@ -910,7 +911,7 @@ impl GdtfFixture {
                     .get_mut(dmx_channel.name().as_ref())
                     .unwrap();
 
-                if !value.should_output(value_state, preset_handler) {
+                if !value.should_output(value_state, preset_handler) && !grand_master_changed {
                     continue;
                 }
 
