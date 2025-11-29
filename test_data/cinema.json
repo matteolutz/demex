@@ -89,7 +89,57 @@
       "2": { "id": 2, "name": "for", "command": ["KeywordFor"] }
     },
     "sequences": {},
-    "presets": {}
+    "presets": {
+      "Dimmer.1": {
+        "id": "Dimmer.1",
+        "name": "Sine 360",
+        "display_color": null,
+        "fade_up": 0.0,
+        "data": {
+          "FeatureEffect": {
+            "runtime": {
+              "effect": {
+                "parts": [
+                  {
+                    "wave": {
+                      "segments": [
+                        {
+                          "start_pos": { "x": 0.0, "y": 0.14285713 },
+                          "control_points": [
+                            { "x": 0.0, "y": 0.14285713 },
+                            { "x": 0.19999997, "y": 0.14285713 }
+                          ]
+                        },
+                        {
+                          "start_pos": { "x": 0.5, "y": 1.0 },
+                          "control_points": [
+                            { "x": 0.3, "y": 1.0 },
+                            { "x": 0.7, "y": 1.0 }
+                          ]
+                        },
+                        {
+                          "start_pos": { "x": 1.0, "y": 0.14285713 },
+                          "control_points": [
+                            { "x": 0.8, "y": 0.14285713 },
+                            { "x": 1.0, "y": 0.14285713 }
+                          ]
+                        }
+                      ],
+                      "wave_type": "Bezier"
+                    },
+                    "attributes": ["Dimmer"],
+                    "phase_offset": 0.0,
+                    "phase_multiplier": 1.0
+                  }
+                ]
+              },
+              "speed": { "Bpm": 30.0 },
+              "phase": { "Range": { "start": 0.0, "end": 360.0 } }
+            }
+          }
+        }
+      }
+    }
   },
   "updatable_handler": {
     "executors": {}
@@ -628,7 +678,17 @@
         }
       ]
     },
-    "outputs": []
+    "outputs": [
+      {
+        "data": {
+          "Serial": {
+            "serial_port": "/dev/tty.usbserial-A10KPDBZ",
+            "universe": 1
+          }
+        },
+        "device_id": "Controller"
+      }
+    ]
   },
   "ui_config": {
     "viewports": [

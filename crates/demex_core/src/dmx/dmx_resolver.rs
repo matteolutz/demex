@@ -10,6 +10,10 @@ use crate::{
     patch::Patch,
 };
 
+fn compare_universe_data(a: &[u8; 512], b: &[u8; 512]) -> bool {
+    a.iter().zip(b.iter()).all(|(a, b)| a == b)
+}
+
 #[derive(Debug, Default)]
 pub struct DmxResolver {
     old_universe_data: HashMap<u16, [u8; 512]>,
@@ -24,26 +28,27 @@ impl DmxResolver {
         outputs: impl Iterator<Item = &'a mut DemexDmxOutput>,
         force: bool,
     ) -> usize {
-        let universes_to_send = force.then(|| {
-            self.universe_data
-                .iter()
-                .filter(|(universe, data)| {
-                    data != &self
-                        .old_universe_data
-                        .get(universe)
-                        .unwrap_or_else(|| &[0; 512])
-                })
-                .map(|(universe, _)| *universe)
-                .collect::<Vec<_>>()
-        });
+        let universes_to_send = (!force)
+            .then(|| {
+                self.universe_data
+                    .iter()
+                    .filter(|(universe, data)| {
+                        self.old_universe_data
+                            .get(universe)
+                            .is_none_or(|old_data| !compare_universe_data(data, old_data))
+                    })
+                    .map(|(universe, _)| *universe)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_else(|| vec![]);
 
         for output in outputs {
             let Some(output_universes) = output.config().universes() else {
-                for universe in self.universe_data.keys().filter(|universe| {
-                    universes_to_send
-                        .as_ref()
-                        .is_none_or(|universes_to_send| universes_to_send.contains(universe))
-                }) {
+                for universe in self
+                    .universe_data
+                    .keys()
+                    .filter(|universe| force || universes_to_send.contains(universe))
+                {
                     let data = self
                         .universe_data
                         .get(universe)
@@ -55,11 +60,10 @@ impl DmxResolver {
                 continue;
             };
 
-            for universe in output_universes.iter().filter(|universe| {
-                universes_to_send
-                    .as_ref()
-                    .is_none_or(|universes_to_send| universes_to_send.contains(universe))
-            }) {
+            for universe in output_universes
+                .iter()
+                .filter(|universe| force || universes_to_send.contains(universe))
+            {
                 let data = self
                     .universe_data
                     .get(universe)
@@ -70,9 +74,11 @@ impl DmxResolver {
             }
         }
 
-        let updated_universes = universes_to_send
-            .map(|u| u.len())
-            .unwrap_or(self.universe_data.len());
+        let updated_universes = if force {
+            self.universe_data.len()
+        } else {
+            universes_to_send.len()
+        };
 
         self.old_universe_data = self.universe_data.clone();
 
