@@ -1,5 +1,6 @@
-use demex_ui::{infobar::infobar, wm::WindowDelegate};
-use gpui::{App, Bounds, ParentElement, Point, WindowBounds, px};
+use gpui::{App, Bounds, ParentElement, Point, WindowBounds, div, px};
+
+use crate::ui2::wm::{WindowDelegate, WindowWrapper};
 
 pub struct AddLayoutItemWindowInitData {
     pub selection: (Point<u16>, Point<u16>),
@@ -30,11 +31,11 @@ impl WindowDelegate for AddLayoutItemWindow {
     fn render_content(
         &mut self,
         _window: &mut gpui::Window,
-        cx: &mut gpui::Context<demex_ui::wm::WindowWrapper<Self>>,
+        cx: &mut gpui::Context<WindowWrapper<Self>>,
     ) -> impl gpui::IntoElement
     where
         Self: Sized,
     {
-        infobar(cx).child(format!("{:?}", self.data.selection))
+        div().child(format!("{:?}", self.data.selection))
     }
 }

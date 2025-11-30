@@ -2,18 +2,15 @@ use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 
 use gpui::prelude::*;
-use gpui::{
-    AnyWindowHandle, App, Entity, FocusHandle, Focusable, Global, PromptLevel, SharedString, Window,
-};
+use gpui::{AnyWindowHandle, App, Entity, FocusHandle, Focusable, Global, PromptLevel, Window};
 
+mod app;
 mod overlay;
 mod window;
 
+pub use app::*;
 pub use overlay::*;
 pub use window::*;
-
-use crate::AppExt;
-use crate::input::{FieldEvent, NumberField, TextField};
 
 pub(crate) fn init(cx: &mut App) {
     overlay::init(cx);
@@ -206,6 +203,7 @@ impl WindowManager {
             .unwrap_or_default()
     }
 
+    /*
     pub fn open_text_modal<F: Fn(SharedString, &mut Window, &mut App) + 'static>(
         &mut self,
         overlay_id: impl Into<String>,
@@ -286,6 +284,7 @@ impl WindowManager {
             cx,
         );
     }
+    */
 }
 
 impl Global for WindowManager {}

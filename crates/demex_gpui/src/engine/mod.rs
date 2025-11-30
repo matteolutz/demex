@@ -10,8 +10,6 @@ use std::sync::mpsc;
 
 use demex_core::{
     engine::{DemexEngine, error::DemexEngineError},
-    fixture::GdtfFixture,
-    patch::Patch,
     show::DemexShow,
 };
 use gdtf::fixture_type::FixtureType;
@@ -35,11 +33,10 @@ impl DemexEngineHandler {
         let (event_bus_tx, event_bus_rx) = mpsc::channel();
 
         let mut engine = DemexEngine::new(event_bus_tx);
-        show.register(global_fixture_types, &mut engine);
 
         let event_handler = cx.new(|cx| DemexEventHandler::new(event_bus_rx, cx));
 
-        engine.start(false);
+        engine.load_show(show, global_fixture_types, true);
 
         cx.set_global(Self {
             engine,
@@ -57,29 +54,6 @@ impl DemexEngineHandler {
     pub fn event_handler(cx: &App) -> Entity<DemexEventHandler> {
         let this: &Self = cx.global();
         this.event_handler.clone()
-    }
-
-    pub fn read_fixture<R>(
-        cx: &App,
-        fixture_id: u32,
-        f: impl FnOnce(&GdtfFixture) -> R,
-    ) -> Option<R> {
-        Self::engine(cx)
-            .fixture_handler()
-            .read(|fh| fh.fixture_immut(fixture_id).map(|fixture| f(fixture)))
-    }
-
-    pub fn read_fixture_and_patch<R>(
-        cx: &App,
-        fixture_id: u32,
-        f: impl FnOnce(&GdtfFixture, &Patch) -> R,
-    ) -> Option<R> {
-        Self::engine(cx).fixture_handler().read(|fh| {
-            Self::engine(cx).patch().read(|patch| {
-                fh.fixture_immut(fixture_id)
-                    .map(|fixture| f(fixture, patch))
-            })
-        })
     }
 }
 

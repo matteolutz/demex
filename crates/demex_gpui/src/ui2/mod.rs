@@ -1,11 +1,14 @@
-use demex_ui::wm::WindowDelegate;
 use gpui::{App, Context, Entity, Window, prelude::*};
 
 pub mod ext;
 pub mod pane;
 pub mod window;
+pub mod wm;
 
-use crate::ui2::pane::MainPane;
+use crate::ui2::{
+    pane::MainPane,
+    wm::{WindowDelegate, WindowWrapper},
+};
 
 pub struct MainWindow {
     pane: Entity<MainPane>,
@@ -29,7 +32,7 @@ impl WindowDelegate for MainWindow {
     fn render_content(
         &mut self,
         _window: &mut Window,
-        _cx: &mut Context<demex_ui::wm::WindowWrapper<Self>>,
+        _cx: &mut Context<WindowWrapper<Self>>,
     ) -> impl IntoElement
     where
         Self: Sized,

@@ -5,8 +5,7 @@ use gpui::{
     WindowOptions, div, point, px,
 };
 use gpui::{WindowBounds, prelude::*};
-
-use crate::theme::{ActiveTheme, InteractiveColor};
+use gpui_component::ActiveTheme;
 
 pub const TRAFFIC_LIGHT_WIDTH: Pixels = px(14.0);
 pub const TRAFFIC_LIGHT_SPACING: Pixels = px(9.0);
@@ -127,7 +126,7 @@ fn render_titlebar(window: &Window, cx: &App) -> impl IntoElement {
         .child(
             div()
                 .font_weight(FontWeight::BOLD)
-                .text_color(cx.theme().foreground.muted())
+                .text_color(cx.theme().foreground.opacity(0.8))
                 .child(window.window_title()),
         )
         .on_click(|event, window, _| {

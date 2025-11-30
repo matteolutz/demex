@@ -14,7 +14,6 @@ pub mod tabs;
 pub mod theme;
 pub mod typo;
 pub mod utils;
-pub mod wm;
 
 mod app_ext;
 
@@ -25,7 +24,6 @@ use gpui::App;
 
 use crate::error::Result;
 use crate::theme::Theme;
-use crate::wm::WindowManager;
 
 pub fn init(cx: &mut App) -> Result<()> {
     assets::load_fonts(cx)
@@ -34,12 +32,8 @@ pub fn init(cx: &mut App) -> Result<()> {
 
     cx.set_global(Theme::default());
 
-    let wm = WindowManager::new(cx);
-    cx.set_global(wm);
-
     input::init(cx);
     table::init(cx);
-    wm::init(cx);
 
     Ok(())
 }

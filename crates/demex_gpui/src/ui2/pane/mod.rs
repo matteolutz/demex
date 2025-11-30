@@ -1,49 +1,93 @@
-use demex_ui::container::container;
-use demex_ui::input::{TextInput, TextInputEvent};
-use demex_ui::theme::ActiveTheme;
-use gpui::{Context, Entity, Render, Styled, div};
+use std::sync::Arc;
+
+use gpui::{Context, Entity, Render, Styled, Subscription, div};
 use gpui::{prelude::*, px};
+use gpui_component::dock::{DockArea, DockItem, DockPlacement};
+use gpui_component::input::{Input, InputEvent, InputState};
+use gpui_component::v_flex;
 
 use crate::engine::DemexEngineHandler;
-use crate::ui2::pane::layout::LayoutViewPane;
+use crate::ui2::pane::panels::command::CommandPanel;
+use crate::ui2::pane::panels::fixture_list::FixtureListPanel;
+// use crate::ui2::pane::layout::LayoutViewPane;
 
-pub mod layout;
+// pub mod layout;
+mod panels;
 
 pub struct MainPane {
-    layout_pane: Entity<LayoutViewPane>,
-    command_input: Entity<TextInput>,
+    // layout_pane: Entity<LayoutViewPane>,
+    command_input_state: Entity<InputState>,
+    dock_area: Entity<DockArea>,
+
+    _subscriptions: Vec<Subscription>,
 }
 
 impl MainPane {
     pub fn new(window: &mut gpui::Window, cx: &mut Context<Self>) -> Self {
-        let command_input = cx.new(|cx| {
-            let t = TextInput::new("command", cx.focus_handle(), window, cx);
-            // t.set_placeholder("Enter command".into(), cx);
-            t
+        let command_input_state = cx.new(|cx| InputState::new(window, cx).placeholder("Command"));
+        let dock_area = cx.new(|cx| {
+            let mut da = DockArea::new("demex-main-dock", None, window, cx);
+
+            da.add_panel(
+                Arc::new(FixtureListPanel::new("The first one", cx)),
+                DockPlacement::Center,
+                None,
+                window,
+                cx,
+            );
+
+            da.add_panel(
+                Arc::new(FixtureListPanel::new("The second one", cx)),
+                DockPlacement::Center,
+                None,
+                window,
+                cx,
+            );
+
+            da.add_panel(
+                Arc::new(FixtureListPanel::new("The third one", cx)),
+                DockPlacement::Center,
+                None,
+                window,
+                cx,
+            );
+
+            da.set_bottom_dock(
+                DockItem::panel(Arc::new(CommandPanel::new(cx))),
+                Some(5.0.into()),
+                true,
+                window,
+                cx,
+            );
+
+            da
         });
 
-        cx.subscribe_in(
-            &command_input,
+        let subs = vec![cx.subscribe_in(
+            &command_input_state,
             window,
-            |_, input, event, _, cx| match event {
-                TextInputEvent::Submit(command) => {
-                    if let Err(err) = DemexEngineHandler::engine(cx).exec_command(command) {
+            |_, input, event: &InputEvent, window, cx| match event {
+                InputEvent::PressEnter { .. } => {
+                    let command = input.read(cx).value();
+
+                    if let Err(err) = DemexEngineHandler::engine(cx).exec_command(&command) {
                         log::warn!("Failed to run command \"{}\": {}", command, err);
                     }
 
                     input.update(cx, |input, cx| {
-                        input.set_text("".into(), cx);
+                        input.set_value("", window, cx);
                         cx.notify();
                     });
                 }
                 _ => {}
             },
-        )
-        .detach();
+        )];
 
         Self {
-            layout_pane: cx.new(|cx| LayoutViewPane::new(window, cx)),
-            command_input,
+            // layout_pane: cx.new(|cx| LayoutViewPane::new(window, cx)),
+            command_input_state,
+            dock_area,
+            _subscriptions: subs,
         }
     }
 }
@@ -54,18 +98,18 @@ impl Render for MainPane {
         window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
-        div()
+        v_flex()
             .size_full()
-            .flex()
-            .flex_col()
+            .child(div().w_full().h(px(20.0)).child("demex"))
             .child(
-                container(window, cx)
+                div()
                     .w_full()
                     .flex_1()
-                    .child(self.layout_pane.clone()),
+                    // .child(self.layout_pane.clone()),
+                    .child(self.dock_area.clone()),
             )
             .child(
-                container(window, cx)
+                div()
                     .w_full()
                     .h(px(50.0))
                     .flex()
@@ -76,8 +120,7 @@ impl Render for MainPane {
                             .p_1()
                             .w_full()
                             .border_1()
-                            .border_color(cx.theme().border)
-                            .child(self.command_input.clone()),
+                            .child(Input::new(&self.command_input_state)),
                     ),
             )
     }

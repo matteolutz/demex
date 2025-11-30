@@ -3,10 +3,9 @@ use gpui::{
     AnyView, App, ElementId, FocusHandle, Focusable, FontWeight, KeyBinding, SharedString, Window,
     div,
 };
+use gpui_component::ActiveTheme;
 
-use crate::AppExt;
-use crate::button::button;
-use crate::theme::{ActiveTheme, InteractiveColor};
+use crate::ui2::wm::WmAppExt;
 
 mod actions {
     pub const KEY_CONTEXT: &str = "Overlay";
@@ -85,18 +84,18 @@ impl Render for Overlay {
             .justify_between()
             .items_center()
             .border_1()
-            .border_color(cx.theme().header_border)
+            // .border_color(cx.theme().header_border)
             .rounded_t(cx.theme().radius)
-            .text_color(cx.theme().header_foreground)
-            .bg(cx.theme().header)
+            // .text_color(cx.theme().header_foreground)
+            // .bg(cx.theme().header)
             .child(
                 div()
                     .font_weight(FontWeight::BOLD)
                     .child(self.title().to_string()),
-            )
-            .child(button("close", None, "X").size_6().on_click(
-                cx.listener(|this, _, window, cx| this.handle_close(&actions::Close, window, cx)),
-            ));
+            );
+        /*/.child(button("close", None, "X").size_6().on_click(
+            cx.listener(|this, _, window, cx| this.handle_close(&actions::Close, window, cx)),
+        ));*/
 
         let content = div()
             .when(!self.is_modal(), |e| e.size_full())
@@ -130,7 +129,7 @@ impl Render for Overlay {
             .flex()
             .justify_center()
             .items_center()
-            .bg(gpui::black().with_opacity(0.5))
+            .bg(gpui::black().opacity(0.5))
             .occlude()
             .child(container)
     }

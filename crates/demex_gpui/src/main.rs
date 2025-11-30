@@ -10,18 +10,10 @@ pub mod ui;
 #[cfg(feature = "gpui")]
 pub mod ui2;
 
-use std::{path::PathBuf, sync::Arc, time};
+use std::path::PathBuf;
 
-use demex_core::engine::DemexEngine;
-use demex_core::event::DemexEvent;
-use demex_core::fixture::handler::FixtureHandler;
-use demex_core::headless::{controller::DemexHeadlessConroller, node::DemexHeadlessNode};
-use demex_core::input::event::handler::DemexInputDeviceEventHandler;
-use demex_core::show::{DemexShow, context::ShowContext};
-use demex_headless::id::DemexProtoDeviceId;
 use gdtf::GdtfFile;
 use itertools::Itertools;
-use parking_lot::RwLock;
 
 #[cfg(feature = "ui")]
 use ui::{
@@ -29,10 +21,7 @@ use ui::{
     utils::icon::load_icon, utils::load::load_textures,
 };
 
-use demex_core::utils::{
-    deadlock::start_deadlock_checking_thread,
-    thread::{DemexThreadStatsHandler, demex_update_thread},
-};
+use demex_core::{show::DemexShow, utils::deadlock::start_deadlock_checking_thread};
 
 use clap::Parser;
 
@@ -159,110 +148,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .flat_map(|file| file.description.fixture_types)
         .collect::<Vec<_>>();
 
-    /*
-    let stats = Arc::new(RwLock::new(DemexThreadStatsHandler::default()));
-    let context = ShowContext::new(
-        fixture_types,
-        show.patch,
-        show.preset_handler,
-        show.updatable_handler,
-        show.timing_handler,
-        if args.headless.is_some() {
-            DemexProtoDeviceId::Node(args.headless_id.unwrap_or_default())
-        } else {
-            DemexProtoDeviceId::Controller
-        },
-    );
-    */
-
-    /*
-    let fixture_handler_thread_a = context.fixture_handler.clone();
-    let preset_handler_thread_a = context.preset_handler.clone();
-    let timing_handler_thread_a = context.timing_handler.clone();
-    let patch_thread_a = context.patch.clone();
-
-    demex_update_thread(
-        "demex-dmx-output".to_owned(),
-        stats.clone(),
-        TEST_MAX_DMX_FPS,
-        move |_, last_user_update| {
-            let mut fixture_handler = fixture_handler_thread_a.write();
-            let preset_handler = preset_handler_thread_a.read();
-            let timing_handler = timing_handler_thread_a.read();
-            let patch = patch_thread_a.read();
-
-            if fixture_handler
-                .generate_output_data(
-                    patch.fixture_types(),
-                    &preset_handler,
-                    &timing_handler,
-                    last_user_update.elapsed().as_secs_f64() > 0.1,
-                )
-                .inspect_err(|err| log::error!("Failed to generate output data: {}", err))
-                .is_ok_and(|res| res > 0)
-            {
-                *last_user_update = time::Instant::now();
-            }
-        },
-    );
-
-    let (udp_tx, udp_rx) = std::sync::mpsc::channel();
-
-    let input_device_event_handler = Arc::new(RwLock::new(DemexInputDeviceEventHandler::new()));
-
-    if args.headless.is_none() {
-        let fixture_handler_thread_b = context.fixture_handler.clone();
-        let preset_handler_thread_b = context.preset_handler.clone();
-        let updatable_handler_thread_b = context.updatable_handler.clone();
-        let timing_handler_thread_b = context.timing_handler.clone();
-        let patch_thread_b = context.patch.clone();
-        let input_device_event_handler_thread_b = input_device_event_handler.clone();
-
-        demex_update_thread(
-            "demex-update".to_owned(),
-            stats.clone(),
-            TEST_MAX_FUPS,
-            move |_, _| {
-                let mut fixture_handler = fixture_handler_thread_b.write();
-                let preset_handler = preset_handler_thread_b.read();
-                let mut updatable_handler = updatable_handler_thread_b.write();
-                let mut timing_handler = timing_handler_thread_b.write();
-                let patch = patch_thread_b.read();
-                let mut input_device_event_handler = input_device_event_handler_thread_b.write();
-
-                timing_handler.update_running_timecodes(
-                    &mut fixture_handler,
-                    &preset_handler,
-                    &mut updatable_handler,
-                );
-
-                let _ = fixture_handler
-                    .update_output_values(
-                        patch.fixture_types(),
-                        &preset_handler,
-                        &updatable_handler,
-                        &timing_handler,
-                        if args.controller { Some(&udp_tx) } else { None },
-                    )
-                    .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
-
-                input_device_event_handler.push_events(
-                    updatable_handler
-                        .update_executors(
-                            patch.fixture_types(),
-                            &mut fixture_handler,
-                            &preset_handler,
-                            &timing_handler,
-                        )
-                        .into_iter()
-                        .map(DemexInputDeviceEvent::ExecutorStop),
-                );
-            },
-        );
-    }
-
-    */
-
     if let Some(master_ip) = args.headless {
         log::info!("Running in headless mode, no UI will be shown");
         /*
@@ -363,17 +248,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(feature = "gpui")]
         {
             gpui::Application::new().run(|cx: &mut gpui::App| {
-                use demex_ui::AppExt;
+                use crate::ui2::{
+                    MainWindow,
+                    wm::{self, WindowManager, WmAppExt},
+                };
 
-                use crate::ui2::MainWindow;
+                gpui_component::init(cx);
 
                 cx.activate(true);
 
-                demex_ui::init(cx).expect("Failed to initialize UI");
+                let wm = WindowManager::new(cx);
+                cx.set_global(wm);
+                wm::init(cx);
 
                 DemexEngineHandler::init(fixture_types, show, cx)
                     .expect("Failed to initialize engine");
 
+                cx.spawn(async move |cx| {
+                    cx.open_window(Default::default(), |window, cx| {
+                        use gpui::AppContext;
+                        use gpui_component::Root;
+
+                        use crate::ui2::pane::MainPane;
+
+                        window.set_window_title("demex");
+                        window.set_app_id("demex");
+
+                        let view = cx.new(|cx| MainPane::new(window, cx));
+                        cx.new(|cx| Root::new(view, window, cx))
+                    })?;
+
+                    Ok::<_, anyhow::Error>(())
+                })
+                .detach();
+
+                /*
                 cx.update_wm(|wm, cx| wm.open_singleton_window::<MainWindow>(cx, ()));
 
                 cx.on_window_closed(|cx| {
@@ -381,7 +290,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         cx.quit();
                     }
                 })
-                .detach();
+                .detach();*/
             });
         }
 
