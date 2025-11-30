@@ -1,9 +1,14 @@
 use std::{collections::HashMap, sync::mpsc, u8};
 
 use crate::{
-    channel3::channel_value_queue::ChannelValueQueueEntry, engine::component::Component,
-    fixture::error::FixtureError, patch::Patch, presets::PresetHandler,
-    state::fixture_state::FixtureState, timing::TimingHandler, updatables::UpdatableHandler,
+    channel3::{channel_value::FixtureChannelValue3, channel_value_queue::ChannelValueQueueEntry},
+    engine::component::Component,
+    fixture::error::FixtureError,
+    patch::Patch,
+    presets::PresetHandler,
+    state::fixture_state::FixtureState,
+    timing::TimingHandler,
+    updatables::UpdatableHandler,
     value_source::FixtureChannelValueSourceTrait,
 };
 
@@ -86,6 +91,10 @@ impl FixtureStateHandler {
         &mut self.grand_master
     }
 
+    pub fn fixtures(&self) -> &HashMap<u32, FixtureState> {
+        &self.fixture_states
+    }
+
     pub fn fixture(&self, fixture_id: u32) -> Result<&FixtureState, FixtureError> {
         self.fixture_states
             .get(&fixture_id)
@@ -112,6 +121,7 @@ impl FixtureStateHandler {
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
+        updated_output_values: &mut HashMap<u32, HashMap<String, FixtureChannelValue3>>,
     ) -> Result<(), FixtureError> {
         for (id, state) in self.fixture_states.iter_mut() {
             let (_, dmx_mode, fixture) = patch.fixture_type_and_dmx_mode_by_id(*id)?;
@@ -137,6 +147,10 @@ impl FixtureStateHandler {
                 }
 
                 output_value.update(new_output_value.clone());
+                updated_output_values.entry(*id).or_default().insert(
+                    dmx_channel.name().as_ref().to_string(),
+                    new_output_value.clone(),
+                );
             }
         }
 

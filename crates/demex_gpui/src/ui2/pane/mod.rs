@@ -28,7 +28,7 @@ impl MainPane {
                 cx,
             );
             da.add_panel(
-                Arc::new(cx.new(|cx| FixtureListPanel::new(cx))),
+                Arc::new(cx.new(|cx| FixtureListPanel::new(window, cx))),
                 DockPlacement::Center,
                 None,
                 window,

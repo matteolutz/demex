@@ -252,6 +252,30 @@ impl FixtureChannelValue3 {
 }
 
 impl FixtureChannelValue3 {
+    pub fn to_opaque_string(&self) -> String {
+        match self {
+            Self::Preset { id: preset_id, .. } => {
+                format!("Preset {}", preset_id)
+            }
+            Self::Discrete(discrete) => discrete.to_string(),
+            Self::Mix { a, b, mix } => {
+                if *mix == 0.0 {
+                    a.to_opaque_string()
+                } else if *mix == 1.0 {
+                    b.to_opaque_string()
+                } else {
+                    format!(
+                        "{} * {:.2} + {} * {:.2}",
+                        a.to_opaque_string(),
+                        1.0 - mix,
+                        b.to_opaque_string(),
+                        mix
+                    )
+                }
+            }
+        }
+    }
+
     pub fn to_string(&self, preset_handler: &PresetHandler) -> String {
         match self {
             Self::Preset { id: preset_id, .. } => {

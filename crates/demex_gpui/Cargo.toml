@@ -26,6 +26,8 @@ re_ui = { version = "0.23.4", optional = true }
 
 gpui = { version = "*", optional = true }
 gpui-component = {version = "0.4.0", optional = true}
+gpui-component-assets = {version = "0.4.0", optional = true}
+
 anyhow = {version = "1.0.100", optional = true}
 
 ecolor.workspace = true
@@ -74,4 +76,4 @@ ui = [
     "dep:rfd",
 ]
 reui = ["ui", "dep:re_ui"]
-gpui = ["dep:gpui", "dep:gpui-component", "dep:anyhow"]
+gpui = ["dep:gpui", "dep:gpui-component", "dep:gpui-component-assets", "dep:anyhow"]

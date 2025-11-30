@@ -378,7 +378,7 @@ impl FixtureChannelDiscreteValue {
             Self::Discrete {
                 value,
                 channel_function_idx,
-            } => format!("{:.2} ({})", value, channel_function_idx),
+            } => format!("{:.1}% ({})", value * 100.0, channel_function_idx),
             Self::Mix { a, b, mix } => {
                 if *mix == 0.0 {
                     a.to_string()

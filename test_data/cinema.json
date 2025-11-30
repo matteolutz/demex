@@ -686,7 +686,8 @@
             "universe": 1
           }
         },
-        "device_id": "Controller"
+        "device_id": "Controller",
+        "disabled": true
       }
     ]
   },

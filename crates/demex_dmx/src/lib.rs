@@ -42,6 +42,9 @@ impl Default for DemexDmxOutputConfigData {
 pub struct DemexDmxOutputConfig {
     data: DemexDmxOutputConfigData,
     device_id: DemexProtoDeviceId,
+
+    #[serde(default)]
+    disabled: bool,
 }
 
 impl DemexDmxOutputConfig {
@@ -67,6 +70,7 @@ impl Default for DemexDmxOutputConfig {
         Self {
             data: DemexDmxOutputConfigData::default(),
             device_id: DemexProtoDeviceId::Controller,
+            disabled: false,
         }
     }
 }
@@ -111,7 +115,7 @@ pub struct DemexDmxOutput {
 
 impl DemexDmxOutput {
     pub fn from_config(config: DemexDmxOutputConfig, own_device_id: DemexProtoDeviceId) -> Self {
-        if own_device_id != config.device_id {
+        if own_device_id != config.device_id || config.disabled {
             return Self {
                 data: DemexDmxOutputData::None,
                 config,

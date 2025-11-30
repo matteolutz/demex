@@ -47,6 +47,12 @@ impl DemexEventHandler {
                             })
                             .unwrap();
                         }
+                        DemexEngineCommEvent::FixtureValuesUpdate(fixture_values) => {
+                            cx.update_global(|ui_state: &mut DemexUiState, cx| {
+                                ui_state.update_fixture_values(fixture_values, cx);
+                            })
+                            .unwrap();
+                        }
                     }
                 }
             }

@@ -20,7 +20,7 @@ use crate::{
             FixtureNameRequest, ThreadStatsRequest,
         },
         component::ComponentHandle,
-        state::DemexEngineState,
+        state::{DemexEngineState, DemexFrontendInitState},
     },
     patch::Patch,
     show::DemexShow,
@@ -66,7 +66,7 @@ impl DemexEngine {
         show: DemexShow,
         fixture_types: Vec<FixtureType>,
         start_debug: bool,
-    ) -> DemexEngineCommRequestDispatcher {
+    ) -> (DemexEngineCommRequestDispatcher, DemexFrontendInitState) {
         let patch = show.patch.into_patch(fixture_types);
         self.patch.store(Arc::new(patch));
 
@@ -78,7 +78,7 @@ impl DemexEngine {
 
         let (value_queue_tx, value_queue_rx) = mpsc::channel();
 
-        let update_thread = threads::update::start_demex_update_thread(
+        let (update_thread, fixture_states) = threads::update::start_demex_update_thread(
             self.event_bus_tx.clone(),
             comm_handler,
             self.stats(),
@@ -103,7 +103,13 @@ impl DemexEngine {
             self.register_thread(debug_thread);
         }
 
-        comm_dispatcher
+        let frontend_state = DemexFrontendInitState {
+            fixture_selection: self.state.read(|s| s.fixture_selection.clone()),
+            fixture_states,
+            patch: self.patch.load_full(),
+        };
+
+        (comm_dispatcher, frontend_state)
     }
 
     fn register_thread(&mut self, join_handle: JoinHandle<()>) {

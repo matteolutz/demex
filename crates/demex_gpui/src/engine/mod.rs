@@ -34,12 +34,12 @@ impl DemexEngineHandler {
 
         let mut engine = DemexEngine::new(event_bus_tx);
 
-        let ui_state = DemexUiState::new(cx);
+        let (dispatcher, frontend_state) = engine.load_show(show, global_fixture_types, false);
+
+        let ui_state = DemexUiState::new(frontend_state, cx);
         cx.set_global(ui_state);
 
         let event_handler = cx.new(|cx| DemexEventHandler::new(event_bus_rx, cx));
-
-        let dispatcher = engine.load_show(show, global_fixture_types, false);
 
         let patch = engine.read_patch();
         DemexUiState::patch(cx).update(cx, |ui_patch, _| *ui_patch = patch);

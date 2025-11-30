@@ -42,7 +42,7 @@ impl DemexSync for FixtureState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FixtureState {
     programmer_values: HashMap<String, FixtureChannelValue3>,
 
@@ -55,6 +55,10 @@ impl FixtureState {
         &self.sources
     }
 
+    pub fn cached_output_moved(self) -> HashMap<String, FixtureChannelOutputValue> {
+        self.cached_output
+    }
+
     pub fn cached_output(&self) -> &HashMap<String, FixtureChannelOutputValue> {
         &self.cached_output
     }
@@ -62,6 +66,7 @@ impl FixtureState {
     pub fn cached_output_mut(&mut self) -> &mut HashMap<String, FixtureChannelOutputValue> {
         &mut self.cached_output
     }
+
     pub fn home(&mut self, clear_sources: bool) -> Result<(), FixtureError> {
         if clear_sources {
             // remove every source except the programmer

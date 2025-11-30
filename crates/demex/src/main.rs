@@ -1,11 +1,9 @@
 pub mod storage;
 
 use std::{
-    io::{self, BufRead, Write},
+    io::{self, Write},
     path::PathBuf,
     sync::mpsc,
-    thread,
-    time::Duration,
 };
 
 use demex_core::{engine::DemexEngine, show::DemexShow};
@@ -129,7 +127,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .flat_map(|file| file.description.fixture_types)
         .collect::<Vec<_>>();
 
-    if let Some(master_ip) = args.headless {
+    if let Some(_master_ip) = args.headless {
         log::info!("Running in headless mode, no UI will be shown");
         /*
         DemexHeadlessNode::default().start_headless_in_current_thread(

@@ -1,4 +1,4 @@
-use std::{sync::mpsc, thread::JoinHandle};
+use std::{collections::HashMap, sync::mpsc, thread::JoinHandle};
 
 use arc_swap::ArcSwap;
 
@@ -21,7 +21,7 @@ use crate::{
     input::DemexInputDeviceHandler,
     patch::Patch,
     presets::PresetHandler,
-    state::fixture_state_handler::FixtureStateHandler,
+    state::{fixture_state::FixtureState, fixture_state_handler::FixtureStateHandler},
     timing::TimingHandler,
     updatables::UpdatableHandler,
     utils::thread::{DemexThreadStatsHandler, demex_update_thread},
@@ -37,12 +37,15 @@ pub(crate) fn start_demex_update_thread(
     mut updatable_handler: UpdatableHandler,
     mut timing_handler: TimingHandler,
     patch: &ArcSwap<Patch>,
-) -> JoinHandle<()> {
+) -> (JoinHandle<()>, HashMap<u32, FixtureState>) {
     let patch = patch.load();
+
     let mut fixture_state_handler = FixtureStateHandler::new(&patch).unwrap();
+    let fixture_states = fixture_state_handler.fixtures().clone();
+
     let mut state = DemexEngineState::default();
 
-    demex_update_thread(
+    let jh = demex_update_thread(
         "demex-update".to_owned(),
         stats.clone(),
         DEMEX_MAX_FUPS,
@@ -92,8 +95,15 @@ pub(crate) fn start_demex_update_thread(
                 &mut updatable_handler,
             );
 
+            let mut updated_output_values = HashMap::new();
             let _ = fixture_state_handler
-                .update_output_values(&patch, &preset_handler, &updatable_handler, &timing_handler)
+                .update_output_values(
+                    &patch,
+                    &preset_handler,
+                    &updatable_handler,
+                    &timing_handler,
+                    &mut updated_output_values,
+                )
                 .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
 
             let _ = fixture_state_handler
@@ -113,6 +123,12 @@ pub(crate) fn start_demex_update_thread(
                 handler.push_events(uh_events.into_iter().map(DemexEvent::ExecutorStop))
             });*/
 
+            if !updated_output_values.is_empty() {
+                let _ = event_bus_tx.send(DemexEngineCommEvent::FixtureValuesUpdate(
+                    updated_output_values,
+                ));
+            }
+
             // handle ui requests
             let handler_payload = DemexEngineCommRequestHandlerPayload {
                 patch: &patch,
@@ -124,5 +140,7 @@ pub(crate) fn start_demex_update_thread(
             // let tick_state = DemexEngineTickState {};
             // let _ = event_bus_tx.send(DemexEngineCommEvent::TickStateUpdate(tick_state));
         },
-    )
+    );
+
+    (jh, fixture_states)
 }

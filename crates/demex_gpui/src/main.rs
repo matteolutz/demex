@@ -243,48 +243,52 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         #[cfg(feature = "gpui")]
         {
-            gpui::Application::new().run(|cx: &mut gpui::App| {
-                use crate::ui2::wm::{self, WindowManager};
+            use gpui_component_assets::Assets;
 
-                gpui_component::init(cx);
+            gpui::Application::new()
+                .with_assets(Assets)
+                .run(|cx: &mut gpui::App| {
+                    use crate::ui2::wm::{self, WindowManager};
 
-                cx.activate(true);
+                    gpui_component::init(cx);
 
-                let wm = WindowManager::new(cx);
-                cx.set_global(wm);
-                wm::init(cx);
+                    cx.activate(true);
 
-                DemexEngineHandler::init(fixture_types, show, cx)
-                    .expect("Failed to initialize engine");
+                    let wm = WindowManager::new(cx);
+                    cx.set_global(wm);
+                    wm::init(cx);
 
-                cx.spawn(async move |cx| {
-                    cx.open_window(Default::default(), |window, cx| {
-                        use gpui::AppContext;
-                        use gpui_component::Root;
+                    DemexEngineHandler::init(fixture_types, show, cx)
+                        .expect("Failed to initialize engine");
 
-                        use crate::ui2::pane::MainPane;
+                    cx.spawn(async move |cx| {
+                        cx.open_window(Default::default(), |window, cx| {
+                            use gpui::AppContext;
+                            use gpui_component::Root;
 
-                        window.set_window_title("demex");
-                        window.set_app_id(APP_ID);
+                            use crate::ui2::pane::MainPane;
 
-                        let view = cx.new(|cx| MainPane::new(window, cx));
-                        cx.new(|cx| Root::new(view, window, cx))
-                    })?;
+                            window.set_window_title("demex");
+                            window.set_app_id(APP_ID);
 
-                    Ok::<_, anyhow::Error>(())
-                })
-                .detach();
+                            let view = cx.new(|cx| MainPane::new(window, cx));
+                            cx.new(|cx| Root::new(view, window, cx))
+                        })?;
 
-                /*
-                cx.update_wm(|wm, cx| wm.open_singleton_window::<MainWindow>(cx, ()));
+                        Ok::<_, anyhow::Error>(())
+                    })
+                    .detach();
 
-                cx.on_window_closed(|cx| {
-                    if cx.windows().is_empty() {
-                        cx.quit();
-                    }
-                })
-                .detach();*/
-            });
+                    /*
+                    cx.update_wm(|wm, cx| wm.open_singleton_window::<MainWindow>(cx, ()));
+
+                    cx.on_window_closed(|cx| {
+                        if cx.windows().is_empty() {
+                            cx.quit();
+                        }
+                    })
+                    .detach();*/
+                });
         }
 
         #[cfg(all(not(feature = "ui"), not(feature = "gpui")))]

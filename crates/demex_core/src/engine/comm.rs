@@ -5,6 +5,7 @@ use std::{
 };
 
 use crate::{
+    channel3::channel_value::FixtureChannelValue3,
     engine::{component::ComponentHandle, tick::DemexEngineTickState},
     event::DemexEvent,
     patch::Patch,
@@ -15,6 +16,7 @@ use crate::{
 pub enum DemexEngineCommEvent {
     DemexEvent(DemexEvent),
     TickStateUpdate(DemexEngineTickState),
+    FixtureValuesUpdate(HashMap<u32, HashMap<String, FixtureChannelValue3>>),
 }
 
 pub trait DemexEngineCommRequest: Send + 'static {

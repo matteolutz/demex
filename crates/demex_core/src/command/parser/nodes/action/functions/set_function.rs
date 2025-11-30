@@ -88,7 +88,9 @@ impl FunctionArgs for SetFeatureValueArgs {
             }
         }
 
-        Ok(ActionRunResult::new())
+        Ok(ActionRunResult::event(DemexEvent::FixtureValuesChanged(
+            selection.fixtures().to_vec(),
+        )))
     }
 }
 
