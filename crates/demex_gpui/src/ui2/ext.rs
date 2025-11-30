@@ -1,6 +1,12 @@
 use gpui::{Context, Entity, EventEmitter, Subscription};
 
 pub trait GpuiContextExtension<T> {
+    /// Arranges so that [`Context::notify`] will be called for the current context
+    /// whenever [`Context::notify`] is called with the given entity.
+    fn observe_and_notify<W>(&mut self, entity: &Entity<W>) -> Subscription
+    where
+        W: 'static;
+
     /// Subscribe to an event type from another entity also accepting a second entity
     /// that will be passed to the event handler.
     fn subscribe_with_entity<T2, T3, Evt>(
@@ -17,6 +23,13 @@ pub trait GpuiContextExtension<T> {
 }
 
 impl<'a, T: 'static> GpuiContextExtension<T> for Context<'a, T> {
+    fn observe_and_notify<W>(&mut self, entity: &Entity<W>) -> Subscription
+    where
+        W: 'static,
+    {
+        self.observe(entity, |_, _, cx| cx.notify())
+    }
+
     fn subscribe_with_entity<T2, T3, Evt>(
         &mut self,
         entity: &Entity<T2>,

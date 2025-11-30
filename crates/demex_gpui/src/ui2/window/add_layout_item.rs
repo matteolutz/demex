@@ -31,7 +31,7 @@ impl WindowDelegate for AddLayoutItemWindow {
     fn render_content(
         &mut self,
         _window: &mut gpui::Window,
-        cx: &mut gpui::Context<WindowWrapper<Self>>,
+        _cx: &mut gpui::Context<WindowWrapper<Self>>,
     ) -> impl gpui::IntoElement
     where
         Self: Sized,

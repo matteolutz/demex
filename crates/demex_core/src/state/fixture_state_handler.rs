@@ -1,16 +1,9 @@
 use std::{collections::HashMap, sync::mpsc, u8};
 
-use parking_lot::lock_api::RawRwLockUpgradeTimed;
-
 use crate::{
-    channel3::channel_value_queue::{ChannelValueQueue, ChannelValueQueueEntry},
-    engine::component::Component,
-    fixture::error::FixtureError,
-    patch::Patch,
-    presets::PresetHandler,
-    state::fixture_state::FixtureState,
-    timing::TimingHandler,
-    updatables::UpdatableHandler,
+    channel3::channel_value_queue::ChannelValueQueueEntry, engine::component::Component,
+    fixture::error::FixtureError, patch::Patch, presets::PresetHandler,
+    state::fixture_state::FixtureState, timing::TimingHandler, updatables::UpdatableHandler,
     value_source::FixtureChannelValueSourceTrait,
 };
 

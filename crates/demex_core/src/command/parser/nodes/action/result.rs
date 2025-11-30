@@ -27,7 +27,7 @@ impl ActionRunResult {
         Self::Default
     }
 
-    pub fn device_event(event: DemexEvent) -> Self {
+    pub fn event(event: DemexEvent) -> Self {
         Self::WithEvent {
             result: Box::new(Self::new()),
             event,

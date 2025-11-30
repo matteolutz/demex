@@ -8,7 +8,15 @@ use crate::{
         action::{ActionIssuer, queue::ActionQueue, result::ActionRunResult},
         fixture_selector::FixtureSelectorContext,
     },
-    engine::{component::ComponentHandle, state::DemexEngineState, threads::DEMEX_MAX_FUPS},
+    engine::{
+        comm::{
+            DemexEngineCommEvent, DemexEngineCommRequestHandler,
+            DemexEngineCommRequestHandlerPayload,
+        },
+        component::ComponentHandle,
+        state::DemexEngineState,
+        threads::DEMEX_MAX_FUPS,
+    },
     event::DemexEvent,
     input::DemexInputDeviceHandler,
     patch::Patch,
@@ -19,8 +27,9 @@ use crate::{
     utils::thread::{DemexThreadStatsHandler, demex_update_thread},
 };
 
-pub fn start_demex_update_thread(
-    event_bus_tx: mpsc::Sender<DemexEvent>,
+pub(crate) fn start_demex_update_thread(
+    event_bus_tx: mpsc::Sender<DemexEngineCommEvent>,
+    request_handler: DemexEngineCommRequestHandler,
     stats: ComponentHandle<DemexThreadStatsHandler>,
     action_queue: ComponentHandle<ActionQueue>,
     value_queue_tx: mpsc::Sender<ChannelValueQueueEntry>,
@@ -40,6 +49,7 @@ pub fn start_demex_update_thread(
         move |_, _| {
             let mut action_queue = action_queue.lock_write();
 
+            // Handle queued actions
             // FIXME: just for testing
             for action in action_queue.inner_mut().drain(..) {
                 match action.run(
@@ -58,14 +68,15 @@ pub fn start_demex_update_thread(
 
                         let (result, event) = result.get_event();
                         if let Some(event) = event {
-                            let _ = event_bus_tx.send(event);
+                            let _ = event_bus_tx.send(DemexEngineCommEvent::DemexEvent(event));
                         }
 
                         match result {
                             ActionRunResult::UpdateFixtureSelection(selection) => {
                                 state.fixture_selection = selection.clone();
-                                let _ = event_bus_tx
-                                    .send(DemexEvent::FixtureSelectionChanged(selection));
+                                let _ = event_bus_tx.send(DemexEngineCommEvent::DemexEvent(
+                                    DemexEvent::FixtureSelectionChanged(selection),
+                                ));
                             }
                             ActionRunResult::WithEvent { .. } => unreachable!(),
                             _ => {}
@@ -89,7 +100,7 @@ pub fn start_demex_update_thread(
                 .submit_output_values(&value_queue_tx, &patch, &preset_handler, &timing_handler)
                 .inspect_err(|err| log::error!("Failed to submit output values: {}", err));
 
-            let uh_events = updatable_handler.update_executors(
+            let _uh_events = updatable_handler.update_executors(
                 &patch,
                 &mut fixture_state_handler,
                 &preset_handler,
@@ -101,6 +112,17 @@ pub fn start_demex_update_thread(
             input_device_event_handler.write(|handler| {
                 handler.push_events(uh_events.into_iter().map(DemexEvent::ExecutorStop))
             });*/
+
+            // handle ui requests
+            let handler_payload = DemexEngineCommRequestHandlerPayload {
+                patch: &patch,
+                stats: &stats,
+            };
+            request_handler.handle_all(handler_payload);
+
+            // send tick state
+            // let tick_state = DemexEngineTickState {};
+            // let _ = event_bus_tx.send(DemexEngineCommEvent::TickStateUpdate(tick_state));
         },
     )
 }

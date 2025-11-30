@@ -204,9 +204,9 @@ impl FunctionArgs for SetFixturePresetArgs {
             }
         }
 
-        Ok(ActionRunResult::device_event(
-            DemexEvent::FixtureValuesChanged(fixtures),
-        ))
+        Ok(ActionRunResult::event(DemexEvent::FixtureValuesChanged(
+            fixtures,
+        )))
     }
 }
 
@@ -223,7 +223,7 @@ impl FunctionArgs for ObjectSetPropertyArgs {
         _issued_at: time::Instant,
         _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut PresetHandler,
-        _fixture_selector_context: FixtureSelectorContext,
+        fixture_selector_context: FixtureSelectorContext,
         updatable_handler: &mut crate::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _timing_handler: &mut TimingHandler,
@@ -232,6 +232,7 @@ impl FunctionArgs for ObjectSetPropertyArgs {
         self.object.clone().set(
             preset_handler,
             updatable_handler,
+            fixture_selector_context,
             self.key.clone(),
             self.value.clone(),
         )

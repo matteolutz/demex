@@ -1,11 +1,3 @@
-/*
- *
- * This file has been modified from its original version.
- * Original: https://github.com/BaukeWestendorp/radiant
- * License: Apache 2.0 - https://github.com/BaukeWestendorp/radiant/blob/main/LICENCE
- *
- */
-
 use std::{
     sync::{Arc, mpsc},
     thread::JoinHandle,
@@ -15,7 +7,6 @@ use arc_swap::ArcSwap;
 use gdtf::fixture_type::FixtureType;
 
 use crate::{
-    channel3::channel_value_queue::ChannelValueQueue,
     command::{
         lexer::Lexer,
         parser::{
@@ -23,17 +14,25 @@ use crate::{
             nodes::action::{Action, ActionIssuer, queue::ActionQueue},
         },
     },
-    engine::{component::ComponentHandle, state::DemexEngineState},
-    event::DemexEvent,
+    engine::{
+        comm::{
+            DemexEngineCommEvent, DemexEngineCommRequestDispatcher, DemexEngineCommRequestHandler,
+            FixtureNameRequest, ThreadStatsRequest,
+        },
+        component::ComponentHandle,
+        state::DemexEngineState,
+    },
     patch::Patch,
     show::DemexShow,
     utils::thread::DemexThreadStatsHandler,
 };
 
+pub mod comm;
 pub mod component;
 pub mod error;
 pub mod state;
-pub mod threads;
+mod threads;
+pub mod tick;
 
 pub struct DemexEngine {
     stats: ComponentHandle<DemexThreadStatsHandler>,
@@ -42,12 +41,12 @@ pub struct DemexEngine {
     state: ComponentHandle<DemexEngineState>,
     action_queue: ComponentHandle<ActionQueue>,
 
-    event_bus_tx: mpsc::Sender<DemexEvent>,
+    event_bus_tx: mpsc::Sender<DemexEngineCommEvent>,
     threads: Vec<JoinHandle<()>>,
 }
 
 impl DemexEngine {
-    pub fn new(event_bus_tx: mpsc::Sender<DemexEvent>) -> Self {
+    pub fn new(event_bus_tx: mpsc::Sender<DemexEngineCommEvent>) -> Self {
         let s = Self {
             stats: ComponentHandle::create_default(),
             action_queue: ComponentHandle::create_default(),
@@ -67,14 +66,21 @@ impl DemexEngine {
         show: DemexShow,
         fixture_types: Vec<FixtureType>,
         start_debug: bool,
-    ) {
+    ) -> DemexEngineCommRequestDispatcher {
         let patch = show.patch.into_patch(fixture_types);
         self.patch.store(Arc::new(patch));
+
+        let (tx, rx) = mpsc::channel();
+        let mut comm_handler = DemexEngineCommRequestHandler::new(rx);
+        let comm_dispatcher = DemexEngineCommRequestDispatcher::new(tx);
+
+        Self::register_comm_handlers(&mut comm_handler);
 
         let (value_queue_tx, value_queue_rx) = mpsc::channel();
 
         let update_thread = threads::update::start_demex_update_thread(
             self.event_bus_tx.clone(),
+            comm_handler,
             self.stats(),
             self.action_queue.clone(),
             value_queue_tx,
@@ -96,13 +102,24 @@ impl DemexEngine {
             let debug_thread = threads::debug::start_demex_debug_thread(self.stats());
             self.register_thread(debug_thread);
         }
+
+        comm_dispatcher
     }
 
     fn register_thread(&mut self, join_handle: JoinHandle<()>) {
         self.threads.push(join_handle);
     }
 
-    fn join_threads(&mut self) {
+    fn register_comm_handlers(handler: &mut DemexEngineCommRequestHandler) {
+        handler.register(|FixtureNameRequest(id): FixtureNameRequest, payload| {
+            payload.patch.fixture(id).map(|f| f.name.clone()).ok()
+        });
+        handler.register(|_: ThreadStatsRequest, payload| {
+            payload.stats.read(|stats| stats.stats().clone())
+        });
+    }
+
+    pub fn join_threads(&mut self) {
         for thread in self.threads.drain(..) {
             thread.join().unwrap();
         }
@@ -141,5 +158,10 @@ impl DemexEngine {
     #[inline]
     pub fn stats(&self) -> ComponentHandle<DemexThreadStatsHandler> {
         self.stats.clone()
+    }
+
+    #[inline]
+    pub fn read_patch(&self) -> Arc<Patch> {
+        self.patch.load_full()
     }
 }

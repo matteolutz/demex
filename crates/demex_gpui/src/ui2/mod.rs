@@ -2,6 +2,7 @@ use gpui::{App, Context, Entity, Window, prelude::*};
 
 pub mod ext;
 pub mod pane;
+pub mod utils;
 pub mod window;
 pub mod wm;
 

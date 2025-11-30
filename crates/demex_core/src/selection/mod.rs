@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     command::parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
     fixture::GdtfFixturePatch,
+    implement_set_property,
     patch::Patch,
 };
 
@@ -203,6 +204,23 @@ impl From<Vec<u32>> for FixtureSelection {
             ..Default::default()
         }
     }
+}
+
+#[derive(strum_macros::EnumString, strum_macros::Display)]
+pub enum FixtureSelectionProperty {
+    Group,
+    Block,
+    Wings,
+    Reverse,
+}
+
+implement_set_property! {
+    for FixtureSelection with FixtureSelectionProperty,
+
+    Group => group as usize,
+    Block => block as usize,
+    Wings => wings as usize,
+    Reverse => reverse as bool
 }
 
 #[cfg(test)]

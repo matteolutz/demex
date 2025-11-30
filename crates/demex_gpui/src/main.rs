@@ -77,10 +77,6 @@ struct Args {
     controller: bool,
 }
 
-const TEST_MAX_FUPS: f64 = 60.0;
-const TEST_MAX_DMX_FPS: f64 = 30.0;
-const TEST_UI_FPS: f64 = 60.0;
-
 const APP_ID: &str = "demex";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -148,7 +144,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .flat_map(|file| file.description.fixture_types)
         .collect::<Vec<_>>();
 
-    if let Some(master_ip) = args.headless {
+    if let Some(_master_ip) = args.headless {
         log::info!("Running in headless mode, no UI will be shown");
         /*
         DemexHeadlessNode::default().start_headless_in_current_thread(
@@ -248,10 +244,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(feature = "gpui")]
         {
             gpui::Application::new().run(|cx: &mut gpui::App| {
-                use crate::ui2::{
-                    MainWindow,
-                    wm::{self, WindowManager, WmAppExt},
-                };
+                use crate::ui2::wm::{self, WindowManager};
 
                 gpui_component::init(cx);
 
@@ -272,7 +265,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         use crate::ui2::pane::MainPane;
 
                         window.set_window_title("demex");
-                        window.set_app_id("demex");
+                        window.set_app_id(APP_ID);
 
                         let view = cx.new(|cx| MainPane::new(window, cx));
                         cx.new(|cx| Root::new(view, window, cx))

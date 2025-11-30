@@ -188,11 +188,12 @@ pub enum Action {
     Sueud,
     GrandEtc,
 
-    // Internal
-    InternalSetFixtureSelection(Option<FixtureSelection>),
-    InternalExecutorGo(ExecutorGoArgs),
-    InternalExecutorStop(ExecutorStopArgs),
-    InternalExecutorSetFaderValue(u32, f32),
+    SetFixtureSelection(Option<FixtureSelection>),
+    SetFixtureSelectionWing(usize),
+
+    ExecutorGo(ExecutorGoArgs),
+    ExecutorStop(ExecutorStopArgs),
+    ExecutorSetFaderValue(u32, f32),
 
     Lock,
 
@@ -474,10 +475,10 @@ impl Action {
                 fader_id,
             } => self.run_unassign_input_fader(input_device_handler, *device_idx, *fader_id),
 
-            Self::InternalSetFixtureSelection(selection) => {
+            Self::SetFixtureSelection(selection) => {
                 Ok(ActionRunResult::UpdateFixtureSelection(selection.clone()))
             }
-            Self::InternalExecutorGo(args) => args.run(
+            Self::ExecutorGo(args) => args.run(
                 issued_at,
                 fixture_handler,
                 preset_handler,
@@ -487,7 +488,7 @@ impl Action {
                 timing_handler,
                 patch,
             ),
-            Self::InternalExecutorStop(args) => args.run(
+            Self::ExecutorStop(args) => args.run(
                 issued_at,
                 fixture_handler,
                 preset_handler,
@@ -497,7 +498,7 @@ impl Action {
                 timing_handler,
                 patch,
             ),
-            Self::InternalExecutorSetFaderValue(executor_id, fader_value) => {
+            Self::ExecutorSetFaderValue(executor_id, fader_value) => {
                 let executor = updatable_handler
                     .executor_mut(*executor_id)
                     .map_err(ActionRunError::UpdatableHandlerError)?;
@@ -508,7 +509,7 @@ impl Action {
                     issued_at.elapsed().as_secs_f32(),
                 );
 
-                Ok(ActionRunResult::device_event(
+                Ok(ActionRunResult::event(
                     DemexEvent::ExecutorFaderValueChanged(*executor_id),
                 ))
             }

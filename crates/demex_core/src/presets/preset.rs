@@ -175,7 +175,7 @@ impl FixturePreset {
         patch: &Patch,
         fixture_handler: &FixtureStateHandler,
         preset_handler: &mut PresetHandler,
-        timing_handler: &TimingHandler,
+        _timing_handler: &TimingHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         feature_group: FixtureChannel3FeatureGroup,

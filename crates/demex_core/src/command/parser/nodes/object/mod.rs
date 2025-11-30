@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     event::DemexEvent,
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
+    selection::FixtureSelection,
     sequence::cue::CueIdx,
     state::fixture_state_handler::FixtureStateHandler,
     updatables::UpdatableHandler,
@@ -51,7 +52,6 @@ macro_rules! implement_set_property {
                         ),*
                     };
 
-                    // FIXME: send event
                     Ok(ActionRunResult::new())
                 }
             }
@@ -106,6 +106,7 @@ pub trait ObjectDelegate: 'static + Sized {
         self,
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
+        fixture_selector_context: FixtureSelectorContext,
         key: String,
         value: String,
     ) -> Result<ActionRunResult, ActionRunError>;
@@ -116,12 +117,28 @@ pub trait ObjectDelegate: 'static + Sized {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum HomeableObject {
+    CurrentFixtureSelection,
     FixtureSelector(FixtureSelector),
     Executor(u32),
     Programmer,
 }
 
 impl HomeableObject {
+    fn home_fixture_selection(
+        selection: &FixtureSelection,
+        fixture_state_handler: &mut FixtureStateHandler,
+    ) -> Result<(), ActionRunError> {
+        for fixture_id in selection.fixtures() {
+            if let Ok(fixture_state) = fixture_state_handler.fixture_mut(*fixture_id) {
+                // TODO: should we clear the source list here??
+                fixture_state
+                    .home(false)
+                    .map_err(ActionRunError::FixtureError)?;
+            }
+        }
+        Ok(())
+    }
+
     pub fn home(
         &self,
         preset_handler: &PresetHandler,
@@ -130,19 +147,18 @@ impl HomeableObject {
         fixture_selector_context: FixtureSelectorContext,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
+            HomeableObject::CurrentFixtureSelection => {
+                if let Some(selection) = fixture_selector_context.current_fixture() {
+                    Self::home_fixture_selection(selection, fixture_state_handler)?;
+                }
+                Ok(ActionRunResult::new())
+            }
             HomeableObject::FixtureSelector(fixture_selector) => {
                 let selection = fixture_selector
                     .get_selection(preset_handler, fixture_selector_context)
                     .map_err(ActionRunError::FixtureSelectorError)?;
 
-                for fixture_id in selection.fixtures() {
-                    if let Ok(fixture_state) = fixture_state_handler.fixture_mut(*fixture_id) {
-                        // TODO: should we clear the source list here??
-                        fixture_state
-                            .home(false)
-                            .map_err(ActionRunError::FixtureError)?;
-                    }
-                }
+                Self::home_fixture_selection(&selection, fixture_state_handler)?;
 
                 Ok(ActionRunResult::new())
             }
@@ -175,6 +191,7 @@ impl ObjectDelegate for HomeableObject {
         self,
         _preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
+        fixture_selector_context: FixtureSelectorContext,
         key: String,
         value: String,
     ) -> Result<ActionRunResult, ActionRunError> {
@@ -183,6 +200,15 @@ impl ObjectDelegate for HomeableObject {
                 .executor_mut(executor_id)
                 .map_err(ActionRunError::UpdatableHandlerError)
                 .and_then(|executor| executor.set_property_string(key, value)),
+            Self::CurrentFixtureSelection => {
+                if let Some(selection) = fixture_selector_context.current_fixture() {
+                    let mut selection = selection.clone();
+                    selection.set_property_string(key, value)?;
+                    Ok(ActionRunResult::UpdateFixtureSelection(Some(selection)))
+                } else {
+                    Ok(ActionRunResult::new())
+                }
+            }
             unmatched => Err(ActionRunError::ActionNotImplementedForObject(
                 "set".to_string(),
                 Object::HomeableObject(unmatched),
@@ -234,15 +260,20 @@ impl ObjectDelegate for Object {
         self,
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
+        fixture_selector_context: FixtureSelectorContext,
         key: String,
         value: String,
     ) -> Result<ActionRunResult, ActionRunError> {
         let cloned_key = key.clone();
 
         let result = match self.clone() {
-            Self::HomeableObject(object) => {
-                object.set(preset_handler, updatable_handler, key, value)
-            }
+            Self::HomeableObject(object) => object.set(
+                preset_handler,
+                updatable_handler,
+                fixture_selector_context,
+                key,
+                value,
+            ),
             Self::Macro(macro_id) => preset_handler
                 .get_macro_mut(macro_id)
                 .map_err(ActionRunError::PresetHandlerError)

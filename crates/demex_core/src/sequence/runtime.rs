@@ -388,7 +388,7 @@ impl SequenceRuntime {
         active_cues: &[(usize, time::Instant)],
         current_cue_idx: usize,
         next_cue_idx: Option<usize>,
-        fixture_handler: &FixtureStateHandler,
+        _fixture_handler: &FixtureStateHandler,
         patch: &Patch,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
