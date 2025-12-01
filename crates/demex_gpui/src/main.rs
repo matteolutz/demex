@@ -248,9 +248,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             gpui::Application::new()
                 .with_assets(Assets)
                 .run(|cx: &mut gpui::App| {
+                    use gpui_component::{Theme, ThemeRegistry};
+
                     use crate::ui2::wm::{self, WindowManager};
 
                     gpui_component::init(cx);
+
+                    let theme_reg = ThemeRegistry::global(cx);
+                    if let Some(theme) = theme_reg.themes().get("Default Dark").cloned() {
+                        Theme::global_mut(cx).apply_config(&theme);
+                    }
 
                     cx.activate(true);
 
