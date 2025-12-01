@@ -1,7 +1,10 @@
 use gpui::{App, Context, Entity, Window, prelude::*};
 
+pub mod assets;
+pub mod config;
 pub mod ext;
 pub mod pane;
+pub mod titlebar;
 pub mod utils;
 pub mod window;
 pub mod wm;
@@ -10,6 +13,11 @@ use crate::ui2::{
     pane::MainPane,
     wm::{WindowDelegate, WindowWrapper},
 };
+
+pub fn init(cx: &mut App) -> gpui::Result<()> {
+    assets::init(cx)?;
+    Ok(())
+}
 
 pub struct MainWindow {
     pane: Entity<MainPane>,

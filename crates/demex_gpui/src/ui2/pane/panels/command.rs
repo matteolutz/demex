@@ -3,11 +3,12 @@ use gpui::{
     Render, Styled, Subscription, Window, div,
 };
 use gpui_component::{
+    Sizable,
     dock::{Panel, PanelEvent},
     input::{Input, InputEvent, InputState},
 };
 
-use crate::engine::DemexEngineHandler;
+use crate::{engine::DemexEngineHandler, ui2::config::AppConfigExt};
 
 pub struct CommandPanel {
     focus_handle: FocusHandle,
@@ -73,14 +74,14 @@ impl Render for CommandPanel {
     fn render(
         &mut self,
         _window: &mut gpui::Window,
-        _cx: &mut gpui::Context<Self>,
+        cx: &mut gpui::Context<Self>,
     ) -> impl IntoElement {
         div().size_full().flex().items_end().p_2().child(
-            div()
-                .p_1()
-                .w_full()
-                .border_1()
-                .child(Input::new(&self.command_input_state)),
+            div().p_1().w_full().border_1().child(
+                Input::new(&self.command_input_state)
+                    .font_family("JetBrains Mono")
+                    .with_size(cx.ui_config().ui_size()),
+            ),
         )
     }
 }

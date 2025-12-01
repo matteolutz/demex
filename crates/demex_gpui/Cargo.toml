@@ -60,6 +60,7 @@ nalgebra.workspace = true
 demex_headless.workspace = true
 demex_dmx.workspace = true
 demex_core.workspace = true
+rust-embed = "8.9.0"
 
 
 [features]

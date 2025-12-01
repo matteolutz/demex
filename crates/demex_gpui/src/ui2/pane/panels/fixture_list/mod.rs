@@ -3,12 +3,17 @@ use gpui::{
     ParentElement, Render, Styled, Subscription, Window, div,
 };
 use gpui_component::{
+    Sizable,
     dock::{Panel, PanelEvent},
     table::{Table, TableState},
 };
 
 use crate::{
-    engine::state::DemexUiState, ui2::pane::panels::fixture_list::table::FixtureListTable,
+    engine::state::DemexUiState,
+    ui2::{
+        config::AppConfigExt,
+        pane::panels::fixture_list::table::{FixtureListTable, FixtureListTableEntry},
+    },
 };
 
 mod table;
@@ -23,11 +28,21 @@ pub struct FixtureListPanel {
 
 impl FixtureListPanel {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let delegate = FixtureListTable::default();
-        let table_state = cx.new(|cx| TableState::new(delegate, window, cx));
-
         let patch = DemexUiState::patch(cx);
         let fixture_values = DemexUiState::fixture_values(cx);
+
+        let delegate = {
+            let patch = patch.read(cx);
+
+            FixtureListTable::new(
+                patch
+                    .fixtures()
+                    .map(|f| FixtureListTableEntry::from_patch(f, patch))
+                    .collect(),
+            )
+        };
+
+        let table_state = cx.new(|cx| TableState::new(delegate, window, cx).col_movable(false));
 
         let notify = |this: &mut FixtureListPanel, cx: &mut Context<Self>| {
             println!("rerendering");
@@ -69,11 +84,12 @@ impl Render for FixtureListPanel {
     fn render(
         &mut self,
         _window: &mut gpui::Window,
-        _cx: &mut gpui::Context<Self>,
+        cx: &mut gpui::Context<Self>,
     ) -> impl IntoElement {
-        div()
-            .w_full()
-            .h_full()
-            .child(Table::new(&self.table_state).bordered(false))
+        div().w_full().h_full().child(
+            Table::new(&self.table_state)
+                .bordered(false)
+                .with_size(cx.ui_config().ui_size()),
+        )
     }
 }

@@ -243,16 +243,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         #[cfg(feature = "gpui")]
         {
-            use gpui_component_assets::Assets;
+            use crate::ui2::assets::Assets;
 
             gpui::Application::new()
                 .with_assets(Assets)
-                .run(|cx: &mut gpui::App| {
+                .run(move |cx: &mut gpui::App| {
                     use gpui_component::{Theme, ThemeRegistry};
 
-                    use crate::ui2::wm::{self, WindowManager};
+                    use crate::ui2::{
+                        config::DemexUiConfig,
+                        wm::{self, WindowManager},
+                    };
 
                     gpui_component::init(cx);
+                    ui2::init(cx).unwrap();
 
                     let theme_reg = ThemeRegistry::global(cx);
                     if let Some(theme) = theme_reg.themes().get("Default Dark").cloned() {
@@ -260,6 +264,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
 
                     cx.activate(true);
+
+                    let ui_config = DemexUiConfig {
+                        touchcreen_mode: args.touchscreen_mode,
+                    };
+                    cx.set_global(ui_config);
 
                     let wm = WindowManager::new(cx);
                     cx.set_global(wm);
@@ -269,18 +278,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .expect("Failed to initialize engine");
 
                     cx.spawn(async move |cx| {
-                        cx.open_window(Default::default(), |window, cx| {
-                            use gpui::AppContext;
-                            use gpui_component::Root;
+                        use gpui::WindowOptions;
+                        use gpui_component::TitleBar;
 
-                            use crate::ui2::pane::MainPane;
+                        cx.open_window(
+                            WindowOptions {
+                                titlebar: Some(TitleBar::title_bar_options()),
+                                ..Default::default()
+                            },
+                            |window, cx| {
+                                use gpui::AppContext;
+                                use gpui_component::Root;
 
-                            window.set_window_title("demex");
-                            window.set_app_id(APP_ID);
+                                use crate::ui2::pane::MainPane;
 
-                            let view = cx.new(|cx| MainPane::new(window, cx));
-                            cx.new(|cx| Root::new(view, window, cx))
-                        })?;
+                                window.set_window_title("demex");
+                                window.set_app_id(APP_ID);
+
+                                let view = cx.new(|cx| MainPane::new(window, cx));
+                                cx.new(|cx| Root::new(view, window, cx))
+                            },
+                        )?;
 
                         Ok::<_, anyhow::Error>(())
                     })
