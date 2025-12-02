@@ -1,18 +1,81 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use demex_core::{
     channel3::channel_value::FixtureChannelValue3,
-    engine::{state::DemexFrontendInitState, tick::DemexEngineTickState},
+    engine::{comm::ThreadStatsRequest, state::DemexFrontendInitState, tick::DemexEngineTickState},
     event::DemexEvent,
     patch::Patch,
     selection::FixtureSelection,
+    utils::thread::DemexThreadStats,
 };
-use gpui::{App, AppContext, Entity, Global};
+use gpui::{App, AppContext, Entity, Global, Timer};
+
+use crate::engine::DemexEngineHandler;
+
+#[derive(Clone)]
+pub struct DemexPerformanceBuffer<const SIZE: usize> {
+    buffer: [Option<DemexThreadStats>; SIZE],
+    write_cursor: usize,
+    clear_on_wrap: bool,
+}
+
+impl<const SIZE: usize> Default for DemexPerformanceBuffer<SIZE> {
+    fn default() -> Self {
+        Self::new(false)
+    }
+}
+
+impl<const SIZE: usize> DemexPerformanceBuffer<SIZE> {
+    pub fn new(clear_on_wrap: bool) -> Self {
+        Self {
+            buffer: [const { None }; SIZE],
+            write_cursor: 0,
+            clear_on_wrap,
+        }
+    }
+
+    pub fn add(&mut self, entry: DemexThreadStats) {
+        if self.write_cursor >= SIZE {
+            self.write_cursor = 0;
+
+            if self.clear_on_wrap {
+                self.buffer.iter_mut().for_each(|e| *e = None);
+            }
+        }
+
+        self.buffer[self.write_cursor] = Some(entry);
+        self.write_cursor += 1;
+    }
+
+    pub fn current_fps(&self) -> Option<f64> {
+        if self.write_cursor == 0 {
+            None
+        } else {
+            self.buffer[self.write_cursor - 1]
+                .as_ref()
+                .map(|p| 1.0 / p.dt())
+        }
+    }
+
+    pub fn data(&self) -> impl Iterator<Item = Option<&DemexThreadStats>> {
+        self.buffer.iter().map(|s| s.as_ref())
+    }
+
+    pub fn move_data(self) -> impl Iterator<Item = Option<DemexThreadStats>> {
+        self.buffer.into_iter()
+    }
+
+    pub fn write_cursor(&self) -> usize {
+        self.write_cursor
+    }
+}
 
 pub struct DemexUiState {
     fixture_selection: Entity<Option<FixtureSelection>>,
     fixture_values: Entity<HashMap<u32, HashMap<String, FixtureChannelValue3>>>,
     patch: Entity<Arc<Patch>>,
+
+    performance: Entity<HashMap<String, DemexPerformanceBuffer<10>>>,
 }
 
 impl DemexUiState {
@@ -29,6 +92,37 @@ impl DemexUiState {
     pub fn patch(cx: &App) -> Entity<Arc<Patch>> {
         let this: &Self = cx.global();
         this.patch.clone()
+    }
+
+    pub fn performance(cx: &App) -> Entity<HashMap<String, DemexPerformanceBuffer<10>>> {
+        let this: &Self = cx.global();
+        this.performance.clone()
+    }
+}
+
+impl DemexUiState {
+    pub(super) fn start_performance_thread(cx: &mut App) {
+        cx.spawn(async move |cx| {
+            loop {
+                let _ = cx.update_global(|ui_state: &mut Self, cx| {
+                    DemexEngineHandler::send_with(
+                        cx,
+                        ui_state.performance.clone(),
+                        ThreadStatsRequest {},
+                        |res, this, cx| {
+                            res.into_iter().for_each(|(thread, stat)| {
+                                this.entry(thread).or_default().add(stat)
+                            });
+
+                            cx.notify();
+                        },
+                    )
+                });
+
+                Timer::after(Duration::from_millis(500)).await;
+            }
+        })
+        .detach();
     }
 }
 
@@ -53,6 +147,7 @@ impl DemexUiState {
                     .collect()
             }),
             patch: cx.new(|_| frontend_state.patch),
+            performance: cx.new(|_| HashMap::new()),
         }
     }
 
@@ -64,7 +159,7 @@ impl DemexUiState {
                     cx.notify();
                 })
             }
-            _ => {}
+            _ => Default::default(),
         }
     }
 

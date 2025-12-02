@@ -17,7 +17,7 @@ use crate::{
     engine::{
         comm::{
             DemexEngineCommEvent, DemexEngineCommRequestDispatcher, DemexEngineCommRequestHandler,
-            FixtureNameRequest, ThreadStatsRequest,
+            FixtureNameRequest, ShowRequest, ThreadStatsRequest,
         },
         component::ComponentHandle,
         state::{DemexEngineState, DemexFrontendInitState},
@@ -122,6 +122,10 @@ impl DemexEngine {
         });
         handler.register(|_: ThreadStatsRequest, payload| {
             payload.stats.read(|stats| stats.stats().clone())
+        });
+        handler.register(|_: ShowRequest, _| {
+            // TODO
+            DemexShow::default()
         });
     }
 

@@ -1,6 +1,7 @@
 use std::sync::mpsc;
 
 use demex_core::{
+    command::parser::nodes::action::Action,
     engine::{
         DemexEngine,
         comm::{DemexEngineCommRequest, DemexEngineCommRequestDispatcher},
@@ -49,6 +50,8 @@ impl DemexEngineHandler {
             event_handler,
             dispatcher,
         });
+
+        DemexUiState::start_performance_thread(cx);
 
         Ok(())
     }
@@ -100,6 +103,14 @@ impl DemexEngineHandler {
             });
         })
         .detach();
+    }
+}
+
+/// Convenience methods
+impl DemexEngineHandler {
+    pub fn save(cx: &mut App) {
+        let engine = Self::engine(cx);
+        engine.exec_ui(Action::Save)
     }
 }
 

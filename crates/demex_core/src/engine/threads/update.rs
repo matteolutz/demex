@@ -74,6 +74,10 @@ pub(crate) fn start_demex_update_thread(
                             let _ = event_bus_tx.send(DemexEngineCommEvent::DemexEvent(event));
                         }
 
+                        // Also send the result itself (maybe it should trigger a ui action)
+                        let _ = event_bus_tx
+                            .send(DemexEngineCommEvent::ActionRunResult(result.clone()));
+
                         match result {
                             ActionRunResult::UpdateFixtureSelection(selection) => {
                                 state.fixture_selection = selection.clone();

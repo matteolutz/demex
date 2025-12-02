@@ -9,9 +9,13 @@
 use gpui::{EventEmitter, Timer, prelude::*};
 use std::{sync::mpsc, time::Duration};
 
-use demex_core::{engine::comm::DemexEngineCommEvent, event::DemexEvent};
+use demex_core::{
+    command::parser::nodes::action::result::ActionRunResult,
+    engine::comm::{DemexEngineCommEvent, ShowRequest},
+    event::DemexEvent,
+};
 
-use crate::engine::state::DemexUiState;
+use crate::engine::{DemexEngineHandler, state::DemexUiState};
 
 pub struct DemexEventHandler {}
 
@@ -41,6 +45,18 @@ impl DemexEventHandler {
                             cx.update_entity(&event_handler, |_, cx| cx.emit(event))
                                 .unwrap();
                         }
+                        DemexEngineCommEvent::ActionRunResult(result) => match result {
+                            ActionRunResult::Save => {
+                                let _ = cx.update(|cx| {
+                                    DemexEngineHandler::send(cx, ShowRequest {}, |show, _| {
+                                        // TODO
+                                        println!("saving show: {:?}", show);
+                                    })
+                                });
+                            }
+                            ActionRunResult::WithEvent { .. } => unreachable!(),
+                            _ => {}
+                        },
                         DemexEngineCommEvent::TickStateUpdate(tick_state) => {
                             cx.update_global(|ui_state: &mut DemexUiState, cx| {
                                 ui_state.update_from_tick(tick_state, cx);

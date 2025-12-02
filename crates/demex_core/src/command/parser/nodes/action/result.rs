@@ -16,6 +16,8 @@ pub enum ActionRunResult {
 
     Lock,
 
+    Save,
+
     WithEvent {
         result: Box<ActionRunResult>,
         event: DemexEvent,

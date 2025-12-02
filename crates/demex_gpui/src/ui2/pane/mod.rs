@@ -3,7 +3,7 @@ use std::sync::Arc;
 use gpui::prelude::*;
 use gpui::{Context, Entity, Render};
 use gpui_component::dock::{DockArea, DockItem, DockPlacement};
-use gpui_component::v_flex;
+use gpui_component::{Root, v_flex};
 
 use crate::ui2::pane::panels::command::CommandPanel;
 use crate::ui2::pane::panels::fixture_list::FixtureListPanel;
@@ -71,12 +71,15 @@ impl MainPane {
 impl Render for MainPane {
     fn render(
         &mut self,
-        _window: &mut gpui::Window,
-        _cx: &mut gpui::Context<Self>,
+        window: &mut gpui::Window,
+        cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
         v_flex()
             .size_full()
             .child(self.title_bar.clone())
             .child(self.dock_area.clone())
+            .children(Root::render_dialog_layer(window, cx))
+            .children(Root::render_sheet_layer(window, cx))
+            .children(Root::render_notification_layer(window, cx))
     }
 }

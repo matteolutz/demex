@@ -245,18 +245,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         {
             use crate::ui2::assets::Assets;
 
+            mod actions {
+                use crate::engine::DemexEngineHandler;
+                use gpui::{App, KeyBinding};
+
+                gpui::actions!(demex, [Quit, Save]);
+                pub(super) fn init(cx: &mut App) {
+                    cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
+                    cx.bind_keys([KeyBinding::new("secondary-s", Save, None)]);
+
+                    cx.on_action::<Quit>(|_, cx| cx.quit());
+                    cx.on_action::<Save>(|_, cx| DemexEngineHandler::save(cx));
+                }
+            }
+
             gpui::Application::new()
                 .with_assets(Assets)
                 .run(move |cx: &mut gpui::App| {
                     use gpui_component::{Theme, ThemeRegistry};
 
-                    use crate::ui2::{
-                        config::DemexUiConfig,
-                        wm::{self, WindowManager},
-                    };
+                    use crate::ui2::config::DemexUiConfig;
 
                     gpui_component::init(cx);
                     ui2::init(cx).unwrap();
+
+                    actions::init(cx);
 
                     let theme_reg = ThemeRegistry::global(cx);
                     if let Some(theme) = theme_reg.themes().get("Default Dark").cloned() {
@@ -269,10 +282,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         touchcreen_mode: args.touchscreen_mode,
                     };
                     cx.set_global(ui_config);
-
-                    let wm = WindowManager::new(cx);
-                    cx.set_global(wm);
-                    wm::init(cx);
 
                     DemexEngineHandler::init(fixture_types, show, cx)
                         .expect("Failed to initialize engine");
@@ -305,6 +314,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .detach();
 
                     /*
+                    let wm = WindowManager::new(cx);
+                    cx.set_global(wm);
+                    wm::init(cx);
+
                     cx.update_wm(|wm, cx| wm.open_singleton_window::<MainWindow>(cx, ()));
 
                     cx.on_window_closed(|cx| {
@@ -312,7 +325,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             cx.quit();
                         }
                     })
-                    .detach();*/
+                    .detach();
+                    */
                 });
         }
 

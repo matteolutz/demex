@@ -6,15 +6,18 @@ use std::{
 
 use crate::{
     channel3::channel_value::FixtureChannelValue3,
+    command::parser::nodes::action::result::ActionRunResult,
     engine::{component::ComponentHandle, tick::DemexEngineTickState},
     event::DemexEvent,
     patch::Patch,
+    show::DemexShow,
     utils::thread::{DemexThreadStats, DemexThreadStatsHandler},
 };
 
 #[derive(Debug, Clone)]
 pub enum DemexEngineCommEvent {
     DemexEvent(DemexEvent),
+    ActionRunResult(ActionRunResult),
     TickStateUpdate(DemexEngineTickState),
     FixtureValuesUpdate(HashMap<u32, HashMap<String, FixtureChannelValue3>>),
 }
@@ -32,6 +35,11 @@ impl DemexEngineCommRequest for FixtureNameRequest {
 pub struct ThreadStatsRequest {}
 impl DemexEngineCommRequest for ThreadStatsRequest {
     type Response = HashMap<String, DemexThreadStats>;
+}
+
+pub struct ShowRequest {}
+impl DemexEngineCommRequest for ShowRequest {
+    type Response = DemexShow;
 }
 
 pub struct DemexEngineCommRequestEnvelope {
