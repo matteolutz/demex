@@ -264,7 +264,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .run(move |cx: &mut gpui::App| {
                     use gpui_component::{Theme, ThemeRegistry};
 
-                    use crate::ui2::config::DemexUiConfig;
+                    use crate::ui2::{
+                        config::DemexUiConfig,
+                        wm::{
+                            WindowManager, app::WindowManagerAppExt, dock_window::DockWindowConfig,
+                        },
+                    };
 
                     gpui_component::init(cx);
                     ui2::init(cx).unwrap();
@@ -286,6 +291,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     DemexEngineHandler::init(fixture_types, show, cx)
                         .expect("Failed to initialize engine");
 
+                    /*
                     cx.spawn(async move |cx| {
                         use gpui::WindowOptions;
                         use gpui_component::TitleBar;
@@ -312,6 +318,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         Ok::<_, anyhow::Error>(())
                     })
                     .detach();
+                    */
+
+                    let wm = WindowManager::new(cx).auto_quit(true);
+                    cx.set_global(wm);
+
+                    cx.update_wm(|wm, cx| wm.add_dock_window(DockWindowConfig::default(), cx));
 
                     /*
                     let wm = WindowManager::new(cx);

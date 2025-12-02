@@ -1,296 +1,106 @@
-use std::any::TypeId;
-use std::collections::{HashMap, HashSet};
+use gpui::{App, AppContext, Global, WindowHandle};
+use gpui_component::{Root, notification::Notification};
 
-use gpui::prelude::*;
-use gpui::{AnyWindowHandle, App, Entity, FocusHandle, Focusable, Global, PromptLevel, Window};
+use crate::ui2::wm::{
+    app::WindowManagerAppExt,
+    dock_window::{DockWindow, DockWindowConfig},
+};
 
-mod app;
-mod overlay;
-mod window;
-
-pub use app::*;
-pub use overlay::*;
-pub use window::*;
-
-pub(crate) fn init(cx: &mut App) {
-    overlay::init(cx);
-}
+pub mod app;
+pub mod dock_window;
 
 pub struct WindowManager {
-    singleton_windows: HashMap<TypeId, AnyWindowHandle>,
-    edited_windows: HashSet<AnyWindowHandle>,
-    unclosable_windows: HashSet<AnyWindowHandle>,
+    /// The "main" windows of the application
+    dock_windows: Vec<WindowHandle<Root>>,
 
-    overlays: HashMap<AnyWindowHandle, Vec<WindowOverlay>>,
-
-    quit_when_all_windows_closed: bool,
+    auto_quit: bool,
 }
 
 impl WindowManager {
-    pub(crate) fn new(cx: &mut App) -> Self {
-        cx.on_window_closed(move |cx| {
-            if cx.windows().is_empty() && cx.wm().quit_when_all_windows_closed {
+    pub fn new(cx: &mut App) -> Self {
+        cx.on_window_closed(|cx| {
+            if cx.windows().is_empty() && cx.wm().auto_quit {
                 cx.quit();
             }
         })
         .detach();
 
         Self {
-            singleton_windows: HashMap::new(),
-            edited_windows: HashSet::new(),
-            unclosable_windows: HashSet::new(),
-
-            overlays: HashMap::new(),
-
-            quit_when_all_windows_closed: false,
+            dock_windows: Vec::new(),
+            auto_quit: false,
         }
     }
 
-    pub fn quit_when_all_windows_closed(&mut self, should_quit: bool) {
-        self.quit_when_all_windows_closed = should_quit;
+    /// When set to true, the application is quit when all windows are closed
+    pub fn auto_quit(mut self, auto_quit: bool) -> Self {
+        self.auto_quit = auto_quit;
+        self
     }
 
-    pub fn open_singleton_window<D: WindowDelegate>(&mut self, cx: &mut App, data: D::InitData) {
-        let type_id = TypeId::of::<D>();
+    pub fn add_dock_window(&mut self, config: DockWindowConfig, cx: &mut App) {
+        let window_handle = cx
+            .open_window(config.gpui_window_options(), |window, cx| {
+                cx.new(|cx| Root::new(cx.new(|cx| DockWindow::new(config, window, cx)), window, cx))
+            })
+            .expect("Dock window should be opened");
 
-        if self.singleton_windows.contains_key(&type_id) {
-            // Window is already opened.
-            return;
-        }
-
-        let handle = WindowWrapper::open(cx, |window, cx| {
-            let handle = window.window_handle();
-
-            window.on_window_should_close(cx, move |_, cx| {
-                cx.update_wm(|wm, cx| {
-                    wm.request_close_singleton_window::<D>(cx);
-                    wm.can_close_window(&handle)
-                })
-            });
-
-            D::create(window, cx, data)
-        });
-
-        self.singleton_windows.insert(type_id, handle.into());
+        self.dock_windows.push(window_handle);
     }
 
-    pub fn request_close_singleton_window<D: WindowDelegate>(&mut self, cx: &mut App) {
-        let type_id = TypeId::of::<D>();
-
-        let Some(&handle) = self.singleton_windows.get(&type_id) else {
-            return;
-        };
-
-        let close_window = move |handle: AnyWindowHandle, cx: &mut App| {
-            cx.defer(move |cx| {
-                handle
-                    .update(cx, |_, window, _| window.remove_window())
-                    .expect("should update window");
-                cx.update_wm(|wm, _| wm.singleton_windows.remove(&type_id));
-                cx.update_wm(|wm, _| wm.unclosable_windows.remove(&handle));
-            });
-        };
-
-        let is_edited = self.is_edited(&handle);
-        if is_edited {
-            cx.defer(move |cx| {
-                let answer = handle
-                    .update(cx, |_, window, cx| {
-                        window.prompt(
-                            PromptLevel::Warning,
-                            "Window has Unsaved Changes",
-                            Some("What do you want to do with the changes?"),
-                            &["Save", "Discard", "Keep Editing"],
-                            cx,
-                        )
-                    })
-                    .expect("should update window");
-
-                cx.spawn(async move |cx| {
-                    let Ok(ix) = answer.await else { return };
-                    handle
-                        .update(cx, move |view, window, cx| {
-                            let wrapper: Entity<WindowWrapper<D>> = view.downcast().unwrap();
-
-                            match ix {
-                                0 => {
-                                    wrapper.update(cx, |wrapper, cx| {
-                                        wrapper.handle_window_save(window, cx);
-                                    });
-                                    close_window(handle, cx);
-                                }
-                                1 => {
-                                    wrapper.update(cx, |wrapper, cx| {
-                                        wrapper.handle_window_discard(window, cx);
-                                    });
-                                    close_window(handle, cx);
-                                }
-                                2 => {}
-                                _ => {}
-                            }
-                        })
-                        .expect("should update window");
-                })
-                .detach();
-            });
-        } else {
-            close_window(handle, cx);
-        }
+    pub fn add_dock_windows(
+        &mut self,
+        configs: impl IntoIterator<Item = DockWindowConfig>,
+        cx: &mut App,
+    ) {
+        configs
+            .into_iter()
+            .for_each(|config| self.add_dock_window(config, cx));
     }
 
-    pub fn set_edited(&mut self, window: &mut Window, edited: bool) {
-        let handle = window.window_handle();
-        window.set_window_edited(edited);
-
-        if edited {
-            self.edited_windows.insert(handle);
-            self.unclosable_windows.insert(handle);
-        } else {
-            self.edited_windows.remove(&handle);
-            self.unclosable_windows.remove(&handle);
-        }
+    fn read_dock_window<'a>(&self, handle: &'a WindowHandle<Root>, cx: &'a App) -> &'a DockWindow {
+        handle
+            .read(cx)
+            .expect("Should read window Root")
+            .view()
+            .clone()
+            .downcast::<DockWindow>()
+            .expect("Root view should be a DockWindow")
+            .read(cx)
     }
 
-    pub fn is_edited(&self, handle: &AnyWindowHandle) -> bool {
-        self.edited_windows.contains(handle)
+    pub fn main_dock_window<'a>(&'a self, cx: &'a App) -> (&'a WindowHandle<Root>, &'a DockWindow) {
+        let handle = &self.dock_windows[0];
+        (handle, self.read_dock_window(handle, cx))
     }
 
-    fn can_close_window(&self, handle: &AnyWindowHandle) -> bool {
-        !self.unclosable_windows.contains(handle)
+    pub fn main_dock_window_handle_mut(&mut self) -> &mut WindowHandle<Root> {
+        &mut self.dock_windows[0]
     }
 
-    pub fn close_overlay(&mut self, id: &str, window: &mut Window) {
-        let Some(overlays) = self.overlays.get_mut(&window.window_handle()) else {
-            return;
-        };
-
-        if let Some(return_focus_handle) = overlays
+    pub fn dock_windows<'a>(
+        &'a self,
+        cx: &'a App,
+    ) -> impl Iterator<Item = (&'a WindowHandle<Root>, &'a DockWindow)> {
+        self.dock_windows
             .iter()
-            .find(|o| &o.id == id)
-            .and_then(|o| o.return_focus_handle.clone())
-        {
-            window.focus(&return_focus_handle);
-        }
-
-        overlays.retain(|o| &o.id != id);
+            .map(|handle| (handle, self.read_dock_window(handle, cx)))
     }
+}
 
-    pub fn open_overlay(&mut self, overlay: Overlay, window: &mut Window, cx: &mut App) {
-        let overlay = WindowOverlay {
-            id: overlay.id().to_string(),
-            return_focus_handle: window.focused(cx),
-            view: cx.new(|_| overlay),
-        };
+impl WindowManager {
+    pub fn push_notifcation(&mut self, notification: impl Into<Notification>, cx: &mut App) {
+        let wh = self.main_dock_window_handle_mut().clone();
+        let notification = notification.into();
 
-        let focus_handle = overlay.view.focus_handle(cx);
-        window.defer(cx, move |window, _| window.focus(&focus_handle));
-
-        match self.overlays.get_mut(&window.window_handle()) {
-            Some(overlays) => {
-                overlays.push(overlay);
-            }
-            None => {
-                self.overlays.insert(window.window_handle(), vec![overlay]);
-            }
-        }
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn window_overlays(&self, handle: &AnyWindowHandle) -> Vec<Entity<Overlay>> {
-        self.overlays
-            .get(&handle)
-            .map(|overlays| overlays.iter().map(|o| o.view.clone()).collect())
-            .unwrap_or_default()
-    }
-
-    /*
-    pub fn open_text_modal<F: Fn(SharedString, &mut Window, &mut App) + 'static>(
-        &mut self,
-        overlay_id: impl Into<String>,
-        title: impl Into<SharedString>,
-        field: Entity<TextField>,
-        window: &mut Window,
-        cx: &mut App,
-        on_submit: F,
-    ) {
-        let id = overlay_id.into();
-        let modal = cx.new(|_| Modal {
-            content: field.clone().into(),
-        });
-        let focus_handle = field.focus_handle(cx);
-
-        field.update(cx, |field, cx| {
-            field.input().update(cx, |input, cx| input.select_all(cx));
-        });
-
-        window
-            .subscribe(&field, cx, {
-                let id = id.clone();
-                move |field: Entity<TextField>, event, window, cx| match event {
-                    FieldEvent::Submit => {
-                        let value = field.read(cx).value(cx).clone();
-                        on_submit(value, window, cx);
-                        cx.update_wm(|wm, _| wm.close_overlay(&id, window));
-                    }
-                    _ => {}
-                }
+        cx.defer(move |cx| {
+            wh.update(cx, |root, window, cx| {
+                root.notification
+                    .update(cx, |nl, cx| nl.push(notification, window, cx))
             })
-            .detach();
-
-        self.open_overlay(
-            Overlay::new(id, title, modal, focus_handle).as_modal(),
-            window,
-            cx,
-        );
-    }
-
-    pub fn open_number_modal<OnSubmit: Fn(Option<f64>, &mut Window, &mut App) + 'static>(
-        &mut self,
-        overlay_id: impl Into<String>,
-        title: impl Into<SharedString>,
-        field: Entity<NumberField>,
-        window: &mut Window,
-        cx: &mut App,
-        on_submit: OnSubmit,
-    ) {
-        let id = overlay_id.into();
-        let modal = cx.new(|_| Modal {
-            content: field.clone().into(),
+            .inspect_err(|err| log::error!("{}", err))
+            .expect("Should push notification");
         });
-        let focus_handle = field.focus_handle(cx);
-
-        field.read(cx).input().clone().update(cx, |input, cx| {
-            input.set_interactive(true, cx);
-            input.select_all(cx);
-        });
-
-        window
-            .subscribe(&field, cx, {
-                let id = id.clone();
-                move |field: Entity<NumberField>, event, window, cx| match event {
-                    FieldEvent::Submit => {
-                        let value = field.read(cx).value(cx).clone();
-                        on_submit(value, window, cx);
-                        cx.update_wm(|wm, _| wm.close_overlay(&id, window));
-                    }
-                    _ => {}
-                }
-            })
-            .detach();
-
-        self.open_overlay(
-            Overlay::new(id, title, modal, focus_handle).as_modal(),
-            window,
-            cx,
-        );
     }
-    */
 }
 
 impl Global for WindowManager {}
-
-struct WindowOverlay {
-    id: String,
-    return_focus_handle: Option<FocusHandle>,
-    view: Entity<Overlay>,
-}

@@ -7,6 +7,7 @@
  */
 
 use gpui::{EventEmitter, Timer, prelude::*};
+use gpui_component::notification::Notification;
 use std::{sync::mpsc, time::Duration};
 
 use demex_core::{
@@ -15,7 +16,10 @@ use demex_core::{
     event::DemexEvent,
 };
 
-use crate::engine::{DemexEngineHandler, state::DemexUiState};
+use crate::{
+    engine::{DemexEngineHandler, state::DemexUiState},
+    ui2::wm::app::WindowManagerAsyncAppExt,
+};
 
 pub struct DemexEventHandler {}
 
@@ -45,7 +49,22 @@ impl DemexEventHandler {
                             cx.update_entity(&event_handler, |_, cx| cx.emit(event))
                                 .unwrap();
                         }
+                        DemexEngineCommEvent::Error(err) => {
+                            let _ = cx.update_wm(|wm, cx| {
+                                wm.push_notifcation(Notification::error(err), cx)
+                            });
+                        }
                         DemexEngineCommEvent::ActionRunResult(result) => match result {
+                            ActionRunResult::Info(info) => {
+                                let _ = cx.update_wm(|wm, cx| {
+                                    wm.push_notifcation(Notification::info(info), cx)
+                                });
+                            }
+                            ActionRunResult::Warn(warn) => {
+                                let _ = cx.update_wm(|wm, cx| {
+                                    wm.push_notifcation(Notification::warning(warn), cx)
+                                });
+                            }
                             ActionRunResult::Save => {
                                 let _ = cx.update(|cx| {
                                     DemexEngineHandler::send(cx, ShowRequest {}, |show, _| {

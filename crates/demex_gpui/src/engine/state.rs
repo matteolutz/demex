@@ -47,7 +47,7 @@ impl<const SIZE: usize> DemexPerformanceBuffer<SIZE> {
         self.write_cursor += 1;
     }
 
-    pub fn current_fps(&self) -> Option<f64> {
+    pub fn current_its(&self) -> Option<f64> {
         if self.write_cursor == 0 {
             None
         } else {

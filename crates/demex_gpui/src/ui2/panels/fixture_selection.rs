@@ -6,18 +6,26 @@ use demex_core::{
     selection::FixtureSelection,
 };
 use gpui::{
-    App, ClickEvent, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement,
-    ParentElement, Render, Styled, Subscription, Window, div,
+    App, AppContext, ClickEvent, Context, Entity, EventEmitter, FocusHandle, Focusable,
+    IntoElement, ParentElement, Render, Styled, Subscription, Window, div,
 };
 use gpui_component::{
     button::Button,
-    dock::{Panel, PanelEvent},
+    dock::{Panel, PanelEvent, register_panel},
 };
 
 use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},
     ui2::ext::GpuiContextExtension,
 };
+
+const FIXTURE_SELECTION_PANEL_NAME: &str = "demex-fixture-selection";
+
+pub(super) fn register(cx: &mut App) {
+    register_panel(cx, FIXTURE_SELECTION_PANEL_NAME, |_, _, _, _, cx| {
+        Box::new(cx.new(|cx| FixtureSelectionPanel::new(cx)))
+    });
+}
 
 pub struct FixtureSelectionPanel {
     focus_handle: FocusHandle,
@@ -50,7 +58,7 @@ impl Focusable for FixtureSelectionPanel {
 
 impl Panel for FixtureSelectionPanel {
     fn panel_name(&self) -> &'static str {
-        "fixture-selection"
+        FIXTURE_SELECTION_PANEL_NAME
     }
 
     fn title(&self, _window: &gpui::Window, _cx: &App) -> gpui::AnyElement {

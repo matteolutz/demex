@@ -1,16 +1,24 @@
 use gpui::{
-    App, Context, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement, Render, Styled,
-    Subscription, Window, div, prelude::FluentBuilder,
+    App, AppContext, Context, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
+    Render, Styled, Subscription, Window, div, prelude::FluentBuilder,
 };
 use gpui_component::{
-    ActiveTheme, StyledExt, WindowExt,
-    button::Button,
+    ActiveTheme, StyledExt,
     chart::AreaChart,
-    dock::{Panel, PanelEvent},
+    dock::{Panel, PanelEvent, register_panel},
+    scroll::ScrollbarAxis,
     v_flex,
 };
 
 use crate::{engine::state::DemexUiState, ui2::ext::GpuiContextExtension};
+
+const PERFORMANCE_PANEL_NAME: &str = "demex-performance";
+
+pub(super) fn register(cx: &mut App) {
+    register_panel(cx, PERFORMANCE_PANEL_NAME, |_, _, _, window, cx| {
+        Box::new(cx.new(|cx| PerformancePanel::new(window, cx)))
+    });
+}
 
 pub struct PerformancePanel {
     focus_handle: FocusHandle,
@@ -27,7 +35,7 @@ impl Focusable for PerformancePanel {
 
 impl Panel for PerformancePanel {
     fn panel_name(&self) -> &'static str {
-        "performance"
+        PERFORMANCE_PANEL_NAME
     }
 
     fn title(&self, _window: &Window, _cx: &App) -> gpui::AnyElement {
@@ -56,42 +64,38 @@ impl Render for PerformancePanel {
     ) -> impl IntoElement {
         let performance = DemexUiState::performance(cx).read(cx).clone();
 
-        v_flex()
-            .w_full()
-            .p_4()
-            .gap_4()
-            .justify_center()
-            .child(div().font_bold().text_2xl().child("Performance"))
-            .children(performance.into_iter().map(|(thread_name, stats)| {
-                stats_chart_container(
-                    thread_name,
-                    stats
-                        .current_fps()
-                        .map(|fps| format!("Current: {:.0}fps", fps)),
-                    AreaChart::new(
+        div().w_full().scrollable(ScrollbarAxis::Both).child(
+            v_flex()
+                .w_full()
+                .min_w_64()
+                .p_4()
+                .gap_4()
+                .justify_center()
+                .child(div().font_bold().text_2xl().child("Performance"))
+                .children(performance.into_iter().map(|(thread_name, stats)| {
+                    div().w_full().child(stats_chart_container(
+                        thread_name,
                         stats
-                            .move_data()
-                            .enumerate()
-                            .map(|(idx, p)| (idx, p.as_ref().map(|p| 1.0 / p.dt()), p)),
-                    )
-                    .step_after()
-                    .x(|(idx, _, _)| idx.to_string())
-                    .y(|(_, fps, _)| {
-                        fps.as_ref()
-                            .and_then(|fps| fps.is_finite().then(|| *fps))
-                            .unwrap_or(0.0)
-                    }),
-                    false,
-                    cx,
-                )
-            }))
-            .child(
-                Button::new("test")
-                    .label("Dialog öffnen")
-                    .on_click(cx.listener(|_, _, window, cx| {
-                        window.open_sheet(cx, |sheet, _, _| sheet.title("Test Sheet"))
-                    })),
-            )
+                            .current_its()
+                            .map(|its| format!("Current: {:.0}its", its)),
+                        AreaChart::new(
+                            stats
+                                .move_data()
+                                .enumerate()
+                                .map(|(idx, p)| (idx, p.as_ref().map(|p| 1.0 / p.dt()), p)),
+                        )
+                        .step_after()
+                        .x(|(idx, _, _)| idx.to_string())
+                        .y(|(_, its, _)| {
+                            its.as_ref()
+                                .and_then(|its| its.is_finite().then(|| *its))
+                                .unwrap_or(0.0)
+                        }),
+                        false,
+                        cx,
+                    ))
+                })),
+        )
     }
 }
 
@@ -103,13 +107,11 @@ fn stats_chart_container(
     cx: &App,
 ) -> impl IntoElement {
     v_flex()
-        .flex_1()
         .h_full()
         .border_1()
         .border_color(cx.theme().border)
         .rounded_lg()
         .p_4()
-        .w_full()
         .min_w_64()
         .min_h_64()
         .child(

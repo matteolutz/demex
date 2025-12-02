@@ -45,19 +45,8 @@ fn load_fonts(cx: &mut App) -> gpui::Result<()> {
         .filter_map(|res| res.ok().flatten())
         .collect::<Vec<_>>();
 
-    let font_names_before = cx.text_system().all_font_names();
-
     log::debug!("Loaded {} fonts", embedded_fonts.len());
     cx.text_system().add_fonts(embedded_fonts)?;
-
-    let new_fonts = cx
-        .text_system()
-        .all_font_names()
-        .into_iter()
-        .filter(|name| !font_names_before.contains(name))
-        .collect::<Vec<_>>();
-
-    log::debug!("Loaded fonts: {:?}", new_fonts);
 
     Ok(())
 }

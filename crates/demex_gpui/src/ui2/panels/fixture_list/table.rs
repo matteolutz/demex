@@ -18,7 +18,14 @@ impl FixtureListTableEntry {
     pub fn from_patch(value: &GdtfFixturePatch, patch: &Patch) -> Self {
         let fixture_type_name = patch
             .fixture_type(value.fixture_type_id)
-            .map(|ft| ft.short_name.clone())
+            .map(|ft| {
+                ft.name
+                    .as_ref()
+                    // Try default "name" attributes first..
+                    .map(|name| name.as_ref().to_string())
+                    // ..if not present, use "short_name"
+                    .unwrap_or_else(|| ft.short_name.clone())
+            })
             .unwrap_or_else(|| "(unknown)".into());
 
         Self {

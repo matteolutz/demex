@@ -1,11 +1,23 @@
 use std::str::FromStr;
 
+use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
 use super::feature_type::FixtureChannel3FeatureType;
 
 #[derive(
-    Debug, Copy, Clone, PartialEq, Eq, Hash, Default, PartialOrd, Ord, strum_macros::EnumIter,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Default,
+    PartialOrd,
+    Ord,
+    strum_macros::EnumIter,
+    Serialize,
+    Deserialize,
 )]
 #[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum FixtureChannel3FeatureGroup {

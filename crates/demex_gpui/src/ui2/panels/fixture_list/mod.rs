@@ -4,7 +4,7 @@ use gpui::{
 };
 use gpui_component::{
     Sizable,
-    dock::{Panel, PanelEvent},
+    dock::{Panel, PanelEvent, register_panel},
     table::{Table, TableState},
 };
 
@@ -12,11 +12,19 @@ use crate::{
     engine::state::DemexUiState,
     ui2::{
         config::AppConfigExt,
-        pane::panels::fixture_list::table::{FixtureListTable, FixtureListTableEntry},
+        panels::fixture_list::table::{FixtureListTable, FixtureListTableEntry},
     },
 };
 
 mod table;
+
+const FIXTURE_LIST_PANEL_NAME: &str = "demex-fixture-list";
+
+pub(super) fn register(cx: &mut App) {
+    register_panel(cx, FIXTURE_LIST_PANEL_NAME, |_, _, _, window, cx| {
+        Box::new(cx.new(|cx| FixtureListPanel::new(window, cx)))
+    });
+}
 
 pub struct FixtureListPanel {
     focus_handle: FocusHandle,
@@ -45,7 +53,6 @@ impl FixtureListPanel {
         let table_state = cx.new(|cx| TableState::new(delegate, window, cx).col_movable(false));
 
         let notify = |this: &mut FixtureListPanel, cx: &mut Context<Self>| {
-            println!("rerendering");
             cx.notify();
             this.table_state.update(cx, |table, cx| table.refresh(cx));
         };
@@ -72,7 +79,7 @@ impl Focusable for FixtureListPanel {
 
 impl Panel for FixtureListPanel {
     fn panel_name(&self) -> &'static str {
-        "fixture-list"
+        FIXTURE_LIST_PANEL_NAME
     }
 
     fn title(&self, _window: &gpui::Window, _cx: &App) -> gpui::AnyElement {

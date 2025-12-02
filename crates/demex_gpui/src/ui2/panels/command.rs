@@ -1,14 +1,26 @@
 use gpui::{
-    AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
-    Render, Styled, Subscription, Window, div,
+    App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement,
+    ParentElement, Render, Styled, Subscription, Window, div,
 };
 use gpui_component::{
     Sizable,
-    dock::{Panel, PanelEvent},
+    dock::{Panel, PanelEvent, register_panel},
     input::{Input, InputEvent, InputState},
+    notification::Notification,
 };
 
-use crate::{engine::DemexEngineHandler, ui2::config::AppConfigExt};
+use crate::{
+    engine::DemexEngineHandler,
+    ui2::{config::AppConfigExt, wm::app::WindowManagerAppExt},
+};
+
+const COMMAND_PANEL_NAME: &str = "demex-command";
+
+pub(super) fn register(cx: &mut App) {
+    register_panel(cx, COMMAND_PANEL_NAME, |_, _, _, window, cx| {
+        Box::new(cx.new(|cx| CommandPanel::new(window, cx)))
+    });
+}
 
 pub struct CommandPanel {
     focus_handle: FocusHandle,
@@ -27,7 +39,7 @@ impl Focusable for CommandPanel {
 
 impl Panel for CommandPanel {
     fn panel_name(&self) -> &'static str {
-        "command"
+        COMMAND_PANEL_NAME
     }
 }
 
@@ -51,6 +63,9 @@ impl CommandPanel {
 
                     if let Err(err) = DemexEngineHandler::engine(cx).exec_command(&command) {
                         log::warn!("Failed to run command \"{}\": {}", command, err);
+                        cx.update_wm(|wm, cx| {
+                            wm.push_notifcation(Notification::error(err.to_string()), cx)
+                        });
                     }
 
                     input.update(cx, |input, cx| {

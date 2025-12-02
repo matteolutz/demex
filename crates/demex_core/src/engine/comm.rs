@@ -17,7 +17,11 @@ use crate::{
 #[derive(Debug, Clone)]
 pub enum DemexEngineCommEvent {
     DemexEvent(DemexEvent),
+
     ActionRunResult(ActionRunResult),
+
+    Error(String),
+
     TickStateUpdate(DemexEngineTickState),
     FixtureValuesUpdate(HashMap<u32, HashMap<String, FixtureChannelValue3>>),
 }

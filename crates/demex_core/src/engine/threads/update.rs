@@ -89,7 +89,10 @@ pub(crate) fn start_demex_update_thread(
                             _ => {}
                         }
                     }
-                    Err(err) => log::warn!("Failed to run action: {}", err),
+                    Err(err) => {
+                        let _ = event_bus_tx.send(DemexEngineCommEvent::Error(err.to_string()));
+                        log::warn!("Failed to run action: {}", err);
+                    }
                 }
             }
 

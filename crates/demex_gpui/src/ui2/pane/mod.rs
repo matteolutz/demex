@@ -5,13 +5,11 @@ use gpui::{Context, Entity, Render};
 use gpui_component::dock::{DockArea, DockItem, DockPlacement};
 use gpui_component::{Root, v_flex};
 
-use crate::ui2::pane::panels::command::CommandPanel;
-use crate::ui2::pane::panels::fixture_list::FixtureListPanel;
-use crate::ui2::pane::panels::fixture_selection::FixtureSelectionPanel;
-use crate::ui2::pane::panels::performance::PerformancePanel;
+use crate::ui2::panels::command::CommandPanel;
+use crate::ui2::panels::fixture_list::FixtureListPanel;
+use crate::ui2::panels::fixture_selection::FixtureSelectionPanel;
+use crate::ui2::panels::performance::PerformancePanel;
 use crate::ui2::titlebar::DemexTitleBar;
-
-mod panels;
 
 pub struct MainPane {
     title_bar: Entity<DemexTitleBar>,
@@ -57,6 +55,9 @@ impl MainPane {
                 window,
                 cx,
             );
+
+            let dock_state = da.dump(cx);
+            println!("dock state: {:?}", dock_state);
 
             da
         });
