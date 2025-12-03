@@ -63,6 +63,22 @@ impl DemexDmxOutputConfig {
             DemexDmxOutputConfigData::Artnet(_) => 1,
         }
     }
+
+    pub fn name(&self) -> &str {
+        match self.data {
+            DemexDmxOutputConfigData::Debug(_) => "Debug",
+            DemexDmxOutputConfigData::Serial(_) => "Serial",
+            DemexDmxOutputConfigData::Artnet(_) => "ArtNet",
+        }
+    }
+
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+    }
+
+    pub fn is_disabled(&self) -> bool {
+        self.disabled
+    }
 }
 
 impl Default for DemexDmxOutputConfig {

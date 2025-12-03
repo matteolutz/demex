@@ -42,9 +42,6 @@ impl DemexEngineHandler {
 
         let event_handler = cx.new(|cx| DemexEventHandler::new(event_bus_rx, cx));
 
-        let patch = engine.read_patch();
-        DemexUiState::patch(cx).update(cx, |ui_patch, _| *ui_patch = patch);
-
         cx.set_global(Self {
             engine,
             event_handler,

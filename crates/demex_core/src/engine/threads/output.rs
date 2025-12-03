@@ -1,4 +1,8 @@
-use std::{sync::mpsc, thread::JoinHandle, time};
+use std::{
+    sync::{Arc, mpsc},
+    thread::JoinHandle,
+    time,
+};
 
 use arc_swap::ArcSwap;
 use demex_dmx::DemexDmxOutput;
@@ -13,13 +17,13 @@ use crate::{
 
 pub fn start_demex_output_thread(
     stats: ComponentHandle<DemexThreadStatsHandler>,
-    patch: &ArcSwap<Patch>,
+    patch: Arc<ArcSwap<Patch>>,
     value_queue: mpsc::Receiver<ChannelValueQueueEntry>,
 ) -> JoinHandle<()> {
-    let patch = patch.load();
     let mut dmx_resolver = DmxResolver::default();
 
     let mut outputs = patch
+        .load()
         .output_configs()
         .iter()
         .map(|config| {
@@ -35,6 +39,7 @@ pub fn start_demex_output_thread(
         stats.clone(),
         DEMEX_MAX_OUTPUT_FUPS,
         move |_, last_user_update| {
+            let patch = patch.load();
             let values = value_queue.try_iter().collect::<Vec<_>>();
 
             dmx_resolver.resovle(values, &patch);

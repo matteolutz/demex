@@ -4,13 +4,21 @@ use gpui::{
 };
 use gpui_component::{
     ActiveTheme, StyledExt,
+    button::Button,
     chart::AreaChart,
     dock::{Panel, PanelEvent, register_panel},
     scroll::ScrollbarAxis,
     v_flex,
 };
 
-use crate::{engine::state::DemexUiState, ui2::ext::GpuiContextExtension};
+use crate::{
+    engine::state::DemexUiState,
+    ui2::{
+        ext::GpuiContextExtension,
+        window::outputs::OutputsConfigWindow,
+        wm::{app::WindowManagerAppExt, edit_window::WindowManagerExtension},
+    },
+};
 
 const PERFORMANCE_PANEL_NAME: &str = "demex-performance";
 
@@ -71,6 +79,13 @@ impl Render for PerformancePanel {
                 .p_4()
                 .gap_4()
                 .justify_center()
+                .child(Button::new("test").label("Test").on_click(|_, _, cx| {
+                    cx.update_wm(|wm, cx| {
+                        wm.open_edit_window::<OutputsConfigWindow>(cx, |cx| {
+                            OutputsConfigWindow::new(cx)
+                        })
+                    })
+                }))
                 .child(div().font_bold().text_2xl().child("Performance"))
                 .children(performance.into_iter().map(|(thread_name, stats)| {
                     div().w_full().child(stats_chart_container(

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, time::Duration};
 
 use demex_core::{
     channel3::channel_value::FixtureChannelValue3,
@@ -73,7 +73,7 @@ impl<const SIZE: usize> DemexPerformanceBuffer<SIZE> {
 pub struct DemexUiState {
     fixture_selection: Entity<Option<FixtureSelection>>,
     fixture_values: Entity<HashMap<u32, HashMap<String, FixtureChannelValue3>>>,
-    patch: Entity<Arc<Patch>>,
+    patch: Entity<Patch>,
 
     performance: Entity<HashMap<String, DemexPerformanceBuffer<10>>>,
 }
@@ -89,7 +89,7 @@ impl DemexUiState {
         this.fixture_values.clone()
     }
 
-    pub fn patch(cx: &App) -> Entity<Arc<Patch>> {
+    pub fn patch(cx: &App) -> Entity<Patch> {
         let this: &Self = cx.global();
         this.patch.clone()
     }
@@ -182,6 +182,13 @@ impl DemexUiState {
             println!("fixture with id 1: {:?}", fixtures.get(&1));
             cx.notify();
         });
+    }
+
+    pub fn update_patch(&self, new_patch: Patch, cx: &mut App) {
+        self.patch.update(cx, |patch, cx| {
+            *patch = new_patch;
+            cx.notify();
+        })
     }
 }
 

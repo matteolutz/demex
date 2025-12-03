@@ -1,4 +1,4 @@
-use crate::{event::DemexEvent, selection::FixtureSelection};
+use crate::{event::DemexEvent, patch::Patch, selection::FixtureSelection};
 
 #[derive(Debug, Clone, Default)]
 pub enum ActionRunResult {
@@ -13,6 +13,7 @@ pub enum ActionRunResult {
     EditWindow(crate::ui::window::edit::DemexEditWindow),
 
     UpdateFixtureSelection(Option<FixtureSelection>),
+    UpdatePatch(Patch),
 
     Lock,
 

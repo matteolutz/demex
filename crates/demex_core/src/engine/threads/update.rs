@@ -1,4 +1,8 @@
-use std::{collections::HashMap, sync::mpsc, thread::JoinHandle};
+use std::{
+    collections::HashMap,
+    sync::{Arc, mpsc},
+    thread::JoinHandle,
+};
 
 use arc_swap::ArcSwap;
 
@@ -36,11 +40,9 @@ pub(crate) fn start_demex_update_thread(
     mut preset_handler: PresetHandler,
     mut updatable_handler: UpdatableHandler,
     mut timing_handler: TimingHandler,
-    patch: &ArcSwap<Patch>,
+    patch_swap: Arc<ArcSwap<Patch>>,
 ) -> (JoinHandle<()>, HashMap<u32, FixtureState>) {
-    let patch = patch.load();
-
-    let mut fixture_state_handler = FixtureStateHandler::new(&patch).unwrap();
+    let mut fixture_state_handler = FixtureStateHandler::new(&patch_swap.load()).unwrap();
     let fixture_states = fixture_state_handler.fixtures().clone();
 
     let mut state = DemexEngineState::default();
@@ -50,6 +52,7 @@ pub(crate) fn start_demex_update_thread(
         stats.clone(),
         DEMEX_MAX_FUPS,
         move |_, _| {
+            let patch = patch_swap.load();
             let mut action_queue = action_queue.lock_write();
 
             // Handle queued actions
@@ -84,6 +87,9 @@ pub(crate) fn start_demex_update_thread(
                                 let _ = event_bus_tx.send(DemexEngineCommEvent::DemexEvent(
                                     DemexEvent::FixtureSelectionChanged(selection),
                                 ));
+                            }
+                            ActionRunResult::UpdatePatch(patch) => {
+                                patch_swap.store(Arc::new(patch));
                             }
                             ActionRunResult::WithEvent { .. } => unreachable!(),
                             _ => {}

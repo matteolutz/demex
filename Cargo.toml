@@ -1,5 +1,12 @@
 [workspace]
-members = ["crates/demex_dmx", "crates/demex_headless", "crates/demex_core", "crates/demex", "crates/demex_gpui"] # crates/demex_gpui, crates/demex_ui
+members = [
+    "crates/demex_dmx",
+    "crates/demex_headless",
+    "crates/demex_core",
+    "crates/demex",
+    "crates/demex_gpui",
+    "crates/tree-sitter-demex"
+    ] # crates/demex_gpui, crates/demex_ui
 resolver = "3"
 
 [workspace.package]
@@ -12,6 +19,8 @@ demex_headless = { path = "./crates/demex_headless" }
 demex_core = { path = "./crates/demex_core" }
 demex_gpui = { path = "./crates/demex_gpui" }
 demex = { path = "./crates/demex" }
+
+tree-sitter-demex = { path = "./crates/tree-sitter-demex" }
 
 ecolor = { version = "0.31.1", features = ["serde"] }
 emath = { version = "0.31.1", features = ["serde"] }

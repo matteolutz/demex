@@ -1,5 +1,6 @@
 use std::{ops::RangeInclusive, time};
 
+use demex_dmx::DemexDmxOutputConfig;
 use functions::{
     FunctionArgs,
     assign_function::{AssignButtonArgs, AssignFaderArgs},
@@ -194,6 +195,8 @@ pub enum Action {
     ExecutorGo(ExecutorGoArgs),
     ExecutorStop(ExecutorStopArgs),
     ExecutorSetFaderValue(u32, f32),
+
+    UpdateOutputConfigs(Vec<DemexDmxOutputConfig>),
 
     Lock,
 
@@ -432,6 +435,12 @@ impl Action {
             Self::Nuzul => Ok(ActionRunResult::Info("Going down...".to_owned())),
             Self::Sueud => Ok(ActionRunResult::Info("Going up...".to_owned())),
             Self::GrandEtc => Ok(ActionRunResult::Warn("Ha ha ha, very funny".to_owned())),
+
+            Self::UpdateOutputConfigs(configs) => {
+                let mut patch = patch.clone();
+                *patch.output_configs_mut() = configs.clone();
+                Ok(ActionRunResult::UpdatePatch(patch))
+            }
 
             #[cfg(feature = "ui")]
             Self::Config(config_type) => Ok(ActionRunResult::EditWindow(

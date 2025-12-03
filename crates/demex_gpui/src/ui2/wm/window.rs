@@ -1,0 +1,120 @@
+use std::ops::{Deref, DerefMut};
+
+use gpui::{
+    AnyView, App, Pixels, SharedString, Window, WindowHandle, WindowKind, WindowOptions, px,
+};
+use gpui::{WindowBounds, prelude::*};
+use gpui_component::{Root, TitleBar};
+
+use crate::ui2::wm::DEMEX_APP_ID;
+use crate::ui2::wm::app::WindowManagerAppExt;
+
+pub const TRAFFIC_LIGHT_WIDTH: Pixels = px(14.0);
+pub const TRAFFIC_LIGHT_SPACING: Pixels = px(9.0);
+
+pub trait WindowDelegate: 'static {
+    type InitData: 'static;
+
+    fn create(
+        window: &mut Window,
+        cx: &mut App,
+        data: impl FnOnce(&mut Context<Self::InitData>) -> Self::InitData,
+    ) -> Self
+    where
+        Self: Sized;
+
+    fn handle_window_save(&self, _window: &mut Window, _cx: &mut Context<WindowWrapper<Self>>)
+    where
+        Self: Sized,
+    {
+    }
+
+    fn handle_window_discard(&self, _window: &mut Window, _cx: &mut Context<WindowWrapper<Self>>)
+    where
+        Self: Sized,
+    {
+    }
+
+    fn window_bounds(_cx: &mut App) -> Option<WindowBounds> {
+        None
+    }
+
+    fn window_kind(_cx: &mut App) -> WindowKind {
+        WindowKind::Normal
+    }
+
+    fn set_edited(&self, edited: bool, cx: &mut App)
+    where
+        Self: Sized,
+    {
+        cx.update_wm(|wm, cx| wm.set_singleton_window_edited::<Self>(cx, edited));
+    }
+
+    fn window_title(&self, window: &mut Window, cx: &App) -> impl Into<SharedString>
+    where
+        Self: Sized;
+
+    fn view(&self) -> AnyView
+    where
+        Self: Sized;
+}
+
+pub struct WindowWrapper<D: WindowDelegate> {
+    delegate: D,
+}
+
+impl<D: WindowDelegate> WindowWrapper<D> {
+    pub fn open<F>(cx: &mut App, f: F) -> WindowHandle<Root>
+    where
+        F: FnOnce(&mut Window, &mut App) -> D,
+    {
+        let window_bounds = D::window_bounds(cx);
+        let window_kind = D::window_kind(cx);
+
+        cx.open_window(
+            singleton_window_options(window_bounds, window_kind),
+            |window, cx| {
+                let delegate = f(window, cx);
+
+                let window_title = delegate.window_title(window, cx).into();
+                window.set_window_title(window_title.as_str());
+
+                cx.new(|cx| Root::new(cx.new(|_| Self { delegate }), window, cx))
+            },
+        )
+        .expect("should open window")
+    }
+}
+
+impl<D: WindowDelegate> Render for WindowWrapper<D> {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        self.delegate.view()
+    }
+}
+
+impl<D: WindowDelegate> Deref for WindowWrapper<D> {
+    type Target = D;
+
+    fn deref(&self) -> &Self::Target {
+        &self.delegate
+    }
+}
+
+impl<D: WindowDelegate> DerefMut for WindowWrapper<D> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.delegate
+    }
+}
+
+fn singleton_window_options(
+    window_bounds: Option<WindowBounds>,
+    kind: WindowKind,
+) -> WindowOptions {
+    WindowOptions {
+        window_bounds,
+        kind,
+        titlebar: Some(TitleBar::title_bar_options()),
+        app_id: Some(DEMEX_APP_ID.to_string()),
+        ..Default::default()
+    }
+}

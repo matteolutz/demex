@@ -37,7 +37,7 @@ pub mod tick;
 pub struct DemexEngine {
     stats: ComponentHandle<DemexThreadStatsHandler>,
 
-    patch: ArcSwap<Patch>,
+    patch: Arc<ArcSwap<Patch>>,
     state: ComponentHandle<DemexEngineState>,
     action_queue: ComponentHandle<ActionQueue>,
 
@@ -53,7 +53,7 @@ impl DemexEngine {
             state: ComponentHandle::create_default(),
             event_bus_tx,
             threads: Vec::new(),
-            patch: ArcSwap::from_pointee(Patch::default()),
+            patch: Arc::new(ArcSwap::from_pointee(Patch::default())),
         };
 
         s
@@ -68,7 +68,7 @@ impl DemexEngine {
         start_debug: bool,
     ) -> (DemexEngineCommRequestDispatcher, DemexFrontendInitState) {
         let patch = show.patch.into_patch(fixture_types);
-        self.patch.store(Arc::new(patch));
+        self.patch.store(Arc::new(patch.clone()));
 
         let (tx, rx) = mpsc::channel();
         let mut comm_handler = DemexEngineCommRequestHandler::new(rx);
@@ -87,13 +87,13 @@ impl DemexEngine {
             show.preset_handler,
             show.updatable_handler,
             show.timing_handler,
-            &self.patch,
+            self.patch.clone(),
         );
         self.register_thread(update_thread);
 
         let output_thread = threads::output::start_demex_output_thread(
             self.stats.clone(),
-            &self.patch,
+            self.patch.clone(),
             value_queue_rx,
         );
         self.register_thread(output_thread);
@@ -106,7 +106,7 @@ impl DemexEngine {
         let frontend_state = DemexFrontendInitState {
             fixture_selection: self.state.read(|s| s.fixture_selection.clone()),
             fixture_states,
-            patch: self.patch.load_full(),
+            patch,
         };
 
         (comm_dispatcher, frontend_state)

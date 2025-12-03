@@ -4,10 +4,6 @@ pub mod engine;
 pub mod storage;
 pub mod utils;
 
-#[cfg(feature = "ui")]
-pub mod ui;
-
-#[cfg(feature = "gpui")]
 pub mod ui2;
 
 use std::path::PathBuf;
@@ -15,19 +11,12 @@ use std::path::PathBuf;
 use gdtf::GdtfFile;
 use itertools::Itertools;
 
-#[cfg(feature = "ui")]
-use ui::{
-    DemexUiApp, context::DemexUiContext, theme::DemexUiTheme, theme::DemexUiThemeAttribute,
-    utils::icon::load_icon, utils::load::load_textures,
-};
-
 use demex_core::{show::DemexShow, utils::deadlock::start_deadlock_checking_thread};
 
 use clap::Parser;
 
 use crate::engine::DemexEngineHandler;
 
-#[cfg(not(feature = "ui"))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
 enum DemexUiThemeAttribute {}
 
@@ -165,190 +154,70 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             */
         }
 
-        #[cfg(feature = "ui")]
-        {
-            let icon = Arc::new(load_icon());
+        use crate::ui2::assets::Assets;
 
-            log::info!("Starting UI fullscreen: {}", args.fullscreen);
+        mod actions {
+            use crate::engine::DemexEngineHandler;
+            use gpui::{App, KeyBinding, Menu, MenuItem, SystemMenuType};
 
-            let mut viewport_builder = eframe::egui::ViewportBuilder::default()
-                .with_maximized(true)
-                .with_icon(icon.clone());
-            if args.fullscreen {
-                viewport_builder = viewport_builder.with_fullscreen(true);
+            gpui::actions!(demex, [Quit, Save]);
+            pub(super) fn init(cx: &mut App) {
+                cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
+                cx.bind_keys([KeyBinding::new("secondary-s", Save, None)]);
+
+                cx.on_action::<Quit>(|_, cx| cx.quit());
+                cx.on_action::<Save>(|_, cx| DemexEngineHandler::save(cx));
+
+                init_menus(cx);
             }
 
-            let ui_theme = args
-                .ui_theme
-                .map(DemexUiTheme::from)
-                .unwrap_or(DemexUiTheme::Default);
-
-            let options = ui_theme.native_options(viewport_builder);
-
-            eframe::run_native(
-                APP_ID,
-                options,
-                Box::new(|creation_context| {
-                    egui_extras::install_image_loaders(&creation_context.egui_ctx);
-
-                    let style = egui::Style {
-                        visuals: egui::Visuals::dark(),
-                        ..egui::Style::default()
-                    };
-
-                    creation_context.egui_ctx.set_style(style);
-                    creation_context
-                        .egui_ctx
-                        .set_fonts(ui::utils::load::load_fonts());
-
-                    ui_theme.apply(&creation_context.egui_ctx);
-
-                    if args.touchscreen_mode {
-                        creation_context.egui_ctx.style_mut(|style| {
-                            style.spacing.button_padding = emath::vec2(10.0, 10.0);
-
-                            style.spacing.indent = 18.0 * 2.0;
-                            style.spacing.icon_width = 14.0 * 2.0;
-                            style.spacing.icon_width_inner = 8.0 * 2.0;
-
-                            // DEFAULT: style.spacing.interact_size = [40.0, 18.0];
-                            //
-                            style.spacing.interact_size = emath::vec2(40.0, 18.0) * 1.5;
-                            style.spacing.slider_rail_height = 8.0 * 2.0;
-                            style.spacing.slider_width = 100.0 * 1.5;
-                        });
-                    }
-
-                    let ui_app_state = DemexUiApp::new(
-                        DemexUiContext::load_show(
-                            &context,
-                            show.input_device_configs,
-                            input_device_event_handler,
-                            show.ui_config,
-                            args.show,
-                            stats,
-                            load_textures(&creation_context.egui_ctx),
-                        ),
-                        TEST_UI_FPS,
-                        icon,
-                        false,
-                        args.additional_viewports,
-                        args.fullscreen,
-                    );
-
-                    Ok(Box::new(ui_app_state))
-                }),
-            )?;
+            pub fn init_menus(cx: &mut App) {
+                cx.set_menus(vec![Menu {
+                    name: "demex".into(),
+                    items: vec![
+                        MenuItem::os_submenu("Services", SystemMenuType::Services),
+                        MenuItem::separator(),
+                        MenuItem::action("Quit", Quit),
+                    ],
+                }]);
+            }
         }
 
-        #[cfg(feature = "gpui")]
-        {
-            use crate::ui2::assets::Assets;
+        gpui::Application::new()
+            .with_assets(Assets)
+            .run(move |cx: &mut gpui::App| {
+                use gpui_component::{Theme, ThemeRegistry};
 
-            mod actions {
-                use crate::engine::DemexEngineHandler;
-                use gpui::{App, KeyBinding};
+                use crate::ui2::{
+                    config::DemexUiConfig,
+                    wm::{WindowManager, app::WindowManagerAppExt, dock_window::DockWindowConfig},
+                };
 
-                gpui::actions!(demex, [Quit, Save]);
-                pub(super) fn init(cx: &mut App) {
-                    cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
-                    cx.bind_keys([KeyBinding::new("secondary-s", Save, None)]);
+                gpui_component::init(cx);
+                ui2::init(cx).unwrap();
 
-                    cx.on_action::<Quit>(|_, cx| cx.quit());
-                    cx.on_action::<Save>(|_, cx| DemexEngineHandler::save(cx));
+                actions::init(cx);
+
+                let theme_reg = ThemeRegistry::global(cx);
+                if let Some(theme) = theme_reg.themes().get("Default Dark").cloned() {
+                    Theme::global_mut(cx).apply_config(&theme);
                 }
-            }
 
-            gpui::Application::new()
-                .with_assets(Assets)
-                .run(move |cx: &mut gpui::App| {
-                    use gpui_component::{Theme, ThemeRegistry};
+                cx.activate(true);
 
-                    use crate::ui2::{
-                        config::DemexUiConfig,
-                        wm::{
-                            WindowManager, app::WindowManagerAppExt, dock_window::DockWindowConfig,
-                        },
-                    };
+                let ui_config = DemexUiConfig {
+                    touchcreen_mode: args.touchscreen_mode,
+                };
+                cx.set_global(ui_config);
 
-                    gpui_component::init(cx);
-                    ui2::init(cx).unwrap();
+                DemexEngineHandler::init(fixture_types, show, cx)
+                    .expect("Failed to initialize engine");
 
-                    actions::init(cx);
+                let wm = WindowManager::new(cx).auto_quit(true);
+                cx.set_global(wm);
 
-                    let theme_reg = ThemeRegistry::global(cx);
-                    if let Some(theme) = theme_reg.themes().get("Default Dark").cloned() {
-                        Theme::global_mut(cx).apply_config(&theme);
-                    }
-
-                    cx.activate(true);
-
-                    let ui_config = DemexUiConfig {
-                        touchcreen_mode: args.touchscreen_mode,
-                    };
-                    cx.set_global(ui_config);
-
-                    DemexEngineHandler::init(fixture_types, show, cx)
-                        .expect("Failed to initialize engine");
-
-                    /*
-                    cx.spawn(async move |cx| {
-                        use gpui::WindowOptions;
-                        use gpui_component::TitleBar;
-
-                        cx.open_window(
-                            WindowOptions {
-                                titlebar: Some(TitleBar::title_bar_options()),
-                                ..Default::default()
-                            },
-                            |window, cx| {
-                                use gpui::AppContext;
-                                use gpui_component::Root;
-
-                                use crate::ui2::pane::MainPane;
-
-                                window.set_window_title("demex");
-                                window.set_app_id(APP_ID);
-
-                                let view = cx.new(|cx| MainPane::new(window, cx));
-                                cx.new(|cx| Root::new(view, window, cx))
-                            },
-                        )?;
-
-                        Ok::<_, anyhow::Error>(())
-                    })
-                    .detach();
-                    */
-
-                    let wm = WindowManager::new(cx).auto_quit(true);
-                    cx.set_global(wm);
-
-                    cx.update_wm(|wm, cx| wm.add_dock_window(DockWindowConfig::default(), cx));
-
-                    /*
-                    let wm = WindowManager::new(cx);
-                    cx.set_global(wm);
-                    wm::init(cx);
-
-                    cx.update_wm(|wm, cx| wm.open_singleton_window::<MainWindow>(cx, ()));
-
-                    cx.on_window_closed(|cx| {
-                        if cx.windows().is_empty() {
-                            cx.quit();
-                        }
-                    })
-                    .detach();
-                    */
-                });
-        }
-
-        #[cfg(all(not(feature = "ui"), not(feature = "gpui")))]
-        {
-            log::error!(
-                "UI feature is not enabled. Please enable the UI feature to run the application with a user interface or run in headless mode."
-            );
-            std::process::exit(1);
-        }
+                cx.update_wm(|wm, cx| wm.add_dock_window(DockWindowConfig::default(), cx));
+            });
     }
 
     Ok(())

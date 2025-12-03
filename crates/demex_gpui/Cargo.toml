@@ -4,31 +4,13 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-catppuccin-egui = { version = "5.5.0", default-features = false, features = [
-    "egui31",
-], optional = true }
-eframe = { features = [
-    "default",
-    "persistence",
-], version = "0.31.1", optional = true }
-egui = { features = ["default", "serde"], version = "0.31.1", optional = true }
-egui-probe = { version = "0.8.0", features = ["derive"], optional = true }
-egui_dock = { version = "0.16.0", features = ["serde"], optional = true }
-egui_extras = { features = [
-    "default",
-    "all_loaders",
-], version = "0.31.1", optional = true }
-image = { version = "0.25.5", features = ["png"], optional = true }
-open = { version = "5.3.2", optional = true }
-rfd = { version = "0.15.2", optional = true }
+rfd = { version = "0.15.2"}
+open = { version = "5.3.2"}
 
-re_ui = { version = "0.23.4", optional = true }
+gpui = { version = "*"}
+gpui-component = {version = "0.4.0"}
 
-gpui = { version = "*", optional = true }
-gpui-component = {version = "0.4.0", optional = true}
-gpui-component-assets = {version = "0.4.0", optional = true}
-
-anyhow = {version = "1.0.100", optional = true}
+anyhow = {version = "1.0.100" }
 
 ecolor.workspace = true
 emath.workspace = true
@@ -60,21 +42,5 @@ nalgebra.workspace = true
 demex_headless.workspace = true
 demex_dmx.workspace = true
 demex_core.workspace = true
+tree-sitter-demex.workspace = true
 rust-embed = "8.9.0"
-
-
-[features]
-default = ["gpui"]
-ui = [
-    "dep:catppuccin-egui",
-    "dep:eframe",
-    "dep:egui",
-    "dep:egui-probe",
-    "dep:egui_dock",
-    "dep:egui_extras",
-    "dep:image",
-    "dep:open",
-    "dep:rfd",
-]
-reui = ["ui", "dep:re_ui"]
-gpui = ["dep:gpui", "dep:gpui-component", "dep:gpui-component-assets", "dep:anyhow"]

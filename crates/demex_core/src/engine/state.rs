@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use crate::{
     engine::component::Component, patch::Patch, selection::FixtureSelection,
@@ -15,5 +15,5 @@ impl Component for DemexEngineState {}
 pub struct DemexFrontendInitState {
     pub fixture_selection: Option<FixtureSelection>,
     pub fixture_states: HashMap<u32, FixtureState>,
-    pub patch: Arc<Patch>,
+    pub patch: Patch,
 }

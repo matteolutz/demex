@@ -73,6 +73,11 @@ impl DemexEventHandler {
                                     })
                                 });
                             }
+                            ActionRunResult::UpdatePatch(patch) => {
+                                let _ = cx.update_global(|ui_state: &mut DemexUiState, cx| {
+                                    ui_state.update_patch(patch, cx);
+                                });
+                            }
                             ActionRunResult::WithEvent { .. } => unreachable!(),
                             _ => {}
                         },

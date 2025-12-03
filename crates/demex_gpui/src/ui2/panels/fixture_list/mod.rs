@@ -38,28 +38,28 @@ impl FixtureListPanel {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let patch = DemexUiState::patch(cx);
         let fixture_values = DemexUiState::fixture_values(cx);
+        let fixture_selection = DemexUiState::fixture_selection(cx);
 
-        let delegate = {
-            let patch = patch.read(cx);
-
-            FixtureListTable::new(
-                patch
-                    .fixtures()
-                    .map(|f| FixtureListTableEntry::from_patch(f, patch))
-                    .collect(),
-            )
-        };
-
-        let table_state = cx.new(|cx| TableState::new(delegate, window, cx).col_movable(false));
+        let table_state = cx.new(|cx| {
+            TableState::new(FixtureListTable::new(Self::get_table_data(cx)), window, cx)
+                .col_movable(false)
+        });
 
         let notify = |this: &mut FixtureListPanel, cx: &mut Context<Self>| {
-            cx.notify();
             this.table_state.update(cx, |table, cx| table.refresh(cx));
+            cx.notify();
         };
 
         let _subscriptions = vec![
-            cx.observe(&patch, move |this, _, cx| notify(this, cx)),
+            cx.observe(&patch, move |this, _, cx| {
+                this.table_state.update(cx, |table, cx| {
+                    table.delegate_mut().data = Self::get_table_data(cx);
+                    table.refresh(cx);
+                });
+                cx.notify();
+            }),
             cx.observe(&fixture_values, move |this, _, cx| notify(this, cx)),
+            cx.observe(&fixture_selection, move |this, _, cx| notify(this, cx)),
         ];
 
         Self {
@@ -67,6 +67,14 @@ impl FixtureListPanel {
             table_state,
             _subscriptions,
         }
+    }
+
+    fn get_table_data(cx: &App) -> Vec<FixtureListTableEntry> {
+        let patch = DemexUiState::patch(cx).read(cx);
+        patch
+            .fixtures()
+            .map(|f| FixtureListTableEntry::from_patch_and_selection(f, patch))
+            .collect()
     }
 }
 

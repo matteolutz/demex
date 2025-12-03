@@ -15,7 +15,7 @@ pub struct FixtureListTableEntry {
 }
 
 impl FixtureListTableEntry {
-    pub fn from_patch(value: &GdtfFixturePatch, patch: &Patch) -> Self {
+    pub fn from_patch_and_selection(value: &GdtfFixturePatch, patch: &Patch) -> Self {
         let fixture_type_name = patch
             .fixture_type(value.fixture_type_id)
             .map(|ft| {
@@ -37,7 +37,7 @@ impl FixtureListTableEntry {
 }
 
 pub struct FixtureListTable {
-    data: Vec<FixtureListTableEntry>,
+    pub(super) data: Vec<FixtureListTableEntry>,
     columns: Vec<Column>,
 }
 
@@ -124,6 +124,9 @@ impl TableDelegate for FixtureListTable {
 
         let patch = DemexUiState::patch(cx).read(cx);
 
+        let fixture_selection = DemexUiState::fixture_selection(cx).read(cx).as_ref();
+        let is_selected = fixture_selection.is_some_and(|s| s.has_fixture(entry.id));
+
         let fixture = patch.fixture(entry.id).unwrap();
 
         let fixture_values = DemexUiState::fixture_values(cx)
@@ -136,7 +139,10 @@ impl TableDelegate for FixtureListTable {
             "patch" => {
                 format!("{}.{}", fixture.universe(), fixture.start_address()).into_any_element()
             }
-            "name" => fixture.name().to_string().into_any_element(),
+            "name" => div()
+                .when(is_selected, |div| div.text_color(cx.theme().green))
+                .child(fixture.name().to_string())
+                .into_any_element(),
             "fixture_type" => entry.fixture_type_name.clone().into_any_element(),
             "dimmer" => {
                 let dimmer_channels = fixture.channels_for_attribute(patch, "Dimmer").unwrap();

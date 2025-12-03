@@ -47,7 +47,7 @@ impl CommandPanel {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let command_input_state = cx.new(|cx| {
             InputState::new(window, cx)
-                .code_editor("rust")
+                .code_editor("demex")
                 .line_number(false)
                 .indent_guides(false)
                 .rows(1)

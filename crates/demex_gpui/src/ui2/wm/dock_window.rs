@@ -5,7 +5,7 @@ use gpui::{
     App, AppContext, Context, Entity, ParentElement, Render, Styled, Window, WindowOptions,
 };
 use gpui_component::{
-    Root,
+    Root, TitleBar,
     dock::{DockArea, DockAreaState, DockItem, DockPlacement},
     v_flex,
 };
@@ -20,6 +20,7 @@ use crate::ui2::{
         pool::{PoolPanel, pool_type::PoolType},
     },
     titlebar::DemexTitleBar,
+    wm::DEMEX_APP_ID,
 };
 
 #[derive(Default, Serialize, Deserialize)]
@@ -29,7 +30,11 @@ pub struct DockWindowConfig {
 
 impl DockWindowConfig {
     pub(super) fn gpui_window_options(&self) -> WindowOptions {
-        Default::default()
+        WindowOptions {
+            titlebar: Some(TitleBar::title_bar_options()),
+            app_id: Some(DEMEX_APP_ID.to_string()),
+            ..Default::default()
+        }
     }
 }
 
