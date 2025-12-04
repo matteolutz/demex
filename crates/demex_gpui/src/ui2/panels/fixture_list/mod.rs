@@ -45,7 +45,7 @@ impl FixtureListPanel {
                 .col_movable(false)
         });
 
-        let notify = |this: &mut FixtureListPanel, cx: &mut Context<Self>| {
+        let refresh_table = |this: &mut FixtureListPanel, cx: &mut Context<Self>| {
             this.table_state.update(cx, |table, cx| table.refresh(cx));
             cx.notify();
         };
@@ -53,13 +53,15 @@ impl FixtureListPanel {
         let _subscriptions = vec![
             cx.observe(&patch, move |this, _, cx| {
                 this.table_state.update(cx, |table, cx| {
-                    table.delegate_mut().data = Self::get_table_data(cx);
+                    table.delegate_mut().update_data(Self::get_table_data(cx));
                     table.refresh(cx);
                 });
                 cx.notify();
             }),
-            cx.observe(&fixture_values, move |this, _, cx| notify(this, cx)),
-            cx.observe(&fixture_selection, move |this, _, cx| notify(this, cx)),
+            cx.observe(&fixture_values, move |this, _, cx| refresh_table(this, cx)),
+            cx.observe(&fixture_selection, move |this, _, cx| {
+                refresh_table(this, cx)
+            }),
         ];
 
         Self {

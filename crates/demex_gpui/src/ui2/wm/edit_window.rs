@@ -22,6 +22,10 @@ pub trait EditWindowDelegate: 'static + Render {
     fn set_edited(&self, edited: bool, cx: &mut App) {
         cx.update_wm(|wm, cx| wm.set_singleton_window_edited::<EditWindow<Self>>(cx, edited))
     }
+
+    fn is_edited(&self, cx: &App) -> bool {
+        cx.wm().is_singleton_window_edited::<EditWindow<Self>>()
+    }
 }
 
 pub struct EditWindow<V: EditWindowDelegate> {

@@ -5,7 +5,8 @@ use gpui::{
     div, size,
 };
 use gpui_component::{
-    ActiveTheme, StyledExt, alert::Alert, h_flex, scroll::ScrollbarAxis, switch::Switch, v_flex,
+    ActiveTheme, Disableable, StyledExt, alert::Alert, button::Button, h_flex,
+    scroll::ScrollbarAxis, switch::Switch, v_flex,
 };
 
 use crate::{
@@ -56,6 +57,7 @@ impl Render for OutputsConfigWindow {
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
         let outputs = self.outputs.read(cx);
+        let is_edited = self.is_edited(cx);
 
         v_flex()
             .size_full()
@@ -63,11 +65,17 @@ impl Render for OutputsConfigWindow {
             .child(
                 v_flex().p_4().gap_2().size_full()
                     .scrollable(ScrollbarAxis::Vertical)
-                    .child("Outputs")
+                    .child(div().text_xl().font_semibold().child("Outputs"))
                     .child(Alert::warning(
                         "restart-required",
                         "Changes to the output configuration require a restart of demex to take effect.",
                     ))
+                    .child(h_flex().w_full().justify_end().child(Button::new("save").label("Save").disabled(is_edited).on_click(cx.listener(move |this, _, window, cx| {
+                        if this.is_edited(cx) {
+                            this.handle_save(window, cx);
+                            this.set_edited(false, cx);
+                        }
+                    }))))
                     .child(
                         v_flex().size_full().gap_4().mt_4()
                             .children(outputs.iter().enumerate().map(|(idx, o)|

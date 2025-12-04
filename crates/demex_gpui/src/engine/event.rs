@@ -6,7 +6,7 @@
  *
  */
 
-use gpui::{EventEmitter, Timer, prelude::*};
+use gpui::{AsyncApp, Entity, EventEmitter, Timer, prelude::*};
 use gpui_component::notification::Notification;
 use std::{sync::mpsc, time::Duration};
 
@@ -39,66 +39,81 @@ impl DemexEventHandler {
                 };
 
                 for event in event_rx.try_iter() {
-                    match event {
-                        DemexEngineCommEvent::DemexEvent(event) => {
-                            cx.update_global(|ui_state: &mut DemexUiState, cx| {
-                                ui_state.update_from_event(event.clone(), cx);
-                            })
-                            .unwrap();
-
-                            cx.update_entity(&event_handler, |_, cx| cx.emit(event))
-                                .unwrap();
-                        }
-                        DemexEngineCommEvent::Error(err) => {
-                            let _ = cx.update_wm(|wm, cx| {
-                                wm.push_notifcation(Notification::error(err), cx)
-                            });
-                        }
-                        DemexEngineCommEvent::ActionRunResult(result) => match result {
-                            ActionRunResult::Info(info) => {
-                                let _ = cx.update_wm(|wm, cx| {
-                                    wm.push_notifcation(Notification::info(info), cx)
-                                });
-                            }
-                            ActionRunResult::Warn(warn) => {
-                                let _ = cx.update_wm(|wm, cx| {
-                                    wm.push_notifcation(Notification::warning(warn), cx)
-                                });
-                            }
-                            ActionRunResult::Save => {
-                                let _ = cx.update(|cx| {
-                                    DemexEngineHandler::send(cx, ShowRequest {}, |show, _| {
-                                        // TODO
-                                        println!("saving show: {:?}", show);
-                                    })
-                                });
-                            }
-                            ActionRunResult::UpdatePatch(patch) => {
-                                let _ = cx.update_global(|ui_state: &mut DemexUiState, cx| {
-                                    ui_state.update_patch(patch, cx);
-                                });
-                            }
-                            ActionRunResult::WithEvent { .. } => unreachable!(),
-                            _ => {}
-                        },
-                        DemexEngineCommEvent::TickStateUpdate(tick_state) => {
-                            cx.update_global(|ui_state: &mut DemexUiState, cx| {
-                                ui_state.update_from_tick(tick_state, cx);
-                            })
-                            .unwrap();
-                        }
-                        DemexEngineCommEvent::FixtureValuesUpdate(fixture_values) => {
-                            cx.update_global(|ui_state: &mut DemexUiState, cx| {
-                                ui_state.update_fixture_values(fixture_values, cx);
-                            })
-                            .unwrap();
-                        }
-                    }
+                    Self::handle_comm_event(&event_handler, event, cx);
                 }
             }
         })
         .detach();
 
         Self {}
+    }
+}
+
+impl DemexEventHandler {
+    fn handle_comm_event(
+        event_handler: &Entity<Self>,
+        event: DemexEngineCommEvent,
+        cx: &mut AsyncApp,
+    ) {
+        match event {
+            DemexEngineCommEvent::DemexEvent(event) => Self::handle_event(event_handler, event, cx),
+            DemexEngineCommEvent::Error(err) => {
+                let _ = cx.update_wm(|wm, cx| wm.push_notifcation(Notification::error(err), cx));
+            }
+            DemexEngineCommEvent::ActionRunResult(result) => {
+                Self::handle_action_run_result(result, cx)
+            }
+            DemexEngineCommEvent::TickStateUpdate(tick_state) => {
+                cx.update_global(|ui_state: &mut DemexUiState, cx| {
+                    ui_state.update_from_tick(tick_state, cx);
+                })
+                .unwrap();
+            }
+            DemexEngineCommEvent::FixtureValuesUpdate(fixture_values) => {
+                cx.update_global(|ui_state: &mut DemexUiState, cx| {
+                    ui_state.update_fixture_values(fixture_values, cx);
+                })
+                .unwrap();
+            }
+        }
+    }
+
+    fn handle_event(event_handler: &Entity<Self>, event: DemexEvent, cx: &mut AsyncApp) {
+        cx.update_global(|ui_state: &mut DemexUiState, cx| {
+            ui_state.update_from_event(event.clone(), cx);
+        })
+        .unwrap();
+
+        cx.update_entity(&event_handler, |_, cx| cx.emit(event))
+            .unwrap();
+    }
+
+    fn handle_action_run_result(result: ActionRunResult, cx: &mut AsyncApp) {
+        match result {
+            ActionRunResult::Info(info) => {
+                let _ = cx.update_wm(|wm, cx| wm.push_notifcation(Notification::info(info), cx));
+            }
+            ActionRunResult::Warn(warn) => {
+                let _ = cx.update_wm(|wm, cx| wm.push_notifcation(Notification::warning(warn), cx));
+            }
+            ActionRunResult::Save => {
+                let _ = cx.update(|cx| {
+                    DemexEngineHandler::send(cx, ShowRequest {}, |show, _| {
+                        // TODO
+                        println!("saving show: {:?}", show);
+                    })
+                });
+            }
+            ActionRunResult::UpdatePatch(patch) => {
+                let _ = cx.update_global(|ui_state: &mut DemexUiState, cx| {
+                    ui_state.update_patch(patch, cx);
+                });
+                let _ = cx.update_wm(|wm, cx| {
+                    wm.push_notifcation(Notification::info("Patch updated"), cx)
+                });
+            }
+            ActionRunResult::WithEvent { .. } => unreachable!(),
+            _ => {}
+        }
     }
 }

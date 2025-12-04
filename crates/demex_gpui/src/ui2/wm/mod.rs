@@ -106,6 +106,14 @@ impl WindowManager {
         });
     }
 
+    pub fn is_singleton_window_edited<D: WindowDelegate>(&self) -> bool {
+        let type_id = TypeId::of::<D>();
+        self.singleton_windows
+            .get(&type_id)
+            .map(|sw| sw.is_edited)
+            .unwrap_or(false)
+    }
+
     pub fn request_close_singleton_window<D: WindowDelegate>(&mut self, cx: &mut App) -> bool {
         let type_id = TypeId::of::<D>();
 

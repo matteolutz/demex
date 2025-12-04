@@ -214,6 +214,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .expect("Failed to initialize engine");
 
                 let wm = WindowManager::new(cx).auto_quit(true);
+                println!("setting wm global");
                 cx.set_global(wm);
 
                 cx.update_wm(|wm, cx| wm.add_dock_window(DockWindowConfig::default(), cx));

@@ -37,7 +37,7 @@ impl FixtureListTableEntry {
 }
 
 pub struct FixtureListTable {
-    pub(super) data: Vec<FixtureListTableEntry>,
+    data: Vec<FixtureListTableEntry>,
     columns: Vec<Column>,
 }
 
@@ -56,9 +56,17 @@ impl FixtureListTable {
             ],
         };
 
-        s._perform_sort(0, ColumnSort::Ascending);
-
+        s.sort();
         s
+    }
+
+    pub fn update_data(&mut self, data: Vec<FixtureListTableEntry>) {
+        self.data = data;
+        self.sort();
+    }
+
+    pub fn sort(&mut self) {
+        self._perform_sort(0, ColumnSort::Ascending);
     }
 
     fn _perform_sort(&mut self, col_ix: usize, sort: gpui_component::table::ColumnSort) {
