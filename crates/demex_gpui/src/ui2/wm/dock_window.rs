@@ -16,6 +16,7 @@ use crate::ui2::{
         command::CommandPanel,
         fixture_list::FixtureListPanel,
         fixture_selection::FixtureSelectionPanel,
+        layout_view::LayoutViewPanel,
         performance::PerformancePanel,
         pool::{PoolPanel, pool_type::PoolType},
     },
@@ -100,6 +101,13 @@ impl DockWindow {
             window,
             cx,
         );
+        da.add_panel(
+            Arc::new(cx.new(|cx| LayoutViewPanel::new(window, cx))),
+            DockPlacement::Center,
+            None,
+            window,
+            cx,
+        );
 
         let command_panel = cx.new(|cx| CommandPanel::new(window, cx));
         da.set_bottom_dock(
@@ -148,6 +156,23 @@ impl DockWindow {
         DockWindowConfig {
             dock_area_state: Some(self.dock_area.read(cx).dump(cx)),
         }
+    }
+
+    fn _focus_panel(_dock_item: &mut DockItem, _panel_name: &str) -> bool {
+        todo!("focus panel")
+    }
+
+    pub fn focus_panel(&mut self, panel_name: &str, window: &mut Window, cx: &mut App) -> bool {
+        self.dock_area.update(cx, |da, cx| {
+            let mut center_item = da.items().clone();
+
+            if Self::_focus_panel(&mut center_item, panel_name) {
+                da.set_center(center_item, window, cx);
+                true
+            } else {
+                false
+            }
+        })
     }
 }
 

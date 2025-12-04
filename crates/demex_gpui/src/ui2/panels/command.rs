@@ -10,7 +10,7 @@ use gpui_component::{
 };
 
 use crate::{
-    engine::DemexEngineHandler,
+    engine::{DemexEngineHandler, state::DemexUiState},
     ui2::{config::AppConfigExt, wm::app::WindowManagerAppExt},
 };
 
@@ -26,6 +26,9 @@ pub struct CommandPanel {
     focus_handle: FocusHandle,
 
     command_input_state: Entity<InputState>,
+
+    /// Indexed from the back
+    command_history_idx: Entity<Option<usize>>,
 
     _subscriptions: Vec<Subscription>,
 }
@@ -54,31 +57,60 @@ impl CommandPanel {
                 .placeholder("Command")
         });
 
-        let subs = vec![cx.subscribe_in(
-            &command_input_state,
-            window,
-            |_, input, event: &InputEvent, window, cx| match event {
-                InputEvent::PressEnter { .. } => {
-                    let command = input.read(cx).value();
+        let command_history_idx = cx.new(|_| None);
 
-                    if let Err(err) = DemexEngineHandler::engine(cx).exec_command(&command) {
-                        log::warn!("Failed to run command \"{}\": {}", command, err);
-                        cx.update_wm(|wm, cx| {
-                            wm.push_notifcation(Notification::error(err.to_string()), cx)
+        let subs = vec![
+            cx.subscribe_in(
+                &command_input_state,
+                window,
+                |_, input, event: &InputEvent, window, cx| match event {
+                    InputEvent::PressEnter { .. } => {
+                        let command = input.read(cx).value();
+
+                        if let Err(err) = DemexEngineHandler::engine(cx).exec_command(&command) {
+                            log::warn!("Failed to run command \"{}\": {}", command, err);
+                            cx.update_wm(|wm, cx| {
+                                wm.push_notifcation(Notification::error(err.to_string()), cx)
+                            });
+                        }
+
+                        input.update(cx, |input, cx| {
+                            input.set_value("", window, cx);
+                            cx.notify();
                         });
                     }
+                    _ => {}
+                },
+            ),
+            cx.observe_in(
+                &command_history_idx,
+                window,
+                |this, idx_entity, window, cx| {
+                    let Some(idx) = *idx_entity.read(cx) else {
+                        return;
+                    };
 
-                    input.update(cx, |input, cx| {
-                        input.set_value("", window, cx);
+                    let value = DemexUiState::command_history(cx).read_with(cx, |history, _| {
+                        history.get(history.len() - idx - 1).cloned()
+                    });
+
+                    let Some(value) = value else {
+                        return;
+                    };
+
+                    this.command_input_state.update(cx, |input, cx| {
+                        input.set_value(&value, window, cx);
                         cx.notify();
                     });
-                }
-                _ => {}
-            },
-        )];
+
+                    cx.notify();
+                },
+            ),
+        ];
 
         Self {
             focus_handle: cx.focus_handle(),
+            command_history_idx,
             command_input_state,
             _subscriptions: subs,
         }

@@ -7,6 +7,7 @@ use artnet::{
     ArtnetOutputConfig, start_artnet_output_thread, start_broadcast_artnet_output_thread,
 };
 use debug::DebugOutputVerbosity;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use serial::SerialOutputConfig;
 
@@ -31,6 +32,42 @@ pub enum DemexDmxOutputConfigData {
     Artnet(ArtnetOutputConfig),
 }
 
+impl DemexDmxOutputConfigData {
+    pub fn name(&self) -> &str {
+        match self {
+            DemexDmxOutputConfigData::Debug(_) => "Debug",
+            DemexDmxOutputConfigData::Serial(_) => "Serial",
+            DemexDmxOutputConfigData::Artnet(_) => "Artnet",
+        }
+    }
+}
+
+impl std::fmt::Display for DemexDmxOutputConfigData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Serial(serial_config) => write!(
+                f,
+                "Universe {} on {} (RTS: {})",
+                serial_config.universe, serial_config.serial_port, serial_config.enable_rts
+            ),
+            Self::Artnet(artnet_config) => {
+                write!(
+                    f,
+                    "Bound to {} with universes [{}] (Broadcast: {})",
+                    artnet_config
+                        .bind_ip
+                        .as_ref()
+                        .map(|s| s.as_str())
+                        .unwrap_or("::0"),
+                    artnet_config.universes.iter().join(", "),
+                    artnet_config.broadcast
+                )
+            }
+            Self::Debug(verbosity) => write!(f, "Verbosity: {:?}", verbosity),
+        }
+    }
+}
+
 impl Default for DemexDmxOutputConfigData {
     fn default() -> Self {
         Self::Debug(DebugOutputVerbosity::Quiet)
@@ -45,6 +82,12 @@ pub struct DemexDmxOutputConfig {
 
     #[serde(default)]
     disabled: bool,
+}
+
+impl std::fmt::Display for DemexDmxOutputConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.data.fmt(f)
+    }
 }
 
 impl DemexDmxOutputConfig {
@@ -65,11 +108,7 @@ impl DemexDmxOutputConfig {
     }
 
     pub fn name(&self) -> &str {
-        match self.data {
-            DemexDmxOutputConfigData::Debug(_) => "Debug",
-            DemexDmxOutputConfigData::Serial(_) => "Serial",
-            DemexDmxOutputConfigData::Artnet(_) => "ArtNet",
-        }
+        self.data.name()
     }
 
     pub fn set_disabled(&mut self, disabled: bool) {

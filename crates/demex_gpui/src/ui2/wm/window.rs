@@ -15,13 +15,16 @@ pub const TRAFFIC_LIGHT_SPACING: Pixels = px(9.0);
 pub trait WindowDelegate: 'static {
     type InitData: 'static;
 
-    fn create(
-        window: &mut Window,
-        cx: &mut App,
-        data: impl FnOnce(&mut Context<Self::InitData>) -> Self::InitData,
-    ) -> Self
+    fn create(window: &mut Window, cx: &mut App, data: Self::InitData) -> Self
     where
         Self: Sized;
+
+    fn should_have_save_button(_cx: &App) -> bool
+    where
+        Self: Sized,
+    {
+        true
+    }
 
     fn handle_window_save(&self, _window: &mut Window, _cx: &mut Context<WindowWrapper<Self>>)
     where

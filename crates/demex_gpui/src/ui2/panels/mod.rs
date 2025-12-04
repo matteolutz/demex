@@ -3,6 +3,7 @@ use gpui::App;
 pub mod command;
 pub mod fixture_list;
 pub mod fixture_selection;
+pub mod layout_view;
 pub mod performance;
 pub mod pool;
 
@@ -16,4 +17,5 @@ fn register_panels(cx: &mut App) {
     performance::register(cx);
     fixture_list::register(cx);
     pool::register(cx);
+    layout_view::register(cx);
 }

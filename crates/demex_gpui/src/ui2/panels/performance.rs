@@ -16,7 +16,7 @@ use crate::{
     ui2::{
         ext::GpuiContextExtension,
         window::outputs::OutputsConfigWindow,
-        wm::{app::WindowManagerAppExt, edit_window::WindowManagerExtension},
+        wm::{WindowManager, edit_window::WindowManagerExtension},
     },
 };
 
@@ -80,11 +80,11 @@ impl Render for PerformancePanel {
                 .gap_4()
                 .justify_center()
                 .child(Button::new("test").label("Test").on_click(|_, _, cx| {
-                    cx.update_wm(|wm, cx| {
-                        wm.open_edit_window::<OutputsConfigWindow>(cx, |cx| {
+                    cx.defer(|cx| {
+                        WindowManager::open_edit_window::<OutputsConfigWindow>(cx, |cx| {
                             OutputsConfigWindow::new(cx)
-                        })
-                    })
+                        });
+                    });
                 }))
                 .child(div().font_bold().text_2xl().child("Performance"))
                 .children(performance.into_iter().map(|(thread_name, stats)| {

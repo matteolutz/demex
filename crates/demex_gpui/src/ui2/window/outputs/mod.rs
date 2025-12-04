@@ -6,7 +6,7 @@ use gpui::{
 };
 use gpui_component::{
     ActiveTheme, Disableable, StyledExt, alert::Alert, button::Button, h_flex,
-    scroll::ScrollbarAxis, switch::Switch, v_flex,
+    scroll::ScrollbarAxis, switch::Switch, text::Text, v_flex,
 };
 
 use crate::{
@@ -70,7 +70,7 @@ impl Render for OutputsConfigWindow {
                         "restart-required",
                         "Changes to the output configuration require a restart of demex to take effect.",
                     ))
-                    .child(h_flex().w_full().justify_end().child(Button::new("save").label("Save").disabled(is_edited).on_click(cx.listener(move |this, _, window, cx| {
+                    .child(h_flex().w_full().justify_end().child(Button::new("save").label("Save").disabled(!is_edited).on_click(cx.listener(move |this, _, window, cx| {
                         if this.is_edited(cx) {
                             this.handle_save(window, cx);
                             this.set_edited(false, cx);
@@ -84,15 +84,22 @@ impl Render for OutputsConfigWindow {
                                     .border_1()
                                     .border_color(cx.theme().border)
                                     .rounded_lg()
-                                    .gap_2()
+                                    .gap_4()
                                     .child(Switch::new(("output-enable", idx)).checked(!o.is_disabled()).on_click(cx.listener(move |this, is_enabled: &bool, _, cx| {
                                         this.update_outputs_and_notify(cx, |outputs, _| outputs[idx].set_disabled(!*is_enabled));
                                     })))
-                                    .child(div().text_lg().font_semibold().child(o.name().to_string()))
+                                    .child(
+                                        v_flex()
+                                            .gap_0()
+                                            .overflow_hidden()
+                                            .child(div().text_lg().font_semibold().child(o.name().to_string()))
+                                            .child(div().text_sm().text_color(cx.theme().muted).child(Text::String(o.to_string().into())))
+                                    )
+                                )
                             )
+                            .child(Button::new("add").label("Add"))
                         )
-                    )
-            )
+                )
     }
 }
 

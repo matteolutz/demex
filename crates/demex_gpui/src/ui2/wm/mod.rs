@@ -1,6 +1,6 @@
 use std::{any::TypeId, collections::HashMap};
 
-use gpui::{App, AppContext, Context, Entity, Global, PromptButton, PromptLevel, WindowHandle};
+use gpui::{App, AppContext, Entity, Global, PromptButton, PromptLevel, WindowHandle};
 use gpui_component::{Root, notification::Notification};
 
 use crate::ui2::wm::{
@@ -73,14 +73,18 @@ impl WindowManager {
     }
 
     // Singleton windows
-    pub fn open_singleton_window<D: WindowDelegate>(
-        &mut self,
-        cx: &mut App,
-        data: impl FnOnce(&mut Context<D::InitData>) -> D::InitData,
-    ) {
+    pub fn open_singleton_window<D: WindowDelegate>(cx: &mut App, data: D::InitData) {
         let type_id = TypeId::of::<D>();
 
-        if self.singleton_windows.contains_key(&type_id) {
+        if cx.wm().singleton_windows.contains_key(&type_id) {
+            cx.update_wm(|wm, cx| {
+                let _ = wm
+                    .singleton_windows
+                    .get(&type_id)
+                    .unwrap()
+                    .handle
+                    .update(cx, |_, window, _| window.activate_window());
+            });
             return;
         }
 
@@ -92,8 +96,10 @@ impl WindowManager {
             D::create(window, cx, data)
         });
 
-        self.singleton_windows
-            .insert(type_id, SingletonWindow::new(handle));
+        cx.update_wm(|wm, _| {
+            wm.singleton_windows
+                .insert(type_id, SingletonWindow::new(handle))
+        });
     }
 
     pub fn set_singleton_window_edited<D: WindowDelegate>(&mut self, cx: &mut App, edited: bool) {
@@ -134,11 +140,13 @@ impl WindowManager {
         };
 
         if !singleton_window.is_edited {
-            close_window(cx);
+            self.singleton_windows.remove(&type_id);
             return true;
         }
 
         if singleton_window.is_edited {
+            let display_save_button = D::should_have_save_button(cx);
+
             cx.defer(move |cx| {
                 let answer = singleton_window
                     .handle
@@ -152,15 +160,25 @@ impl WindowManager {
                         let window_title =
                             delegate.read_with(cx, |d, cx| d.window_title(window, cx).into());
 
+                        let prompt_buttons_save = &[
+                            PromptButton::ok("Save"),
+                            PromptButton::new("Discard"),
+                            PromptButton::cancel("Keep Editing"),
+                        ];
+                        let prompt_buttons = &[
+                            PromptButton::new("Discard"),
+                            PromptButton::cancel("Keep Editing"),
+                        ];
+
                         window.prompt(
                             PromptLevel::Warning,
                             format!("{} has unsaved changes", window_title).as_str(),
                             Some("What do you want to do with the changes?"),
-                            &[
-                                PromptButton::ok("Save"),
-                                PromptButton::ok("Discard"),
-                                PromptButton::cancel("Keep Editing"),
-                            ],
+                            if display_save_button {
+                                prompt_buttons_save
+                            } else {
+                                prompt_buttons
+                            },
                             cx,
                         )
                     })
@@ -179,13 +197,19 @@ impl WindowManager {
                                 .expect("Root view should be a WindowWrapper");
 
                             match ix {
-                                0 => {
+                                0 if display_save_button => {
                                     wrapper.update(cx, |wrapper, cx| {
                                         wrapper.handle_window_save(window, cx);
                                     });
                                     close_window(cx);
                                 }
-                                1 => {
+                                0 if !display_save_button => {
+                                    wrapper.update(cx, |wrapper, cx| {
+                                        wrapper.handle_window_discard(window, cx);
+                                    });
+                                    close_window(cx);
+                                }
+                                1 if display_save_button => {
                                     wrapper.update(cx, |wrapper, cx| {
                                         wrapper.handle_window_discard(window, cx);
                                     });
@@ -205,7 +229,7 @@ impl WindowManager {
     }
 
     // Dock windows
-    pub fn add_dock_window(&mut self, config: DockWindowConfig, cx: &mut App) {
+    pub fn add_dock_window(config: DockWindowConfig, cx: &mut App) {
         let window_handle = cx
             .open_window(config.gpui_window_options(), |window, cx| {
                 window.set_window_title("demex");
@@ -214,20 +238,16 @@ impl WindowManager {
             })
             .expect("Dock window should be opened");
 
-        self.dock_windows.push(window_handle);
+        cx.update_wm(|wm, _| wm.dock_windows.push(window_handle))
     }
 
-    pub fn add_dock_windows(
-        &mut self,
-        configs: impl IntoIterator<Item = DockWindowConfig>,
-        cx: &mut App,
-    ) {
+    pub fn add_dock_windows(configs: impl IntoIterator<Item = DockWindowConfig>, cx: &mut App) {
         configs
             .into_iter()
-            .for_each(|config| self.add_dock_window(config, cx));
+            .for_each(|config| Self::add_dock_window(config, cx));
     }
 
-    fn read_dock_window<'a>(&self, handle: &'a WindowHandle<Root>, cx: &'a App) -> &'a DockWindow {
+    fn read_dock_window<'a>(handle: &'a WindowHandle<Root>, cx: &'a App) -> &'a DockWindow {
         handle
             .read(cx)
             .expect("Should read window Root")
@@ -240,7 +260,7 @@ impl WindowManager {
 
     pub fn main_dock_window<'a>(&'a self, cx: &'a App) -> (&'a WindowHandle<Root>, &'a DockWindow) {
         let handle = &self.dock_windows[0];
-        (handle, self.read_dock_window(handle, cx))
+        (handle, Self::read_dock_window(handle, cx))
     }
 
     pub fn main_dock_window_handle_mut(&mut self) -> &mut WindowHandle<Root> {
@@ -253,7 +273,23 @@ impl WindowManager {
     ) -> impl Iterator<Item = (&'a WindowHandle<Root>, &'a DockWindow)> {
         self.dock_windows
             .iter()
-            .map(|handle| (handle, self.read_dock_window(handle, cx)))
+            .map(|handle| (handle, Self::read_dock_window(handle, cx)))
+    }
+
+    pub fn focus_panel(&mut self, panel_name: &str, cx: &mut App) -> bool {
+        self.dock_windows
+            .iter_mut()
+            .find(|dw| {
+                dw.update(cx, |root, window, cx| {
+                    root.view()
+                        .clone()
+                        .downcast::<DockWindow>()
+                        .expect("Root view should be a DockWindow")
+                        .update(cx, |dw, cx| dw.focus_panel(panel_name, window, cx))
+                })
+                .unwrap()
+            })
+            .is_some()
     }
 }
 

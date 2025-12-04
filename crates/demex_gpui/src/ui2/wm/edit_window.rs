@@ -12,6 +12,13 @@ use crate::ui2::wm::{
 pub trait EditWindowDelegate: 'static + Render {
     fn window_title(&self, window: &mut Window, cx: &App) -> impl Into<SharedString>;
 
+    fn should_have_save_button(_cx: &App) -> bool
+    where
+        Self: Sized,
+    {
+        true
+    }
+
     fn handle_save(&self, window: &mut Window, cx: &mut App);
     fn handle_discard(&self, window: &mut Window, cx: &mut App);
 
@@ -29,45 +36,46 @@ pub trait EditWindowDelegate: 'static + Render {
 }
 
 pub struct EditWindow<V: EditWindowDelegate> {
-    view: Entity<V>,
+    entity: Entity<V>,
 }
 
 impl<V: EditWindowDelegate> WindowDelegate for EditWindow<V> {
-    type InitData = V;
+    type InitData = Entity<V>;
 
-    fn create(
-        _window: &mut Window,
-        cx: &mut App,
-        data: impl FnOnce(&mut Context<Self::InitData>) -> Self::InitData,
-    ) -> Self
+    fn create(_window: &mut Window, _cx: &mut App, data: Self::InitData) -> Self
     where
         Self: Sized,
     {
-        Self {
-            view: cx.new(|cx| data(cx)),
-        }
+        Self { entity: data }
     }
 
     fn window_title(&self, window: &mut Window, cx: &App) -> impl Into<SharedString>
     where
         Self: Sized,
     {
-        self.view
+        self.entity
             .read_with(cx, |d, cx| d.window_title(window, cx).into())
+    }
+
+    fn should_have_save_button(cx: &App) -> bool
+    where
+        Self: Sized,
+    {
+        V::should_have_save_button(cx)
     }
 
     fn handle_window_save(&self, window: &mut Window, cx: &mut Context<WindowWrapper<Self>>)
     where
         Self: Sized,
     {
-        self.view.update(cx, |d, cx| d.handle_save(window, cx))
+        self.entity.update(cx, |d, cx| d.handle_save(window, cx))
     }
 
     fn handle_window_discard(&self, window: &mut Window, cx: &mut Context<WindowWrapper<Self>>)
     where
         Self: Sized,
     {
-        self.view.update(cx, |d, cx| d.handle_discard(window, cx))
+        self.entity.update(cx, |d, cx| d.handle_discard(window, cx))
     }
 
     fn window_bounds(cx: &mut App) -> Option<WindowBounds> {
@@ -75,20 +83,19 @@ impl<V: EditWindowDelegate> WindowDelegate for EditWindow<V> {
     }
 
     fn window_kind(_cx: &mut App) -> WindowKind {
-        WindowKind::PopUp
+        WindowKind::Normal
     }
 
     fn view(&self) -> AnyView
     where
         Self: Sized,
     {
-        self.view.clone().into()
+        self.entity.clone().into()
     }
 }
 
 pub trait WindowManagerExtension<V: EditWindowDelegate> {
     fn open_edit_window<D: EditWindowDelegate>(
-        &mut self,
         cx: &mut App,
         data: impl FnOnce(&mut Context<V>) -> V,
     );
@@ -96,10 +103,10 @@ pub trait WindowManagerExtension<V: EditWindowDelegate> {
 
 impl<V: EditWindowDelegate> WindowManagerExtension<V> for WindowManager {
     fn open_edit_window<D: EditWindowDelegate>(
-        &mut self,
         cx: &mut App,
         data: impl FnOnce(&mut Context<V>) -> V,
     ) {
-        self.open_singleton_window::<EditWindow<V>>(cx, data);
+        let e = cx.new(|cx| data(cx));
+        Self::open_singleton_window::<EditWindow<V>>(cx, e);
     }
 }

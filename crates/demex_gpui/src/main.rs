@@ -190,7 +190,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 use crate::ui2::{
                     config::DemexUiConfig,
-                    wm::{WindowManager, app::WindowManagerAppExt, dock_window::DockWindowConfig},
+                    wm::{WindowManager, dock_window::DockWindowConfig},
                 };
 
                 gpui_component::init(cx);
@@ -214,10 +214,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .expect("Failed to initialize engine");
 
                 let wm = WindowManager::new(cx).auto_quit(true);
-                println!("setting wm global");
                 cx.set_global(wm);
 
-                cx.update_wm(|wm, cx| wm.add_dock_window(DockWindowConfig::default(), cx));
+                WindowManager::add_dock_window(DockWindowConfig::default(), cx);
             });
     }
 

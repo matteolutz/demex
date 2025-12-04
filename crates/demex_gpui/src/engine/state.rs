@@ -76,6 +76,8 @@ pub struct DemexUiState {
     patch: Entity<Patch>,
 
     performance: Entity<HashMap<String, DemexPerformanceBuffer<10>>>,
+
+    command_history: Entity<Vec<String>>,
 }
 
 impl DemexUiState {
@@ -97,6 +99,11 @@ impl DemexUiState {
     pub fn performance(cx: &App) -> Entity<HashMap<String, DemexPerformanceBuffer<10>>> {
         let this: &Self = cx.global();
         this.performance.clone()
+    }
+
+    pub fn command_history(cx: &App) -> Entity<Vec<String>> {
+        let this: &Self = cx.global();
+        this.command_history.clone()
     }
 }
 
@@ -148,6 +155,7 @@ impl DemexUiState {
             }),
             patch: cx.new(|_| frontend_state.patch),
             performance: cx.new(|_| HashMap::new()),
+            command_history: cx.new(|_| Vec::new()),
         }
     }
 
