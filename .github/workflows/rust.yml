@@ -31,17 +31,11 @@ jobs:
       - name: cargo test
         run: cargo test --all-features
 
-      - name: Build and upload
-        id: compile
-        uses: rust-build/rust-build.action@v1.4.5
-        with:
-          RUSTTARGET: x86_64-unknown-linux-musl
-          UPLOAD_MODE: none
+      - name: cargo build demex_gpui
+        run: cargo build --bin demex_gpui --release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: demex
-          path: |
-            ${{ steps.compile.outputs.BUILT_ARCHIVE }}
-            ${{ steps.compile.outputs.BUILT_CHECKSUM }}
+          path: target/release/demex_gpui
