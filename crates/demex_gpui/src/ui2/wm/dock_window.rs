@@ -112,7 +112,7 @@ impl DockWindow {
         let command_panel = cx.new(|cx| CommandPanel::new(window, cx));
         da.set_bottom_dock(
             DockItem::panel(Arc::new(command_panel)),
-            Some(100.0.into()),
+            Some(130.0.into()),
             true,
             window,
             cx,

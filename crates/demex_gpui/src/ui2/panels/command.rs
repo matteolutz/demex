@@ -1,7 +1,7 @@
 use gpui::{
     App, AppContext, BoxShadow, Context, Entity, EventEmitter, FocusHandle, Focusable,
-    InteractiveElement, IntoElement, ParentElement, Render, ScrollHandle, Styled, Subscription,
-    Window, black, div, point, prelude::FluentBuilder,
+    InteractiveElement, IntoElement, ParentElement, Render, Styled, Subscription,
+    UniformListScrollHandle, Window, black, div, point, prelude::FluentBuilder, uniform_list,
 };
 use gpui_component::{
     ActiveTheme, Icon, IconName, Sizable,
@@ -9,6 +9,7 @@ use gpui_component::{
     h_flex,
     input::{Input, InputEvent, InputState, Position},
     notification::Notification,
+    scroll::ScrollableElement,
     v_flex,
 };
 
@@ -60,7 +61,7 @@ pub struct CommandPanel {
     // Indexed from the back
     command_history_idx: Entity<Option<usize>>,
 
-    command_history_scroll_handle: ScrollHandle,
+    command_history_scroll_handle: UniformListScrollHandle,
 
     _subscriptions: Vec<Subscription>,
 }
@@ -112,7 +113,7 @@ impl CommandPanel {
             focus_handle: cx.focus_handle(),
             command_history_idx,
             command_input_state,
-            command_history_scroll_handle: ScrollHandle::new(),
+            command_history_scroll_handle: UniformListScrollHandle::new(),
             _subscriptions: subs,
         }
     }
@@ -143,10 +144,16 @@ impl CommandPanel {
                 });
             }
 
-            DemexUiState::command_history(cx).update(cx, |history, cx| {
+            let history_length = DemexUiState::command_history(cx).update(cx, |history, cx| {
                 history.push_now(command.into(), is_success);
                 cx.notify();
+                history.len()
             });
+
+            if history_length > 0 {
+                self.command_history_scroll_handle
+                    .scroll_to_item(history_length - 1, gpui::ScrollStrategy::Top);
+            }
 
             // don't notify
             self.command_history_idx.update(cx, |idx, _| *idx = None);
@@ -166,10 +173,14 @@ impl CommandPanel {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        let command_history_len = DemexUiState::command_history(cx).read(cx).len();
+
         let Some(idx) = *idx_entity.read(cx) else {
             // When idx was set to None, clear the command input state
             self.command_input_state
                 .update(cx, |input, cx| input.set_value("", window, cx));
+            self.command_history_scroll_handle
+                .scroll_to_item(command_history_len - 1, gpui::ScrollStrategy::Top);
             return;
         };
 
@@ -184,6 +195,10 @@ impl CommandPanel {
             input.set_value(&value.command, window, cx);
             input.set_cursor_position(Position::new(0, value.command.len() as u32), window, cx);
         });
+
+        let rev_idx = command_history_len - idx - 1;
+        self.command_history_scroll_handle
+            .scroll_to_item(rev_idx, gpui::ScrollStrategy::Top);
 
         cx.notify();
     }
@@ -227,12 +242,13 @@ impl CommandPanel {
 }
 
 impl CommandPanel {
+    // TODO: move into it's own component
     fn render_command_history(
         &mut self,
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
-        let command_history = DemexUiState::command_history(cx).read(cx);
+        let command_history = DemexUiState::command_history(cx);
         let selected_history_item = self.command_history_idx.read(cx).clone();
 
         div()
@@ -251,50 +267,63 @@ impl CommandPanel {
                     .justify_end()
                     .bg(cx.theme().group_box)
                     .gap_0()
+                    .vertical_scrollbar(&self.command_history_scroll_handle)
                     .child(
-                        v_flex()
-                            .w_full()
-                            .flex_col_reverse()
-                            .overflow_hidden()
-                            .justify_end()
-                            .gap_0()
-                            .children(command_history.iter().enumerate().take(25).map(
-                                |(idx, command)| {
-                                    h_flex()
-                                        .font_family("JetBrains Mono")
-                                        .border_t_1()
-                                        .border_color(cx.theme().border)
-                                        .px_3()
-                                        .py_1()
-                                        .gap_2()
-                                        .text_sm()
-                                        .when(
-                                            selected_history_item
-                                                .is_some_and(|sel_idx| sel_idx == idx),
-                                            |this| this.underline(),
-                                        )
-                                        .child(
-                                            Icon::new(IconName::ChevronRight)
-                                                .when(!command.success, |icon| {
-                                                    icon.text_color(cx.theme().red)
-                                                })
-                                                .when(command.success, |icon| {
-                                                    icon.text_color(cx.theme().green)
+                        uniform_list(
+                            "command_history",
+                            command_history.read(cx).iter().count(),
+                            move |visible_range, _, cx| {
+                                let command_history_len = command_history.read(cx).len();
+
+                                command_history
+                                    .read(cx)
+                                    .iter()
+                                    .enumerate()
+                                    .skip(visible_range.start)
+                                    .take(visible_range.end - visible_range.start)
+                                    .map(|(idx, command)| {
+                                        h_flex()
+                                            .font_family("JetBrains Mono")
+                                            .border_t_1()
+                                            .border_color(cx.theme().border)
+                                            .px_3()
+                                            .py_1()
+                                            .gap_2()
+                                            .text_sm()
+                                            .w_full()
+                                            .when(
+                                                selected_history_item.is_some_and(|sel_idx| {
+                                                    (command_history_len - sel_idx - 1) == idx
                                                 }),
-                                        )
-                                        .child(
-                                            div()
-                                                .child(
-                                                    command
-                                                        .timestamp
-                                                        .format("%H:%M:%S")
-                                                        .to_string(),
-                                                )
-                                                .text_color(cx.theme().muted_foreground),
-                                        )
-                                        .child(command.command.clone())
-                                },
-                            )),
+                                                |this| this.underline(),
+                                            )
+                                            .child(
+                                                Icon::new(IconName::ChevronRight)
+                                                    .when(!command.success, |icon| {
+                                                        icon.text_color(cx.theme().red)
+                                                    })
+                                                    .when(command.success, |icon| {
+                                                        icon.text_color(cx.theme().green)
+                                                    }),
+                                            )
+                                            .child(
+                                                div()
+                                                    .child(
+                                                        command
+                                                            .timestamp
+                                                            .format("%H:%M:%S")
+                                                            .to_string(),
+                                                    )
+                                                    .text_color(cx.theme().muted_foreground),
+                                            )
+                                            .child(command.command.clone())
+                                    })
+                                    .collect()
+                            },
+                        )
+                        .size_full()
+                        .y_flipped(false)
+                        .track_scroll(self.command_history_scroll_handle.clone()),
                     ),
             )
             .child(

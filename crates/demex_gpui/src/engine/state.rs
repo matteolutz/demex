@@ -49,7 +49,7 @@ impl DemexCommandHistory {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &DemexCommandHistoryEntry> {
-        self.history.iter().rev()
+        self.history.iter()
     }
 
     pub fn push_now(&mut self, command: String, success: bool) {
