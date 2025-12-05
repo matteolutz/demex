@@ -1,8 +1,8 @@
 use demex_core::{fixture::GdtfFixturePatch, patch::Patch};
-use gpui::{IntoElement, ParentElement, Styled, div, prelude::FluentBuilder};
+use gpui::{Context, IntoElement, ParentElement, Styled, div, prelude::FluentBuilder};
 use gpui_component::{
     ActiveTheme,
-    table::{Column, ColumnSort, TableDelegate},
+    table::{Column, ColumnSort, TableDelegate, TableState},
 };
 use itertools::Itertools;
 
@@ -121,11 +121,11 @@ impl TableDelegate for FixtureListTable {
     }
 
     fn render_td(
-        &self,
+        &mut self,
         row_ix: usize,
         col_ix: usize,
         _window: &mut gpui::Window,
-        cx: &mut gpui::App,
+        cx: &mut Context<TableState<Self>>,
     ) -> impl gpui::IntoElement {
         let column = &self.columns[col_ix];
         let entry = &self.data[row_ix];

@@ -92,8 +92,8 @@ impl Panel for FixtureListPanel {
         FIXTURE_LIST_PANEL_NAME
     }
 
-    fn title(&self, _window: &gpui::Window, _cx: &App) -> gpui::AnyElement {
-        "Fixture List".into_any_element()
+    fn title(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        "Fixture List"
     }
 }
 

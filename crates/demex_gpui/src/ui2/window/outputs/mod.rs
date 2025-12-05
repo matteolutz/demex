@@ -6,7 +6,7 @@ use gpui::{
 };
 use gpui_component::{
     ActiveTheme, Disableable, StyledExt, alert::Alert, button::Button, h_flex,
-    scroll::ScrollbarAxis, switch::Switch, text::Text, v_flex,
+    scroll::ScrollableElement, switch::Switch, text::Text, v_flex,
 };
 
 use crate::{
@@ -64,7 +64,7 @@ impl Render for OutputsConfigWindow {
             .child(self.titlebar.clone())
             .child(
                 v_flex().p_4().gap_2().size_full()
-                    .scrollable(ScrollbarAxis::Vertical)
+                    .overflow_y_scrollbar()
                     .child(div().text_xl().font_semibold().child("Outputs"))
                     .child(Alert::warning(
                         "restart-required",

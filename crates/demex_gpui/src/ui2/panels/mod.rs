@@ -9,6 +9,8 @@ pub mod pool;
 
 pub fn init(cx: &mut App) {
     register_panels(cx);
+
+    command::init(cx);
 }
 
 fn register_panels(cx: &mut App) {

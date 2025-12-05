@@ -1,16 +1,22 @@
 use gpui::{
-    App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement,
-    ParentElement, Render, Styled, Subscription, Window, div,
+    App, AppContext, BoxShadow, Context, Entity, EventEmitter, FocusHandle, Focusable,
+    InteractiveElement, IntoElement, ParentElement, Render, ScrollHandle, Styled, Subscription,
+    Window, black, div, point, prelude::FluentBuilder,
 };
 use gpui_component::{
-    Sizable,
+    ActiveTheme, Icon, IconName, Sizable,
     dock::{Panel, PanelEvent, register_panel},
-    input::{Input, InputEvent, InputState},
+    h_flex,
+    input::{Input, InputEvent, InputState, Position},
     notification::Notification,
+    v_flex,
 };
 
 use crate::{
-    engine::{DemexEngineHandler, state::DemexUiState},
+    engine::{
+        DemexEngineHandler,
+        state::{DemexCommandHistoryEntry, DemexUiState},
+    },
     ui2::{config::AppConfigExt, wm::app::WindowManagerAppExt},
 };
 
@@ -22,13 +28,39 @@ pub(super) fn register(cx: &mut App) {
     });
 }
 
+mod actions {
+    use gpui::{App, KeyBinding, actions};
+
+    pub const CONTEXT: &str = "demex-command-input";
+    actions!(command_input, [PrevCommand, NextCommand]);
+
+    pub fn init(cx: &mut App) {
+        cx.bind_keys([
+            #[cfg(not(target_os = "macos"))]
+            KeyBinding::new("ctrl-up", PrevCommand, Some(CONTEXT)),
+            #[cfg(not(target_os = "macos"))]
+            KeyBinding::new("ctrl-down", NextCommand, Some(CONTEXT)),
+            #[cfg(target_os = "macos")]
+            KeyBinding::new("cmd-up", PrevCommand, Some(CONTEXT)),
+            #[cfg(target_os = "macos")]
+            KeyBinding::new("cmd-down", NextCommand, Some(CONTEXT)),
+        ]);
+    }
+}
+
+pub fn init(cx: &mut App) {
+    actions::init(cx);
+}
+
 pub struct CommandPanel {
     focus_handle: FocusHandle,
 
     command_input_state: Entity<InputState>,
 
-    /// Indexed from the back
+    // Indexed from the back
     command_history_idx: Entity<Option<usize>>,
+
+    command_history_scroll_handle: ScrollHandle,
 
     _subscriptions: Vec<Subscription>,
 }
@@ -53,7 +85,6 @@ impl CommandPanel {
                 .code_editor("demex")
                 .line_number(false)
                 .indent_guides(false)
-                .rows(1)
                 .placeholder("Command")
         });
 
@@ -63,21 +94,9 @@ impl CommandPanel {
             cx.subscribe_in(
                 &command_input_state,
                 window,
-                |_, input, event: &InputEvent, window, cx| match event {
+                |this, input, event: &InputEvent, window, cx| match event {
                     InputEvent::PressEnter { .. } => {
-                        let command = input.read(cx).value();
-
-                        if let Err(err) = DemexEngineHandler::engine(cx).exec_command(&command) {
-                            log::warn!("Failed to run command \"{}\": {}", command, err);
-                            cx.update_wm(|wm, cx| {
-                                wm.push_notifcation(Notification::error(err.to_string()), cx)
-                            });
-                        }
-
-                        input.update(cx, |input, cx| {
-                            input.set_value("", window, cx);
-                            cx.notify();
-                        });
+                        this.handle_command_input_submit(input, window, cx)
                     }
                     _ => {}
                 },
@@ -85,26 +104,7 @@ impl CommandPanel {
             cx.observe_in(
                 &command_history_idx,
                 window,
-                |this, idx_entity, window, cx| {
-                    let Some(idx) = *idx_entity.read(cx) else {
-                        return;
-                    };
-
-                    let value = DemexUiState::command_history(cx).read_with(cx, |history, _| {
-                        history.get(history.len() - idx - 1).cloned()
-                    });
-
-                    let Some(value) = value else {
-                        return;
-                    };
-
-                    this.command_input_state.update(cx, |input, cx| {
-                        input.set_value(&value, window, cx);
-                        cx.notify();
-                    });
-
-                    cx.notify();
-                },
+                Self::handle_command_history_idx_update,
             ),
         ];
 
@@ -112,23 +112,232 @@ impl CommandPanel {
             focus_handle: cx.focus_handle(),
             command_history_idx,
             command_input_state,
+            command_history_scroll_handle: ScrollHandle::new(),
             _subscriptions: subs,
         }
+    }
+}
+
+impl CommandPanel {
+    fn handle_command_input_submit(
+        &mut self,
+        input_state: &Entity<InputState>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let input_value = input_state.read(cx).value();
+        let command = input_value.strip_suffix("\n");
+
+        let Some(command) = command else {
+            return;
+        };
+
+        if !command.is_empty() {
+            let exec_res = DemexEngineHandler::engine(cx).exec_command(command);
+            let is_success = exec_res.is_ok();
+
+            if let Err(err) = exec_res {
+                log::warn!("Failed to run command \"{}\": {}", command, err);
+                cx.update_wm(|wm, cx| {
+                    wm.push_notifcation(Notification::error(err.to_string()), cx)
+                });
+            }
+
+            DemexUiState::command_history(cx).update(cx, |history, cx| {
+                history.push_now(command.into(), is_success);
+                cx.notify();
+            });
+
+            // don't notify
+            self.command_history_idx.update(cx, |idx, _| *idx = None);
+        }
+
+        input_state.update(cx, |input, cx| {
+            input.set_value("", window, cx);
+            cx.notify();
+        });
+
+        cx.notify();
+    }
+
+    fn handle_command_history_idx_update(
+        &mut self,
+        idx_entity: Entity<Option<usize>>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(idx) = *idx_entity.read(cx) else {
+            // When idx was set to None, clear the command input state
+            self.command_input_state
+                .update(cx, |input, cx| input.set_value("", window, cx));
+            return;
+        };
+
+        let value: Option<DemexCommandHistoryEntry> =
+            DemexUiState::command_history(cx).read_with(cx, |history, _| history.get(idx).cloned());
+
+        let Some(value) = value else {
+            return;
+        };
+
+        self.command_input_state.update(cx, |input, cx| {
+            input.set_value(&value.command, window, cx);
+            input.set_cursor_position(Position::new(0, value.command.len() as u32), window, cx);
+        });
+
+        cx.notify();
+    }
+
+    fn handle_prev_command(
+        &mut self,
+        _: &actions::PrevCommand,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let command_history_len = DemexUiState::command_history(cx).read(cx).len();
+
+        self.command_history_idx.update(cx, |idx, cx| {
+            if command_history_len == 0 {
+                *idx = None;
+            } else {
+                match idx {
+                    Some(idx) => *idx = (*idx + 1).min(command_history_len - 1),
+                    None => *idx = Some(0),
+                }
+            }
+            cx.notify();
+        });
+    }
+
+    fn handle_next_command(
+        &mut self,
+        _: &actions::NextCommand,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.command_history_idx.update(cx, |idx, cx| {
+            match idx {
+                Some(0) => *idx = None,
+                Some(idx) => *idx -= 1,
+                _ => {}
+            }
+            cx.notify();
+        });
+    }
+}
+
+impl CommandPanel {
+    fn render_command_history(
+        &mut self,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        let command_history = DemexUiState::command_history(cx).read(cx);
+        let selected_history_item = self.command_history_idx.read(cx).clone();
+
+        div()
+            .relative()
+            .w_full()
+            .flex_1()
+            .overflow_hidden()
+            .child(
+                v_flex()
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .flex_col_reverse()
+                    .rounded(cx.theme().radius)
+                    .size_full()
+                    .justify_end()
+                    .bg(cx.theme().group_box)
+                    .gap_0()
+                    .child(
+                        v_flex()
+                            .w_full()
+                            .flex_col_reverse()
+                            .overflow_hidden()
+                            .justify_end()
+                            .gap_0()
+                            .children(command_history.iter().enumerate().take(25).map(
+                                |(idx, command)| {
+                                    h_flex()
+                                        .font_family("JetBrains Mono")
+                                        .border_t_1()
+                                        .border_color(cx.theme().border)
+                                        .px_3()
+                                        .py_1()
+                                        .gap_2()
+                                        .text_sm()
+                                        .when(
+                                            selected_history_item
+                                                .is_some_and(|sel_idx| sel_idx == idx),
+                                            |this| this.underline(),
+                                        )
+                                        .child(
+                                            Icon::new(IconName::ChevronRight)
+                                                .when(!command.success, |icon| {
+                                                    icon.text_color(cx.theme().red)
+                                                })
+                                                .when(command.success, |icon| {
+                                                    icon.text_color(cx.theme().green)
+                                                }),
+                                        )
+                                        .child(
+                                            div()
+                                                .child(
+                                                    command
+                                                        .timestamp
+                                                        .format("%H:%M:%S")
+                                                        .to_string(),
+                                                )
+                                                .text_color(cx.theme().muted_foreground),
+                                        )
+                                        .child(command.command.clone())
+                                },
+                            )),
+                    ),
+            )
+            .child(
+                div()
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .w_full()
+                    .h_0()
+                    .shadow(vec![BoxShadow {
+                        color: black(),
+                        offset: point((0.0).into(), (10.0).into()),
+                        blur_radius: (40.0).into(),
+                        spread_radius: (20.0).into(),
+                    }]),
+            )
     }
 }
 
 impl Render for CommandPanel {
     fn render(
         &mut self,
-        _window: &mut gpui::Window,
+        window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl IntoElement {
-        div().size_full().flex().items_end().p_2().child(
-            div().p_1().w_full().border_1().child(
-                Input::new(&self.command_input_state)
-                    .font_family("JetBrains Mono")
-                    .with_size(cx.ui_config().ui_size()),
-            ),
-        )
+        v_flex()
+            .size_full()
+            .justify_end()
+            .p_3()
+            .gap_2()
+            .child(self.render_command_history(window, cx))
+            .child(
+                div()
+                    .key_context(actions::CONTEXT)
+                    .on_action(cx.listener(Self::handle_prev_command))
+                    .on_action(cx.listener(Self::handle_next_command))
+                    .w_full()
+                    .border_1()
+                    .child(
+                        Input::new(&self.command_input_state)
+                            .font_family("JetBrains Mono")
+                            .with_size(cx.ui_config().ui_size()),
+                    ),
+            )
     }
 }

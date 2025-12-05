@@ -12,7 +12,65 @@ use gpui::{App, AppContext, Entity, Global, Timer};
 
 use crate::engine::DemexEngineHandler;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
+pub struct DemexCommandHistoryEntry {
+    pub command: String,
+    pub timestamp: chrono::DateTime<chrono::Local>,
+    pub success: bool,
+}
+
+impl DemexCommandHistoryEntry {
+    pub fn now(command: String, success: bool) -> Self {
+        Self {
+            command,
+            timestamp: chrono::Local::now(),
+            success,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct DemexCommandHistory {
+    history: Vec<DemexCommandHistoryEntry>,
+    max_len: usize,
+}
+
+impl DemexCommandHistory {
+    pub fn new(max_len: usize) -> Self {
+        // TODO: maybe reserve max_len elements?
+        Self {
+            history: Vec::new(),
+            max_len,
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.history.len()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &DemexCommandHistoryEntry> {
+        self.history.iter().rev()
+    }
+
+    pub fn push_now(&mut self, command: String, success: bool) {
+        self.history
+            .retain(|prev_command| prev_command.command != command);
+
+        if self.history.len() == self.max_len {
+            self.history.pop();
+        }
+
+        self.history
+            .push(DemexCommandHistoryEntry::now(command, success));
+    }
+
+    pub fn get(&self, offset: usize) -> Option<&DemexCommandHistoryEntry> {
+        let idx = self.history.len() - offset - 1;
+        self.history.get(idx)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct DemexPerformanceBuffer<const SIZE: usize> {
     buffer: [Option<DemexThreadStats>; SIZE],
     write_cursor: usize,
@@ -77,7 +135,7 @@ pub struct DemexUiState {
 
     performance: Entity<HashMap<String, DemexPerformanceBuffer<10>>>,
 
-    command_history: Entity<Vec<String>>,
+    command_history: Entity<DemexCommandHistory>,
 }
 
 impl DemexUiState {
@@ -101,7 +159,7 @@ impl DemexUiState {
         this.performance.clone()
     }
 
-    pub fn command_history(cx: &App) -> Entity<Vec<String>> {
+    pub fn command_history(cx: &App) -> Entity<DemexCommandHistory> {
         let this: &Self = cx.global();
         this.command_history.clone()
     }
@@ -155,7 +213,7 @@ impl DemexUiState {
             }),
             patch: cx.new(|_| frontend_state.patch),
             performance: cx.new(|_| HashMap::new()),
-            command_history: cx.new(|_| Vec::new()),
+            command_history: cx.new(|_| DemexCommandHistory::new(25)),
         }
     }
 

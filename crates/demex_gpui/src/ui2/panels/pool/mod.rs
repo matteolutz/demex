@@ -54,8 +54,8 @@ impl Panel for PoolPanel {
         POOL_PANEL_NAME
     }
 
-    fn title(&self, _window: &gpui::Window, _cx: &App) -> gpui::AnyElement {
-        format!("{} Pool", self.pool_type).into_any_element()
+    fn title(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        format!("{} Pool", self.pool_type)
     }
 }
 

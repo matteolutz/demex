@@ -90,7 +90,7 @@ impl FixtureSelection {
         selection.is_ok_and(|selection| &selection == self)
     }
 
-    pub fn add_fixtures(mut self, fixtures: &[u32]) -> Self {
+    pub fn with_additional_fixtures(mut self, fixtures: &[u32]) -> Self {
         for fixture in fixtures {
             if self.fixtures.contains(fixture) {
                 continue;

@@ -7,7 +7,7 @@ use gpui_component::{
     button::Button,
     chart::AreaChart,
     dock::{Panel, PanelEvent, register_panel},
-    scroll::ScrollbarAxis,
+    scroll::ScrollableElement,
     v_flex,
 };
 
@@ -46,8 +46,8 @@ impl Panel for PerformancePanel {
         PERFORMANCE_PANEL_NAME
     }
 
-    fn title(&self, _window: &Window, _cx: &App) -> gpui::AnyElement {
-        "Performance".into_any_element()
+    fn title(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        "Performance"
     }
 }
 
@@ -72,7 +72,7 @@ impl Render for PerformancePanel {
     ) -> impl IntoElement {
         let performance = DemexUiState::performance(cx).read(cx).clone();
 
-        div().w_full().scrollable(ScrollbarAxis::Both).child(
+        div().w_full().overflow_scrollbar().child(
             v_flex()
                 .w_full()
                 .min_w_64()

@@ -66,8 +66,24 @@ impl LayoutProjection {
         offset
     }
 
-    pub fn unproject_box(&self, _screen_box: &emath::Rect, _screen: &emath::Rect) -> emath::Rect {
-        todo!()
+    /// Project a world bounds onto screen bounds
+    pub fn project_bounds(&self, world_bounds: Bounds<Pixels>, cx: &App) -> Bounds<Pixels> {
+        let origin = self.project(world_bounds.origin, cx);
+        let size = self.scale_size(world_bounds.size);
+        Bounds { origin, size }
+    }
+
+    /// Unproject a given screen bounsd onto world bounds.
+    pub fn unproject_bounds(&self, screen_bounds: Bounds<Pixels>, cx: &App) -> Bounds<Pixels> {
+        let origin = self.unproject(screen_bounds.origin, cx);
+        let size = self.unscale_size(screen_bounds.size);
+        Bounds { origin, size }
+    }
+
+    /// The visible world bounds of the screen
+    pub fn visible_world_screen(&self, cx: &App) -> Bounds<Pixels> {
+        let screen = self.bounds.read(cx);
+        self.unproject_bounds(*screen, cx)
     }
 
     pub fn scale(&self, scale: f32) -> f32 {
@@ -84,14 +100,23 @@ impl LayoutProjection {
             size_to_scale.height * self.zoom,
         )
     }
+
+    pub fn unscale_size(&self, size_to_scale: Size<Pixels>) -> Size<Pixels> {
+        size_to_scale / self.zoom
+    }
 }
 
 pub trait PosExt {
     fn to_gpui_point(self) -> Point<Pixels>;
+    fn gpui_distance_to(self, other: &Point<Pixels>) -> f64;
 }
 impl PosExt for emath::Pos2 {
     fn to_gpui_point(self) -> Point<Pixels> {
         point(px(self.x), px(self.y))
+    }
+
+    fn gpui_distance_to(self, other: &Point<Pixels>) -> f64 {
+        self.to_gpui_point().relative_to(other).magnitude()
     }
 }
 

@@ -8,7 +8,7 @@ rfd = { version = "0.15.2"}
 open = { version = "5.3.2"}
 
 gpui = { version = "*"}
-gpui-component = {version = "0.4.0"}
+gpui-component = {git = "https://github.com/longbridge/gpui-component.git"}
 
 anyhow = {version = "1.0.100" }
 

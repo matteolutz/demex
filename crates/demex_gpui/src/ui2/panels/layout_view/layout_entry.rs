@@ -35,7 +35,7 @@ impl FixtureLayoutEntryExt for FixtureLayoutEntry {
         } else {
             white()
         };
-        let stroke_width = 1.5;
+        let stroke_width = projection.scale(0.5);
         let fill_color = transparent_black();
 
         match self.entry_type() {

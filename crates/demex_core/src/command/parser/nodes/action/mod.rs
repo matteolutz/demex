@@ -190,6 +190,7 @@ pub enum Action {
     GrandEtc,
 
     SetFixtureSelection(Option<FixtureSelection>),
+    AddFixturesToSelection(Vec<u32>),
     SetFixtureSelectionWing(usize),
 
     ExecutorGo(ExecutorGoArgs),
@@ -486,6 +487,17 @@ impl Action {
 
             Self::SetFixtureSelection(selection) => {
                 Ok(ActionRunResult::UpdateFixtureSelection(selection.clone()))
+            }
+            Self::AddFixturesToSelection(fixtures) => {
+                if fixtures.is_empty() {
+                    Ok(ActionRunResult::new())
+                } else {
+                    let selection = match fixture_selector_context.current_fixture() {
+                        None => fixtures.clone().into(),
+                        Some(selection) => selection.clone().with_additional_fixtures(fixtures),
+                    };
+                    Ok(ActionRunResult::UpdateFixtureSelection(Some(selection)))
+                }
             }
             Self::ExecutorGo(args) => args.run(
                 issued_at,

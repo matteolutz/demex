@@ -1,4 +1,4 @@
-use gpui::{Context, Entity, EventEmitter, Subscription};
+use gpui::{App, Bounds, Context, Entity, EventEmitter, Pixels, Subscription, Window};
 
 pub trait GpuiContextExtension<T> {
     /// Arranges so that [`Context::notify`] will be called for the current context
@@ -20,6 +20,13 @@ pub trait GpuiContextExtension<T> {
         T2: 'static + EventEmitter<Evt>,
         T3: 'static,
         Evt: 'static;
+
+    /// Convenience method for producing view state in a `Canvas` draw method.
+    /// See `listener` for more details.
+    fn draw_canvas<C>(
+        &self,
+        f: impl 'static + FnOnce(&mut T, Bounds<Pixels>, C, &mut Window, &mut Context<T>),
+    ) -> impl 'static + FnOnce(Bounds<Pixels>, C, &mut Window, &mut App);
 }
 
 impl<'a, T: 'static> GpuiContextExtension<T> for Context<'a, T> {
@@ -51,5 +58,16 @@ impl<'a, T: 'static> GpuiContextExtension<T> for Context<'a, T> {
 
             on_event(this, entity, event, entity2, cx)
         })
+    }
+
+    fn draw_canvas<C>(
+        &self,
+        f: impl 'static + FnOnce(&mut T, Bounds<Pixels>, C, &mut Window, &mut Context<T>),
+    ) -> impl 'static + FnOnce(Bounds<Pixels>, C, &mut Window, &mut App) {
+        let view = self.entity().downgrade();
+        move |bounds: Bounds<Pixels>, c: C, window: &mut Window, cx: &mut App| {
+            view.update(cx, |view, cx| f(view, bounds, c, window, cx))
+                .ok();
+        }
     }
 }
