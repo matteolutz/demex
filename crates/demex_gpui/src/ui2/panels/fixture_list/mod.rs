@@ -52,6 +52,7 @@ impl FixtureListPanel {
 
         let _subscriptions = vec![
             cx.observe(&patch, move |this, _, cx| {
+                println!("updating table");
                 this.table_state.update(cx, |table, cx| {
                     table.delegate_mut().update_data(Self::get_table_data(cx));
                     table.refresh(cx);

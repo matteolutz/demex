@@ -6,22 +6,23 @@
  *
  */
 
-use gpui::{AsyncApp, Entity, EventEmitter, Timer, prelude::*};
+use gpui::{AsyncApp, Entity, EventEmitter, Task, Timer, prelude::*};
 use gpui_component::notification::Notification;
 use std::{sync::mpsc, time::Duration};
 
 use demex_core::{
-    command::parser::nodes::action::result::ActionRunResult,
-    engine::comm::{DemexEngineCommEvent, ShowRequest},
+    command::parser::nodes::action::result::ActionRunResult, engine::comm::DemexEngineCommEvent,
     event::DemexEvent,
 };
 
 use crate::{
-    engine::{DemexEngineHandler, state::DemexUiState},
+    engine::{showfile::DemexShowFileManager, state::DemexUiState},
     ui2::wm::app::WindowManagerAsyncAppExt,
 };
 
-pub struct DemexEventHandler {}
+pub struct DemexEventHandler {
+    _tasks: Vec<Task<()>>,
+}
 
 impl EventEmitter<DemexEvent> for DemexEventHandler {}
 
@@ -30,7 +31,7 @@ impl DemexEventHandler {
         event_rx: mpsc::Receiver<DemexEngineCommEvent>,
         cx: &mut gpui::Context<Self>,
     ) -> Self {
-        cx.spawn(async move |event_handler, cx| {
+        let _tasks = vec![cx.spawn(async move |event_handler, cx| {
             loop {
                 Timer::after(Duration::from_millis(16)).await;
 
@@ -42,10 +43,9 @@ impl DemexEventHandler {
                     Self::handle_comm_event(&event_handler, event, cx);
                 }
             }
-        })
-        .detach();
+        })];
 
-        Self {}
+        Self { _tasks }
     }
 }
 
@@ -97,12 +97,7 @@ impl DemexEventHandler {
                 let _ = cx.update_wm(|wm, cx| wm.push_notifcation(Notification::warning(warn), cx));
             }
             ActionRunResult::Save => {
-                let _ = cx.update(|cx| {
-                    DemexEngineHandler::send(cx, ShowRequest {}, |show, _| {
-                        // TODO
-                        println!("saving show: {:?}", show);
-                    })
-                });
+                let _ = cx.update(|cx| DemexShowFileManager::save(None, cx));
             }
             ActionRunResult::UpdatePatch(patch) => {
                 let _ = cx.update_global(|ui_state: &mut DemexUiState, cx| {

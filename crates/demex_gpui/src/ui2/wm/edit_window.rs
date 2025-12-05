@@ -30,6 +30,13 @@ pub trait EditWindowDelegate: 'static + Render {
         cx.update_wm(|wm, cx| wm.set_singleton_window_edited::<EditWindow<Self>>(cx, edited))
     }
 
+    fn close(&self, cx: &mut App)
+    where
+        Self: Sized,
+    {
+        cx.update_wm(|wm, cx| wm.request_close_singleton_window::<EditWindow<Self>>(cx));
+    }
+
     fn is_edited(&self, cx: &App) -> bool {
         cx.wm().is_singleton_window_edited::<EditWindow<Self>>()
     }

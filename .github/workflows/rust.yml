@@ -3,7 +3,8 @@ name: test-and-build
 on:
   push:
     branches:
-      - "**"
+      - "main"
+      - "gpui"
 
 env:
   CARGO_TERM_COLOR: always

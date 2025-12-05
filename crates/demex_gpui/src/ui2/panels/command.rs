@@ -37,14 +37,8 @@ mod actions {
 
     pub fn init(cx: &mut App) {
         cx.bind_keys([
-            #[cfg(not(target_os = "macos"))]
-            KeyBinding::new("ctrl-up", PrevCommand, Some(CONTEXT)),
-            #[cfg(not(target_os = "macos"))]
-            KeyBinding::new("ctrl-down", NextCommand, Some(CONTEXT)),
-            #[cfg(target_os = "macos")]
-            KeyBinding::new("cmd-up", PrevCommand, Some(CONTEXT)),
-            #[cfg(target_os = "macos")]
-            KeyBinding::new("cmd-down", NextCommand, Some(CONTEXT)),
+            KeyBinding::new("secondary-up", PrevCommand, Some(CONTEXT)),
+            KeyBinding::new("secondary-down", NextCommand, Some(CONTEXT)),
         ]);
     }
 }

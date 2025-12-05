@@ -70,6 +70,10 @@ impl DemexCommandHistory {
         let idx = self.history.len() - offset - 1;
         self.history.get(idx)
     }
+
+    pub fn clear(&mut self) {
+        self.history.clear();
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -168,6 +172,11 @@ impl DemexUiState {
 }
 
 impl DemexUiState {
+    pub(super) fn init(cx: &mut App) {
+        let ui_state = DemexUiState::new(cx);
+        cx.set_global(ui_state);
+    }
+
     pub(super) fn start_performance_thread(cx: &mut App) {
         cx.spawn(async move |cx| {
             loop {
@@ -194,29 +203,51 @@ impl DemexUiState {
 }
 
 impl DemexUiState {
-    pub fn new(frontend_state: DemexFrontendInitState, cx: &mut App) -> Self {
+    pub fn new(cx: &mut App) -> Self {
         Self {
-            fixture_selection: cx.new(|_| frontend_state.fixture_selection),
-            fixture_values: cx.new(|_| {
-                frontend_state
-                    .fixture_states
-                    .into_iter()
-                    .map(|(id, state)| {
-                        (
-                            id,
-                            state
-                                .cached_output_moved()
-                                .into_iter()
-                                .map(|(channel, value)| (channel, value.value))
-                                .collect(),
-                        )
-                    })
-                    .collect()
-            }),
-            patch: cx.new(|_| frontend_state.patch),
-            performance: cx.new(|_| HashMap::new()),
-            command_history: cx.new(|_| DemexCommandHistory::new(25)),
+            fixture_selection: cx.new(|_| Default::default()),
+            fixture_values: cx.new(|_| Default::default()),
+            patch: cx.new(|_| Default::default()),
+            performance: cx.new(|_| Default::default()),
+            command_history: cx.new(|_| Default::default()),
         }
+    }
+
+    pub fn load_frontend_state(&mut self, frontend_state: DemexFrontendInitState, cx: &mut App) {
+        self.fixture_selection.update(cx, |sel, cx| {
+            *sel = frontend_state.fixture_selection;
+            cx.notify();
+        });
+
+        self.fixture_values.update(cx, |values, cx| {
+            *values = frontend_state
+                .fixture_states
+                .into_iter()
+                .map(|(id, state)| {
+                    (
+                        id,
+                        state
+                            .cached_output_moved()
+                            .into_iter()
+                            .map(|(channel, value)| (channel, value.value))
+                            .collect(),
+                    )
+                })
+                .collect();
+            cx.notify();
+        });
+
+        self.patch.update(cx, |patch, cx| {
+            *patch = frontend_state.patch;
+            cx.notify();
+        });
+
+        // don't update performance
+
+        self.command_history.update(cx, |history, cx| {
+            history.clear();
+            cx.notify();
+        });
     }
 
     pub fn update_from_event(&self, event: DemexEvent, cx: &mut App) {

@@ -17,6 +17,7 @@ pub fn init(cx: &mut App) -> gpui::Result<()> {
 
     assets::init(cx)?;
     panels::init(cx);
+    window::init(cx);
 
     Ok(())
 }

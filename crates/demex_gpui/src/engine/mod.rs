@@ -1,20 +1,21 @@
 use std::sync::mpsc;
 
 use demex_core::{
-    command::parser::nodes::action::Action,
     engine::{
         DemexEngine,
         comm::{DemexEngineCommRequest, DemexEngineCommRequestDispatcher},
         error::DemexEngineError,
+        state::DemexFrontendInitState,
     },
     show::DemexShow,
 };
 use gdtf::fixture_type::FixtureType;
 use gpui::{App, AppContext, AsyncApp, Context, Entity, Global};
 
-use crate::engine::{event::DemexEventHandler, state::DemexUiState};
+use crate::engine::event::DemexEventHandler;
 
 pub mod event;
+pub mod showfile;
 pub mod state;
 
 pub struct DemexEngineHandler {
@@ -30,15 +31,12 @@ impl DemexEngineHandler {
         global_fixture_types: Vec<FixtureType>,
         show: DemexShow,
         cx: &mut App,
-    ) -> Result<(), DemexEngineError> {
+    ) -> Result<DemexFrontendInitState, DemexEngineError> {
         let (event_bus_tx, event_bus_rx) = mpsc::channel();
 
         let mut engine = DemexEngine::new(event_bus_tx);
 
         let (dispatcher, frontend_state) = engine.load_show(show, global_fixture_types, false);
-
-        let ui_state = DemexUiState::new(frontend_state, cx);
-        cx.set_global(ui_state);
 
         let event_handler = cx.new(|cx| DemexEventHandler::new(event_bus_rx, cx));
 
@@ -48,9 +46,7 @@ impl DemexEngineHandler {
             dispatcher,
         });
 
-        DemexUiState::start_performance_thread(cx);
-
-        Ok(())
+        Ok(frontend_state)
     }
 
     pub fn engine(cx: &App) -> &DemexEngine {
@@ -100,14 +96,6 @@ impl DemexEngineHandler {
             });
         })
         .detach();
-    }
-}
-
-/// Convenience methods
-impl DemexEngineHandler {
-    pub fn save(cx: &mut App) {
-        let engine = Self::engine(cx);
-        engine.exec_ui(Action::Save)
     }
 }
 

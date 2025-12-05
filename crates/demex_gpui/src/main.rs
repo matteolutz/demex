@@ -1,21 +1,21 @@
 #![warn(unused_extern_crates)]
 
+pub mod app;
 pub mod engine;
 pub mod storage;
-pub mod utils;
-
 pub mod ui2;
+pub mod utils;
 
 use std::path::PathBuf;
 
 use gdtf::GdtfFile;
 use itertools::Itertools;
 
-use demex_core::{show::DemexShow, utils::deadlock::start_deadlock_checking_thread};
+use demex_core::utils::deadlock::start_deadlock_checking_thread;
 
 use clap::Parser;
 
-use crate::engine::DemexEngineHandler;
+use crate::app::{DemexApp, DemexAppArgs};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
 enum DemexUiThemeAttribute {}
@@ -121,13 +121,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .join(", ")
     );
 
-    let show: DemexShow = args
-        .show
-        .as_ref()
-        .inspect(|show_path| log::info!("Loading show file: {:?}", show_path))
-        .map(|show_path| serde_json::from_reader(std::fs::File::open(show_path).unwrap()).unwrap())
-        .unwrap_or(DemexShow::default());
-
     let fixture_types = fixture_files
         .into_iter()
         .flat_map(|file| file.description.fixture_types)
@@ -154,70 +147,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             */
         }
 
-        use crate::ui2::assets::Assets;
-
-        mod actions {
-            use crate::engine::DemexEngineHandler;
-            use gpui::{App, KeyBinding, Menu, MenuItem, SystemMenuType};
-
-            gpui::actions!(demex, [Quit, Save]);
-            pub(super) fn init(cx: &mut App) {
-                cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
-                cx.bind_keys([KeyBinding::new("secondary-s", Save, None)]);
-
-                cx.on_action::<Quit>(|_, cx| cx.quit());
-                cx.on_action::<Save>(|_, cx| DemexEngineHandler::save(cx));
-
-                init_menus(cx);
-            }
-
-            pub fn init_menus(cx: &mut App) {
-                cx.set_menus(vec![Menu {
-                    name: "demex".into(),
-                    items: vec![
-                        MenuItem::os_submenu("Services", SystemMenuType::Services),
-                        MenuItem::separator(),
-                        MenuItem::action("Quit", Quit),
-                    ],
-                }]);
-            }
-        }
-
-        gpui::Application::new()
-            .with_assets(Assets)
-            .run(move |cx: &mut gpui::App| {
-                use gpui_component::{Theme, ThemeRegistry};
-
-                use crate::ui2::{
-                    config::DemexUiConfig,
-                    wm::{WindowManager, dock_window::DockWindowConfig},
-                };
-
-                gpui_component::init(cx);
-                ui2::init(cx).unwrap();
-
-                actions::init(cx);
-
-                let theme_reg = ThemeRegistry::global(cx);
-                if let Some(theme) = theme_reg.themes().get("Default Dark").cloned() {
-                    Theme::global_mut(cx).apply_config(&theme);
-                }
-
-                cx.activate(true);
-
-                let ui_config = DemexUiConfig {
-                    touchcreen_mode: args.touchscreen_mode,
-                };
-                cx.set_global(ui_config);
-
-                DemexEngineHandler::init(fixture_types, show, cx)
-                    .expect("Failed to initialize engine");
-
-                let wm = WindowManager::new(cx).auto_quit(true);
-                cx.set_global(wm);
-
-                WindowManager::add_dock_window(DockWindowConfig::default(), cx);
-            });
+        DemexApp::default().run(DemexAppArgs {
+            touchscreen_mode: args.touchscreen_mode,
+            showfile_path: args.show,
+            fixture_types,
+        });
     }
 
     Ok(())
