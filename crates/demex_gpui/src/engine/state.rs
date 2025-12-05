@@ -1,4 +1,7 @@
-use std::{collections::HashMap, time::Duration};
+use std::{
+    collections::{HashMap, VecDeque},
+    time::Duration,
+};
 
 use demex_core::{
     channel3::channel_value::FixtureChannelValue3,
@@ -31,15 +34,14 @@ impl DemexCommandHistoryEntry {
 
 #[derive(Debug, Clone, Default)]
 pub struct DemexCommandHistory {
-    history: Vec<DemexCommandHistoryEntry>,
+    history: VecDeque<DemexCommandHistoryEntry>,
     max_len: usize,
 }
 
 impl DemexCommandHistory {
     pub fn new(max_len: usize) -> Self {
-        // TODO: maybe reserve max_len elements?
         Self {
-            history: Vec::new(),
+            history: VecDeque::with_capacity(max_len),
             max_len,
         }
     }
@@ -57,11 +59,11 @@ impl DemexCommandHistory {
             .retain(|prev_command| prev_command.command != command);
 
         if self.history.len() == self.max_len {
-            self.history.pop();
+            self.history.pop_front();
         }
 
         self.history
-            .push(DemexCommandHistoryEntry::now(command, success));
+            .push_back(DemexCommandHistoryEntry::now(command, success));
     }
 
     pub fn get(&self, offset: usize) -> Option<&DemexCommandHistoryEntry> {

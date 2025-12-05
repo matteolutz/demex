@@ -152,7 +152,7 @@ impl CommandPanel {
 
             if history_length > 0 {
                 self.command_history_scroll_handle
-                    .scroll_to_item(history_length - 1, gpui::ScrollStrategy::Top);
+                    .scroll_to_item(history_length - 1, gpui::ScrollStrategy::Bottom);
             }
 
             // don't notify
@@ -180,7 +180,7 @@ impl CommandPanel {
             self.command_input_state
                 .update(cx, |input, cx| input.set_value("", window, cx));
             self.command_history_scroll_handle
-                .scroll_to_item(command_history_len - 1, gpui::ScrollStrategy::Top);
+                .scroll_to_item(command_history_len - 1, gpui::ScrollStrategy::Bottom);
             return;
         };
 
@@ -198,7 +198,7 @@ impl CommandPanel {
 
         let rev_idx = command_history_len - idx - 1;
         self.command_history_scroll_handle
-            .scroll_to_item(rev_idx, gpui::ScrollStrategy::Top);
+            .scroll_to_item(rev_idx, gpui::ScrollStrategy::Bottom);
 
         cx.notify();
     }

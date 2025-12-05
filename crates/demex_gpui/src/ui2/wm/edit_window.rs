@@ -83,7 +83,11 @@ impl<V: EditWindowDelegate> WindowDelegate for EditWindow<V> {
     }
 
     fn window_kind(_cx: &mut App) -> WindowKind {
-        WindowKind::Normal
+        #[cfg(target_os = "windows")]
+        return WindowKind::Normal;
+
+        #[cfg(target_os = "linux")]
+        return WindowKind::PopUp;
     }
 
     fn view(&self) -> AnyView

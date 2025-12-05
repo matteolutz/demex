@@ -1,7 +1,12 @@
 use gpui::{AnyElement, IntoElement, ParentElement, Render, SharedString, Styled, div};
 use gpui_component::{
-    IconName, TitleBar,
+    TitleBar,
     button::{Button, ButtonVariants},
+};
+
+use crate::ui2::{
+    window::outputs::OutputsConfigWindow,
+    wm::{WindowManager, edit_window::WindowManagerExtension},
 };
 
 #[derive(Default)]
@@ -17,10 +22,20 @@ impl DemexTitleBarConfig {
         match self {
             Self::DockWindow => {
                 vec![
-                    "demex".into_any_element(),
-                    Button::new("save")
-                        .ghost()
-                        .icon(IconName::Copy)
+                    div().text_lg().child("demex").into_any_element(),
+                    Button::new("save").link().label("Save").into_any_element(),
+                    Button::new("settings")
+                        .link()
+                        .label("Settings")
+                        .into_any_element(),
+                    Button::new("outputs")
+                        .link()
+                        .label("Outputs")
+                        .on_click(|_, _, cx| {
+                            WindowManager::open_edit_window::<OutputsConfigWindow>(cx, |cx| {
+                                OutputsConfigWindow::new(cx)
+                            });
+                        })
                         .into_any_element(),
                 ]
             }
