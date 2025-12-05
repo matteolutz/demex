@@ -1,4 +1,4 @@
-name: build-and-test
+name: test-and-build
 
 on:
   push:
@@ -9,8 +9,8 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build_and_test:
-    name: Build and Test demex
+  lint_test_and_build:
+    name: Lint and Test demex
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -23,7 +23,7 @@ jobs:
           rust-version: stable
 
       - name: Install apt dependencies
-        run: sudo apt-get update && sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
+        run: sudo apt-get update && sudo apt-get install build-essential pkg-config libasound2-dev libudev-dev libx11-dev libxkbcommon-dev libxkbcommon-x11-0 libxkbcommon-x11-dev
 
       - name: cargo test
         run: cargo test --all-features
@@ -33,3 +33,17 @@ jobs:
 
       - name: clippy
         run: cargo clippy --all --all-features --tests
+
+      - name: Build and upload
+        id: compile
+        uses: rust-build/rust-build.action@v1.4.5
+        with:
+          RUSTTARGET: x86_64-unknown-linux-gnu
+          UPLOAD_MODE: none
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Binary
+          path: |
+            ${{ steps.compile.outputs.BUILT_ARCHIVE }}
+            ${{ steps.compile.outputs.BUILT_CHECKSUM }}
