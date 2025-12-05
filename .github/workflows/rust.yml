@@ -40,10 +40,11 @@ jobs:
         with:
           RUSTTARGET: x86_64-unknown-linux-gnu
           UPLOAD_MODE: none
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: Binary
+          name: demex
           path: |
             ${{ steps.compile.outputs.BUILT_ARCHIVE }}
             ${{ steps.compile.outputs.BUILT_CHECKSUM }}
