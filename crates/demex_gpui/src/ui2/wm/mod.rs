@@ -53,6 +53,13 @@ impl WindowManager {
                     .count()
             });
 
+            // check if singleton windows are open
+            // on_window_should_close is not being called on X11
+            cx.update_wm(|wm, cx| {
+                wm.singleton_windows
+                    .retain(|_, w| w.handle.is_active(cx).is_some());
+            });
+
             if n_dock_windows == 0 && cx.wm().auto_quit {
                 cx.quit();
             }
