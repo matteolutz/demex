@@ -18,9 +18,7 @@ use crate::{
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct DemexExecutor {
-    #[cfg_attr(feature = "ui", egui_probe(skip))]
     id: u32,
 
     priority: FixtureChannelValuePriority,
@@ -29,7 +27,6 @@ pub struct DemexExecutor {
     stomp_protected: bool,
 
     #[serde(default, skip_serializing)]
-    #[cfg_attr(feature = "ui", egui_probe(skip))]
     value: f32,
 
     runtime: SequenceRuntime,

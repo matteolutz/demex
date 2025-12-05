@@ -1512,7 +1512,7 @@ checksum = "da692b8d1080ea3045efaab14434d40468c3d8657e42abddfffca87b428f4c1b"
 
 [[package]]
 name = "demex"
-version = "0.1.30"
+version = "0.2.0"
 dependencies = [
  "clap",
  "demex_core",
@@ -1528,7 +1528,7 @@ dependencies = [
 
 [[package]]
 name = "demex_core"
-version = "0.1.30"
+version = "0.2.0"
 dependencies = [
  "approx",
  "arc-swap",
@@ -1555,7 +1555,7 @@ dependencies = [
 
 [[package]]
 name = "demex_dmx"
-version = "0.1.30"
+version = "0.2.0"
 dependencies = [
  "artnet_protocol",
  "demex_headless",
@@ -1568,7 +1568,7 @@ dependencies = [
 
 [[package]]
 name = "demex_gpui"
-version = "0.1.30"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1599,7 +1599,7 @@ dependencies = [
 
 [[package]]
 name = "demex_headless"
-version = "0.1.30"
+version = "0.2.0"
 dependencies = [
  "byteorder",
  "serde",
@@ -6779,7 +6779,7 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter-demex"
-version = "0.1.30"
+version = "0.2.0"
 dependencies = [
  "cc",
  "tree-sitter",

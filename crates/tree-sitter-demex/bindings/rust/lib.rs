@@ -1,22 +1,4 @@
 //! This crate provides demex language support for the [tree-sitter] parsing library.
-//!
-//! Typically, you will use the [`LANGUAGE`] constant to add this language to a
-//! tree-sitter [`Parser`], and then use the parser to parse some code:
-//!
-//! ```
-//! let code = r#"
-//! "#;
-//! let mut parser = tree_sitter::Parser::new();
-//! let language = tree_sitter_demex::LANGUAGE;
-//! parser
-//!     .set_language(&language.into())
-//!     .expect("Error loading demex parser");
-//! let tree = parser.parse(code, None).unwrap();
-//! assert!(!tree.root_node().has_error());
-//! ```
-//!
-//! [`Parser`]: https://docs.rs/tree-sitter/0.25.10/tree_sitter/struct.Parser.html
-//! [tree-sitter]: https://tree-sitter.github.io/
 
 use tree_sitter_language::LanguageFn;
 

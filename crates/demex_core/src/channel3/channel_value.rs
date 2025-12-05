@@ -74,7 +74,6 @@ impl FixtureChannelValue2PresetState {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum FixtureChannelValue3 {
     Discrete(FixtureChannelDiscreteValue),
 
@@ -82,7 +81,6 @@ pub enum FixtureChannelValue3 {
         id: FixturePresetId,
 
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        #[cfg_attr(feature = "ui", egui_probe(skip))]
         state: Option<FixtureChannelValue2PresetState>,
     },
 

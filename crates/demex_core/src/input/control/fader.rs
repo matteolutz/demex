@@ -13,7 +13,6 @@ use crate::{
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum DemexInputFader {
     Fader {
         executor_id: u32,

@@ -9,9 +9,6 @@ pub enum ActionRunResult {
     InfoWithLink(String, String),
     Warn(String),
 
-    #[cfg(feature = "ui")]
-    EditWindow(crate::ui::window::edit::DemexEditWindow),
-
     UpdateFixtureSelection(Option<FixtureSelection>),
     UpdatePatch(Patch),
 

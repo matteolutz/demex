@@ -19,7 +19,6 @@ use crate::{
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct FeatureEffectRuntime {
     // effect: FeatureEffect,
     effect: Effect2,
@@ -31,7 +30,6 @@ pub struct FeatureEffectRuntime {
     phase: RuntimePhase,
 
     #[serde(default, skip_serializing, skip_deserializing)]
-    #[cfg_attr(feature = "ui", egui_probe(skip))]
     effect_started: Option<time::Instant>,
 }
 

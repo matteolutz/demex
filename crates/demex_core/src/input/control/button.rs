@@ -24,7 +24,6 @@ use crate::{
 };
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum DemexInputButton {
     ExecutorGo(u32),
     ExecutorStop(u32),
@@ -34,14 +33,12 @@ pub enum DemexInputButton {
     },
 
     SelectivePreset {
-        #[cfg_attr(feature = "ui", egui_probe(skip))]
         selection: Option<FixtureSelection>,
         preset_id: FixturePresetId,
     },
 
     #[warn(deprecated)]
     FixtureSelector {
-        #[cfg_attr(feature = "ui", egui_probe(skip))]
         fixture_selector: FixtureSelector,
     },
 
@@ -50,12 +47,10 @@ pub enum DemexInputButton {
     },
 
     Macro {
-        #[cfg_attr(feature = "ui", egui_probe(skip))]
         action: Action,
     },
 
     TokenInsert {
-        #[cfg_attr(feature = "ui", egui_probe(skip))]
         tokens: Vec<Token>,
     },
 

@@ -31,7 +31,6 @@ use crate::{
 use super::{PresetHandler, error::PresetHandlerError};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Default)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct FixturePresetId {
     pub feature_group: FixtureChannel3FeatureGroup,
     pub preset_id: u32,
@@ -121,17 +120,14 @@ pub enum FixturePresetTarget {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum FixturePresetData {
     Default {
-        #[cfg_attr(feature = "ui", egui_probe(skip))]
         data: HashMap<u32, HashMap<String, FixtureChannelDiscreteValue>>,
     },
     FeatureEffect {
         runtime: FeatureEffectRuntime,
     },
     KeyframeEffect {
-        #[cfg_attr(feature = "ui", egui_probe(skip))]
         runtime: KeyframeEffectRuntime,
     },
 }
@@ -154,9 +150,7 @@ impl FixturePresetData {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct FixturePreset {
-    #[cfg_attr(feature = "ui", egui_probe(skip))]
     id: FixturePresetId,
 
     name: String,

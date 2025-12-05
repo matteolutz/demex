@@ -185,16 +185,13 @@ impl SequenceRuntimeState {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct SequenceRuntime {
     sequence_id: u32,
 
     #[serde(default, skip_serializing, skip_deserializing)]
-    #[cfg_attr(feature = "ui", egui_probe(skip))]
     state: SequenceRuntimeState,
 
     #[serde(default, skip_serializing, skip_deserializing)]
-    #[cfg_attr(feature = "ui", egui_probe(skip))]
     tracked_values: HashMap<u32, HashMap<String, Vec<(usize, FadeFixtureChannelValue)>>>,
 }
 

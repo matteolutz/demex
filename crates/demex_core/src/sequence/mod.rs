@@ -91,7 +91,6 @@ impl FadeFixtureChannelValue {
     strum_macros::EnumString,
     strum_macros::Display,
 )]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum SequenceStopBehavior {
     #[default]
     ManualStop,
@@ -102,9 +101,7 @@ pub enum SequenceStopBehavior {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct Sequence {
-    #[cfg_attr(feature = "ui", egui_probe(skip))]
     id: u32,
 
     name: String,
@@ -112,7 +109,6 @@ pub struct Sequence {
     #[serde(default)]
     stop_behavior: SequenceStopBehavior,
 
-    #[cfg_attr(feature = "ui", egui_probe(skip))]
     cues: Vec<Cue>,
 
     #[serde(default)]

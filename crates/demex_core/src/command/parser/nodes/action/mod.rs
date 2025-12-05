@@ -413,16 +413,6 @@ impl Action {
                 patch,
             ),
 
-            #[cfg(feature = "ui")]
-            Self::Edit(object) => object
-                .clone()
-                .edit_window()
-                .ok_or(ActionRunError::ActionNotImplementedForObject(
-                    "Edit".to_owned(),
-                    object.clone(),
-                ))
-                .map(ActionRunResult::EditWindow),
-
             Self::ClearAll => Ok(ActionRunResult::UpdateFixtureSelection(None)),
             Self::FixtureSelector(fixture_selector) => self.run_fixture_selector(
                 fixture_selector,
@@ -442,17 +432,6 @@ impl Action {
                 *patch.output_configs_mut() = configs.clone();
                 Ok(ActionRunResult::UpdatePatch(patch))
             }
-
-            #[cfg(feature = "ui")]
-            Self::Config(config_type) => Ok(ActionRunResult::EditWindow(
-                crate::ui::window::edit::DemexEditWindow::Config(*config_type),
-            )),
-
-            #[cfg(feature = "ui")]
-            Self::MatteoLutz => Ok(ActionRunResult::InfoWithLink(
-                crate::ui::constants::INFO_TEXT.to_owned(),
-                "https://matteolutz.de".to_owned(),
-            )),
 
             Self::AssignFader(args) => args.run(
                 issued_at,

@@ -3,14 +3,11 @@ use serde::{Deserialize, Serialize};
 use crate::{command::parser::nodes::action::Action, implement_set_property};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct MMacro {
-    #[cfg_attr(feature = "ui", egui_probe(skip))]
     id: u32,
 
     name: String,
 
-    #[cfg_attr(feature = "ui", egui_probe(skip))]
     action: Box<Action>,
 }
 

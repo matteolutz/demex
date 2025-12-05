@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 use super::DmxData;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct SerialOutputConfig {
     pub serial_port: String,
     pub universe: u16,

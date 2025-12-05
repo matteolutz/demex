@@ -110,9 +110,6 @@ pub trait ObjectDelegate: 'static + Sized {
         key: String,
         value: String,
     ) -> Result<ActionRunResult, ActionRunError>;
-
-    #[cfg(feature = "ui")]
-    fn edit_window(self) -> Option<crate::ui::window::edit::DemexEditWindow>;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -215,17 +212,6 @@ impl ObjectDelegate for HomeableObject {
             )),
         }
     }
-
-    #[cfg(feature = "ui")]
-    fn edit_window(self) -> Option<crate::ui::window::edit::DemexEditWindow> {
-        match self {
-            Self::Executor(id) => Some(crate::ui::window::edit::DemexEditWindow::EditExecutor(id)),
-            Self::FixtureSelector(fixture_selector) => fixture_selector
-                .try_as_group_id()
-                .map(crate::ui::window::edit::DemexEditWindow::EditGroup),
-            Self::Programmer => None,
-        }
-    }
 }
 
 impl HomeableObject {
@@ -300,21 +286,6 @@ impl ObjectDelegate for Object {
             result: Box::new(result),
             event: DemexEvent::ObjectPropertyChanged(self.clone(), cloned_key),
         })
-    }
-
-    #[cfg(feature = "ui")]
-    fn edit_window(self) -> Option<crate::ui::window::edit::DemexEditWindow> {
-        match self {
-            Self::HomeableObject(obj) => obj.edit_window(),
-            Self::Sequence(id) => Some(crate::ui::window::edit::DemexEditWindow::EditSequence(id)),
-            Self::SequenceCue(sequence_id, cue_idx) => Some(
-                crate::ui::window::edit::DemexEditWindow::EditSequenceCue(sequence_id, cue_idx),
-            ),
-            Self::Preset(preset_id) => Some(crate::ui::window::edit::DemexEditWindow::EditPreset(
-                preset_id,
-            )),
-            Self::Macro(_) => None,
-        }
     }
 }
 

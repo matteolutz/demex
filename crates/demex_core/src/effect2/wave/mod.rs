@@ -11,7 +11,6 @@ pub mod segment;
 pub mod wave_type;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct Effect2Wave {
     segments: Vec<WaveSegment>,
     wave_type: WaveType,

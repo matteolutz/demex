@@ -24,7 +24,6 @@ pub trait DemexDmxOutputTrait: fmt::Debug {
 pub type DmxData = (u16, [u8; 512]);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum DemexDmxOutputConfigData {
     Debug(DebugOutputVerbosity),
 
@@ -75,7 +74,6 @@ impl Default for DemexDmxOutputConfigData {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct DemexDmxOutputConfig {
     data: DemexDmxOutputConfigData,
     device_id: DemexProtoDeviceId,

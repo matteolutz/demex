@@ -11,7 +11,6 @@ fn f32_one() -> f32 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct Effect2Part {
     wave: Effect2Wave,
     attributes: Vec<String>,
@@ -63,7 +62,6 @@ impl Effect2Part {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct Effect2 {
     parts: Vec<Effect2Part>,
 }

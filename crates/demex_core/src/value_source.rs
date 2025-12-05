@@ -27,7 +27,6 @@ use super::{
     strum_macros::EnumString,
     strum_macros::Display,
 )]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum FixtureChannelValuePriority {
     #[default]
     Ltp,

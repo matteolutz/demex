@@ -87,7 +87,7 @@ impl<V: EditWindowDelegate> WindowDelegate for EditWindow<V> {
         return WindowKind::Floating;
 
         #[cfg(target_os = "macos")]
-        return WindowKind::Floating;
+        return WindowKind::PopUp;
 
         #[cfg(target_os = "linux")]
         return WindowKind::Floating;

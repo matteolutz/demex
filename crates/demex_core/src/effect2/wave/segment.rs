@@ -10,7 +10,6 @@ pub enum WaveSegmentTouchResult {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct WaveSegment {
     start_pos: emath::Pos2,
     control_points: [emath::Pos2; 2],

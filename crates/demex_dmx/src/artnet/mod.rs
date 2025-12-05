@@ -12,7 +12,6 @@ use serde::{Deserialize, Serialize};
 use super::DmxData;
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct ArtnetOutputConfig {
     pub broadcast: bool,
 

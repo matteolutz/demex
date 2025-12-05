@@ -19,7 +19,6 @@ use crate::{
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub enum DemexInputEncoder {
     GlobalEncoder { encoder_idx: u32 },
 }

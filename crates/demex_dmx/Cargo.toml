@@ -13,6 +13,3 @@ itertools.workspace = true
 log.workspace = true
 
 demex_headless.workspace = true
-
-[features]
-ui = []

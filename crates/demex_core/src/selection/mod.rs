@@ -10,7 +10,6 @@ use crate::{
 use super::presets::PresetHandler;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[cfg_attr(feature = "ui", derive(egui_probe::EguiProbe))]
 pub struct FixtureSelection {
     fixtures: Vec<u32>,
 
