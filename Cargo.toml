@@ -7,7 +7,7 @@ members = [
     "crates/demex_gpui",
     "crates/tree-sitter-demex"
     ] # crates/demex_gpui, crates/demex_ui
-resolver = "3"
+resolver = "2"
 
 [workspace.package]
 version = "0.2.0"

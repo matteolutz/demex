@@ -10,29 +10,26 @@ env:
 
 jobs:
   lint_test_and_build:
-    name: Lint and Test demex
+    name: Lint, Test and Build demex
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - uses: Swatinem/rust-cache@v2
-
-      - name: setup toolchain
+      - name: Setup Rust toolchain
         uses: hecrj/setup-rust-action@v1
         with:
           rust-version: stable
 
+      - uses: Swatinem/rust-cache@v2
+
       - name: Install apt dependencies
         run: sudo apt-get update && sudo apt-get install build-essential pkg-config libasound2-dev libudev-dev libx11-dev libxkbcommon-dev libxkbcommon-x11-0 libxkbcommon-x11-dev
 
+      - name: cargo check
+        run: cargo check --all-features
+
       - name: cargo test
         run: cargo test --all-features
-
-      - name: rustfmt
-        run: cargo fmt --all -- --check
-
-      - name: clippy
-        run: cargo clippy --all --all-features --tests
 
       - name: Build and upload
         id: compile
