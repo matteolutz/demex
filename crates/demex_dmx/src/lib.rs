@@ -38,7 +38,7 @@ impl DemexDmxOutputConfigData {
             DemexDmxOutputConfigData::UsbSerial(config) => config
                 .usb_port
                 .0
-                .product
+                .manufacturer
                 .clone()
                 .unwrap_or_else(|| "USB Debug".into()),
             DemexDmxOutputConfigData::Artnet(_) => "ArtNet".into(),

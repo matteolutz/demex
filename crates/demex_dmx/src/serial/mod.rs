@@ -21,10 +21,17 @@ impl UsbPortInfo {
     }
 
     pub fn to_string(&self) -> String {
-        self.0
-            .product
-            .clone()
-            .unwrap_or_else(|| format!("0x{:04x}-0x{:04x}", self.0.vid, self.0.pid))
+        format!(
+            "{} - {}",
+            self.0
+                .manufacturer
+                .clone()
+                .unwrap_or_else(|| format!("0x{:04x}", self.0.vid)),
+            self.0
+                .product
+                .clone()
+                .unwrap_or_else(|| format!("0x{:04x}", self.0.pid))
+        )
     }
 }
 
