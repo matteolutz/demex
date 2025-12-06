@@ -1,13 +1,7 @@
-use gpui::{App, AppContext, Context, Entity, InteractiveElement, ParentElement, Render, Styled};
-use gpui_component::{
-    setting::{SettingField, SettingGroup, SettingItem, SettingPage, Settings},
-    v_flex,
-};
+use gpui::{App, Context, InteractiveElement, ParentElement, Render, Styled, div};
+use gpui_component::setting::{SettingField, SettingGroup, SettingItem, SettingPage, Settings};
 
-use crate::ui2::{
-    titlebar::{DemexTitleBar, DemexTitleBarConfig},
-    wm::edit_window::EditWindowDelegate,
-};
+use crate::ui2::wm::edit_window::EditWindowDelegate;
 
 mod actions {
     use gpui::{App, KeyBinding};
@@ -28,17 +22,11 @@ pub(super) fn init(cx: &mut App) {
     actions::init(cx);
 }
 
-pub struct SettingsWindow {
-    titlebar: Entity<DemexTitleBar>,
-}
+pub struct SettingsWindow {}
 
 impl SettingsWindow {
-    pub fn new(cx: &mut Context<Self>) -> Self {
-        Self {
-            titlebar: cx.new(|_| {
-                DemexTitleBar::new(DemexTitleBarConfig::SettingsWindow("Settings".into()))
-            }),
-        }
+    pub fn new(_cx: &mut Context<Self>) -> Self {
+        Self {}
     }
 }
 
@@ -66,13 +54,12 @@ impl Render for SettingsWindow {
         _window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
-        v_flex()
+        div()
             .key_context(actions::CONTEXT)
             .on_action(cx.listener(|this, _: &actions::Escape, _, cx| {
                 this.close(cx);
             }))
             .size_full()
-            .child(self.titlebar.clone())
             .child(Settings::new("demex-settings").pages(vec![
                 SettingPage::new("General").default_open(true).group(
                     SettingGroup::new().title("Test").item(SettingItem::new(

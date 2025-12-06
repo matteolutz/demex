@@ -9,7 +9,7 @@ use artnet::{
 use debug::DebugOutputVerbosity;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use serial::SerialOutputConfig;
+use serial::UsbSerialOutputConfig;
 
 use demex_headless::id::DemexProtoDeviceId;
 
@@ -27,16 +27,21 @@ pub type DmxData = (u16, [u8; 512]);
 pub enum DemexDmxOutputConfigData {
     Debug(DebugOutputVerbosity),
 
-    Serial(SerialOutputConfig),
+    UsbSerial(UsbSerialOutputConfig),
     Artnet(ArtnetOutputConfig),
 }
 
 impl DemexDmxOutputConfigData {
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> String {
         match self {
-            DemexDmxOutputConfigData::Debug(_) => "Debug",
-            DemexDmxOutputConfigData::Serial(_) => "Serial",
-            DemexDmxOutputConfigData::Artnet(_) => "Artnet",
+            DemexDmxOutputConfigData::Debug(_) => "Debug".into(),
+            DemexDmxOutputConfigData::UsbSerial(config) => config
+                .usb_port
+                .0
+                .product
+                .clone()
+                .unwrap_or_else(|| "USB Debug".into()),
+            DemexDmxOutputConfigData::Artnet(_) => "ArtNet".into(),
         }
     }
 }
@@ -44,10 +49,12 @@ impl DemexDmxOutputConfigData {
 impl std::fmt::Display for DemexDmxOutputConfigData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Serial(serial_config) => write!(
+            Self::UsbSerial(serial_config) => write!(
                 f,
                 "Universe {} on {} (RTS: {})",
-                serial_config.universe, serial_config.serial_port, serial_config.enable_rts
+                serial_config.universe,
+                serial_config.usb_port.to_string(),
+                serial_config.enable_rts
             ),
             Self::Artnet(artnet_config) => {
                 write!(
@@ -82,6 +89,16 @@ pub struct DemexDmxOutputConfig {
     disabled: bool,
 }
 
+impl DemexDmxOutputConfig {
+    pub fn new(data: DemexDmxOutputConfigData, device_id: DemexProtoDeviceId) -> Self {
+        Self {
+            data,
+            device_id,
+            disabled: false,
+        }
+    }
+}
+
 impl std::fmt::Display for DemexDmxOutputConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.data.fmt(f)
@@ -93,19 +110,19 @@ impl DemexDmxOutputConfig {
         match &self.data {
             DemexDmxOutputConfigData::Debug(_) => None,
             DemexDmxOutputConfigData::Artnet(config) => Some(config.universes.clone()),
-            DemexDmxOutputConfigData::Serial(config) => Some(vec![config.universe]),
+            DemexDmxOutputConfigData::UsbSerial(config) => Some(vec![config.universe]),
         }
     }
 
     pub fn num_threads(&self) -> usize {
         match &self.data {
             DemexDmxOutputConfigData::Debug(_) => 0,
-            DemexDmxOutputConfigData::Serial(_) => 1,
+            DemexDmxOutputConfigData::UsbSerial(_) => 1,
             DemexDmxOutputConfigData::Artnet(_) => 1,
         }
     }
 
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> String {
         self.data.name()
     }
 
@@ -136,7 +153,7 @@ pub enum DemexDmxOutputData {
     },
     Serial {
         tx: mpsc::Sender<DmxData>,
-        config: SerialOutputConfig,
+        config: UsbSerialOutputConfig,
     },
     Debug(DebugOutputVerbosity),
     None,
@@ -190,7 +207,7 @@ impl DemexDmxOutput {
                 }
             }
             DemexDmxOutputConfigData::Debug(verbosity) => DemexDmxOutputData::Debug(*verbosity),
-            DemexDmxOutputConfigData::Serial(config) => {
+            DemexDmxOutputConfigData::UsbSerial(config) => {
                 let (tx, rx) = mpsc::channel();
                 serial::start_serial_output_thread(rx, config.clone());
 
@@ -226,5 +243,21 @@ impl DemexDmxOutput {
 
     pub fn config_mut(&mut self) -> &mut DemexDmxOutputConfig {
         &mut self.config
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serialport::SerialPortType;
+
+    #[test]
+    fn test_serialport() {
+        let ports = serialport::available_ports().expect("No serial ports found");
+        for p in ports {
+            match p.port_type {
+                SerialPortType::UsbPort(usb) => println!("{:?}", usb),
+                _ => {}
+            }
+        }
     }
 }

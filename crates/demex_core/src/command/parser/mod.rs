@@ -422,6 +422,18 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_currently_selected_set_function(&mut self) -> Result<Action, ParseError> {
+        let feature_type = self.parse_feature_type()?;
+
+        let feature_value = self.parse_channel_value_single()?;
+
+        Ok(Action::SetFeatureValue(SetFeatureValueArgs {
+            fixture_selector: FixtureSelector::current_fixtures_selected(),
+            feature_type,
+            feature_value,
+        }))
+    }
+
     fn parse_set_function(
         &mut self,
         fixture_selector: FixtureSelector,
@@ -1361,6 +1373,12 @@ impl<'a> Parser2<'a> {
             let test_action = self.parse_string()?;
 
             return Ok(Action::Test(test_action));
+        }
+
+        let currently_selected_set_function =
+            self.try_parse(Self::parse_currently_selected_set_function);
+        if let Ok(currently_selected_set_function) = currently_selected_set_function {
+            return Ok(currently_selected_set_function);
         }
 
         let fixture_selector = self.try_parse(Self::parse_fixture_selector);

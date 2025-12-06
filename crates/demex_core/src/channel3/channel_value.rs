@@ -103,6 +103,17 @@ impl PartialEq for FixtureChannelValue3 {
             (Self::Discrete(l), Self::Discrete(r)) => l == r,
 
             (
+                Self::Preset {
+                    id: l_id,
+                    state: l_state,
+                },
+                Self::Preset {
+                    id: r_id,
+                    state: r_state,
+                },
+            ) => l_id == r_id && l_state == r_state,
+
+            (
                 Self::Mix {
                     a: a_a,
                     b: a_b,

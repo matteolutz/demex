@@ -97,7 +97,7 @@ impl WindowManager {
 
         let handle = WindowWrapper::open(cx, |window, cx| {
             window.on_window_should_close(cx, move |_, cx| {
-                cx.update_wm(|wm, cx| wm.request_close_singleton_window::<D>(cx))
+                cx.update_wm(|wm, cx| wm.request_close_singleton_window::<D>(cx, false, true))
             });
 
             D::create(window, cx, data)
@@ -127,7 +127,12 @@ impl WindowManager {
             .unwrap_or(false)
     }
 
-    pub fn request_close_singleton_window<D: WindowDelegate>(&mut self, cx: &mut App) -> bool {
+    pub fn request_close_singleton_window<D: WindowDelegate>(
+        &mut self,
+        cx: &mut App,
+        discard_changes: bool,
+        closes_on_false: bool,
+    ) -> bool {
         let type_id = TypeId::of::<D>();
 
         let Some(&singleton_window) = self.singleton_windows.get(&type_id) else {
@@ -146,8 +151,13 @@ impl WindowManager {
             });
         };
 
-        if !singleton_window.is_edited {
-            self.singleton_windows.remove(&type_id);
+        if !singleton_window.is_edited || discard_changes {
+            if closes_on_false {
+                self.singleton_windows.remove(&type_id);
+            } else {
+                close_window(cx);
+            }
+
             return true;
         }
 

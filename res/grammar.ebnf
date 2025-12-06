@@ -5,6 +5,7 @@ command                     = function
 
 
 function                    = fixture_selector set_function
+                            | discrete_set_function
                             | "set" set_property_function
                             | "home" [homeable_object]
                             | "record" record_function
@@ -64,7 +65,9 @@ create_function             = "sequence" (integer | "next") ["as" string]
                             | "macro" (integer | "next") "with" command ["as" string]
                             | "preset" float ["as" string]
 
-set_function                = channel_type value_single
+discrete_set_function       = channel_type value_single
+
+set_function                = discrete_set_function
                             | specific_preset_or_range
 
 object_range                = object ["thru" object]

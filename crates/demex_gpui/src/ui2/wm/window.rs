@@ -53,11 +53,13 @@ pub trait WindowDelegate: 'static {
         cx.update_wm(|wm, cx| wm.set_singleton_window_edited::<Self>(cx, edited));
     }
 
-    fn close(&self, cx: &mut App)
+    fn close(&self, cx: &mut App, discard_changes: bool)
     where
         Self: Sized,
     {
-        cx.update_wm(|wm, cx| wm.request_close_singleton_window::<Self>(cx));
+        cx.update_wm(|wm, cx| {
+            wm.request_close_singleton_window::<Self>(cx, discard_changes, false)
+        });
     }
 
     fn window_title(&self, window: &mut Window, cx: &App) -> impl Into<SharedString>

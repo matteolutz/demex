@@ -1,12 +1,16 @@
 use gpui::{
-    AnyView, App, AppContext, Context, Entity, Render, SharedString, Window, WindowBounds,
-    WindowKind,
+    AnyView, App, AppContext, Context, Entity, ParentElement, Render, SharedString, Styled, Window,
+    WindowBounds, WindowKind,
 };
+use gpui_component::v_flex;
 
-use crate::ui2::wm::{
-    WindowManager,
-    app::WindowManagerAppExt,
-    window::{WindowDelegate, WindowWrapper},
+use crate::ui2::{
+    titlebar::{DemexTitleBar, DemexTitleBarConfig},
+    wm::{
+        WindowManager,
+        app::WindowManagerAppExt,
+        window::{WindowDelegate, WindowWrapper},
+    },
 };
 
 pub trait EditWindowDelegate: 'static + Render {
@@ -34,7 +38,18 @@ pub trait EditWindowDelegate: 'static + Render {
     where
         Self: Sized,
     {
-        cx.update_wm(|wm, cx| wm.request_close_singleton_window::<EditWindow<Self>>(cx));
+        cx.update_wm(|wm, cx| {
+            wm.request_close_singleton_window::<EditWindow<Self>>(cx, false, false)
+        });
+    }
+
+    fn discard_and_close(&self, cx: &mut App)
+    where
+        Self: Sized,
+    {
+        cx.update_wm(|wm, cx| {
+            wm.request_close_singleton_window::<EditWindow<Self>>(cx, true, false)
+        });
     }
 
     fn is_edited(&self, cx: &App) -> bool {
@@ -42,18 +57,42 @@ pub trait EditWindowDelegate: 'static + Render {
     }
 }
 
+pub struct EditWindowView<V: EditWindowDelegate> {
+    pub entity: Entity<V>,
+    pub titlebar: Entity<DemexTitleBar>,
+}
+
+impl<V: EditWindowDelegate> Render for EditWindowView<V> {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        v_flex()
+            .size_full()
+            .child(self.titlebar.clone())
+            .child(self.entity.clone())
+    }
+}
+
 pub struct EditWindow<V: EditWindowDelegate> {
     entity: Entity<V>,
+    view: Entity<EditWindowView<V>>,
 }
 
 impl<V: EditWindowDelegate> WindowDelegate for EditWindow<V> {
     type InitData = Entity<V>;
 
-    fn create(_window: &mut Window, _cx: &mut App, data: Self::InitData) -> Self
+    fn create(window: &mut Window, cx: &mut App, data: Self::InitData) -> Self
     where
         Self: Sized,
     {
-        Self { entity: data }
+        let window_title = data.read(cx).window_title(window, cx).into();
+
+        Self {
+            entity: data.clone(),
+            view: cx.new(|cx| EditWindowView {
+                entity: data,
+                titlebar: cx
+                    .new(|_| DemexTitleBar::new(DemexTitleBarConfig::SettingsWindow(window_title))),
+            }),
+        }
     }
 
     fn window_title(&self, window: &mut Window, cx: &App) -> impl Into<SharedString>
@@ -104,7 +143,7 @@ impl<V: EditWindowDelegate> WindowDelegate for EditWindow<V> {
     where
         Self: Sized,
     {
-        self.entity.clone().into()
+        self.view.clone().into()
     }
 }
 

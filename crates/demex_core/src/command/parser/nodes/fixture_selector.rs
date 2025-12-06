@@ -129,6 +129,12 @@ impl Default for FixtureSelector {
 }
 
 impl FixtureSelector {
+    pub fn current_fixtures_selected() -> Self {
+        Self::Atomic(AtomicFixtureSelector::CurrentFixturesSelected)
+    }
+}
+
+impl FixtureSelector {
     pub fn get_selection(
         &self,
         preset_handler: &PresetHandler,

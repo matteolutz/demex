@@ -41,12 +41,16 @@ impl DemexShowFileManager {
 
         DemexUiState::init(cx);
 
-        let show = showfile_path
-            .as_ref()
-            .and_then(|path| Self::parse_show_file(&path).ok());
-        if show.is_none() {
-            log::warn!("Couldn't load initial showfile, falling back to default.");
-        }
+        let show = showfile_path.as_ref().and_then(|path| {
+            Self::parse_show_file(&path)
+                .inspect_err(|err| {
+                    log::warn!(
+                        "Couldn't load initial showfile, falling back to default: {}",
+                        err
+                    )
+                })
+                .ok()
+        });
 
         s.load_show(show.unwrap_or_default(), cx)?;
 
