@@ -31,6 +31,14 @@ Before you can run demex, you need to install some additional packages. You can 
 sudo apt-get install build-essential pkg-config libasound2-dev libudev-dev libx11-dev libxkbcommon-dev libxkbcommon-x11-0 libxkbcommon-x11-dev
 ```
 
+To use a USB-to-DMX adapter, you need to grant permission to the user account, running demex:
+
+```bash
+sudo usermod -a -G dialout $USER
+sudo usermod -a -G tty $USER
+```
+
+
 #### Windows
 > TODO
 
