@@ -4,7 +4,8 @@ use demex_core::command::parser::nodes::action::Action;
 use demex_dmx::DemexDmxOutputConfig;
 use gpui::{
     App, AppContext, Context, Entity, InteractiveElement, ParentElement, Render, SharedString,
-    Styled, Subscription, UniformListScrollHandle, WindowBounds, div, size, uniform_list,
+    Styled, Subscription, UniformListScrollHandle, WindowBounds, div, prelude::FluentBuilder, size,
+    uniform_list,
 };
 use gpui_component::{
     ActiveTheme, Disableable, IconName, StyledExt,
@@ -154,7 +155,11 @@ impl Render for OutputsConfigWindow {
                             .mt_4()
                             .overflow_hidden()
                             .vertical_scrollbar(&self.output_list_scroll_handle)
-                            .child(Button::new("add").label("Add").dropdown_menu(|menu, _, _| {
+                            .child(Button::new("add").label("Add")
+                                .disabled(is_edited)
+                                .when(is_edited, |button| button.tooltip("Please save your changes to add a new output"))
+                                .when(!is_edited, |button| button.tooltip("Add a new output"))
+                                .dropdown_menu(|menu, _, _| {
                                 menu.menu("USB Serial", Box::new(actions::AddUsbSerial))
                                     .menu("ArtNet", Box::new(actions::AddArtNet))
                                     .menu("Debug", Box::new(actions::AddDebug))

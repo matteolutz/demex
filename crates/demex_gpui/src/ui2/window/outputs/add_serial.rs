@@ -5,11 +5,14 @@ use demex_dmx::{
 };
 use demex_headless::id::DemexProtoDeviceId;
 use gpui::{
-    AppContext, Context, Entity, ParentElement, Render, Styled, Window, WindowBounds, div, size,
+    AppContext, ClickEvent, Context, Entity, ParentElement, Render, Styled, Window, WindowBounds,
+    div, size,
 };
 use gpui_component::{
+    IconName,
     button::{Button, ButtonVariants},
     form::{field, v_form},
+    h_flex,
     input::{InputEvent, InputState, NumberInput},
     notification::Notification,
     select::{Select, SelectEvent, SelectItem, SelectState},
@@ -118,6 +121,29 @@ impl AddSerialOutputWindow {
 
         self.discard_and_close(cx);
     }
+
+    fn handle_refresh_devices(
+        &mut self,
+        _: &ClickEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.selected_output_device.update(cx, |state, cx| {
+            state.set_items(
+                available_usb_ports()
+                    .into_iter()
+                    .map(WithId::map(|port: &demex_dmx::serial::UsbPortInfo| {
+                        port.id()
+                    }))
+                    .map_into()
+                    .collect(),
+                window,
+                cx,
+            );
+            cx.notify();
+        });
+        cx.notify();
+    }
 }
 
 impl Render for AddSerialOutputWindow {
@@ -129,10 +155,18 @@ impl Render for AddSerialOutputWindow {
         div().size_full().p_4().child(
             v_form()
                 .child(
-                    field()
-                        .required(true)
-                        .label("Device")
-                        .child(Select::new(&self.selected_output_device)),
+                    field().required(true).label("Device").child(
+                        h_flex()
+                            .gap_1()
+                            .child(Select::new(&self.selected_output_device).flex_1())
+                            .child(
+                                Button::new("refresh-devices")
+                                    .ghost()
+                                    .icon(IconName::Undo)
+                                    .tooltip("Refresh device list")
+                                    .on_click(cx.listener(Self::handle_refresh_devices)),
+                            ),
+                    ),
                 )
                 .child(
                     field()
