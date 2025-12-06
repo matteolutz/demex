@@ -60,6 +60,10 @@ impl FixtureListTable {
         s
     }
 
+    pub fn row_fixture_id(&self, row_ix: usize) -> Option<u32> {
+        self.data.get(row_ix).map(|entry| entry.id)
+    }
+
     pub fn update_data(&mut self, data: Vec<FixtureListTableEntry>) {
         self.data = data;
         self.sort();

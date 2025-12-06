@@ -10,7 +10,7 @@ use demex_core::{
     show::DemexShow,
 };
 use gdtf::fixture_type::FixtureType;
-use gpui::{App, AppContext, AsyncApp, Context, Entity, Global};
+use gpui::{App, AppContext, AsyncApp, BorrowAppContext, Context, Entity, Global};
 
 use crate::engine::event::DemexEventHandler;
 
@@ -27,16 +27,28 @@ pub struct DemexEngineHandler {
 }
 
 impl DemexEngineHandler {
-    pub fn init(
-        global_fixture_types: Vec<FixtureType>,
+    pub fn load_show(
+        fixture_types: Vec<FixtureType>,
         show: DemexShow,
+        cx: &mut App,
+    ) -> Result<DemexFrontendInitState, DemexEngineError> {
+        if cx.has_global::<Self>() {
+            Ok(cx.update_global(|this: &mut Self, _| this.update_show(show, fixture_types)))
+        } else {
+            Self::init(show, fixture_types, cx)
+        }
+    }
+
+    fn init(
+        show: DemexShow,
+        fixture_types: Vec<FixtureType>,
         cx: &mut App,
     ) -> Result<DemexFrontendInitState, DemexEngineError> {
         let (event_bus_tx, event_bus_rx) = mpsc::channel();
 
-        let mut engine = DemexEngine::new(event_bus_tx);
+        let mut engine = DemexEngine::new(event_bus_tx, false);
 
-        let (dispatcher, frontend_state) = engine.load_show(show, global_fixture_types, false);
+        let (dispatcher, frontend_state) = engine.load_show(show, fixture_types);
 
         let event_handler = cx.new(|cx| DemexEventHandler::new(event_bus_rx, cx));
 
@@ -47,6 +59,16 @@ impl DemexEngineHandler {
         });
 
         Ok(frontend_state)
+    }
+
+    fn update_show(
+        &mut self,
+        show: DemexShow,
+        fixture_types: Vec<FixtureType>,
+    ) -> DemexFrontendInitState {
+        let (dispatcher, frontend_state) = self.engine.load_show(show, fixture_types);
+        self.dispatcher = dispatcher;
+        frontend_state
     }
 
     pub fn engine(cx: &App) -> &DemexEngine {

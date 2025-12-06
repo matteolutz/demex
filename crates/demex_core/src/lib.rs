@@ -22,6 +22,7 @@ pub mod selection;
 pub mod sequence;
 pub mod show;
 pub mod state;
+mod thread;
 pub mod timing;
 pub mod updatables;
 pub mod utils;

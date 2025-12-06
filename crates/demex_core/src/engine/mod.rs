@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, mpsc},
-    thread::JoinHandle,
-};
+use std::sync::{Arc, mpsc};
 
 use arc_swap::ArcSwap;
 use gdtf::fixture_type::FixtureType;
@@ -24,6 +21,10 @@ use crate::{
     },
     patch::Patch,
     show::DemexShow,
+    thread::{
+        DemexThread, DemexThreadHandle, debug::DebugThread, output::OutputThread,
+        update::UpdateThread,
+    },
     utils::thread::DemexThreadStatsHandler,
 };
 
@@ -31,10 +32,10 @@ pub mod comm;
 pub mod component;
 pub mod error;
 pub mod state;
-mod threads;
 pub mod tick;
 
 pub struct DemexEngine {
+    debug_thread: Option<DemexThreadHandle<DebugThread>>,
     stats: ComponentHandle<DemexThreadStatsHandler>,
 
     patch: Arc<ArcSwap<Patch>>,
@@ -42,18 +43,25 @@ pub struct DemexEngine {
     action_queue: ComponentHandle<ActionQueue>,
 
     event_bus_tx: mpsc::Sender<DemexEngineCommEvent>,
-    threads: Vec<JoinHandle<()>>,
+
+    update_thread: Option<DemexThreadHandle<UpdateThread>>,
+    output_thread: Option<DemexThreadHandle<OutputThread>>,
 }
 
 impl DemexEngine {
-    pub fn new(event_bus_tx: mpsc::Sender<DemexEngineCommEvent>) -> Self {
+    pub fn new(event_bus_tx: mpsc::Sender<DemexEngineCommEvent>, start_debug: bool) -> Self {
+        let stats = ComponentHandle::create_default();
+
         let s = Self {
-            stats: ComponentHandle::create_default(),
+            debug_thread: start_debug
+                .then(|| DemexThread::start(DebugThread::default(), stats.clone())),
+            stats,
             action_queue: ComponentHandle::create_default(),
             state: ComponentHandle::create_default(),
             event_bus_tx,
-            threads: Vec::new(),
             patch: Arc::new(ArcSwap::from_pointee(Patch::default())),
+            update_thread: None,
+            output_thread: None,
         };
 
         s
@@ -65,8 +73,9 @@ impl DemexEngine {
         &mut self,
         show: DemexShow,
         fixture_types: Vec<FixtureType>,
-        start_debug: bool,
     ) -> (DemexEngineCommRequestDispatcher, DemexFrontendInitState) {
+        self.stop_threads();
+
         let patch = show.patch.into_patch(fixture_types);
         self.patch.store(Arc::new(patch.clone()));
 
@@ -74,14 +83,13 @@ impl DemexEngine {
         let mut comm_handler = DemexEngineCommRequestHandler::new(rx);
         let comm_dispatcher = DemexEngineCommRequestDispatcher::new(tx);
 
-        Self::register_comm_handlers(&mut comm_handler);
+        self.register_comm_handlers(&mut comm_handler);
 
         let (value_queue_tx, value_queue_rx) = mpsc::channel();
 
-        let (update_thread, fixture_states) = threads::update::start_demex_update_thread(
+        let (update_thread_delegate, fixture_states) = UpdateThread::new(
             self.event_bus_tx.clone(),
             comm_handler,
-            self.stats(),
             self.action_queue.clone(),
             value_queue_tx,
             show.preset_handler,
@@ -89,19 +97,14 @@ impl DemexEngine {
             show.timing_handler,
             self.patch.clone(),
         );
-        self.register_thread(update_thread);
+        let update_thread = DemexThread::start(update_thread_delegate, self.stats());
+        self.update_thread = Some(update_thread);
 
-        let output_thread = threads::output::start_demex_output_thread(
-            self.stats.clone(),
-            self.patch.clone(),
-            value_queue_rx,
+        let output_thread = DemexThread::start(
+            OutputThread::new(self.patch.clone(), value_queue_rx),
+            self.stats(),
         );
-        self.register_thread(output_thread);
-
-        if start_debug {
-            let debug_thread = threads::debug::start_demex_debug_thread(self.stats());
-            self.register_thread(debug_thread);
-        }
+        self.output_thread = Some(output_thread);
 
         let frontend_state = DemexFrontendInitState {
             fixture_selection: self.state.read(|s| s.fixture_selection.clone()),
@@ -112,27 +115,38 @@ impl DemexEngine {
         (comm_dispatcher, frontend_state)
     }
 
-    fn register_thread(&mut self, join_handle: JoinHandle<()>) {
-        self.threads.push(join_handle);
+    fn stop_threads(&mut self) {
+        if let Some(update_thread) = self.update_thread.take() {
+            update_thread
+                .stop_and_join()
+                .expect("Should stop update thread");
+        }
+
+        if let Some(output_thread) = self.output_thread.take() {
+            output_thread
+                .stop_and_join()
+                .expect("Should stop output thread");
+        }
     }
 
-    fn register_comm_handlers(handler: &mut DemexEngineCommRequestHandler) {
+    pub fn stop(mut self) {
+        self.stop_threads();
+        if let Some(debug_thread) = self.debug_thread.take() {
+            debug_thread
+                .stop_and_join()
+                .expect("Should stop debug thread");
+        }
+    }
+
+    fn register_comm_handlers(&self, handler: &mut DemexEngineCommRequestHandler) {
         handler.register(|FixtureNameRequest(id): FixtureNameRequest, payload| {
             payload.patch.fixture(id).map(|f| f.name.clone()).ok()
         });
         handler.register(|_: ThreadStatsRequest, payload| {
             payload.stats.read(|stats| stats.stats().clone())
         });
-        handler.register(|_: ShowRequest, _| {
-            // TODO
-            DemexShow::default()
-        });
-    }
 
-    pub fn join_threads(&mut self) {
-        for thread in self.threads.drain(..) {
-            thread.join().unwrap();
-        }
+        handler.register(|_: ShowRequest, payload| payload.show.clone_into_show());
     }
 
     pub fn exec_command(&self, command: &str) -> Result<(), Box<dyn std::error::Error>> {

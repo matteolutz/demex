@@ -58,7 +58,8 @@ impl DemexShowFileManager {
     }
 
     pub fn load_show(&mut self, show: DemexShow, cx: &mut App) -> Result<(), DemexEngineError> {
-        let frontend_state = DemexEngineHandler::init(self.global_fixture_types.clone(), show, cx)?;
+        let frontend_state =
+            DemexEngineHandler::load_show(self.global_fixture_types.clone(), show, cx)?;
 
         cx.update_global(|ui_state: &mut DemexUiState, cx| {
             ui_state.load_frontend_state(frontend_state, cx)
@@ -130,9 +131,7 @@ impl DemexShowFileManager {
         }
     }
 
-    #[allow(unused)]
     pub fn open(path: impl Into<PathBuf>, cx: &mut App) -> Result<(), Box<dyn std::error::Error>> {
-        return Err("Not yet implemented".into());
         cx.update_global(|this: &mut Self, cx| this.load_showfile(path, cx))
     }
 

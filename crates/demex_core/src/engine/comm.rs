@@ -10,7 +10,7 @@ use crate::{
     engine::{component::ComponentHandle, tick::DemexEngineTickState},
     event::DemexEvent,
     patch::Patch,
-    show::DemexShow,
+    show::{DemexShow, DemexShowRef},
     utils::thread::{DemexThreadStats, DemexThreadStatsHandler},
 };
 
@@ -87,6 +87,7 @@ impl DemexEngineCommRequestDispatcher {
 pub(crate) struct DemexEngineCommRequestHandlerPayload<'a> {
     pub patch: &'a Patch,
     pub stats: &'a ComponentHandle<DemexThreadStatsHandler>,
+    pub show: DemexShowRef<'a>,
 }
 
 pub(crate) struct DemexEngineCommRequestHandler {

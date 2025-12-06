@@ -37,6 +37,13 @@ impl DemexTitleBarConfig {
         _window: &mut Window,
         cx: &mut App,
     ) -> impl IntoIterator<Item = AnyElement> {
+        let showfile_name = DemexShowFileManager::current_file_path(cx)
+            .read(cx)
+            .as_ref()
+            .and_then(|path| path.file_name())
+            .and_then(|name| name.to_str().map(|s| s.to_string()))
+            .unwrap_or_else(|| "Untitled show".to_string());
+
         match self {
             Self::DockWindow => {
                 vec![
@@ -62,7 +69,7 @@ impl DemexTitleBarConfig {
                                     .menu("Save", Box::new(app::actions::Save))
                                     .menu("Save As", Box::new(app::actions::SaveAs))
                                     .separator()
-                                    .menu_with_enable("Open", Box::new(app::actions::Open), false)
+                                    .menu_with_enable("Open", Box::new(app::actions::Open), true)
                             },
                         ))
                         .child(Button::new("settings").link().label("Settings").on_click(
@@ -79,6 +86,11 @@ impl DemexTitleBarConfig {
                                 });
                             },
                         ))
+                        .into_any_element(),
+                    h_flex()
+                        .px_8()
+                        .justify_center()
+                        .child(showfile_name)
                         .into_any_element(),
                 ]
             }
@@ -119,10 +131,11 @@ impl Render for DemexTitleBar {
     ) -> impl gpui::IntoElement {
         TitleBar::new().child(
             div()
+                .w_full()
                 .on_action(Self::handle_new)
                 .flex()
+                .justify_start()
                 .items_center()
-                .justify_end()
                 .gap_2()
                 .children(self.config.into_children(window, cx)),
         )

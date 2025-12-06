@@ -1,3 +1,4 @@
+use demex_core::command::parser::nodes::action::Action;
 use gpui::{
     App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement,
     ParentElement, Render, Styled, Subscription, Window, div,
@@ -5,11 +6,11 @@ use gpui::{
 use gpui_component::{
     Sizable,
     dock::{Panel, PanelEvent, register_panel},
-    table::{Table, TableState},
+    table::{Table, TableEvent, TableState},
 };
 
 use crate::{
-    engine::state::DemexUiState,
+    engine::{DemexEngineHandler, state::DemexUiState},
     ui2::{
         config::AppConfigExt,
         panels::fixture_list::table::{FixtureListTable, FixtureListTableEntry},
@@ -62,6 +63,16 @@ impl FixtureListPanel {
             cx.observe(&fixture_values, move |this, _, cx| refresh_table(this, cx)),
             cx.observe(&fixture_selection, move |this, _, cx| {
                 refresh_table(this, cx)
+            }),
+            cx.subscribe(&table_state, |_, state, evt, cx| match evt {
+                TableEvent::DoubleClickedRow(row_ix) => {
+                    let Some(fixture_id) = state.read(cx).delegate().row_fixture_id(*row_ix) else {
+                        return;
+                    };
+                    DemexEngineHandler::engine(cx)
+                        .exec_ui(Action::AddFixturesToSelection(vec![fixture_id]));
+                }
+                _ => {}
             }),
         ];
 
