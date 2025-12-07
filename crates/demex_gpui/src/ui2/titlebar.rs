@@ -1,10 +1,9 @@
-use demex_core::utils::version::VERSION_STR;
 use gpui::{
-    AnyElement, App, BorrowAppContext, InteractiveElement, IntoElement, ParentElement, Render,
-    SharedString, Styled, Window, div,
+    AnyElement, App, Context, InteractiveElement, IntoElement, ParentElement, Render, SharedString,
+    Styled, Subscription, Window, div,
 };
 use gpui_component::{
-    ActiveTheme, TitleBar,
+    Sizable, TitleBar,
     button::{Button, ButtonVariants},
     h_flex,
     menu::DropdownMenu,
@@ -14,6 +13,7 @@ use crate::{
     app,
     engine::showfile::DemexShowFileManager,
     ui2::{
+        ext::GpuiContextExtension,
         window::{outputs::OutputsConfigWindow, settings::SettingsWindow},
         wm::{WindowManager, edit_window::WindowManagerExtension},
     },
@@ -37,6 +37,10 @@ impl DemexTitleBarConfig {
         _window: &mut Window,
         cx: &mut App,
     ) -> impl IntoIterator<Item = AnyElement> {
+        let has_showfile_name = DemexShowFileManager::current_file_path(cx)
+            .read(cx)
+            .is_some();
+
         let showfile_name = DemexShowFileManager::current_file_path(cx)
             .read(cx)
             .as_ref()
@@ -47,45 +51,58 @@ impl DemexTitleBarConfig {
         match self {
             Self::DockWindow => {
                 vec![
-                    h_flex()
-                        .gap_1()
-                        .items_center()
-                        .child(div().text_xl().child("demex"))
-                        .child(
-                            div()
-                                .text_sm()
-                                .text_color(cx.theme().muted_foreground)
-                                .child(format!("v{}", VERSION_STR)),
-                        )
-                        .into_any_element(),
+                    div().text_xl().child("demex").into_any_element(),
                     h_flex()
                         .px_4()
                         .py_2()
                         .gap_2()
-                        .child(Button::new("file-menu").link().label("File").dropdown_menu(
-                            |menu, _, _| {
-                                menu.menu("New", Box::new(actions::NewFile))
-                                    .separator()
-                                    .menu("Save", Box::new(app::actions::Save))
-                                    .menu("Save As", Box::new(app::actions::SaveAs))
-                                    .separator()
-                                    .menu_with_enable("Open", Box::new(app::actions::Open), true)
-                            },
-                        ))
-                        .child(Button::new("settings").link().label("Settings").on_click(
-                            |_, _, cx| {
-                                WindowManager::open_edit_window::<SettingsWindow>(cx, |cx| {
-                                    SettingsWindow::new(cx)
-                                });
-                            },
-                        ))
-                        .child(Button::new("outputs").link().label("Outputs").on_click(
-                            |_, _, cx| {
-                                WindowManager::open_edit_window::<OutputsConfigWindow>(cx, |cx| {
-                                    OutputsConfigWindow::new(cx)
-                                });
-                            },
-                        ))
+                        .child(
+                            Button::new("file-menu")
+                                .small()
+                                .link()
+                                .label("File")
+                                .dropdown_menu(move |menu, _, _| {
+                                    menu.menu("New", Box::new(actions::NewFile))
+                                        .separator()
+                                        .menu("Save", Box::new(app::actions::Save))
+                                        .menu("Save As", Box::new(app::actions::SaveAs))
+                                        .separator()
+                                        .menu_with_enable(
+                                            "Open",
+                                            Box::new(app::actions::Open),
+                                            true,
+                                        )
+                                        .separator()
+                                        .menu_with_enable(
+                                            "Reload",
+                                            Box::new(app::actions::Reload),
+                                            has_showfile_name,
+                                        )
+                                }),
+                        )
+                        .child(
+                            Button::new("settings")
+                                .small()
+                                .link()
+                                .label("Settings")
+                                .on_click(|_, _, cx| {
+                                    WindowManager::open_edit_window::<SettingsWindow>(cx, |cx| {
+                                        SettingsWindow::new(cx)
+                                    });
+                                }),
+                        )
+                        .child(
+                            Button::new("outputs")
+                                .small()
+                                .link()
+                                .label("Outputs")
+                                .on_click(|_, _, cx| {
+                                    WindowManager::open_edit_window::<OutputsConfigWindow>(
+                                        cx,
+                                        |cx| OutputsConfigWindow::new(cx),
+                                    );
+                                }),
+                        )
                         .into_any_element(),
                     h_flex()
                         .px_8()
@@ -101,25 +118,34 @@ impl DemexTitleBarConfig {
     }
 }
 
-#[derive(Default)]
 pub struct DemexTitleBar {
     config: DemexTitleBarConfig,
+    _subscriptions: Vec<Subscription>,
 }
 
 impl DemexTitleBar {
-    pub fn new(config: DemexTitleBarConfig) -> Self {
-        Self { config }
+    pub fn new(config: DemexTitleBarConfig, cx: &mut Context<Self>) -> Self {
+        let _subscriptions =
+            vec![cx.observe_and_notify(&DemexShowFileManager::current_file_path(cx))];
+
+        Self {
+            config,
+            _subscriptions,
+        }
     }
 
-    pub fn settings(title: impl Into<SharedString>) -> Self {
-        Self::new(DemexTitleBarConfig::SettingsWindow(title.into()))
+    pub fn dock_window(cx: &mut Context<Self>) -> Self {
+        Self::new(DemexTitleBarConfig::DockWindow, cx)
+    }
+
+    pub fn settings(title: impl Into<SharedString>, cx: &mut Context<Self>) -> Self {
+        Self::new(DemexTitleBarConfig::SettingsWindow(title.into()), cx)
     }
 }
 
 impl DemexTitleBar {
     fn handle_new(_: &actions::NewFile, _: &mut Window, cx: &mut App) {
-        let _ =
-            cx.update_global(|manager: &mut DemexShowFileManager, cx| manager.load_empty_show(cx));
+        DemexShowFileManager::load_empty_show(cx);
     }
 }
 

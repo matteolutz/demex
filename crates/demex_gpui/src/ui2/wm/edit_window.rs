@@ -5,7 +5,7 @@ use gpui::{
 use gpui_component::v_flex;
 
 use crate::ui2::{
-    titlebar::{DemexTitleBar, DemexTitleBarConfig},
+    titlebar::DemexTitleBar,
     wm::{
         WindowManager,
         app::WindowManagerAppExt,
@@ -89,8 +89,7 @@ impl<V: EditWindowDelegate> WindowDelegate for EditWindow<V> {
             entity: data.clone(),
             view: cx.new(|cx| EditWindowView {
                 entity: data,
-                titlebar: cx
-                    .new(|_| DemexTitleBar::new(DemexTitleBarConfig::SettingsWindow(window_title))),
+                titlebar: cx.new(|cx| DemexTitleBar::settings(window_title, cx)),
             }),
         }
     }

@@ -10,7 +10,7 @@ use demex_core::{
     show::DemexShow,
 };
 use gdtf::fixture_type::FixtureType;
-use gpui::{App, AppContext, AsyncApp, BorrowAppContext, Context, Entity, Global};
+use gpui::{App, AppContext, AsyncApp, Context, Entity, Global};
 
 use crate::engine::event::DemexEventHandler;
 
@@ -27,19 +27,7 @@ pub struct DemexEngineHandler {
 }
 
 impl DemexEngineHandler {
-    pub fn load_show(
-        fixture_types: Vec<FixtureType>,
-        show: DemexShow,
-        cx: &mut App,
-    ) -> Result<DemexFrontendInitState, DemexEngineError> {
-        if cx.has_global::<Self>() {
-            Ok(cx.update_global(|this: &mut Self, _| this.update_show(show, fixture_types)))
-        } else {
-            Self::init(show, fixture_types, cx)
-        }
-    }
-
-    fn init(
+    pub fn init(
         show: DemexShow,
         fixture_types: Vec<FixtureType>,
         cx: &mut App,

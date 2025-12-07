@@ -143,7 +143,8 @@ impl Render for OutputsConfigWindow {
                                 .on_click(cx.listener(move |this, _, window, cx| {
                                     if this.is_edited(cx) {
                                         this.handle_save(window, cx);
-                                        this.set_edited(false, cx);
+                                        // this.set_edited(false, cx);
+                                        this.discard_and_close(cx);
                                     }
                                 })),
                         ),

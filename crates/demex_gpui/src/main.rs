@@ -15,7 +15,10 @@ use demex_core::utils::deadlock::start_deadlock_checking_thread;
 
 use clap::Parser;
 
-use crate::app::{DemexApp, DemexAppArgs};
+use crate::{
+    app::{DemexApp, DemexAppArgs},
+    storage::read_or_create_dir,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
 enum DemexUiThemeAttribute {}
@@ -64,14 +67,17 @@ struct Args {
     /// Enable the controller mode, which allows the application to act as a controller for headless nodes.
     #[arg(long, default_value = "false", conflicts_with = "headless")]
     controller: bool,
+
+    #[cfg(debug_assertions)]
+    #[arg(long, default_value = "false")]
+    backtrace: bool,
 }
 
-const APP_ID: &str = "demex";
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    if std::env::var("RUST_LOG").is_err() {
-        unsafe {
-            std::env::set_var("RUST_LOG", "debug");
+    #[cfg(debug_assertions)]
+    {
+        if std::env::var("RUST_LOG").is_err() {
+            unsafe { std::env::set_var("RUST_LOG", "debug") }
         }
     }
 
@@ -80,12 +86,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let args = Args::parse();
 
+    #[cfg(debug_assertions)]
+    {
+        let backtrace = if args.backtrace { "1" } else { "0" };
+        log::info!("Running with RUST_BACKTRACE={}", backtrace);
+        unsafe { std::env::set_var("RUST_BACKTRACE", backtrace) }
+    }
+
     if args.deadlock_test {
         start_deadlock_checking_thread();
     }
 
-    let fixture_files = std::fs::read_dir(storage::fixture_types(APP_ID))
-        .unwrap()
+    let fixture_files = read_or_create_dir(storage::fixture_types())
+        .expect("Failed to read or create fixture types directory")
         .flat_map(|file| {
             file.ok()
                 .and_then(|f| std::fs::File::open(f.path()).ok())
@@ -100,7 +113,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .iter()
             .map(|f| f.description.fixture_types.len())
             .sum::<usize>(),
-        storage::fixture_types(APP_ID).display()
+        storage::fixture_types().display()
     );
     log::debug!(
         "Valid fixture type(s):\n {}",
@@ -151,6 +164,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             touchscreen_mode: args.touchscreen_mode,
             showfile_path: args.show,
             fixture_types,
+            additional_viewports: args.additional_viewports.unwrap_or(0),
         });
     }
 

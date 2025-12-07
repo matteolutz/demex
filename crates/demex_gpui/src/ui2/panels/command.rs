@@ -71,6 +71,10 @@ impl Panel for CommandPanel {
     fn panel_name(&self) -> &'static str {
         COMMAND_PANEL_NAME
     }
+
+    fn title(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        "Command"
+    }
 }
 
 impl CommandPanel {

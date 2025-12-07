@@ -26,21 +26,24 @@ pub enum DemexEngineCommEvent {
     FixtureValuesUpdate(HashMap<u32, HashMap<String, FixtureChannelValue3>>),
 }
 
-pub trait DemexEngineCommRequest: Send + 'static {
+pub trait DemexEngineCommRequest: Send + 'static + std::fmt::Debug {
     type Response: Send + 'static;
 }
 
 // Test request
+#[derive(Debug)]
 pub struct FixtureNameRequest(pub u32);
 impl DemexEngineCommRequest for FixtureNameRequest {
     type Response = Option<String>;
 }
 
+#[derive(Debug)]
 pub struct ThreadStatsRequest {}
 impl DemexEngineCommRequest for ThreadStatsRequest {
     type Response = HashMap<String, DemexThreadStats>;
 }
 
+#[derive(Debug)]
 pub struct ShowRequest {}
 impl DemexEngineCommRequest for ShowRequest {
     type Response = DemexShow;

@@ -1,6 +1,9 @@
 use std::{any::TypeId, collections::HashMap};
 
-use gpui::{App, AppContext, Entity, Global, PromptButton, PromptLevel, WindowHandle};
+use gpui::{
+    App, AppContext, Context, Entity, Global, PromptButton, PromptLevel, SharedString, Window,
+    WindowHandle,
+};
 use gpui_component::{Root, notification::Notification};
 
 use crate::ui2::wm::{
@@ -45,12 +48,11 @@ pub struct WindowManager {
 impl WindowManager {
     pub fn new(cx: &mut App) -> Self {
         cx.on_window_closed(|cx| {
-            let n_dock_windows = cx.update_wm(|wm, cx| {
+            let dock_window_closed = cx.update_wm(|wm, cx| {
                 wm.dock_windows
                     .iter()
                     // why ever this thing needs &mut App??
-                    .filter(|h| h.is_active(cx).is_some())
-                    .count()
+                    .any(|h| h.is_active(cx).is_none())
             });
 
             // check if singleton windows are open
@@ -60,7 +62,7 @@ impl WindowManager {
                     .retain(|_, w| w.handle.is_active(cx).is_some());
             });
 
-            if n_dock_windows == 0 && cx.wm().auto_quit {
+            if dock_window_closed && cx.wm().auto_quit {
                 cx.quit();
             }
         })
@@ -73,7 +75,7 @@ impl WindowManager {
         }
     }
 
-    /// When set to true, the application is quit when all dock ("main") windows are closed
+    /// When set to true, the application is quit when any dock ("main") window is closed
     pub fn auto_quit(mut self, auto_quit: bool) -> Self {
         self.auto_quit = auto_quit;
         self
@@ -246,9 +248,9 @@ impl WindowManager {
     }
 
     // Dock windows
-    pub fn add_dock_window(config: DockWindowConfig, cx: &mut App) {
+    pub fn add_dock_window(config: Option<DockWindowConfig>, cx: &mut App) {
         let window_handle = cx
-            .open_window(config.gpui_window_options(), |window, cx| {
+            .open_window(DockWindowConfig::gpui_window_options(), |window, cx| {
                 window.set_window_title("demex");
 
                 cx.new(|cx| Root::new(cx.new(|cx| DockWindow::new(config, window, cx)), window, cx))
@@ -261,10 +263,46 @@ impl WindowManager {
     pub fn add_dock_windows(configs: impl IntoIterator<Item = DockWindowConfig>, cx: &mut App) {
         configs
             .into_iter()
-            .for_each(|config| Self::add_dock_window(config, cx));
+            .for_each(|config| Self::add_dock_window(Some(config), cx));
     }
 
-    fn read_dock_window<'a>(handle: &'a WindowHandle<Root>, cx: &'a App) -> &'a DockWindow {
+    pub fn reset_dock_window_configs(&mut self, cx: &mut App) {
+        for handle in &self.dock_windows {
+            let _ = Self::update_dock_window(
+                handle,
+                |dock_window, window, cx| {
+                    dock_window.reset_config(window, cx);
+                },
+                cx,
+            );
+        }
+    }
+
+    pub fn update_dock_window_configs(
+        &mut self,
+        configs: impl IntoIterator<Item = DockWindowConfig>,
+        cx: &mut App,
+    ) {
+        let mut configs = configs.into_iter();
+
+        for handle in &self.dock_windows {
+            let config = configs.next();
+
+            let _ = Self::update_dock_window(
+                handle,
+                |dock_window, window, cx| {
+                    if let Some(config) = config {
+                        dock_window.update_config(config.dock_area_state, window, cx);
+                    } else {
+                        dock_window.reset_config(window, cx);
+                    }
+                },
+                cx,
+            );
+        }
+    }
+
+    fn dock_window_entity(handle: &WindowHandle<Root>, cx: &App) -> Entity<DockWindow> {
         handle
             .read(cx)
             .expect("Should read window Root")
@@ -272,7 +310,21 @@ impl WindowManager {
             .clone()
             .downcast::<DockWindow>()
             .expect("Root view should be a DockWindow")
-            .read(cx)
+    }
+
+    fn read_dock_window<'a>(handle: &'a WindowHandle<Root>, cx: &'a App) -> &'a DockWindow {
+        Self::dock_window_entity(handle, cx).read(cx)
+    }
+
+    fn update_dock_window<'a, R>(
+        handle: &'a WindowHandle<Root>,
+        update: impl FnOnce(&mut DockWindow, &mut Window, &mut Context<DockWindow>) -> R,
+        cx: &'a mut App,
+    ) -> gpui::Result<R> {
+        let dock_window = Self::dock_window_entity(handle, cx);
+        handle.update(cx, |_, window, cx| {
+            dock_window.update(cx, |dock_window, cx| update(dock_window, window, cx))
+        })
     }
 
     pub fn main_dock_window<'a>(&'a self, cx: &'a App) -> (&'a WindowHandle<Root>, &'a DockWindow) {
@@ -284,6 +336,18 @@ impl WindowManager {
         &mut self.dock_windows[0]
     }
 
+    pub fn update_main_dock_window<'a, R>(
+        &mut self,
+        cx: &'a mut App,
+        update: impl FnOnce(&mut DockWindow, &mut Window, &mut Context<DockWindow>) -> R,
+    ) -> gpui::Result<R> {
+        let handle = self.dock_windows[0];
+        let dock_window = Self::dock_window_entity(&handle, cx);
+        handle.update(cx, |_, window, cx| {
+            dock_window.update(cx, |dock_window, cx| update(dock_window, window, cx))
+        })
+    }
+
     pub fn dock_windows<'a>(
         &'a self,
         cx: &'a App,
@@ -291,6 +355,14 @@ impl WindowManager {
         self.dock_windows
             .iter()
             .map(|handle| (handle, Self::read_dock_window(handle, cx)))
+    }
+
+    pub fn dock_window_configs<'a>(
+        &'a self,
+        cx: &'a App,
+    ) -> impl Iterator<Item = DockWindowConfig> {
+        self.dock_windows(cx)
+            .map(|(_, window)| window.dump_config(cx))
     }
 
     pub fn focus_panel(&mut self, panel_name: &str, cx: &mut App) -> bool {
@@ -323,6 +395,32 @@ impl WindowManager {
             .inspect_err(|err| log::error!("{}", err))
             .expect("Should push notification");
         });
+    }
+
+    pub fn push_success(&mut self, success: impl Into<SharedString>, cx: &mut App) {
+        self.push_notifcation(Notification::success(success), cx);
+    }
+
+    pub fn push_error(&mut self, error: impl Into<SharedString>, cx: &mut App) {
+        self.push_notifcation(Notification::error(error), cx);
+    }
+
+    pub fn inspect_error<R, E: std::fmt::Display>(
+        result: Result<R, E>,
+        prefix: &str,
+        cx: &mut App,
+    ) -> Result<R, E> {
+        result.inspect_err(|err| {
+            let err = format!("{}{}", prefix, err);
+            cx.defer(|cx| cx.update_wm(|wm, cx| wm.push_error(err, cx)));
+        })
+    }
+
+    pub fn handle_error<E: std::fmt::Display>(prefix: &str) -> impl Fn(&E, &mut App) {
+        move |err, cx| {
+            let err = format!("{}{}", prefix, err);
+            cx.defer(|cx| cx.update_wm(|wm, cx| wm.push_error(err, cx)));
+        }
     }
 }
 

@@ -1,36 +1,43 @@
 use std::sync::Arc;
 
-use demex_core::channel3::feature::feature_group::FixtureChannel3FeatureGroup;
+use demex_core::{
+    channel3::feature::feature_group::FixtureChannel3FeatureGroup, utils::version::VERSION_STR,
+};
 use gpui::{
-    App, AppContext, Context, Entity, ParentElement, Render, Styled, Window, WindowOptions,
+    App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Subscription,
+    Window, WindowOptions,
 };
 use gpui_component::{
-    Root, TitleBar,
+    ActiveTheme, Root, TitleBar,
     dock::{DockArea, DockAreaState, DockItem, DockPlacement},
-    v_flex,
+    h_flex, v_flex,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::ui2::{
-    panels::{
-        command::CommandPanel,
-        fixture_list::FixtureListPanel,
-        fixture_selection::FixtureSelectionPanel,
-        layout_view::LayoutViewPanel,
-        performance::PerformancePanel,
-        pool::{PoolPanel, pool_type::PoolType},
+use crate::{
+    engine::showfile::DemexShowFileManager,
+    ui2::{
+        ext::GpuiContextExtension,
+        panels::{
+            command::CommandPanel,
+            fixture_list::FixtureListPanel,
+            fixture_selection::FixtureSelectionPanel,
+            layout_view::LayoutViewPanel,
+            performance::PerformancePanel,
+            pool::{PoolPanel, pool_type::PoolType},
+        },
+        titlebar::DemexTitleBar,
+        wm::DEMEX_APP_ID,
     },
-    titlebar::DemexTitleBar,
-    wm::DEMEX_APP_ID,
 };
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DockWindowConfig {
-    pub dock_area_state: Option<DockAreaState>,
+    pub dock_area_state: DockAreaState,
 }
 
 impl DockWindowConfig {
-    pub(super) fn gpui_window_options(&self) -> WindowOptions {
+    pub(super) fn gpui_window_options() -> WindowOptions {
         WindowOptions {
             titlebar: Some(TitleBar::title_bar_options()),
             app_id: Some(DEMEX_APP_ID.to_string()),
@@ -42,6 +49,8 @@ impl DockWindowConfig {
 pub struct DockWindow {
     title_bar: Entity<DemexTitleBar>,
     dock_area: Entity<DockArea>,
+
+    _subscriptions: Vec<Subscription>,
 }
 
 impl DockWindow {
@@ -130,13 +139,16 @@ impl DockWindow {
 }
 
 impl DockWindow {
-    pub fn new(config: DockWindowConfig, window: &mut Window, cx: &mut Context<Self>) -> Self {
+    pub fn new(
+        config: Option<DockWindowConfig>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Self {
         let dock_area = cx.new(|cx| {
             let mut da = DockArea::new("dock-area", Some(5), window, cx);
 
             let should_load_default = config
-                .dock_area_state
-                .map(|dock_state| da.load(dock_state, window, cx).ok())
+                .map(|config| da.load(config.dock_area_state, window, cx).ok())
                 .is_none();
 
             if should_load_default {
@@ -146,15 +158,32 @@ impl DockWindow {
             da
         });
 
+        let _subscriptions = vec![cx.observe_and_notify(&DemexShowFileManager::last_autosave(cx))];
+
         Self {
-            title_bar: cx.new(|_| Default::default()),
+            title_bar: cx.new(|cx| DemexTitleBar::dock_window(cx)),
             dock_area,
+            _subscriptions,
         }
     }
 
-    pub fn dump_config(&self, cx: &mut App) -> DockWindowConfig {
+    pub fn update_config(&self, state: DockAreaState, window: &mut Window, cx: &mut App) {
+        let _ = self
+            .dock_area
+            .update(cx, |dock_area, cx| dock_area.load(state, window, cx));
+    }
+
+    pub fn reset_config(&self, window: &mut Window, cx: &mut App) {
+        let _: gpui::Result<()> = self.dock_area.update(cx, |dock_area, cx| {
+            dock_area.load(DockAreaState::default(), window, cx)?;
+            Self::apply_default_dock_area(dock_area, window, cx);
+            Ok(())
+        });
+    }
+
+    pub fn dump_config(&self, cx: &App) -> DockWindowConfig {
         DockWindowConfig {
-            dock_area_state: Some(self.dock_area.read(cx).dump(cx)),
+            dock_area_state: self.dock_area.read(cx).dump(cx),
         }
     }
 
@@ -176,6 +205,34 @@ impl DockWindow {
     }
 }
 
+impl DockWindow {
+    pub fn render_status_bar(
+        &self,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        let last_autosave = DemexShowFileManager::last_autosave(cx).read(cx).clone();
+
+        h_flex()
+            .justify_between()
+            .items_center()
+            .px_4()
+            .w_full()
+            .h_6()
+            .border_t_1()
+            .border_color(cx.theme().border)
+            .text_color(cx.theme().muted_foreground)
+            .text_sm()
+            .child(format!("demex v{} ({})", VERSION_STR, env!("GIT_HASH")))
+            .child(format!(
+                "Last autosave: {}",
+                last_autosave
+                    .map(|la| format!("{} seconds ago", la.elapsed().as_secs()))
+                    .unwrap_or_else(|| "-".to_string())
+            ))
+    }
+}
+
 impl Render for DockWindow {
     fn render(
         &mut self,
@@ -186,6 +243,7 @@ impl Render for DockWindow {
             .size_full()
             .child(self.title_bar.clone())
             .child(self.dock_area.clone())
+            .child(self.render_status_bar(window, cx))
             .children(Root::render_dialog_layer(window, cx))
             .children(Root::render_sheet_layer(window, cx))
             .children(Root::render_notification_layer(window, cx))

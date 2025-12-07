@@ -1,809 +1,815 @@
 {
-  "preset_handler": {
-    "groups": {
-      "2": {
-        "id": 2,
-        "name": "Cyberlights Shuffle",
-        "fixture_selection": {
-          "fixtures": [401, 402, 403, 404, 405, 406, 407, 408],
-          "group": 16,
-          "block": 1,
-          "wings": 4,
-          "reverse": false
-        }
-      },
-      "1": {
-        "id": 1,
-        "name": "Cyberlights",
-        "fixture_selection": {
-          "fixtures": [401, 402, 403, 404, 405, 406, 407, 408],
-          "group": 1,
-          "block": 1,
-          "wings": 1,
-          "reverse": false
-        }
-      },
-      "3": {
-        "id": 3,
-        "name": "Spots",
-        "fixture_selection": {
-          "fixtures": [301, 302, 303, 304, 305],
-          "group": 1,
-          "block": 1,
-          "wings": 1,
-          "reverse": false
-        }
-      },
-      "0": {
-        "id": 0,
-        "name": "Washes",
-        "fixture_selection": {
-          "fixtures": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-          "group": 1,
-          "block": 1,
-          "wings": 1,
-          "reverse": false
-        }
-      },
-      "6": {
-        "id": 6,
-        "name": "Wash LR",
-        "fixture_selection": {
-          "fixtures": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-          "group": 5,
-          "block": 1,
-          "wings": 1,
-          "reverse": false
-        }
-      },
-      "4": {
-        "id": 4,
-        "name": "Spot Even Odd",
-        "fixture_selection": {
-          "fixtures": [301, 302, 303, 304, 305],
-          "group": 2,
-          "block": 0,
-          "wings": 1,
-          "reverse": false
-        }
-      }
-    },
-    "macros": { "0": { "id": 0, "name": "Home", "action": "HomeAll" } },
-    "command_slices": {},
-    "sequences": {},
-    "presets": {
-      "Dimmer.1": {
-        "id": "Dimmer.1",
-        "name": "Sine 360",
-        "display_color": null,
-        "fade_up": 0.0,
-        "data": {
-          "FeatureEffect": {
-            "runtime": {
-              "effect": {
-                "parts": [
-                  {
-                    "wave": {
-                      "segments": [
-                        {
-                          "start_pos": { "x": 0.0, "y": 0.14285713 },
-                          "control_points": [
-                            { "x": 0.0, "y": 0.14285713 },
-                            { "x": 0.19999997, "y": 0.14285713 }
-                          ]
-                        },
-                        {
-                          "start_pos": { "x": 0.5, "y": 1.0 },
-                          "control_points": [
-                            { "x": 0.3, "y": 1.0 },
-                            { "x": 0.7, "y": 1.0 }
-                          ]
-                        },
-                        {
-                          "start_pos": { "x": 1.0, "y": 0.14285713 },
-                          "control_points": [
-                            { "x": 0.8, "y": 0.14285713 },
-                            { "x": 1.0, "y": 0.14285713 }
-                          ]
-                        }
-                      ],
-                      "wave_type": "Bezier"
-                    },
-                    "attributes": ["Dimmer"],
-                    "phase_offset": 0.0,
-                    "phase_multiplier": 1.0
-                  }
-                ]
-              },
-              "speed": { "Bpm": 30.0 },
-              "phase": { "Range": { "start": 0.0, "end": 360.0 } }
-            }
-          }
-        }
-      }
-    }
-  },
-  "updatable_handler": {
-    "executors": {}
-  },
-  "timing_handler": {
-    "speed_master_values": {
-      "9": { "bpm": 120.0 },
-      "3": { "bpm": 15.0 },
-      "8": { "bpm": 120.0 },
-      "0": { "bpm": 127.74554 },
-      "1": { "bpm": 120.0 },
-      "4": { "bpm": 120.0 },
-      "5": { "bpm": 120.0 },
-      "2": { "bpm": 60.0 },
-      "6": { "bpm": 120.0 },
-      "7": { "bpm": 120.0 }
-    },
-    "timecodes": {}
-  },
-  "input_device_configs": [
-    {
-      "buttons": {},
-      "faders": {
-        "8": "Grandmaster"
-      },
-      "profile_type": { "ApcMiniMk2": { "apc_midi": "APC mini mk2 Control" } }
-    },
-    {
-      "buttons": {},
-      "faders": {},
-      "profile_type": {
-        "MidiTimecode": { "midi_in_device": "IAC Driver Bus 1" }
-      }
-    }
-  ],
-  "patch": {
-    "fixtures": [
-      {
-        "id": 1,
-        "name": "Robe Wash 1",
-        "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
-        "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
-        "universe": 0,
-        "start_address": 1
-      },
-      {
-        "id": 2,
-        "name": "Robe Wash 2",
-        "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
-        "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
-        "universe": 0,
-        "start_address": 18
-      },
-      {
-        "id": 3,
-        "name": "Robe Wash 3",
-        "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
-        "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
-        "universe": 0,
-        "start_address": 35
-      },
-      {
-        "id": 4,
-        "name": "Robe Wash 4",
-        "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
-        "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
-        "universe": 0,
-        "start_address": 52
-      },
-      {
-        "id": 5,
-        "name": "Robe Wash 5",
-        "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
-        "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
-        "universe": 0,
-        "start_address": 69
-      },
-      {
-        "id": 6,
-        "name": "Robe Wash 6",
-        "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
-        "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
-        "universe": 0,
-        "start_address": 86
-      },
-      {
-        "id": 7,
-        "name": "Robe Wash 7",
-        "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
-        "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
-        "universe": 0,
-        "start_address": 103
-      },
-      {
-        "id": 8,
-        "name": "Robe Wash 8",
-        "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
-        "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
-        "universe": 0,
-        "start_address": 120
-      },
-      {
-        "id": 9,
-        "name": "Robe Wash 9",
-        "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
-        "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
-        "universe": 0,
-        "start_address": 137
-      },
-      {
-        "id": 10,
-        "name": "Robe Wash 10",
-        "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
-        "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
-        "universe": 0,
-        "start_address": 154
-      },
-      {
-        "id": 101,
-        "name": "ETC Colorsource 1",
-        "fixture_type_id": "b5c104a0-c099-4c1b-bba0-32d4d798021d",
-        "fixture_type_dmx_mode": "1ch",
-        "universe": 0,
-        "start_address": 425
-      },
-      {
-        "id": 102,
-        "name": "ETC Colorsource 2",
-        "fixture_type_id": "b5c104a0-c099-4c1b-bba0-32d4d798021d",
-        "fixture_type_dmx_mode": "1ch",
-        "universe": 0,
-        "start_address": 426
-      },
-      {
-        "id": 103,
-        "name": "ETC Colorsource 3",
-        "fixture_type_id": "b5c104a0-c099-4c1b-bba0-32d4d798021d",
-        "fixture_type_dmx_mode": "1ch",
-        "universe": 0,
-        "start_address": 427
-      },
-      {
-        "id": 201,
-        "name": "PAR 1",
-        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
-        "fixture_type_dmx_mode": "Standard mode",
-        "universe": 0,
-        "start_address": 428
-      },
-      {
-        "id": 202,
-        "name": "PAR 2",
-        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
-        "fixture_type_dmx_mode": "Standard mode",
-        "universe": 0,
-        "start_address": 429
-      },
-      {
-        "id": 203,
-        "name": "PAR 3",
-        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
-        "fixture_type_dmx_mode": "Standard mode",
-        "universe": 0,
-        "start_address": 430
-      },
-      {
-        "id": 204,
-        "name": "PAR 4",
-        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
-        "fixture_type_dmx_mode": "Standard mode",
-        "universe": 0,
-        "start_address": 431
-      },
-      {
-        "id": 205,
-        "name": "PAR 5",
-        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
-        "fixture_type_dmx_mode": "Standard mode",
-        "universe": 0,
-        "start_address": 432
-      },
-      {
-        "id": 206,
-        "name": "PAR 6",
-        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
-        "fixture_type_dmx_mode": "Standard mode",
-        "universe": 0,
-        "start_address": 433
-      },
-      {
-        "id": 207,
-        "name": "PAR 7",
-        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
-        "fixture_type_dmx_mode": "Standard mode",
-        "universe": 0,
-        "start_address": 434
-      },
-      {
-        "id": 208,
-        "name": "PAR 8",
-        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
-        "fixture_type_dmx_mode": "Standard mode",
-        "universe": 0,
-        "start_address": 435
-      },
-      {
-        "id": 209,
-        "name": "PAR 9",
-        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
-        "fixture_type_dmx_mode": "Standard mode",
-        "universe": 0,
-        "start_address": 436
-      },
-      {
-        "id": 210,
-        "name": "PAR 10",
-        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
-        "fixture_type_dmx_mode": "Standard mode",
-        "universe": 0,
-        "start_address": 437
-      },
-      {
-        "id": 211,
-        "name": "PAR 11",
-        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
-        "fixture_type_dmx_mode": "Standard mode",
-        "universe": 0,
-        "start_address": 438
-      },
-      {
-        "id": 212,
-        "name": "PAR 12",
-        "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
-        "fixture_type_dmx_mode": "Standard mode",
-        "universe": 0,
-        "start_address": 439
-      },
-      {
-        "id": 301,
-        "name": "VL3000 Spot 1",
-        "fixture_type_id": "4332bff9-fdef-454a-955c-025c54f1b9ec",
-        "fixture_type_dmx_mode": "Mode 1",
-        "universe": 1,
-        "start_address": 1
-      },
-      {
-        "id": 302,
-        "name": "VL3000 Spot 2",
-        "fixture_type_id": "4332bff9-fdef-454a-955c-025c54f1b9ec",
-        "fixture_type_dmx_mode": "Mode 1",
-        "universe": 1,
-        "start_address": 29
-      },
-      {
-        "id": 303,
-        "name": "VL3000 Spot 3",
-        "fixture_type_id": "4332bff9-fdef-454a-955c-025c54f1b9ec",
-        "fixture_type_dmx_mode": "Mode 1",
-        "universe": 1,
-        "start_address": 57
-      },
-      {
-        "id": 304,
-        "name": "VL3000 Spot 4",
-        "fixture_type_id": "4332bff9-fdef-454a-955c-025c54f1b9ec",
-        "fixture_type_dmx_mode": "Mode 1",
-        "universe": 1,
-        "start_address": 85
-      },
-      {
-        "id": 305,
-        "name": "VL3000 Spot 5",
-        "fixture_type_id": "4332bff9-fdef-454a-955c-025c54f1b9ec",
-        "fixture_type_dmx_mode": "Mode 1",
-        "universe": 1,
-        "start_address": 113
-      },
-      {
-        "id": 401,
-        "name": "Cyberlight 1",
-        "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
-        "fixture_type_dmx_mode": "Default",
-        "universe": 1,
-        "start_address": 141
-      },
-      {
-        "id": 402,
-        "name": "Cyberlight 2",
-        "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
-        "fixture_type_dmx_mode": "Default",
-        "universe": 1,
-        "start_address": 161
-      },
-      {
-        "id": 403,
-        "name": "Cyberlight 3",
-        "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
-        "fixture_type_dmx_mode": "Default",
-        "universe": 1,
-        "start_address": 181
-      },
-      {
-        "id": 404,
-        "name": "Cyberlight 4",
-        "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
-        "fixture_type_dmx_mode": "Default",
-        "universe": 1,
-        "start_address": 201
-      },
-      {
-        "id": 405,
-        "name": "Cyberlight 5",
-        "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
-        "fixture_type_dmx_mode": "Default",
-        "universe": 1,
-        "start_address": 221
-      },
-      {
-        "id": 406,
-        "name": "Cyberlight 6",
-        "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
-        "fixture_type_dmx_mode": "Default",
-        "universe": 1,
-        "start_address": 241
-      },
-      {
-        "id": 407,
-        "name": "Cyberlight 7",
-        "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
-        "fixture_type_dmx_mode": "Default",
-        "universe": 1,
-        "start_address": 261
-      },
-      {
-        "id": 408,
-        "name": "Cyberlight 8",
-        "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
-        "fixture_type_dmx_mode": "Default",
-        "universe": 1,
-        "start_address": 281
-      }
-    ],
-    "layout": { "fixtures": [], "decorations": [] },
-    "outputs": [
-      {
-        "data": {
-          "Artnet": {
-            "broadcast": true,
-            "broadcast_addresses": ["192.168.178.255"],
-            "bind_ip": "192.168.178.109",
-            "universes": [0, 1]
+  "engine": {
+    "preset_handler": {
+      "groups": {
+        "2": {
+          "id": 2,
+          "name": "Cyberlights Shuffle",
+          "fixture_selection": {
+            "fixtures": [401, 402, 403, 404, 405, 406, 407, 408],
+            "group": 16,
+            "block": 1,
+            "wings": 4,
+            "reverse": false
           }
         },
-        "device_id": "Controller"
-      }
-    ]
-  },
-  "ui_config": {
-    "viewports": [
-      {
-        "viewport_type": "Main",
-        "tabs": {
-          "dock_state": {
-            "surfaces": [
-              {
-                "Main": {
-                  "nodes": [
+        "1": {
+          "id": 1,
+          "name": "Cyberlights",
+          "fixture_selection": {
+            "fixtures": [401, 402, 403, 404, 405, 406, 407, 408],
+            "group": 1,
+            "block": 1,
+            "wings": 1,
+            "reverse": false
+          }
+        },
+        "3": {
+          "id": 3,
+          "name": "Spots",
+          "fixture_selection": {
+            "fixtures": [301, 302, 303, 304, 305],
+            "group": 1,
+            "block": 1,
+            "wings": 1,
+            "reverse": false
+          }
+        },
+        "0": {
+          "id": 0,
+          "name": "Washes",
+          "fixture_selection": {
+            "fixtures": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "group": 1,
+            "block": 1,
+            "wings": 1,
+            "reverse": false
+          }
+        },
+        "6": {
+          "id": 6,
+          "name": "Wash LR",
+          "fixture_selection": {
+            "fixtures": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "group": 5,
+            "block": 1,
+            "wings": 1,
+            "reverse": false
+          }
+        },
+        "4": {
+          "id": 4,
+          "name": "Spot Even Odd",
+          "fixture_selection": {
+            "fixtures": [301, 302, 303, 304, 305],
+            "group": 2,
+            "block": 0,
+            "wings": 1,
+            "reverse": false
+          }
+        }
+      },
+      "macros": { "0": { "id": 0, "name": "Home", "action": "HomeAll" } },
+      "command_slices": {},
+      "sequences": {},
+      "presets": {
+        "Dimmer.1": {
+          "id": "Dimmer.1",
+          "name": "Sine 360",
+          "display_color": null,
+          "fade_up": 0.0,
+          "data": {
+            "FeatureEffect": {
+              "runtime": {
+                "effect": {
+                  "parts": [
                     {
-                      "Vertical": {
-                        "rect": {
-                          "min": { "x": 8.0, "y": 36.5 },
-                          "max": { "x": 1672.0, "y": 897.875 }
-                        },
-                        "fraction": 0.7235705,
-                        "fully_collapsed": false,
-                        "collapsed_leaf_count": 0
-                      }
-                    },
-                    {
-                      "Horizontal": {
-                        "rect": {
-                          "min": { "x": 8.0, "y": 36.5 },
-                          "max": { "x": 1672.0, "y": 659.5 }
-                        },
-                        "fraction": 0.65,
-                        "fully_collapsed": false,
-                        "collapsed_leaf_count": 0
-                      }
-                    },
-                    {
-                      "Leaf": {
-                        "rect": {
-                          "min": { "x": 8.0, "y": 660.5 },
-                          "max": { "x": 1672.0, "y": 897.875 }
-                        },
-                        "viewport": {
-                          "min": { "x": 8.0, "y": 684.5 },
-                          "max": { "x": 1672.0, "y": 897.875 }
-                        },
-                        "tabs": ["Encoders", "Logs"],
-                        "active": 0,
-                        "scroll": 0.0,
-                        "collapsed": false
-                      }
-                    },
-                    {
-                      "Horizontal": {
-                        "rect": {
-                          "min": { "x": 8.0, "y": 36.5 },
-                          "max": { "x": 1089.0, "y": 659.5 }
-                        },
-                        "fraction": 0.3,
-                        "fully_collapsed": false,
-                        "collapsed_leaf_count": 0
-                      }
-                    },
-                    {
-                      "Vertical": {
-                        "rect": {
-                          "min": { "x": 1090.0, "y": 36.5 },
-                          "max": { "x": 1672.0, "y": 659.5 }
-                        },
-                        "fraction": 0.6252676,
-                        "fully_collapsed": false,
-                        "collapsed_leaf_count": 0
-                      }
-                    },
-                    "Empty",
-                    "Empty",
-                    {
-                      "Vertical": {
-                        "rect": {
-                          "min": { "x": 8.0, "y": 36.5 },
-                          "max": { "x": 332.0, "y": 659.5 }
-                        },
-                        "fraction": 0.65,
-                        "fully_collapsed": false,
-                        "collapsed_leaf_count": 0
-                      }
-                    },
-                    {
-                      "Leaf": {
-                        "rect": {
-                          "min": { "x": 333.0, "y": 36.5 },
-                          "max": { "x": 1089.0, "y": 659.5 }
-                        },
-                        "viewport": {
-                          "min": { "x": 333.0, "y": 60.5 },
-                          "max": { "x": 1089.0, "y": 659.5 }
-                        },
-                        "tabs": [
-                          "LayoutView",
-                          "FixtureSelection",
-                          "SequenceEditor",
-                          "Patch",
-                          "PresetGrid"
+                      "wave": {
+                        "segments": [
+                          {
+                            "start_pos": { "x": 0.0, "y": 0.14285713 },
+                            "control_points": [
+                              { "x": 0.0, "y": 0.14285713 },
+                              { "x": 0.19999997, "y": 0.14285713 }
+                            ]
+                          },
+                          {
+                            "start_pos": { "x": 0.5, "y": 1.0 },
+                            "control_points": [
+                              { "x": 0.3, "y": 1.0 },
+                              { "x": 0.7, "y": 1.0 }
+                            ]
+                          },
+                          {
+                            "start_pos": { "x": 1.0, "y": 0.14285713 },
+                            "control_points": [
+                              { "x": 0.8, "y": 0.14285713 },
+                              { "x": 1.0, "y": 0.14285713 }
+                            ]
+                          }
                         ],
-                        "active": 4,
-                        "scroll": 0.0,
-                        "collapsed": false
-                      }
-                    },
-                    {
-                      "Leaf": {
-                        "rect": {
-                          "min": { "x": 1090.0, "y": 36.5 },
-                          "max": { "x": 1672.0, "y": 425.5 }
-                        },
-                        "viewport": {
-                          "min": { "x": 1090.0, "y": 60.5 },
-                          "max": { "x": 1672.0, "y": 425.5 }
-                        },
-                        "tabs": ["Faders", "TimecodeClock"],
-                        "active": 1,
-                        "scroll": 0.0,
-                        "collapsed": false
-                      }
-                    },
-                    {
-                      "Leaf": {
-                        "rect": {
-                          "min": { "x": 1090.0, "y": 426.5 },
-                          "max": { "x": 1672.0, "y": 659.5 }
-                        },
-                        "viewport": {
-                          "min": { "x": 1090.0, "y": 450.5 },
-                          "max": { "x": 1672.0, "y": 659.5 }
-                        },
-                        "tabs": ["FixtureList", "SequencesList", "Performance"],
-                        "active": 2,
-                        "scroll": 0.0,
-                        "collapsed": false
-                      }
-                    },
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    {
-                      "Leaf": {
-                        "rect": {
-                          "min": { "x": 8.0, "y": 36.5 },
-                          "max": { "x": 332.0, "y": 441.0 }
-                        },
-                        "viewport": {
-                          "min": { "x": 8.0, "y": 60.5 },
-                          "max": { "x": 332.0, "y": 441.0 }
-                        },
-                        "tabs": ["ColorPicker"],
-                        "active": 0,
-                        "scroll": 0.0,
-                        "collapsed": false
-                      }
-                    },
-                    {
-                      "Leaf": {
-                        "rect": {
-                          "min": { "x": 8.0, "y": 442.0 },
-                          "max": { "x": 332.0, "y": 659.5 }
-                        },
-                        "viewport": {
-                          "min": { "x": 8.0, "y": 466.0 },
-                          "max": { "x": 332.0, "y": 659.5 }
-                        },
-                        "tabs": ["Timing"],
-                        "active": 0,
-                        "scroll": 0.0,
-                        "collapsed": false
-                      }
-                    },
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty",
-                    "Empty"
-                  ],
-                  "focused_node": 8,
-                  "collapsed": false,
-                  "collapsed_leaf_count": 0
-                }
-              }
-            ],
-            "focused_surface": 0,
-            "translations": {
-              "tab_context_menu": {
-                "close_button": "Close",
-                "eject_button": "Eject"
-              },
-              "leaf": {
-                "close_button_disabled_tooltip": "This leaf contains non-closable tabs.",
-                "close_all_button": "Close window",
-                "close_all_button_menu_hint": "Right click to close this window.",
-                "close_all_button_modifier_hint": "Press modifier keys (Shift by default) to close this window.",
-                "close_all_button_modifier_menu_hint": "Press modifier keys (Shift by default) or right click to close this window.",
-                "close_all_button_disabled_tooltip": "This window contains non-closable tabs.",
-                "minimize_button": "Minimize window",
-                "minimize_button_menu_hint": "Right click to minimize this window.",
-                "minimize_button_modifier_hint": "Press modifier keys (Shift by default) to minimize this window.",
-                "minimize_button_modifier_menu_hint": "Press modifier keys (Shift by default) or right click to minimize this window."
+                        "wave_type": "Bezier"
+                      },
+                      "attributes": ["Dimmer"],
+                      "phase_offset": 0.0,
+                      "phase_multiplier": 1.0
+                    }
+                  ]
+                },
+                "speed": { "Bpm": 30.0 },
+                "phase": { "Range": { "start": 0.0, "end": 360.0 } }
               }
             }
           }
-        },
-        "pos_state": null
-      },
-      {
-        "viewport_type": {
-          "Other": { "id": 6965796959140226784, "is_active": true }
-        },
-        "tabs": {
-          "dock_state": {
-            "surfaces": [
-              {
-                "Main": {
-                  "nodes": [
-                    {
-                      "Leaf": {
-                        "rect": {
-                          "min": { "x": 8.0, "y": 8.0 },
-                          "max": { "x": 992.0, "y": 454.875 }
-                        },
-                        "viewport": {
-                          "min": { "x": 8.0, "y": 32.0 },
-                          "max": { "x": 992.0, "y": 454.875 }
-                        },
-                        "tabs": ["PresetGrid", "FixtureSelection"],
-                        "active": 0,
-                        "scroll": 0.0,
-                        "collapsed": false
-                      }
-                    },
-                    "Empty",
-                    "Empty"
-                  ],
-                  "focused_node": 0,
-                  "collapsed": false,
-                  "collapsed_leaf_count": 0
-                }
-              }
-            ],
-            "focused_surface": 0,
-            "translations": {
-              "tab_context_menu": {
-                "close_button": "Close",
-                "eject_button": "Eject"
-              },
-              "leaf": {
-                "close_button_disabled_tooltip": "This leaf contains non-closable tabs.",
-                "close_all_button": "Close window",
-                "close_all_button_menu_hint": "Right click to close this window.",
-                "close_all_button_modifier_hint": "Press modifier keys (Shift by default) to close this window.",
-                "close_all_button_modifier_menu_hint": "Press modifier keys (Shift by default) or right click to close this window.",
-                "close_all_button_disabled_tooltip": "This window contains non-closable tabs.",
-                "minimize_button": "Minimize window",
-                "minimize_button_menu_hint": "Right click to minimize this window.",
-                "minimize_button_modifier_hint": "Press modifier keys (Shift by default) to minimize this window.",
-                "minimize_button_modifier_menu_hint": "Press modifier keys (Shift by default) or right click to minimize this window."
-              }
-            }
-          }
-        },
-        "pos_state": {
-          "min": { "x": -1000.0, "y": 514.0 },
-          "max": { "x": 0.0, "y": 1064.0 }
         }
+      }
+    },
+    "updatable_handler": {
+      "executors": {}
+    },
+    "timing_handler": {
+      "speed_master_values": {
+        "9": { "bpm": 120.0 },
+        "3": { "bpm": 15.0 },
+        "8": { "bpm": 120.0 },
+        "0": { "bpm": 127.74554 },
+        "1": { "bpm": 120.0 },
+        "4": { "bpm": 120.0 },
+        "5": { "bpm": 120.0 },
+        "2": { "bpm": 60.0 },
+        "6": { "bpm": 120.0 },
+        "7": { "bpm": 120.0 }
+      },
+      "timecodes": {}
+    },
+    "input_device_configs": [
+      {
+        "buttons": {},
+        "faders": {
+          "8": "Grandmaster"
+        },
+        "profile_type": { "ApcMiniMk2": { "apc_midi": "APC mini mk2 Control" } }
       },
       {
-        "viewport_type": {
-          "Other": { "id": 12364760964689848468, "is_active": true }
-        },
-        "tabs": null,
-        "pos_state": null
-      },
-      {
-        "viewport_type": {
-          "Other": { "id": 14193773023188818889, "is_active": true }
-        },
-        "tabs": null,
-        "pos_state": null
+        "buttons": {},
+        "faders": {},
+        "profile_type": {
+          "MidiTimecode": { "midi_in_device": "IAC Driver Bus 1" }
+        }
       }
     ],
-    "lock_image": null
+    "patch": {
+      "fixtures": [
+        {
+          "id": 1,
+          "name": "Robe Wash 1",
+          "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
+          "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
+          "universe": 0,
+          "start_address": 1
+        },
+        {
+          "id": 2,
+          "name": "Robe Wash 2",
+          "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
+          "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
+          "universe": 0,
+          "start_address": 18
+        },
+        {
+          "id": 3,
+          "name": "Robe Wash 3",
+          "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
+          "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
+          "universe": 0,
+          "start_address": 35
+        },
+        {
+          "id": 4,
+          "name": "Robe Wash 4",
+          "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
+          "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
+          "universe": 0,
+          "start_address": 52
+        },
+        {
+          "id": 5,
+          "name": "Robe Wash 5",
+          "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
+          "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
+          "universe": 0,
+          "start_address": 69
+        },
+        {
+          "id": 6,
+          "name": "Robe Wash 6",
+          "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
+          "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
+          "universe": 0,
+          "start_address": 86
+        },
+        {
+          "id": 7,
+          "name": "Robe Wash 7",
+          "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
+          "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
+          "universe": 0,
+          "start_address": 103
+        },
+        {
+          "id": 8,
+          "name": "Robe Wash 8",
+          "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
+          "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
+          "universe": 0,
+          "start_address": 120
+        },
+        {
+          "id": 9,
+          "name": "Robe Wash 9",
+          "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
+          "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
+          "universe": 0,
+          "start_address": 137
+        },
+        {
+          "id": 10,
+          "name": "Robe Wash 10",
+          "fixture_type_id": "6b040d65-f659-4f94-a14f-12f638e3e22e",
+          "fixture_type_dmx_mode": "Mode 1 - 8bit normal",
+          "universe": 0,
+          "start_address": 154
+        },
+        {
+          "id": 101,
+          "name": "ETC Colorsource 1",
+          "fixture_type_id": "b5c104a0-c099-4c1b-bba0-32d4d798021d",
+          "fixture_type_dmx_mode": "1ch",
+          "universe": 0,
+          "start_address": 425
+        },
+        {
+          "id": 102,
+          "name": "ETC Colorsource 2",
+          "fixture_type_id": "b5c104a0-c099-4c1b-bba0-32d4d798021d",
+          "fixture_type_dmx_mode": "1ch",
+          "universe": 0,
+          "start_address": 426
+        },
+        {
+          "id": 103,
+          "name": "ETC Colorsource 3",
+          "fixture_type_id": "b5c104a0-c099-4c1b-bba0-32d4d798021d",
+          "fixture_type_dmx_mode": "1ch",
+          "universe": 0,
+          "start_address": 427
+        },
+        {
+          "id": 201,
+          "name": "PAR 1",
+          "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+          "fixture_type_dmx_mode": "Standard mode",
+          "universe": 0,
+          "start_address": 428
+        },
+        {
+          "id": 202,
+          "name": "PAR 2",
+          "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+          "fixture_type_dmx_mode": "Standard mode",
+          "universe": 0,
+          "start_address": 429
+        },
+        {
+          "id": 203,
+          "name": "PAR 3",
+          "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+          "fixture_type_dmx_mode": "Standard mode",
+          "universe": 0,
+          "start_address": 430
+        },
+        {
+          "id": 204,
+          "name": "PAR 4",
+          "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+          "fixture_type_dmx_mode": "Standard mode",
+          "universe": 0,
+          "start_address": 431
+        },
+        {
+          "id": 205,
+          "name": "PAR 5",
+          "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+          "fixture_type_dmx_mode": "Standard mode",
+          "universe": 0,
+          "start_address": 432
+        },
+        {
+          "id": 206,
+          "name": "PAR 6",
+          "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+          "fixture_type_dmx_mode": "Standard mode",
+          "universe": 0,
+          "start_address": 433
+        },
+        {
+          "id": 207,
+          "name": "PAR 7",
+          "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+          "fixture_type_dmx_mode": "Standard mode",
+          "universe": 0,
+          "start_address": 434
+        },
+        {
+          "id": 208,
+          "name": "PAR 8",
+          "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+          "fixture_type_dmx_mode": "Standard mode",
+          "universe": 0,
+          "start_address": 435
+        },
+        {
+          "id": 209,
+          "name": "PAR 9",
+          "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+          "fixture_type_dmx_mode": "Standard mode",
+          "universe": 0,
+          "start_address": 436
+        },
+        {
+          "id": 210,
+          "name": "PAR 10",
+          "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+          "fixture_type_dmx_mode": "Standard mode",
+          "universe": 0,
+          "start_address": 437
+        },
+        {
+          "id": 211,
+          "name": "PAR 11",
+          "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+          "fixture_type_dmx_mode": "Standard mode",
+          "universe": 0,
+          "start_address": 438
+        },
+        {
+          "id": 212,
+          "name": "PAR 12",
+          "fixture_type_id": "6b9acb11-a69b-4e1a-a667-ac31cfe8655c",
+          "fixture_type_dmx_mode": "Standard mode",
+          "universe": 0,
+          "start_address": 439
+        },
+        {
+          "id": 301,
+          "name": "VL3000 Spot 1",
+          "fixture_type_id": "4332bff9-fdef-454a-955c-025c54f1b9ec",
+          "fixture_type_dmx_mode": "Mode 1",
+          "universe": 1,
+          "start_address": 1
+        },
+        {
+          "id": 302,
+          "name": "VL3000 Spot 2",
+          "fixture_type_id": "4332bff9-fdef-454a-955c-025c54f1b9ec",
+          "fixture_type_dmx_mode": "Mode 1",
+          "universe": 1,
+          "start_address": 29
+        },
+        {
+          "id": 303,
+          "name": "VL3000 Spot 3",
+          "fixture_type_id": "4332bff9-fdef-454a-955c-025c54f1b9ec",
+          "fixture_type_dmx_mode": "Mode 1",
+          "universe": 1,
+          "start_address": 57
+        },
+        {
+          "id": 304,
+          "name": "VL3000 Spot 4",
+          "fixture_type_id": "4332bff9-fdef-454a-955c-025c54f1b9ec",
+          "fixture_type_dmx_mode": "Mode 1",
+          "universe": 1,
+          "start_address": 85
+        },
+        {
+          "id": 305,
+          "name": "VL3000 Spot 5",
+          "fixture_type_id": "4332bff9-fdef-454a-955c-025c54f1b9ec",
+          "fixture_type_dmx_mode": "Mode 1",
+          "universe": 1,
+          "start_address": 113
+        },
+        {
+          "id": 401,
+          "name": "Cyberlight 1",
+          "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
+          "fixture_type_dmx_mode": "Default",
+          "universe": 1,
+          "start_address": 141
+        },
+        {
+          "id": 402,
+          "name": "Cyberlight 2",
+          "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
+          "fixture_type_dmx_mode": "Default",
+          "universe": 1,
+          "start_address": 161
+        },
+        {
+          "id": 403,
+          "name": "Cyberlight 3",
+          "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
+          "fixture_type_dmx_mode": "Default",
+          "universe": 1,
+          "start_address": 181
+        },
+        {
+          "id": 404,
+          "name": "Cyberlight 4",
+          "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
+          "fixture_type_dmx_mode": "Default",
+          "universe": 1,
+          "start_address": 201
+        },
+        {
+          "id": 405,
+          "name": "Cyberlight 5",
+          "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
+          "fixture_type_dmx_mode": "Default",
+          "universe": 1,
+          "start_address": 221
+        },
+        {
+          "id": 406,
+          "name": "Cyberlight 6",
+          "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
+          "fixture_type_dmx_mode": "Default",
+          "universe": 1,
+          "start_address": 241
+        },
+        {
+          "id": 407,
+          "name": "Cyberlight 7",
+          "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
+          "fixture_type_dmx_mode": "Default",
+          "universe": 1,
+          "start_address": 261
+        },
+        {
+          "id": 408,
+          "name": "Cyberlight 8",
+          "fixture_type_id": "a711017d-fd5c-4e69-b3d3-ea66cf2a4841",
+          "fixture_type_dmx_mode": "Default",
+          "universe": 1,
+          "start_address": 281
+        }
+      ],
+      "layout": { "fixtures": [], "decorations": [] },
+      "outputs": [
+        {
+          "data": {
+            "Artnet": {
+              "broadcast": true,
+              "broadcast_addresses": ["192.168.178.255"],
+              "bind_ip": "192.168.178.109",
+              "universes": [0, 1]
+            }
+          },
+          "device_id": "Controller"
+        }
+      ]
+    },
+    "ui_config": {
+      "viewports": [
+        {
+          "viewport_type": "Main",
+          "tabs": {
+            "dock_state": {
+              "surfaces": [
+                {
+                  "Main": {
+                    "nodes": [
+                      {
+                        "Vertical": {
+                          "rect": {
+                            "min": { "x": 8.0, "y": 36.5 },
+                            "max": { "x": 1672.0, "y": 897.875 }
+                          },
+                          "fraction": 0.7235705,
+                          "fully_collapsed": false,
+                          "collapsed_leaf_count": 0
+                        }
+                      },
+                      {
+                        "Horizontal": {
+                          "rect": {
+                            "min": { "x": 8.0, "y": 36.5 },
+                            "max": { "x": 1672.0, "y": 659.5 }
+                          },
+                          "fraction": 0.65,
+                          "fully_collapsed": false,
+                          "collapsed_leaf_count": 0
+                        }
+                      },
+                      {
+                        "Leaf": {
+                          "rect": {
+                            "min": { "x": 8.0, "y": 660.5 },
+                            "max": { "x": 1672.0, "y": 897.875 }
+                          },
+                          "viewport": {
+                            "min": { "x": 8.0, "y": 684.5 },
+                            "max": { "x": 1672.0, "y": 897.875 }
+                          },
+                          "tabs": ["Encoders", "Logs"],
+                          "active": 0,
+                          "scroll": 0.0,
+                          "collapsed": false
+                        }
+                      },
+                      {
+                        "Horizontal": {
+                          "rect": {
+                            "min": { "x": 8.0, "y": 36.5 },
+                            "max": { "x": 1089.0, "y": 659.5 }
+                          },
+                          "fraction": 0.3,
+                          "fully_collapsed": false,
+                          "collapsed_leaf_count": 0
+                        }
+                      },
+                      {
+                        "Vertical": {
+                          "rect": {
+                            "min": { "x": 1090.0, "y": 36.5 },
+                            "max": { "x": 1672.0, "y": 659.5 }
+                          },
+                          "fraction": 0.6252676,
+                          "fully_collapsed": false,
+                          "collapsed_leaf_count": 0
+                        }
+                      },
+                      "Empty",
+                      "Empty",
+                      {
+                        "Vertical": {
+                          "rect": {
+                            "min": { "x": 8.0, "y": 36.5 },
+                            "max": { "x": 332.0, "y": 659.5 }
+                          },
+                          "fraction": 0.65,
+                          "fully_collapsed": false,
+                          "collapsed_leaf_count": 0
+                        }
+                      },
+                      {
+                        "Leaf": {
+                          "rect": {
+                            "min": { "x": 333.0, "y": 36.5 },
+                            "max": { "x": 1089.0, "y": 659.5 }
+                          },
+                          "viewport": {
+                            "min": { "x": 333.0, "y": 60.5 },
+                            "max": { "x": 1089.0, "y": 659.5 }
+                          },
+                          "tabs": [
+                            "LayoutView",
+                            "FixtureSelection",
+                            "SequenceEditor",
+                            "Patch",
+                            "PresetGrid"
+                          ],
+                          "active": 4,
+                          "scroll": 0.0,
+                          "collapsed": false
+                        }
+                      },
+                      {
+                        "Leaf": {
+                          "rect": {
+                            "min": { "x": 1090.0, "y": 36.5 },
+                            "max": { "x": 1672.0, "y": 425.5 }
+                          },
+                          "viewport": {
+                            "min": { "x": 1090.0, "y": 60.5 },
+                            "max": { "x": 1672.0, "y": 425.5 }
+                          },
+                          "tabs": ["Faders", "TimecodeClock"],
+                          "active": 1,
+                          "scroll": 0.0,
+                          "collapsed": false
+                        }
+                      },
+                      {
+                        "Leaf": {
+                          "rect": {
+                            "min": { "x": 1090.0, "y": 426.5 },
+                            "max": { "x": 1672.0, "y": 659.5 }
+                          },
+                          "viewport": {
+                            "min": { "x": 1090.0, "y": 450.5 },
+                            "max": { "x": 1672.0, "y": 659.5 }
+                          },
+                          "tabs": [
+                            "FixtureList",
+                            "SequencesList",
+                            "Performance"
+                          ],
+                          "active": 2,
+                          "scroll": 0.0,
+                          "collapsed": false
+                        }
+                      },
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      {
+                        "Leaf": {
+                          "rect": {
+                            "min": { "x": 8.0, "y": 36.5 },
+                            "max": { "x": 332.0, "y": 441.0 }
+                          },
+                          "viewport": {
+                            "min": { "x": 8.0, "y": 60.5 },
+                            "max": { "x": 332.0, "y": 441.0 }
+                          },
+                          "tabs": ["ColorPicker"],
+                          "active": 0,
+                          "scroll": 0.0,
+                          "collapsed": false
+                        }
+                      },
+                      {
+                        "Leaf": {
+                          "rect": {
+                            "min": { "x": 8.0, "y": 442.0 },
+                            "max": { "x": 332.0, "y": 659.5 }
+                          },
+                          "viewport": {
+                            "min": { "x": 8.0, "y": 466.0 },
+                            "max": { "x": 332.0, "y": 659.5 }
+                          },
+                          "tabs": ["Timing"],
+                          "active": 0,
+                          "scroll": 0.0,
+                          "collapsed": false
+                        }
+                      },
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty",
+                      "Empty"
+                    ],
+                    "focused_node": 8,
+                    "collapsed": false,
+                    "collapsed_leaf_count": 0
+                  }
+                }
+              ],
+              "focused_surface": 0,
+              "translations": {
+                "tab_context_menu": {
+                  "close_button": "Close",
+                  "eject_button": "Eject"
+                },
+                "leaf": {
+                  "close_button_disabled_tooltip": "This leaf contains non-closable tabs.",
+                  "close_all_button": "Close window",
+                  "close_all_button_menu_hint": "Right click to close this window.",
+                  "close_all_button_modifier_hint": "Press modifier keys (Shift by default) to close this window.",
+                  "close_all_button_modifier_menu_hint": "Press modifier keys (Shift by default) or right click to close this window.",
+                  "close_all_button_disabled_tooltip": "This window contains non-closable tabs.",
+                  "minimize_button": "Minimize window",
+                  "minimize_button_menu_hint": "Right click to minimize this window.",
+                  "minimize_button_modifier_hint": "Press modifier keys (Shift by default) to minimize this window.",
+                  "minimize_button_modifier_menu_hint": "Press modifier keys (Shift by default) or right click to minimize this window."
+                }
+              }
+            }
+          },
+          "pos_state": null
+        },
+        {
+          "viewport_type": {
+            "Other": { "id": 6965796959140226784, "is_active": true }
+          },
+          "tabs": {
+            "dock_state": {
+              "surfaces": [
+                {
+                  "Main": {
+                    "nodes": [
+                      {
+                        "Leaf": {
+                          "rect": {
+                            "min": { "x": 8.0, "y": 8.0 },
+                            "max": { "x": 992.0, "y": 454.875 }
+                          },
+                          "viewport": {
+                            "min": { "x": 8.0, "y": 32.0 },
+                            "max": { "x": 992.0, "y": 454.875 }
+                          },
+                          "tabs": ["PresetGrid", "FixtureSelection"],
+                          "active": 0,
+                          "scroll": 0.0,
+                          "collapsed": false
+                        }
+                      },
+                      "Empty",
+                      "Empty"
+                    ],
+                    "focused_node": 0,
+                    "collapsed": false,
+                    "collapsed_leaf_count": 0
+                  }
+                }
+              ],
+              "focused_surface": 0,
+              "translations": {
+                "tab_context_menu": {
+                  "close_button": "Close",
+                  "eject_button": "Eject"
+                },
+                "leaf": {
+                  "close_button_disabled_tooltip": "This leaf contains non-closable tabs.",
+                  "close_all_button": "Close window",
+                  "close_all_button_menu_hint": "Right click to close this window.",
+                  "close_all_button_modifier_hint": "Press modifier keys (Shift by default) to close this window.",
+                  "close_all_button_modifier_menu_hint": "Press modifier keys (Shift by default) or right click to close this window.",
+                  "close_all_button_disabled_tooltip": "This window contains non-closable tabs.",
+                  "minimize_button": "Minimize window",
+                  "minimize_button_menu_hint": "Right click to minimize this window.",
+                  "minimize_button_modifier_hint": "Press modifier keys (Shift by default) to minimize this window.",
+                  "minimize_button_modifier_menu_hint": "Press modifier keys (Shift by default) or right click to minimize this window."
+                }
+              }
+            }
+          },
+          "pos_state": {
+            "min": { "x": -1000.0, "y": 514.0 },
+            "max": { "x": 0.0, "y": 1064.0 }
+          }
+        },
+        {
+          "viewport_type": {
+            "Other": { "id": 12364760964689848468, "is_active": true }
+          },
+          "tabs": null,
+          "pos_state": null
+        },
+        {
+          "viewport_type": {
+            "Other": { "id": 14193773023188818889, "is_active": true }
+          },
+          "tabs": null,
+          "pos_state": null
+        }
+      ],
+      "lock_image": null
+    }
   }
 }

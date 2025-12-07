@@ -7,7 +7,7 @@
  */
 
 use gpui::{AsyncApp, Entity, EventEmitter, Task, Timer, prelude::*};
-use gpui_component::notification::Notification;
+use gpui_component::{button::Button, notification::Notification};
 use std::{sync::mpsc, time::Duration};
 
 use demex_core::{
@@ -17,7 +17,7 @@ use demex_core::{
 
 use crate::{
     engine::{showfile::DemexShowFileManager, state::DemexUiState},
-    ui2::wm::app::WindowManagerAsyncAppExt,
+    ui2::wm::{WindowManager, app::WindowManagerAsyncAppExt},
 };
 
 pub struct DemexEventHandler {
@@ -97,14 +97,25 @@ impl DemexEventHandler {
                 let _ = cx.update_wm(|wm, cx| wm.push_notifcation(Notification::warning(warn), cx));
             }
             ActionRunResult::Save => {
-                let _ = cx.update(|cx| DemexShowFileManager::save(None, cx));
+                let _ = cx.update(|cx| DemexShowFileManager::save(None, cx, |_, _| {}));
             }
             ActionRunResult::UpdatePatch(patch) => {
                 let _ = cx.update_global(|ui_state: &mut DemexUiState, cx| {
                     ui_state.update_patch(patch, cx);
                 });
                 let _ = cx.update_wm(|wm, cx| {
-                    wm.push_notifcation(Notification::info("Patch updated"), cx)
+                    wm.push_notifcation(
+                        Notification::info("Patch updated").action(|_, _, _| {
+                            Button::new("reload").label("Reload").on_click(|_, _, cx| {
+                                let _ = WindowManager::inspect_error(
+                                    DemexShowFileManager::reload(cx),
+                                    "Failed to reload: ",
+                                    cx,
+                                );
+                            })
+                        }),
+                        cx,
+                    )
                 });
             }
             ActionRunResult::WithEvent { .. } => unreachable!(),

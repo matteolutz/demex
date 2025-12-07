@@ -172,12 +172,12 @@ impl DemexUiState {
 }
 
 impl DemexUiState {
-    pub(super) fn init(cx: &mut App) {
+    pub fn init(cx: &mut App) {
         let ui_state = DemexUiState::new(cx);
         cx.set_global(ui_state);
     }
 
-    pub(super) fn start_performance_thread(cx: &mut App) {
+    pub fn start_performance_thread(cx: &mut App) {
         cx.spawn(async move |cx| {
             loop {
                 let _ = cx.update_global(|ui_state: &mut Self, cx| {

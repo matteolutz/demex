@@ -148,7 +148,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             */
         }
 
-        println!("HI");
         let (tx, _) = mpsc::channel();
         let mut engine = DemexEngine::new(tx, args.debug_thread);
         engine.load_show(show, fixture_types);
