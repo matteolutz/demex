@@ -9,7 +9,7 @@ use gpui::{
 };
 use gpui_component::{
     ActiveTheme, Root, TitleBar,
-    dock::{DockArea, DockAreaState, DockItem, DockPlacement},
+    dock::{DockArea, DockAreaState, DockItem, DockPlacement, PanelStyle},
     h_flex, v_flex,
 };
 use serde::{Deserialize, Serialize};
@@ -136,6 +136,25 @@ impl DockWindow {
             cx,
         );
     }
+
+    fn init_dockarea(
+        config: Option<DockWindowConfig>,
+        window: &mut Window,
+        cx: &mut Context<DockArea>,
+    ) -> DockArea {
+        let mut da =
+            DockArea::new("dock-area", Some(5), window, cx).panel_style(PanelStyle::TabBar);
+
+        let should_load_default = config
+            .map(|config| da.load(config.dock_area_state, window, cx).ok())
+            .is_none();
+
+        if should_load_default {
+            Self::apply_default_dock_area(&mut da, window, cx);
+        }
+
+        da
+    }
 }
 
 impl DockWindow {
@@ -144,19 +163,7 @@ impl DockWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {
-        let dock_area = cx.new(|cx| {
-            let mut da = DockArea::new("dock-area", Some(5), window, cx);
-
-            let should_load_default = config
-                .map(|config| da.load(config.dock_area_state, window, cx).ok())
-                .is_none();
-
-            if should_load_default {
-                Self::apply_default_dock_area(&mut da, window, cx);
-            }
-
-            da
-        });
+        let dock_area = cx.new(|cx| Self::init_dockarea(config, window, cx));
 
         let _subscriptions = vec![cx.observe_and_notify(&DemexShowFileManager::last_autosave(cx))];
 
@@ -168,16 +175,16 @@ impl DockWindow {
     }
 
     pub fn update_config(&self, state: DockAreaState, window: &mut Window, cx: &mut App) {
-        let _ = self
-            .dock_area
-            .update(cx, |dock_area, cx| dock_area.load(state, window, cx));
+        self.dock_area.update(cx, |dock_area, cx| {
+            let _ = dock_area.load(state, window, cx);
+            cx.notify();
+        });
     }
 
     pub fn reset_config(&self, window: &mut Window, cx: &mut App) {
-        let _: gpui::Result<()> = self.dock_area.update(cx, |dock_area, cx| {
-            dock_area.load(DockAreaState::default(), window, cx)?;
-            Self::apply_default_dock_area(dock_area, window, cx);
-            Ok(())
+        self.dock_area.update(cx, |dock_area, cx| {
+            *dock_area = Self::init_dockarea(None, window, cx);
+            cx.notify();
         });
     }
 

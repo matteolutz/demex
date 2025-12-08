@@ -5,6 +5,7 @@ use gpui::{
 };
 use gpui_component::{
     ActiveTheme, Icon, IconName, Sizable,
+    button::Button,
     dock::{Panel, PanelEvent, register_panel},
     h_flex,
     input::{Input, InputEvent, InputState, Position},
@@ -18,7 +19,7 @@ use crate::{
         DemexEngineHandler,
         state::{DemexCommandHistoryEntry, DemexUiState},
     },
-    ui2::{config::AppConfigExt, wm::app::WindowManagerAppExt},
+    ui2::{config::AppConfigExt, panels::toolbar_buttons, wm::app::WindowManagerAppExt},
 };
 
 const COMMAND_PANEL_NAME: &str = "demex-command";
@@ -74,6 +75,14 @@ impl Panel for CommandPanel {
 
     fn title(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         "Command"
+    }
+
+    fn toolbar_buttons(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<Vec<Button>> {
+        Some(toolbar_buttons(self, window, cx))
     }
 }
 

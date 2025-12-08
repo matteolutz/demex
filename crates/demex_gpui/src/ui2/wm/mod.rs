@@ -260,10 +260,13 @@ impl WindowManager {
         cx.update_wm(|wm, _| wm.dock_windows.push(window_handle))
     }
 
-    pub fn add_dock_windows(configs: impl IntoIterator<Item = DockWindowConfig>, cx: &mut App) {
+    pub fn add_dock_windows(
+        configs: impl IntoIterator<Item = Option<DockWindowConfig>>,
+        cx: &mut App,
+    ) {
         configs
             .into_iter()
-            .for_each(|config| Self::add_dock_window(Some(config), cx));
+            .for_each(|config| Self::add_dock_window(config, cx));
     }
 
     pub fn reset_dock_window_configs(&mut self, cx: &mut App) {

@@ -16,7 +16,7 @@ use gpui_component::{
 
 use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},
-    ui2::ext::GpuiContextExtension,
+    ui2::{ext::GpuiContextExtension, panels::toolbar_buttons},
 };
 
 const FIXTURE_SELECTION_PANEL_NAME: &str = "demex-fixture-selection";
@@ -63,6 +63,14 @@ impl Panel for FixtureSelectionPanel {
 
     fn title(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
         "Fixture Selection"
+    }
+
+    fn toolbar_buttons(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<Vec<Button>> {
+        Some(toolbar_buttons(self, window, cx))
     }
 }
 

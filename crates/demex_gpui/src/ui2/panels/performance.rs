@@ -10,7 +10,10 @@ use gpui_component::{
     v_flex,
 };
 
-use crate::{engine::state::DemexUiState, ui2::ext::GpuiContextExtension};
+use crate::{
+    engine::state::DemexUiState,
+    ui2::{ext::GpuiContextExtension, panels::toolbar_buttons},
+};
 
 const PERFORMANCE_PANEL_NAME: &str = "demex-performance";
 
@@ -40,6 +43,14 @@ impl Panel for PerformancePanel {
 
     fn title(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         "Performance"
+    }
+
+    fn toolbar_buttons(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<Vec<gpui_component::button::Button>> {
+        Some(toolbar_buttons(self, window, cx))
     }
 }
 

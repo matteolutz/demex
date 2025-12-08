@@ -5,6 +5,7 @@ use gpui::{
 };
 use gpui_component::{
     Sizable,
+    button::Button,
     dock::{Panel, PanelEvent, register_panel},
     table::{Table, TableEvent, TableState},
 };
@@ -13,7 +14,10 @@ use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},
     ui2::{
         config::AppConfigExt,
-        panels::fixture_list::table::{FixtureListTable, FixtureListTableEntry},
+        panels::{
+            fixture_list::table::{FixtureListTable, FixtureListTableEntry},
+            toolbar_buttons,
+        },
     },
 };
 
@@ -105,6 +109,14 @@ impl Panel for FixtureListPanel {
 
     fn title(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
         "Fixture List"
+    }
+
+    fn toolbar_buttons(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<Vec<Button>> {
+        Some(toolbar_buttons(self, window, cx))
     }
 }
 

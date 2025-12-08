@@ -32,6 +32,7 @@ pub mod actions {
 
         cx.on_action::<Quit>(|_, cx| cx.quit());
         cx.on_action::<Save>(|_, cx| {
+            println!("saving");
             if DemexShowFileManager::current_file_path(cx)
                 .read(cx)
                 .is_some()
@@ -118,10 +119,7 @@ impl DemexApp {
             .run(move |cx: &mut gpui::App| {
                 use gpui_component::{Theme, ThemeRegistry};
 
-                use crate::ui2::{
-                    config::DemexUiConfig,
-                    wm::{WindowManager, dock_window::DockWindowConfig},
-                };
+                use crate::ui2::{config::DemexUiConfig, wm::WindowManager};
 
                 gpui_component::init(cx);
                 ui2::init(cx).unwrap();
@@ -148,7 +146,7 @@ impl DemexApp {
                     .expect("Failed to initialize show file manager");
 
                 WindowManager::add_dock_windows(
-                    (0..(args.additional_viewports + 1)).map(|_| DockWindowConfig::default()),
+                    (0..(args.additional_viewports + 1)).map(|_| None),
                     cx,
                 );
 

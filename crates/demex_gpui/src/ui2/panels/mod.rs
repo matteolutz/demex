@@ -1,4 +1,5 @@
-use gpui::App;
+use gpui::{App, Context, Window};
+use gpui_component::{IconName, button::Button, dock::Panel};
 
 pub mod command;
 pub mod fixture_list;
@@ -6,6 +7,14 @@ pub mod fixture_selection;
 pub mod layout_view;
 pub mod performance;
 pub mod pool;
+
+mod actions {
+    gpui::actions!(panels, [AddFixtureSelection, AddFixtureList, AddLayoutView]);
+}
+
+fn toolbar_buttons<P: Panel>(_this: &P, _window: &mut Window, _cx: &mut Context<P>) -> Vec<Button> {
+    vec![Button::new("add-panel").icon(IconName::Plus)]
+}
 
 pub fn init(cx: &mut App) {
     register_panels(cx);

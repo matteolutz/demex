@@ -5,12 +5,14 @@ use gpui::{
     App, AppContext, BorderStyle, Bounds, Context, Entity, EventEmitter, FocusHandle, Focusable,
     InteractiveElement, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
     PaintQuad, ParentElement, Pixels, Point, Render, ScrollWheelEvent, Styled, Subscription,
-    Window, black, canvas, div, fill, px, white,
+    Window, black, canvas, div, fill, prelude::FluentBuilder, px, white,
 };
 use gpui_component::{
     PixelsExt,
     button::Button,
     dock::{Panel, PanelEvent, register_panel},
+    h_flex,
+    slider::{Slider, SliderEvent, SliderState},
     v_flex,
 };
 use itertools::Itertools;
@@ -19,9 +21,12 @@ use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},
     ui2::{
         ext::GpuiContextExtension,
-        panels::layout_view::{
-            layout_entry::{FixtureLayoutEntryDrawArgs, FixtureLayoutEntryExt},
-            layout_projection::{LayoutProjection, PosExt},
+        panels::{
+            layout_view::{
+                layout_entry::{FixtureLayoutEntryDrawArgs, FixtureLayoutEntryExt},
+                layout_projection::{LayoutProjection, PosExt},
+            },
+            toolbar_buttons,
         },
     },
 };
@@ -47,6 +52,8 @@ pub struct LayoutViewPanel {
     last_middle_button_mouse_pos: Entity<Option<Point<Pixels>>>,
     selection_start_mouse_pos: Entity<Option<Point<Pixels>>>,
 
+    zoom_slider_state: Entity<SliderState>,
+
     _subscriptions: Vec<Subscription>,
 }
 
@@ -65,17 +72,59 @@ impl Panel for LayoutViewPanel {
     fn title(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         "Layout View"
     }
+
+    fn inner_padding(&self, _cx: &App) -> bool {
+        false
+    }
+
+    fn toolbar_buttons(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<Vec<Button>> {
+        Some(toolbar_buttons(self, window, cx))
+    }
 }
 
 impl LayoutViewPanel {
-    pub fn new(_window: &mut Window, cx: &mut Context<Self>) -> Self {
+    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
+        let initial_zoom = 1.0;
+
+        let screen_bounds = cx.new(|_| Bounds::default());
+        let projection =
+            cx.new(|_| LayoutProjection::new(screen_bounds.clone()).with_zoom(initial_zoom));
+
+        let zoom_slider_state = cx.new(|_| {
+            SliderState::new()
+                .default_value(initial_zoom)
+                .min(0.1)
+                .max(10.0)
+                .step(0.01)
+        });
+
         let subs = vec![
             cx.observe_and_notify(&DemexUiState::patch(cx)),
             cx.observe_and_notify(&DemexUiState::fixture_selection(cx)),
+            cx.observe_in(&projection, window, |this, projection, window, cx| {
+                this.zoom_slider_state.update(cx, |state, cx| {
+                    state.set_value(projection.read(cx).zoom(), window, cx);
+                    cx.notify();
+                });
+            }),
+            cx.subscribe_in(
+                &zoom_slider_state,
+                window,
+                |this, _, evt, _, cx| match evt {
+                    SliderEvent::Change(value) => {
+                        this.projection.update(cx, |projection, _| {
+                            *projection.zoom_mut() = value.start();
+                            // don't notify the projection
+                        });
+                        cx.notify();
+                    }
+                },
+            ),
         ];
-
-        let screen_bounds = cx.new(|_| Bounds::default());
-        let projection = cx.new(|_| LayoutProjection::new(screen_bounds.clone()));
 
         Self {
             focus_handle: cx.focus_handle(),
@@ -83,6 +132,7 @@ impl LayoutViewPanel {
             projection,
             last_middle_button_mouse_pos: cx.new(|_| None),
             selection_start_mouse_pos: cx.new(|_| None),
+            zoom_slider_state,
             _subscriptions: subs,
         }
     }
@@ -117,6 +167,15 @@ impl LayoutViewPanel {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        // double click
+        if evt.click_count == 2 {
+            self.selection_start_mouse_pos
+                .update(cx, |pos, _| *pos = None);
+            self.last_middle_button_mouse_pos
+                .update(cx, |pos, _| *pos = Some(evt.position));
+            return;
+        }
+
         self.selection_start_mouse_pos
             .update(cx, |pos, _| *pos = Some(evt.position));
         cx.notify();
@@ -128,6 +187,12 @@ impl LayoutViewPanel {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.last_middle_button_mouse_pos.read(cx).is_some() {
+            self.last_middle_button_mouse_pos
+                .update(cx, |pos, _| *pos = None);
+            cx.notify();
+        }
+
         let Some(start_pos) = *self.selection_start_mouse_pos.read(cx) else {
             return;
         };
@@ -179,8 +244,9 @@ impl LayoutViewPanel {
             let to = projection.unproject(evt.position, cx);
             let delta = to - from;
 
-            self.projection.update(cx, |proj, _| {
+            self.projection.update(cx, |proj, cx| {
                 *proj.center_mut() += delta;
+                cx.notify();
             });
             self.last_middle_button_mouse_pos
                 .update(cx, |pos, _| *pos = Some(evt.position));
@@ -199,9 +265,10 @@ impl LayoutViewPanel {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        self.projection.update(cx, |proj, _| {
+        self.projection.update(cx, |proj, cx| {
             let delta = evt.delta.pixel_delta(px(1.0));
             *proj.zoom_mut() += delta.y.as_f32() * 0.1;
+            cx.notify();
         });
         cx.notify();
     }
@@ -260,18 +327,19 @@ impl Render for LayoutViewPanel {
         v_flex()
             .size_full()
             .child(
-                v_flex()
-                    .p_4()
-                    .gap_1()
-                    .child("Layout View")
-                    .child(format!(
-                        "Zoom: {}, Center: {:?}",
-                        self.projection.read(cx).zoom(),
-                        self.projection.read(cx).center()
-                    ))
+                h_flex()
+                    .w_full()
+                    .items_center()
+                    .gap_2()
+                    .px_4()
+                    .py_2()
+                    .child(Slider::new(&self.zoom_slider_state).horizontal())
                     .child(Button::new("reset").label("Reset").on_click(cx.listener(
                         |this, _, _, cx| {
-                            this.projection.update(cx, |proj, _| proj.reset());
+                            this.projection.update(cx, |proj, cx| {
+                                proj.reset();
+                                cx.notify();
+                            });
                             cx.notify();
                         },
                     ))),
@@ -280,6 +348,10 @@ impl Render for LayoutViewPanel {
                 div()
                     .size_full()
                     .cursor_crosshair()
+                    .when(
+                        self.last_middle_button_mouse_pos.read(cx).is_some(),
+                        |this| this.cursor_grabbing(),
+                    )
                     .child(
                         canvas(
                             move |bounds, _, cx| {

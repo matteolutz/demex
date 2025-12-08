@@ -3,3 +3,6 @@ pub use deferred::*;
 
 mod id;
 pub use id::*;
+
+mod canvas;
+pub use canvas::*;
