@@ -5,13 +5,18 @@ use std::{
 
 use demex_core::{
     channel3::channel_value::FixtureChannelValue3,
-    engine::{comm::ThreadStatsRequest, state::DemexFrontendInitState, tick::DemexEngineTickState},
+    engine::{
+        comm::{PoolItemRequest, ThreadStatsRequest},
+        state::DemexFrontendInitState,
+        tick::DemexEngineTickState,
+    },
     event::DemexEvent,
     patch::Patch,
+    pool::{PoolItem, PoolType},
     selection::FixtureSelection,
     utils::thread::DemexThreadStats,
 };
-use gpui::{App, AppContext, Entity, Global, Timer};
+use gpui::{App, AppContext, BorrowAppContext, Entity, Global, Timer};
 
 use crate::engine::DemexEngineHandler;
 
@@ -141,6 +146,8 @@ pub struct DemexUiState {
 
     performance: Entity<HashMap<String, DemexPerformanceBuffer<10>>>,
 
+    pools: HashMap<PoolType, Entity<Vec<PoolItem>>>,
+
     command_history: Entity<DemexCommandHistory>,
 }
 
@@ -168,6 +175,25 @@ impl DemexUiState {
     pub fn command_history(cx: &App) -> Entity<DemexCommandHistory> {
         let this: &Self = cx.global();
         this.command_history.clone()
+    }
+
+    fn get_or_insert_pool(
+        &mut self,
+        pool_type: PoolType,
+        cx: &mut App,
+    ) -> &mut Entity<Vec<PoolItem>> {
+        self.pools
+            .entry(pool_type)
+            .or_insert_with(|| cx.new(|_| Vec::new()))
+    }
+
+    pub fn pool(pool_type: PoolType, cx: &mut App) -> Entity<Vec<PoolItem>> {
+        cx.update_global(|this: &mut Self, cx| this.get_or_insert_pool(pool_type, cx).clone())
+    }
+
+    pub fn try_pool(pool_type: PoolType, cx: &App) -> Option<Entity<Vec<PoolItem>>> {
+        let this: &Self = cx.global();
+        this.pools.get(&pool_type).cloned()
     }
 }
 
@@ -209,6 +235,7 @@ impl DemexUiState {
             fixture_values: cx.new(|_| Default::default()),
             patch: cx.new(|_| Default::default()),
             performance: cx.new(|_| Default::default()),
+            pools: HashMap::new(),
             command_history: cx.new(|_| Default::default()),
         }
     }
@@ -248,15 +275,67 @@ impl DemexUiState {
             history.clear();
             cx.notify();
         });
+
+        for (pool_type, pool_items) in frontend_state.pools.into_iter() {
+            let pool = self
+                .pools
+                .entry(pool_type)
+                .or_insert_with(|| cx.new(|_| Vec::new()));
+            pool.update(cx, |pool, cx| {
+                *pool = pool_items;
+                cx.notify();
+            })
+        }
     }
 
-    pub fn update_from_event(&self, event: DemexEvent, cx: &mut App) {
+    pub fn update_from_event(&mut self, event: DemexEvent, cx: &mut App) {
         match event {
             DemexEvent::FixtureSelectionChanged(new_selection) => {
                 self.fixture_selection.update(cx, |sel, cx| {
                     *sel = new_selection;
                     cx.notify();
                 })
+            }
+            DemexEvent::PoolItemAdded(pool_type, id) => {
+                DemexEngineHandler::send(cx, PoolItemRequest { pool_type, id }, move |res, cx| {
+                    let Some(item) = res else {
+                        return;
+                    };
+
+                    cx.update_global(|this: &mut Self, cx| {
+                        let pool = this.get_or_insert_pool(pool_type, cx);
+                        pool.update(cx, |pool_items, cx| {
+                            pool_items.push(item);
+                            cx.notify();
+                        });
+                    })
+                });
+            }
+            DemexEvent::PoolItemsDeleted {
+                pool_type,
+                from_id,
+                to_id,
+            } => {
+                let pool = self.get_or_insert_pool(pool_type, cx);
+                pool.update(cx, |pool, cx| {
+                    pool.retain(|pool_item| pool_item.id < from_id || pool_item.id > to_id);
+                    cx.notify();
+                });
+            }
+            DemexEvent::PoolItemMoved {
+                pool_type,
+                from_id,
+                to_id,
+            } => {
+                let pool = self.get_or_insert_pool(pool_type, cx);
+                pool.update(cx, |pool, cx| {
+                    let item = pool.iter_mut().find(|item| item.id == from_id);
+                    let Some(item) = item else {
+                        return;
+                    };
+                    item.id = to_id;
+                    cx.notify();
+                });
             }
             _ => Default::default(),
         }

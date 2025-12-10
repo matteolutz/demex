@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     input::device::DemexInputDeviceConfig,
     patch::{Patch, SerializablePatch},
+    pool::{Pool, PoolType},
     presets::PresetHandler,
     timing::TimingHandler,
     updatables::UpdatableHandler,
@@ -34,6 +35,15 @@ impl<'a> DemexShowRef<'a> {
             timing_handler: self.timing_handler.clone(),
             input_device_configs: self.input_device_configs.clone(),
             patch: SerializablePatch::from_patch(self.patch),
+        }
+    }
+
+    pub fn get_pool(&self, pool_type: PoolType) -> &dyn Pool {
+        match pool_type {
+            PoolType::Executor => self.updatable_handler,
+            PoolType::Preset(_) | PoolType::Sequence | PoolType::Group | PoolType::Macro => {
+                self.preset_handler
+            }
         }
     }
 }

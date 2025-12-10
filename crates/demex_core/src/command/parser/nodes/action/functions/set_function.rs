@@ -126,6 +126,15 @@ pub struct SetFixturePresetArgs {
     pub preset_id: ValueOrRange<FixturePresetId>,
 }
 
+impl SetFixturePresetArgs {
+    pub fn current(preset_id: FixturePresetId) -> Self {
+        Self {
+            selection_or_selector: SelectionOrSelector::Current,
+            preset_id: ValueOrRange::Single(preset_id),
+        }
+    }
+}
+
 impl FunctionArgs for SetFixturePresetArgs {
     fn run(
         &self,

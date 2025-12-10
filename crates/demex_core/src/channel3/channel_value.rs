@@ -173,6 +173,13 @@ impl FixtureChannelValue3 {
         }
     }
 
+    pub fn try_as_discrete(&self) -> Option<&FixtureChannelDiscreteValue> {
+        match self {
+            Self::Discrete(discrete) => Some(discrete),
+            _ => None,
+        }
+    }
+
     pub fn to_discrete(
         self,
         patch: &Patch,

@@ -105,6 +105,7 @@ impl LayoutViewPanel {
         let subs = vec![
             cx.observe_and_notify(&DemexUiState::patch(cx)),
             cx.observe_and_notify(&DemexUiState::fixture_selection(cx)),
+            cx.observe_and_notify(&DemexUiState::fixture_values(cx)),
             cx.observe_in(&projection, window, |this, projection, window, cx| {
                 this.zoom_slider_state.update(cx, |state, cx| {
                     state.set_value(projection.read(cx).zoom(), window, cx);
@@ -267,7 +268,7 @@ impl LayoutViewPanel {
     ) {
         self.projection.update(cx, |proj, cx| {
             let delta = evt.delta.pixel_delta(px(1.0));
-            *proj.zoom_mut() += delta.y.as_f32() * 0.1;
+            *proj.zoom_mut() += delta.y.as_f32() * 0.01;
             cx.notify();
         });
         cx.notify();
@@ -293,6 +294,7 @@ impl LayoutViewPanel {
                     .as_ref()
                     .is_some_and(|fs| fs.has_fixture(fixture.fixture_id())),
             };
+
             fixture.draw(args, self.projection.read(cx), window, cx);
         }
 

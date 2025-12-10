@@ -16,9 +16,9 @@ pub enum ActionRunResult {
 
     Save,
 
-    WithEvent {
+    WithEvents {
         result: Box<ActionRunResult>,
-        event: DemexEvent,
+        events: Vec<DemexEvent>,
     },
 }
 
@@ -28,15 +28,35 @@ impl ActionRunResult {
     }
 
     pub fn event(event: DemexEvent) -> Self {
-        Self::WithEvent {
+        Self::WithEvents {
             result: Box::new(Self::new()),
-            event,
+            events: vec![event],
         }
     }
 
-    pub fn get_event(self) -> (Self, Option<DemexEvent>) {
+    pub fn events(events: Vec<DemexEvent>) -> Self {
+        Self::WithEvents {
+            result: Box::new(Self::new()),
+            events,
+        }
+    }
+
+    pub fn with_event(self, event: DemexEvent) -> Self {
         match self {
-            Self::WithEvent { result, event } => (*result, Some(event)),
+            Self::WithEvents { result, mut events } => {
+                events.push(event);
+                Self::WithEvents { result, events }
+            }
+            result => Self::WithEvents {
+                result: Box::new(result),
+                events: vec![event],
+            },
+        }
+    }
+
+    pub fn get_events(self) -> (Self, Option<Vec<DemexEvent>>) {
+        match self {
+            Self::WithEvents { result, events } => (*result, Some(events)),
             _ => (self, None),
         }
     }

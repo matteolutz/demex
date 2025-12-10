@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use cue::{Cue, CueIdx};
 use serde::{Deserialize, Serialize};
 
-use crate::{implement_set_property, sequence::cue::CueOut};
+use crate::{implement_set_property, pool::PoolItem, sequence::cue::CueOut};
 
 use super::{
     channel3::channel_value::FixtureChannelValue3, presets::PresetHandler,
@@ -211,4 +211,13 @@ implement_set_property! {
 
     CueOutFade => cue_out.fade as f32,
     CueOutFadingFunction => cue_out.fading_function as cue::CueFadingFunction
+}
+
+impl From<&Sequence> for PoolItem {
+    fn from(value: &Sequence) -> Self {
+        PoolItem {
+            id: value.id,
+            name: value.name.clone().into(),
+        }
+    }
 }

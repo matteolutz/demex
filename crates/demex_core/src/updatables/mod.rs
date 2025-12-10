@@ -5,7 +5,10 @@ use executor::{DemexExecutor, fader_function::DemexExecutorFaderFunction};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    engine::component::Component, group_master::GroupMaster, patch::Patch,
+    engine::component::Component,
+    group_master::GroupMaster,
+    patch::Patch,
+    pool::{Pool, PoolError, PoolHelper, PoolType},
     state::fixture_state_handler::FixtureStateHandler,
 };
 
@@ -197,5 +200,39 @@ impl UpdatableHandler {
 
     pub fn group_masters(&self) -> &HashMap<u32, GroupMaster> {
         &self.group_masters
+    }
+}
+
+impl Pool for UpdatableHandler {
+    fn get(
+        &self,
+        pool_type: crate::pool::PoolType,
+        id: u32,
+    ) -> Result<crate::pool::PoolItem, crate::pool::PoolError> {
+        self.ensure_pool_type(PoolType::Executor, pool_type)?;
+        let executor = self
+            .executors
+            .get(&id)
+            .ok_or(PoolError::PoolItemNotFound(pool_type, id))?;
+        Ok(executor.into())
+    }
+
+    fn get_all(
+        &self,
+        pool_type: PoolType,
+    ) -> Result<Vec<crate::pool::PoolItem>, crate::pool::PoolError> {
+        self.ensure_pool_type(PoolType::Executor, pool_type)?;
+
+        let executors = self.executors.values().map(|e| e.into()).collect();
+        Ok(executors)
+    }
+
+    fn set_name(
+        &mut self,
+        _pool_type: crate::pool::PoolType,
+        _id: u32,
+        _name: String,
+    ) -> Result<(), crate::pool::PoolError> {
+        todo!()
     }
 }

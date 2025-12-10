@@ -18,6 +18,7 @@ use crate::{
     engine::component::Component,
     fixture::GdtfFixturePatch,
     patch::Patch,
+    pool::{Pool, PoolError, PoolType},
     state::fixture_state_handler::FixtureStateHandler,
 };
 
@@ -538,6 +539,7 @@ impl PresetHandler {
             id,
             Sequence::new(id, name.unwrap_or(format!("Sequence {}", id))),
         );
+
         Ok(())
     }
 
@@ -729,5 +731,68 @@ impl PresetHandler {
             .retain(|c| c.cue_idx() < cue_from || c.cue_idx() > cue_to);
 
         Ok(initial_len - sequence.cues().len())
+    }
+}
+
+impl Pool for PresetHandler {
+    fn get(
+        &self,
+        pool_type: crate::pool::PoolType,
+        id: u32,
+    ) -> Result<crate::pool::PoolItem, crate::pool::PoolError> {
+        match pool_type {
+            PoolType::Preset(preset_type) => {
+                let preset_id = FixturePresetId::new(preset_type, id);
+                let item = self
+                    .presets
+                    .get(&preset_id)
+                    .ok_or(PoolError::PoolItemNotFound(pool_type, id))?;
+                Ok(item.into())
+            }
+            PoolType::Sequence => Ok(self
+                .sequences
+                .get(&id)
+                .ok_or(PoolError::PoolItemNotFound(pool_type, id))?
+                .into()),
+            PoolType::Group => Ok(self
+                .groups
+                .get(&id)
+                .ok_or(PoolError::PoolItemNotFound(pool_type, id))?
+                .into()),
+            PoolType::Macro => Ok(self
+                .macros
+                .get(&id)
+                .ok_or(PoolError::PoolItemNotFound(pool_type, id))?
+                .into()),
+            pool_type => Err(PoolError::InvalidPoolType(pool_type)),
+        }
+    }
+
+    fn get_all(&self, pool_type: PoolType) -> Result<Vec<crate::pool::PoolItem>, PoolError> {
+        match pool_type {
+            PoolType::Preset(preset_type) => {
+                let presets = self
+                    .presets
+                    .values()
+                    .filter(|p| p.id().feature_group == preset_type)
+                    .map(|p| p.into())
+                    .collect();
+
+                Ok(presets)
+            }
+            PoolType::Sequence => Ok(self.sequences.values().map(|s| s.into()).collect()),
+            PoolType::Group => Ok(self.groups.values().map(|s| s.into()).collect()),
+            PoolType::Macro => Ok(self.macros.values().map(|s| s.into()).collect()),
+            pool_type => Err(PoolError::InvalidPoolType(pool_type)),
+        }
+    }
+
+    fn set_name(
+        &mut self,
+        _pool_type: crate::pool::PoolType,
+        _id: u32,
+        _name: String,
+    ) -> Result<(), crate::pool::PoolError> {
+        todo!()
     }
 }

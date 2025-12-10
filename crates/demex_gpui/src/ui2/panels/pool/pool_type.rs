@@ -1,26 +1,17 @@
-use demex_core::channel3::feature::feature_group::FixtureChannel3FeatureGroup;
-use serde::{Deserialize, Serialize};
+use demex_core::pool::PoolType;
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub enum PoolType {
-    Preset(FixtureChannel3FeatureGroup),
-
-    Sequence,
-    Executor,
+pub trait PoolTypeExt {
+    fn to_string(&self) -> String;
 }
 
-impl Default for PoolType {
-    fn default() -> Self {
-        Self::Preset(FixtureChannel3FeatureGroup::default())
-    }
-}
-
-impl std::fmt::Display for PoolType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl PoolTypeExt for PoolType {
+    fn to_string(&self) -> String {
         match self {
-            Self::Preset(feature_group) => write!(f, "{} Preset", feature_group),
-            Self::Sequence => write!(f, "Sequence"),
-            Self::Executor => write!(f, "Executor"),
+            Self::Preset(feature_group) => format!("{} Preset", feature_group),
+            Self::Sequence => format!("Sequence"),
+            Self::Executor => format!("Executor"),
+            Self::Group => format!("Group"),
+            Self::Macro => format!("Macro"),
         }
     }
 }

@@ -4,7 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     command::parser::nodes::action::{Action, error::ActionRunError, result::ActionRunResult},
+    event::DemexEvent,
     patch::Patch,
+    pool::PoolType,
     presets::preset::FixturePresetId,
     timing::TimingHandler,
 };
@@ -32,14 +34,16 @@ impl FunctionArgs for CreateSequenceArgs {
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
     > {
+        let id = self.id.unwrap_or_else(|| preset_handler.next_sequence_id());
+
         preset_handler
-            .create_sequence(
-                self.id.unwrap_or_else(|| preset_handler.next_sequence_id()),
-                self.name.clone(),
-            )
+            .create_sequence(id, self.name.clone())
             .map_err(ActionRunError::PresetHandlerError)?;
 
-        Ok(ActionRunResult::new())
+        Ok(ActionRunResult::event(DemexEvent::PoolItemAdded(
+            PoolType::Sequence,
+            id,
+        )))
     }
 }
 
@@ -61,15 +65,18 @@ impl FunctionArgs for CreateExecutorArgs {
         _: &mut TimingHandler,
         _: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
+        let id = self
+            .id
+            .unwrap_or_else(|| updatable_handler.next_executor_id());
+
         updatable_handler
-            .create_executor(
-                self.id
-                    .unwrap_or_else(|| updatable_handler.next_executor_id()),
-                self.sequence_id,
-            )
+            .create_executor(id, self.sequence_id)
             .map_err(ActionRunError::UpdatableHandlerError)?;
 
-        Ok(ActionRunResult::new())
+        Ok(ActionRunResult::event(DemexEvent::PoolItemAdded(
+            PoolType::Executor,
+            id,
+        )))
     }
 }
 
@@ -92,15 +99,16 @@ impl FunctionArgs for CreateMacroArgs {
         _: &mut TimingHandler,
         _: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
+        let id = self.id.unwrap_or_else(|| preset_handler.next_macro_id());
+
         preset_handler
-            .create_macro(
-                self.id.unwrap_or_else(|| preset_handler.next_macro_id()),
-                self.name.clone(),
-                self.action.clone(),
-            )
+            .create_macro(id, self.name.clone(), self.action.clone())
             .map_err(ActionRunError::PresetHandlerError)?;
 
-        Ok(ActionRunResult::new())
+        Ok(ActionRunResult::event(DemexEvent::PoolItemAdded(
+            PoolType::Macro,
+            id,
+        )))
     }
 }
 
@@ -126,6 +134,9 @@ impl FunctionArgs for CreateEffectPresetArgs {
             .create_effect_preset(self.id, self.name.clone())
             .map_err(ActionRunError::PresetHandlerError)?;
 
-        Ok(ActionRunResult::new())
+        Ok(ActionRunResult::event(DemexEvent::PoolItemAdded(
+            PoolType::Preset(self.id.feature_group),
+            self.id.preset_id,
+        )))
     }
 }

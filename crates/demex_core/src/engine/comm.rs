@@ -10,6 +10,7 @@ use crate::{
     engine::{component::ComponentHandle, tick::DemexEngineTickState},
     event::DemexEvent,
     patch::Patch,
+    pool::{PoolItem, PoolType},
     show::{DemexShow, DemexShowRef},
     utils::thread::{DemexThreadStats, DemexThreadStatsHandler},
 };
@@ -47,6 +48,15 @@ impl DemexEngineCommRequest for ThreadStatsRequest {
 pub struct ShowRequest {}
 impl DemexEngineCommRequest for ShowRequest {
     type Response = DemexShow;
+}
+
+#[derive(Debug)]
+pub struct PoolItemRequest {
+    pub pool_type: PoolType,
+    pub id: u32,
+}
+impl DemexEngineCommRequest for PoolItemRequest {
+    type Response = Option<PoolItem>;
 }
 
 pub struct DemexEngineCommRequestEnvelope {

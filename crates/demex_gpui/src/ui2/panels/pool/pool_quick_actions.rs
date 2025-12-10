@@ -8,6 +8,7 @@ use gpui::{
 use gpui_component::{ActiveTheme, StyledExt, v_flex};
 
 const QUICK_ACTIONS_TIMEOUT: f32 = 0.5;
+const QUICK_ACTIONS_MOUSE_MOVE_THRESHOLD: f64 = 5.0;
 
 #[derive(Clone)]
 pub struct PoolQuickAction {
@@ -67,12 +68,18 @@ impl PoolQuickActionsState {
         });
     }
 
-    pub(super) fn mouse_move(&mut self, id: ElementId) {
+    pub(super) fn mouse_move(&mut self, pos: Point<Pixels>, id: ElementId) {
         let Some(current_button) = self.current_pool_button.as_mut() else {
             return;
         };
 
         if current_button.id != id {
+            return;
+        }
+
+        if current_button.mouse_down_pos.relative_to(&pos).magnitude()
+            < QUICK_ACTIONS_MOUSE_MOVE_THRESHOLD
+        {
             return;
         }
 

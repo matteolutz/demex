@@ -1,11 +1,15 @@
 use std::path::PathBuf;
 
 use gdtf::fixture_type::FixtureType;
+use gpui::UpdateGlobal;
 
 use crate::{
     engine::{showfile::DemexShowFileManager, state::DemexUiState},
-    ui2::{self, assets::Assets},
+    storage::themes_dir,
+    ui2::{self, assets::Assets, config::DemexUiConfig, wm::WindowManager},
 };
+
+use gpui_component::{Theme, ThemeRegistry};
 
 pub struct DemexAppArgs {
     pub fixture_types: Vec<FixtureType>,
@@ -13,6 +17,8 @@ pub struct DemexAppArgs {
 
     pub touchscreen_mode: bool,
     pub additional_viewports: usize,
+
+    pub theme: Option<String>,
 }
 
 pub mod actions {
@@ -32,7 +38,8 @@ pub mod actions {
 
         cx.on_action::<Quit>(|_, cx| cx.quit());
         cx.on_action::<Save>(|_, cx| {
-            println!("saving");
+            log::debug!("Saving showfile");
+
             if DemexShowFileManager::current_file_path(cx)
                 .read(cx)
                 .is_some()
@@ -117,18 +124,45 @@ impl DemexApp {
         gpui::Application::new()
             .with_assets(Assets)
             .run(move |cx: &mut gpui::App| {
-                use gpui_component::{Theme, ThemeRegistry};
-
-                use crate::ui2::{config::DemexUiConfig, wm::WindowManager};
-
                 gpui_component::init(cx);
                 ui2::init(cx).unwrap();
 
                 actions::init(cx);
 
-                let theme_reg = ThemeRegistry::global(cx);
-                if let Some(theme) = theme_reg.themes().get("Default Dark").cloned() {
-                    Theme::global_mut(cx).apply_config(&theme);
+                let themes_dir = themes_dir();
+                log::info!("Watching themes directory: {}", themes_dir.display());
+                if let Err(err) = ThemeRegistry::watch_dir(themes_dir.clone(), cx, move |cx| {
+                    let theme_reg = ThemeRegistry::global(cx);
+                    log::debug!("Found {} themes", theme_reg.themes().len());
+
+                    let Some(selected_theme) = args.theme.as_ref() else {
+                        return;
+                    };
+
+                    let theme = theme_reg
+                        .themes()
+                        .iter()
+                        .find_map(|(name, theme)| {
+                            if name == selected_theme {
+                                Some(theme)
+                            } else {
+                                None
+                            }
+                        })
+                        .cloned();
+
+                    let Some(theme) = theme else {
+                        log::warn!("{} theme found", selected_theme);
+                        return;
+                    };
+
+                    Theme::update_global(cx, |active_theme, _| active_theme.apply_config(&theme));
+                }) {
+                    log::warn!(
+                        "Failed to watch themes directory ({}): {}",
+                        themes_dir.display(),
+                        err
+                    );
                 }
 
                 let ui_config = DemexUiConfig {

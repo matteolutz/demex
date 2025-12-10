@@ -14,8 +14,10 @@ use crate::{
             },
         },
     },
+    event::DemexEvent,
     fixture::{GdtfFixturePatch, error::FixtureError},
     patch::Patch,
+    pool::PoolType,
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
     sequence::cue::{CueFixtureChannelValue, CueIdx},
     state::fixture_state_handler::FixtureStateHandler,
@@ -120,7 +122,10 @@ impl FunctionArgs for RecordPresetArgs {
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 
-        Ok(ActionRunResult::new())
+        Ok(ActionRunResult::event(DemexEvent::PoolItemAdded(
+            PoolType::Preset(self.id.feature_group),
+            self.id.preset_id,
+        )))
     }
 }
 
@@ -148,15 +153,16 @@ impl FunctionArgs for RecordGroupArgs {
             .get_selection(preset_handler, fixture_selector_context)
             .map_err(ActionRunError::FixtureSelectorError)?;
 
+        let id = self.id.unwrap_or_else(|| preset_handler.next_group_id());
+
         preset_handler
-            .record_group(
-                selection,
-                self.id.unwrap_or_else(|| preset_handler.next_group_id()),
-                self.name.clone(),
-            )
+            .record_group(selection, id, self.name.clone())
             .map_err(ActionRunError::PresetHandlerError)?;
 
-        Ok(ActionRunResult::new())
+        Ok(ActionRunResult::event(DemexEvent::PoolItemAdded(
+            PoolType::Group,
+            id,
+        )))
     }
 }
 
@@ -289,6 +295,8 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                             patch,
                         )
                         .map_err(ActionRunError::PresetHandlerError)?;
+
+                    Ok(ActionRunResult::new())
                 } else {
                     let sequence_id = self
                         .create_sequence(
@@ -305,10 +313,13 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                     updatable_handler
                         .create_executor(executor_id, sequence_id)
                         .map_err(ActionRunError::UpdatableHandlerError)?;
+
+                    Ok(ActionRunResult::events(vec![
+                        DemexEvent::PoolItemAdded(PoolType::Sequence, sequence_id),
+                        DemexEvent::PoolItemAdded(PoolType::Executor, executor_id),
+                    ]))
                 }
             }
         }
-
-        Ok(ActionRunResult::new())
     }
 }

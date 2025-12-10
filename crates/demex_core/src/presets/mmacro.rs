@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{command::parser::nodes::action::Action, implement_set_property};
+use crate::{command::parser::nodes::action::Action, implement_set_property, pool::PoolItem};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MMacro {
@@ -46,4 +46,13 @@ implement_set_property! {
     for MMacro with MMacroProperty,
 
     Name => name as String
+}
+
+impl From<&MMacro> for PoolItem {
+    fn from(value: &MMacro) -> Self {
+        PoolItem {
+            id: value.id,
+            name: value.name.clone().into(),
+        }
+    }
 }

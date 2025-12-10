@@ -10,6 +10,7 @@ use crate::{
     fixture::{GdtfFixturePatch, error::FixtureError},
     implement_set_property,
     patch::Patch,
+    pool::{PoolItem, PoolItemName, PoolType},
     presets::PresetHandler,
     sequence::{FadeFixtureChannelValue, runtime::SequenceRuntime},
     state::fixture_state_handler::FixtureStateHandler,
@@ -284,4 +285,13 @@ implement_set_property! {
     FaderFunction => fader_function as DemexExecutorFaderFunction,
     Priority => priority as FixtureChannelValuePriority,
     StompProtected => stomp_protected as bool
+}
+
+impl From<&DemexExecutor> for PoolItem {
+    fn from(value: &DemexExecutor) -> Self {
+        PoolItem {
+            id: value.id,
+            name: PoolItemName::reference(PoolType::Sequence, value.runtime.sequence_id()),
+        }
+    }
 }

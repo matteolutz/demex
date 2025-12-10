@@ -22,6 +22,7 @@ use crate::{
     event::DemexEvent,
     input::DemexInputDeviceHandler,
     patch::Patch,
+    pool::{PoolItem, PoolType},
     presets::PresetHandler,
     show::DemexShowRef,
     state::{fixture_state::FixtureState, fixture_state_handler::FixtureStateHandler},
@@ -54,9 +55,30 @@ impl UpdateThread {
         updatable_handler: UpdatableHandler,
         timing_handler: TimingHandler,
         patch: Arc<ArcSwap<Patch>>,
-    ) -> (Self, HashMap<u32, FixtureState>) {
+    ) -> (
+        Self,
+        HashMap<u32, FixtureState>,
+        HashMap<PoolType, Vec<PoolItem>>,
+    ) {
         let fixture_state_handler = FixtureStateHandler::new(&patch.load()).unwrap();
         let fixture_states = fixture_state_handler.fixtures().clone();
+
+        let show = DemexShowRef {
+            preset_handler: &preset_handler,
+            updatable_handler: &updatable_handler,
+            timing_handler: &timing_handler,
+            input_device_configs: &vec![],
+            patch: &patch.load(),
+        };
+        let pools = PoolType::all()
+            .into_iter()
+            .filter_map(|pool_type| {
+                show.get_pool(pool_type)
+                    .get_all(pool_type)
+                    .ok()
+                    .map(|items| (pool_type, items))
+            })
+            .collect::<HashMap<_, _>>();
 
         let state = DemexEngineState::default();
 
@@ -74,7 +96,7 @@ impl UpdateThread {
             state,
         };
 
-        (s, fixture_states)
+        (s, fixture_states, pools)
     }
 }
 
@@ -115,11 +137,13 @@ impl DemexThreadDelegate for UpdateThread {
                         log::debug!("Action run result: {:?}", result);
                     }
 
-                    let (result, event) = result.get_event();
-                    if let Some(event) = event {
-                        let _ = self
-                            .event_bus_tx
-                            .send(DemexEngineCommEvent::DemexEvent(event));
+                    let (result, events) = result.get_events();
+                    if let Some(events) = events {
+                        for event in events {
+                            let _ = self
+                                .event_bus_tx
+                                .send(DemexEngineCommEvent::DemexEvent(event));
+                        }
                     }
 
                     // Also send the result itself (maybe it should trigger a ui action)
@@ -137,7 +161,7 @@ impl DemexThreadDelegate for UpdateThread {
                         ActionRunResult::UpdatePatch(patch) => {
                             self.patch.store(Arc::new(patch));
                         }
-                        ActionRunResult::WithEvent { .. } => unreachable!(),
+                        ActionRunResult::WithEvents { .. } => unreachable!(),
                         _ => {}
                     }
                 }

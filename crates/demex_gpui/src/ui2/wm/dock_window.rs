@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use demex_core::{
-    channel3::feature::feature_group::FixtureChannel3FeatureGroup, utils::version::VERSION_STR,
+    channel3::feature::feature_group::FixtureChannel3FeatureGroup, pool::PoolType,
+    utils::version::VERSION_STR,
 };
 use gpui::{
     App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Subscription,
@@ -19,12 +20,9 @@ use crate::{
     ui2::{
         ext::GpuiContextExtension,
         panels::{
-            command::CommandPanel,
-            fixture_list::FixtureListPanel,
-            fixture_selection::FixtureSelectionPanel,
-            layout_view::LayoutViewPanel,
-            performance::PerformancePanel,
-            pool::{PoolPanel, pool_type::PoolType},
+            command::CommandPanel, fixture_list::FixtureListPanel,
+            fixture_selection::FixtureSelectionPanel, layout_view::LayoutViewPanel,
+            performance::PerformancePanel, pool::PoolPanel,
         },
         titlebar::DemexTitleBar,
         wm::DEMEX_APP_ID,
@@ -64,6 +62,13 @@ impl DockWindow {
         );
         da.add_panel(
             Arc::new(cx.new(|cx| FixtureListPanel::new(window, cx))),
+            DockPlacement::Center,
+            None,
+            window,
+            cx,
+        );
+        da.add_panel(
+            Arc::new(cx.new(|cx| PoolPanel::new(PoolType::Group, cx))),
             DockPlacement::Center,
             None,
             window,

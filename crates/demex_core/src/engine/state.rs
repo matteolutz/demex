@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use crate::{
-    engine::component::Component, patch::Patch, selection::FixtureSelection,
+    engine::component::Component,
+    patch::Patch,
+    pool::{PoolItem, PoolType},
+    selection::FixtureSelection,
     state::fixture_state::FixtureState,
 };
 
@@ -12,8 +15,10 @@ pub struct DemexEngineState {
 
 impl Component for DemexEngineState {}
 
+#[derive(Debug)]
 pub struct DemexFrontendInitState {
     pub fixture_selection: Option<FixtureSelection>,
     pub fixture_states: HashMap<u32, FixtureState>,
+    pub pools: HashMap<PoolType, Vec<PoolItem>>,
     pub patch: Patch,
 }

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::selection::FixtureSelection;
+use crate::{pool::PoolItem, selection::FixtureSelection};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FixtureGroup {
@@ -37,5 +37,14 @@ impl FixtureGroup {
 
     pub fn fixture_selection_mut(&mut self) -> &mut FixtureSelection {
         &mut self.fixture_selection
+    }
+}
+
+impl From<&FixtureGroup> for PoolItem {
+    fn from(value: &FixtureGroup) -> Self {
+        PoolItem {
+            id: value.id,
+            name: value.name.clone().into(),
+        }
     }
 }

@@ -1,57 +1,67 @@
+use demex_core::pool::{PoolItem, PoolType};
 use gpui::{
-    App, AppContext, Bounds, Context, Entity, IntoElement, ParentElement, Pixels, Render,
-    SharedString, Styled, Subscription, Window, div, prelude::FluentBuilder, px,
+    App, AppContext, Bounds, Context, Entity, IntoElement, ParentElement, Pixels, Render, Styled,
+    Subscription, Window, div, prelude::FluentBuilder, px,
 };
 use gpui_component::PixelsExt;
+use itertools::Itertools;
 
-use crate::ui2::{
-    ext::GpuiContextExtension,
-    panels::pool::{
-        pool_button::{PoolButton, PoolItemButtonIndicatorColor},
-        pool_quick_actions::{PoolQuickActions, PoolQuickActionsState},
+use crate::{
+    engine::state::DemexUiState,
+    ui2::{
+        ext::GpuiContextExtension,
+        panels::pool::{
+            pool_action::handle_pool_item_click,
+            pool_button::{PoolButton, PoolItemButtonIndicatorColor},
+            pool_item::PoolItemNameExt,
+            pool_quick_actions::{PoolQuickActions, PoolQuickActionsState},
+        },
+        utils::bounds,
     },
-    utils::bounds,
 };
 
 const ELEMENT_PADDING: f32 = 5.0;
 const ELEMENT_SIZE: f32 = 80.0;
 
-#[derive(Debug, Clone)]
-pub struct PoolItem {
-    id: u32,
-    name: SharedString,
-}
-
 pub struct Pool {
-    items: Vec<PoolItem>,
     bounds: Entity<Option<Bounds<Pixels>>>,
 
     quick_actions_state: Entity<PoolQuickActionsState>,
+
+    pool_items: Entity<Vec<PoolItem>>,
+    pool_type: PoolType,
 
     _subscriptions: Vec<Subscription>,
 }
 
 impl Pool {
-    pub fn new(cx: &mut Context<Self>) -> Self {
+    pub fn new(pool_type: PoolType, cx: &mut Context<Self>) -> Self {
         let bounds = cx.new(|_| None);
         let quick_actions_state = cx.new(|_| PoolQuickActionsState::default());
+
+        let pool_items = DemexUiState::pool(pool_type, cx);
 
         let _subscriptions = vec![
             cx.observe_and_notify(&bounds),
             cx.observe_and_notify(&quick_actions_state),
+            cx.observe_and_notify(&pool_items),
         ];
 
         Self {
-            items: (0..10)
-                .map(|id| PoolItem {
-                    id,
-                    name: format!("Item {}", id + 1).into(),
-                })
-                .collect(),
+            pool_items,
+            pool_type,
             bounds,
             quick_actions_state,
             _subscriptions,
         }
+    }
+
+    fn get_pool_item_color(
+        &self,
+        _pool_item_id: u32,
+        _cx: &App,
+    ) -> Option<PoolItemButtonIndicatorColor> {
+        None
     }
 }
 
@@ -72,6 +82,7 @@ impl Pool {
         };
 
         let (n_cols, element_size) = self.cols_and_element_size(width);
+        let pool_items = self.pool_items.read(cx);
 
         div()
             .absolute()
@@ -81,26 +92,29 @@ impl Pool {
             .grid()
             .grid_cols(n_cols)
             .gap_y(px(ELEMENT_PADDING))
-            .children(self.items.iter().enumerate().map(|(idx, item)| {
+            .children(pool_items.into_iter().sorted().map(|item| {
                 PoolButton::new(item.id as usize)
                     .size(px(element_size))
-                    .indicator_color(match idx % 3 {
-                        0 => PoolItemButtonIndicatorColor::Red,
-                        1 => PoolItemButtonIndicatorColor::Green,
-                        2 => PoolItemButtonIndicatorColor::Blue,
-                        _ => unreachable!(),
-                    })
                     .quick_actions_state(&self.quick_actions_state)
-                    .action("Test", |_, _| println!("Test"))
-                    .action("Test 2", |_, _| println!("Test 2"))
-                    .action("Test 3", |_, _| println!("Test 3"))
-                    .action("Test 4", |_, _| println!("Test 4"))
-                    .action("Test 5", |_, _| println!("Test 5"))
-                    .action("Test 6", |_, _| println!("Test 6"))
-                    .action("Test 7", |_, _| println!("Test 7"))
-                    .action("Test 8", |_, _| println!("Test 8"))
-                    .on_click(|_, _, _| println!("clicked"))
-                    .item_name(&item.name)
+                    .action("Test", |_, _| log::debug!("PoolButton: Test"))
+                    .action("Test 2", |_, _| log::debug!("PoolButton: Test 2"))
+                    .action("Test 3", |_, _| log::debug!("PoolButton: Test 3"))
+                    .action("Test 4", |_, _| log::debug!("PoolButton: Test 4"))
+                    .action("Test 5", |_, _| log::debug!("PoolButton: Test 5"))
+                    .action("Test 6", |_, _| log::debug!("PoolButton: Test 6"))
+                    .action("Test 7", |_, _| log::debug!("PoolButton: Test 7"))
+                    .action("Test 8", |_, _| log::debug!("PoolButton: Test 8"))
+                    .item_name(item.name.clone().to_name(cx))
+                    .on_click({
+                        let id = item.id;
+                        cx.listener(move |this, _, _, cx| {
+                            handle_pool_item_click(this.pool_type, id, cx)
+                        })
+                    })
+                    .when_some(self.get_pool_item_color(item.id, cx), |this, color| {
+                        this.indicator_color(color)
+                    })
+                    .item_id(item.id)
             }))
     }
 }

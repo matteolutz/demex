@@ -5,11 +5,14 @@ use gpui::{
     ParentElement, RenderOnce, SharedString, Stateful, StatefulInteractiveElement, StyleRefinement,
     Styled, Window, div, prelude::FluentBuilder,
 };
-use gpui_component::{ActiveTheme, Disableable, v_flex};
+use gpui_component::{ActiveTheme, Disableable, StyledExt, v_flex};
 
 use crate::ui2::panels::pool::pool_quick_actions::{PoolQuickAction, PoolQuickActionsState};
 
+#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, Hash)]
 pub enum PoolItemButtonIndicatorColor {
+    #[default]
+    Black,
     Red,
     Green,
     Blue,
@@ -18,6 +21,7 @@ pub enum PoolItemButtonIndicatorColor {
 impl PoolItemButtonIndicatorColor {
     pub fn color(self, cx: &App) -> Hsla {
         match self {
+            Self::Black => cx.theme().accent,
             Self::Red => cx.theme().red,
             Self::Green => cx.theme().green,
             Self::Blue => cx.theme().blue,
@@ -31,6 +35,7 @@ pub struct PoolButton {
     base: Stateful<Div>,
 
     item_name: Option<SharedString>,
+    item_id: Option<u32>,
     indicator_color: Option<PoolItemButtonIndicatorColor>,
 
     quick_actions_state: Option<Entity<PoolQuickActionsState>>,
@@ -49,6 +54,7 @@ impl PoolButton {
             id: id.clone(),
             base: div().id(id),
             item_name: None,
+            item_id: None,
             indicator_color: None,
             quick_actions_state: None,
             quick_actions: Vec::new(),
@@ -59,6 +65,11 @@ impl PoolButton {
 
     pub fn item_name(mut self, name: impl Into<SharedString>) -> Self {
         self.item_name = Some(name.into());
+        self
+    }
+
+    pub fn item_id(mut self, item_id: u32) -> Self {
+        self.item_id = Some(item_id);
         self
     }
 
@@ -142,10 +153,10 @@ impl PoolButton {
             let state = state.clone();
             let id = id.clone();
 
-            move |_, _, cx| {
+            move |evt, _, cx| {
                 let id = id.clone();
                 state.update(cx, |state, cx| {
-                    state.mouse_move(id);
+                    state.mouse_move(evt.position, id);
                     cx.notify();
                 })
             }
@@ -191,13 +202,32 @@ impl RenderOnce for PoolButton {
                         .top_0()
                         .left_0()
                         .size_full()
+                        .p_2()
+                        .overflow_hidden()
                         .justify_center()
                         .items_center()
+                        .font_semibold()
+                        .text_sm()
+                        .text_ellipsis()
                         .child(item_name),
                 )
             })
-            .when_some(self.indicator_color, |this, color| {
-                this.child(div().w_full().h_2().bg(color.color(cx)))
+            .child(
+                div()
+                    .w_full()
+                    .h_2()
+                    .bg(self.indicator_color.unwrap_or_default().color(cx)),
+            )
+            .when_some(self.item_id, |this, item_id| {
+                this.child(
+                    div()
+                        .w_full()
+                        .px_1()
+                        .text_xs()
+                        .font_semibold()
+                        .text_color(cx.theme().muted_foreground)
+                        .child(format!("{}", item_id)),
+                )
             })
             .when_some(self.quick_actions_state, |div, state| {
                 Self::when_quick_actions_state(div, state, self.quick_actions, self.id)

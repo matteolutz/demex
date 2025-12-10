@@ -1,10 +1,22 @@
-use crate::{command::parser::nodes::object::Object, selection::FixtureSelection};
+use crate::{command::parser::nodes::object::Object, pool::PoolType, selection::FixtureSelection};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DemexEvent {
     ExecutorGo(u32),
     ExecutorStop(u32),
     ExecutorFaderValueChanged(u32),
+
+    PoolItemAdded(PoolType, u32),
+    PoolItemsDeleted {
+        pool_type: PoolType,
+        from_id: u32,
+        to_id: u32,
+    },
+    PoolItemMoved {
+        pool_type: PoolType,
+        from_id: u32,
+        to_id: u32,
+    },
 
     GrandmasterFaderValueChanged,
 

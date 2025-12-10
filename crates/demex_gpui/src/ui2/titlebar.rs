@@ -15,12 +15,12 @@ use crate::{
     ui2::{
         ext::GpuiContextExtension,
         window::{outputs::OutputsConfigWindow, settings::SettingsWindow},
-        wm::{WindowManager, edit_window::WindowManagerExtension},
+        wm::{WindowManager, app::WindowManagerAppExt, edit_window::WindowManagerExtension},
     },
 };
 
 mod actions {
-    gpui::actions!(titlebar, [NewFile]);
+    gpui::actions!(titlebar, [NewFile, ResetView]);
 }
 
 #[derive(Default)]
@@ -78,6 +78,15 @@ impl DemexTitleBarConfig {
                                             Box::new(app::actions::Reload),
                                             has_showfile_name,
                                         )
+                                }),
+                        )
+                        .child(
+                            Button::new("view-menu")
+                                .small()
+                                .link()
+                                .label("View")
+                                .dropdown_menu(move |menu, _, _| {
+                                    menu.menu("Reset Layout", Box::new(actions::ResetView))
                                 }),
                         )
                         .child(
@@ -147,6 +156,10 @@ impl DemexTitleBar {
     fn handle_new(_: &actions::NewFile, _: &mut Window, cx: &mut App) {
         DemexShowFileManager::load_empty_show(cx);
     }
+
+    fn handle_reset_view(_: &actions::ResetView, _window: &mut Window, cx: &mut App) {
+        cx.defer(|cx| cx.update_wm(|wm, cx| wm.reset_dock_window_configs(cx)));
+    }
 }
 
 impl Render for DemexTitleBar {
@@ -159,6 +172,7 @@ impl Render for DemexTitleBar {
             div()
                 .w_full()
                 .on_action(Self::handle_new)
+                .on_action(Self::handle_reset_view)
                 .flex()
                 .justify_start()
                 .items_center()

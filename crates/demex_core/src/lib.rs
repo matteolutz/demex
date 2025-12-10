@@ -17,6 +17,7 @@ pub mod input;
 pub mod keyframe_effect;
 pub mod layout;
 pub mod patch;
+pub mod pool;
 pub mod presets;
 pub mod selection;
 pub mod sequence;

@@ -7,7 +7,9 @@ use crate::{
         action::{error::ActionRunError, result::ActionRunResult},
         object::{HomeableObject, Object, ObjectRange},
     },
+    event::DemexEvent,
     patch::Patch,
+    pool::PoolType,
     timing::TimingHandler,
 };
 
@@ -41,11 +43,18 @@ impl FunctionArgs for DeleteArgs {
                     .delete_preset_range(*preset_id_from, *preset_id_to)
                     .map_err(ActionRunError::PresetHandlerError)?;
 
-                if self.object_range.is_single() {
-                    Ok(ActionRunResult::new())
+                let result = if self.object_range.is_single() {
+                    ActionRunResult::new()
                 } else {
-                    Ok(ActionRunResult::Info(format!("Deleted {} presets", count)))
-                }
+                    ActionRunResult::Info(format!("Deleted {} presets", count))
+                };
+
+                Ok(result.with_event(DemexEvent::PoolItemsDeleted {
+                    // the PresetHandler will make sure from and to feature group match
+                    pool_type: PoolType::Preset(preset_id_from.feature_group),
+                    from_id: preset_id_from.preset_id,
+                    to_id: preset_id_to.preset_id,
+                }))
             }
             (Object::Sequence(id_from), Object::Sequence(id_to)) => {
                 for id in *id_from..=*id_to {
@@ -60,14 +69,17 @@ impl FunctionArgs for DeleteArgs {
                         .map_err(ActionRunError::PresetHandlerError)?;
                 }
 
-                if id_from == id_to {
-                    Ok(ActionRunResult::new())
+                let result = if id_from == id_to {
+                    ActionRunResult::new()
                 } else {
-                    Ok(ActionRunResult::Info(format!(
-                        "Deleted {} sequences",
-                        id_to - id_from + 1
-                    )))
-                }
+                    ActionRunResult::Info(format!("Deleted {} sequences", id_to - id_from + 1))
+                };
+
+                Ok(result.with_event(DemexEvent::PoolItemsDeleted {
+                    pool_type: PoolType::Sequence,
+                    from_id: *id_from,
+                    to_id: *id_to,
+                }))
             }
             (
                 Object::SequenceCue(sequence_id_from, cue_idx_from),
@@ -125,14 +137,20 @@ impl FunctionArgs for DeleteArgs {
                             .map_err(ActionRunError::PresetHandlerError)?;
                     }
 
-                    if group_id_from == group_id_to {
-                        Ok(ActionRunResult::new())
+                    let result = if group_id_from == group_id_to {
+                        ActionRunResult::new()
                     } else {
-                        Ok(ActionRunResult::Info(format!(
+                        ActionRunResult::Info(format!(
                             "Deleted {} groups",
                             group_id_from - group_id_to + 1
-                        )))
-                    }
+                        ))
+                    };
+
+                    Ok(result.with_event(DemexEvent::PoolItemsDeleted {
+                        pool_type: PoolType::Group,
+                        from_id: group_id_from,
+                        to_id: group_id_to,
+                    }))
                 }
                 (HomeableObject::Executor(id_from), HomeableObject::Executor(id_to)) => {
                     for id in *id_from..=*id_to {
@@ -150,14 +168,17 @@ impl FunctionArgs for DeleteArgs {
                             .map_err(ActionRunError::UpdatableHandlerError)?;
                     }
 
-                    if id_from == id_to {
-                        Ok(ActionRunResult::new())
+                    let result = if id_from == id_to {
+                        ActionRunResult::new()
                     } else {
-                        Ok(ActionRunResult::Info(format!(
-                            "Deleted {} executors",
-                            id_to - id_from + 1
-                        )))
-                    }
+                        ActionRunResult::Info(format!("Deleted {} executors", id_to - id_from + 1))
+                    };
+
+                    Ok(result.with_event(DemexEvent::PoolItemsDeleted {
+                        pool_type: PoolType::Executor,
+                        from_id: *id_from,
+                        to_id: *id_to,
+                    }))
                 }
                 _ => Err(ActionRunError::ActionNotImplementedForObjectRange(
                     "Delete".to_owned(),

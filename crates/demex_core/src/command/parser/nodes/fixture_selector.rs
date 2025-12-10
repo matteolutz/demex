@@ -132,6 +132,10 @@ impl FixtureSelector {
     pub fn current_fixtures_selected() -> Self {
         Self::Atomic(AtomicFixtureSelector::CurrentFixturesSelected)
     }
+
+    pub fn group(id: u32) -> Self {
+        Self::Atomic(AtomicFixtureSelector::FixtureGroup(id))
+    }
 }
 
 impl FixtureSelector {

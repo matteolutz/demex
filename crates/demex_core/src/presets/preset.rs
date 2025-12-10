@@ -22,6 +22,7 @@ use crate::{
         effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_runtime::KeyframeEffectRuntime,
     },
     patch::Patch,
+    pool::PoolItem,
     selection::FixtureSelection,
     state::{fixture_state::FixtureState, fixture_state_handler::FixtureStateHandler},
     timing::TimingHandler,
@@ -34,6 +35,15 @@ use super::{PresetHandler, error::PresetHandlerError};
 pub struct FixturePresetId {
     pub feature_group: FixtureChannel3FeatureGroup,
     pub preset_id: u32,
+}
+
+impl FixturePresetId {
+    pub fn new(feature_group: FixtureChannel3FeatureGroup, preset_id: u32) -> Self {
+        Self {
+            feature_group,
+            preset_id,
+        }
+    }
 }
 
 impl ValueOrRange<FixturePresetId> {
@@ -616,4 +626,13 @@ implement_set_property! {
     for FixturePreset with FixturePresetProperty,
 
     Name => name as String
+}
+
+impl From<&FixturePreset> for PoolItem {
+    fn from(value: &FixturePreset) -> Self {
+        PoolItem {
+            id: value.id.preset_id,
+            name: value.name.clone().into(),
+        }
+    }
 }

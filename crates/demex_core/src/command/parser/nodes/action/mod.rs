@@ -197,6 +197,8 @@ pub enum Action {
     ExecutorStop(ExecutorStopArgs),
     ExecutorSetFaderValue(u32, f32),
 
+    RunMacro(u32),
+
     UpdateOutputConfigs(Vec<DemexDmxOutputConfig>),
 
     Lock,
@@ -512,6 +514,22 @@ impl Action {
                 Ok(ActionRunResult::event(
                     DemexEvent::ExecutorFaderValueChanged(*executor_id),
                 ))
+            }
+
+            Self::RunMacro(macro_id) => {
+                let mmacro = preset_handler
+                    .get_macro(*macro_id)
+                    .map_err(ActionRunError::PresetHandlerError)?;
+                mmacro.action().clone().run(
+                    fixture_handler,
+                    preset_handler,
+                    fixture_selector_context,
+                    updatable_handler,
+                    input_device_handler,
+                    timing_handler,
+                    patch,
+                    issued_at,
+                )
             }
 
             Self::Lock => Ok(ActionRunResult::Lock),

@@ -14,7 +14,7 @@ use crate::{
     engine::{
         comm::{
             DemexEngineCommEvent, DemexEngineCommRequestDispatcher, DemexEngineCommRequestHandler,
-            FixtureNameRequest, ShowRequest, ThreadStatsRequest,
+            FixtureNameRequest, PoolItemRequest, ShowRequest, ThreadStatsRequest,
         },
         component::ComponentHandle,
         state::{DemexEngineState, DemexFrontendInitState},
@@ -87,7 +87,7 @@ impl DemexEngine {
 
         let (value_queue_tx, value_queue_rx) = mpsc::channel();
 
-        let (update_thread_delegate, fixture_states) = UpdateThread::new(
+        let (update_thread_delegate, fixture_states, pools) = UpdateThread::new(
             self.event_bus_tx.clone(),
             comm_handler,
             self.action_queue.clone(),
@@ -109,6 +109,7 @@ impl DemexEngine {
         let frontend_state = DemexFrontendInitState {
             fixture_selection: self.state.read(|s| s.fixture_selection.clone()),
             fixture_states,
+            pools,
             patch,
         };
 
@@ -147,6 +148,12 @@ impl DemexEngine {
         });
 
         handler.register(|_: ShowRequest, payload| payload.show.clone_into_show());
+        handler.register(
+            |PoolItemRequest { pool_type, id }: PoolItemRequest, payload| {
+                let pool = payload.show.get_pool(pool_type);
+                pool.get(pool_type, id).ok()
+            },
+        );
     }
 
     pub fn exec_command(&self, command: &str) -> Result<(), Box<dyn std::error::Error>> {

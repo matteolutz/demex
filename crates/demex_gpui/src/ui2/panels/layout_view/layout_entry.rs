@@ -1,5 +1,5 @@
 use demex_core::layout::{FixtureLayoutEntry, FixtureLayoutEntryType};
-use gpui::{App, BorderStyle, Bounds, PaintQuad, Window, px, size, transparent_black, white};
+use gpui::{App, BorderStyle, Bounds, PaintQuad, Window, px, size, white};
 use gpui_component::{ActiveTheme, PixelsExt};
 
 use crate::ui2::panels::layout_view::layout_projection::{LayoutProjection, PosExt};
@@ -9,6 +9,8 @@ pub(super) struct FixtureLayoutEntryDrawArgs {
 }
 
 pub(super) trait FixtureLayoutEntryExt {
+    fn get_dimmer_value(&self, cx: &App) -> Option<f32>;
+
     fn draw(
         &self,
         args: FixtureLayoutEntryDrawArgs,
@@ -19,6 +21,10 @@ pub(super) trait FixtureLayoutEntryExt {
 }
 
 impl FixtureLayoutEntryExt for FixtureLayoutEntry {
+    fn get_dimmer_value(&self, _cx: &App) -> Option<f32> {
+        Some(0.5)
+    }
+
     fn draw(
         &self,
         args: FixtureLayoutEntryDrawArgs,
@@ -36,7 +42,9 @@ impl FixtureLayoutEntryExt for FixtureLayoutEntry {
             white()
         };
         let stroke_width = projection.scale(0.5);
-        let fill_color = transparent_black();
+
+        let dimmer_value = self.get_dimmer_value(cx);
+        let fill_color = white().alpha(dimmer_value.unwrap_or(0.0));
 
         match self.entry_type() {
             FixtureLayoutEntryType::Rect => {

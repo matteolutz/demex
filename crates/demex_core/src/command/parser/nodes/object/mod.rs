@@ -282,9 +282,9 @@ impl ObjectDelegate for Object {
                 .and_then(|cue| cue.set_property_string(key, value)),
         };
 
-        result.map(|result| ActionRunResult::WithEvent {
+        result.map(|result| ActionRunResult::WithEvents {
             result: Box::new(result),
-            event: DemexEvent::ObjectPropertyChanged(self.clone(), cloned_key),
+            events: vec![DemexEvent::ObjectPropertyChanged(self.clone(), cloned_key)],
         })
     }
 }

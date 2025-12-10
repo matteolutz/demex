@@ -4,6 +4,8 @@ use crate::{
     command::parser::nodes::action::{
         error::ActionRunError, functions::FunctionArgs, result::ActionRunResult,
     },
+    event::DemexEvent,
+    pool::PoolType,
     presets::preset::FixturePresetId,
 };
 
@@ -32,6 +34,11 @@ impl FunctionArgs for MoveArgs {
             .move_preset(self.preset_to_move, self.target_preset)
             .map_err(ActionRunError::PresetHandlerError)?;
 
-        Ok(ActionRunResult::new())
+        Ok(ActionRunResult::event(DemexEvent::PoolItemMoved {
+            // the PresetHandler will make sure that the pool type matches
+            pool_type: PoolType::Preset(self.preset_to_move.feature_group),
+            from_id: self.preset_to_move.preset_id,
+            to_id: self.target_preset.preset_id,
+        }))
     }
 }

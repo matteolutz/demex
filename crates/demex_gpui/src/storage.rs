@@ -53,6 +53,11 @@ pub fn fixture_types() -> &'static PathBuf {
     FIXTURE_TYPES.get_or_init(|| data_dir().join("fixture_types"))
 }
 
+pub fn themes_dir() -> &'static PathBuf {
+    static THEMES_DIR: OnceLock<PathBuf> = OnceLock::new();
+    THEMES_DIR.get_or_init(|| config_dir().join("themes"))
+}
+
 pub fn read_or_create_dir(dir: &PathBuf) -> std::io::Result<std::fs::ReadDir> {
     let res = std::fs::read_dir(dir);
     let error = match res {

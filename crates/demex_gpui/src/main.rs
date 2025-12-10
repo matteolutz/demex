@@ -20,9 +20,6 @@ use crate::{
     storage::read_or_create_dir,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
-enum DemexUiThemeAttribute {}
-
 /// demex - command based stage lighting control
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -49,7 +46,7 @@ struct Args {
 
     /// Set the UI theme to use. This is only used if the UI feature is enabled.
     #[arg(long, value_name = "THEME", conflicts_with = "headless")]
-    ui_theme: Option<DemexUiThemeAttribute>,
+    ui_theme: Option<String>,
 
     /// Number of additional viewports to create in the UI. This is only used if the UI feature is enabled.
     #[arg(
@@ -164,6 +161,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             touchscreen_mode: args.touchscreen_mode,
             showfile_path: args.show,
             fixture_types,
+            theme: args.ui_theme,
             additional_viewports: args.additional_viewports.unwrap_or(0),
         });
     }

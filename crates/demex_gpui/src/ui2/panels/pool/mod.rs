@@ -1,19 +1,22 @@
+use demex_core::pool::PoolType;
 use gpui::{
     App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement,
     ParentElement, Render, Styled, Subscription, Window, div,
 };
 use gpui_component::{
     button::Button,
-    dock::{Panel, PanelEvent, PanelInfo, register_panel},
+    dock::{Panel, PanelEvent, PanelInfo, PanelState, register_panel},
 };
 
 use crate::ui2::panels::{
-    pool::{pool::Pool, pool_type::PoolType},
+    pool::{pool::Pool, pool_type::PoolTypeExt},
     toolbar_buttons,
 };
 
 mod pool;
+mod pool_action;
 mod pool_button;
+mod pool_item;
 mod pool_quick_actions;
 pub mod pool_type;
 
@@ -42,7 +45,7 @@ pub struct PoolPanel {
 
 impl PoolPanel {
     pub fn new(pool_type: PoolType, cx: &mut Context<Self>) -> Self {
-        let pool = cx.new(|cx| Pool::new(cx));
+        let pool = cx.new(|cx| Pool::new(pool_type, cx));
 
         let _subscriptions = vec![];
 
@@ -68,7 +71,7 @@ impl Panel for PoolPanel {
     }
 
     fn title(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        format!("{} Pool", self.pool_type)
+        format!("{} Pool", self.pool_type.to_string())
     }
 
     fn toolbar_buttons(
@@ -77,6 +80,14 @@ impl Panel for PoolPanel {
         cx: &mut Context<Self>,
     ) -> Option<Vec<Button>> {
         Some(toolbar_buttons(self, window, cx))
+    }
+
+    fn dump(&self, _cx: &App) -> gpui_component::dock::PanelState {
+        let mut state = PanelState::new(self);
+        state.info = PanelInfo::Panel(
+            serde_json::to_value(self.pool_type).unwrap_or(serde_json::Value::Null),
+        );
+        state
     }
 }
 

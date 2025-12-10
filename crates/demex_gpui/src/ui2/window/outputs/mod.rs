@@ -220,7 +220,7 @@ impl Render for OutputsConfigWindow {
                                                             .child(
                                                                 div()
                                                                     .text_sm()
-                                                                    .text_color(cx.theme().muted)
+                                                                    .text_color(cx.theme().muted_foreground)
                                                                     .child(Text::String(
                                                                         o.to_string().into(),
                                                                     )),
