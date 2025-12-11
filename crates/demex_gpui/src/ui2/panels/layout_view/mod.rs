@@ -292,7 +292,7 @@ impl LayoutViewPanel {
             let args = FixtureLayoutEntryDrawArgs {
                 is_selected: fixture_selection
                     .as_ref()
-                    .is_some_and(|fs| fs.has_fixture(fixture.fixture_id())),
+                    .is_some_and(|fs| fs.selection().has_fixture(fixture.fixture_id())),
             };
 
             fixture.draw(args, self.projection.read(cx), window, cx);

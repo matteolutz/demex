@@ -153,7 +153,8 @@ impl DemexThreadDelegate for UpdateThread {
 
                     match result {
                         ActionRunResult::UpdateFixtureSelection(selection) => {
-                            self.state.fixture_selection = selection.clone();
+                            self.state.fixture_selection =
+                                selection.clone().map(|sel| sel.selection);
                             let _ = self.event_bus_tx.send(DemexEngineCommEvent::DemexEvent(
                                 DemexEvent::FixtureSelectionChanged(selection),
                             ));

@@ -129,7 +129,9 @@ impl DemexInputButton {
 
                 // FIXME: make this an engine method
                 *global_fixture_selection = selection.clone();
-                Some(DemexEvent::FixtureSelectionChanged(selection))
+                Some(DemexEvent::FixtureSelectionChanged(
+                    selection.map(|sel| sel.into()),
+                ))
             }
             Self::TokenInsert { tokens } => {
                 command_input.extend_from_slice(tokens);

@@ -13,6 +13,8 @@ use super::{
 pub mod cue;
 pub mod runtime;
 
+pub mod frontend;
+
 #[derive(Debug, Clone)]
 pub struct FadeFixtureChannelValue {
     value: FixtureChannelValue3,
@@ -102,17 +104,17 @@ pub enum SequenceStopBehavior {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Sequence {
-    id: u32,
+    pub(crate) id: u32,
 
-    name: String,
-
-    #[serde(default)]
-    stop_behavior: SequenceStopBehavior,
-
-    cues: Vec<Cue>,
+    pub(crate) name: String,
 
     #[serde(default)]
-    cue_out: CueOut,
+    pub(crate) stop_behavior: SequenceStopBehavior,
+
+    pub(crate) cues: Vec<Cue>,
+
+    #[serde(default)]
+    pub(crate) cue_out: CueOut,
 }
 
 impl Sequence {

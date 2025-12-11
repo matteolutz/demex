@@ -22,7 +22,7 @@ use crate::{
         panels::{
             command::CommandPanel, fixture_list::FixtureListPanel,
             fixture_selection::FixtureSelectionPanel, layout_view::LayoutViewPanel,
-            performance::PerformancePanel, pool::PoolPanel,
+            performance::PerformancePanel, pool::PoolPanel, sequence_editor::SequenceEditorPanel,
         },
         titlebar::DemexTitleBar,
         wm::DEMEX_APP_ID,
@@ -117,6 +117,13 @@ impl DockWindow {
         );
         da.add_panel(
             Arc::new(cx.new(|cx| LayoutViewPanel::new(window, cx))),
+            DockPlacement::Center,
+            None,
+            window,
+            cx,
+        );
+        da.add_panel(
+            Arc::new(cx.new(|cx| SequenceEditorPanel::new(window, cx))),
             DockPlacement::Center,
             None,
             window,

@@ -1,4 +1,7 @@
-use crate::{event::DemexEvent, patch::Patch, selection::FixtureSelection};
+use crate::{
+    event::{DemexEvent, FixtureSelectionWithGroup},
+    patch::Patch,
+};
 
 #[derive(Debug, Clone, Default)]
 pub enum ActionRunResult {
@@ -9,7 +12,7 @@ pub enum ActionRunResult {
     InfoWithLink(String, String),
     Warn(String),
 
-    UpdateFixtureSelection(Option<FixtureSelection>),
+    UpdateFixtureSelection(Option<FixtureSelectionWithGroup>),
     UpdatePatch(Patch),
 
     Lock,

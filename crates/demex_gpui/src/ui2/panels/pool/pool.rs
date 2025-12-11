@@ -41,11 +41,12 @@ impl Pool {
 
         let pool_items = DemexUiState::pool(pool_type, cx);
 
-        let _subscriptions = vec![
+        let mut _subscriptions = vec![
             cx.observe_and_notify(&bounds),
             cx.observe_and_notify(&quick_actions_state),
             cx.observe_and_notify(&pool_items),
         ];
+        _subscriptions.extend(Self::get_pool_type_subscriptions(pool_type, cx));
 
         Self {
             pool_items,
@@ -56,12 +57,32 @@ impl Pool {
         }
     }
 
+    fn get_pool_type_subscriptions(
+        pool_type: PoolType,
+        cx: &mut Context<Self>,
+    ) -> Vec<Subscription> {
+        match pool_type {
+            PoolType::Group => vec![cx.observe_and_notify(&DemexUiState::fixture_selection(cx))],
+            _ => vec![],
+        }
+    }
+
     fn get_pool_item_color(
         &self,
-        _pool_item_id: u32,
-        _cx: &App,
+        pool_item_id: u32,
+        cx: &App,
     ) -> Option<PoolItemButtonIndicatorColor> {
-        None
+        match self.pool_type {
+            PoolType::Group => {
+                let is_selected = DemexUiState::fixture_selection(cx)
+                    .read(cx)
+                    .as_ref()
+                    .and_then(|sel| sel.group_id())
+                    .is_some_and(|group_id| group_id == pool_item_id);
+                is_selected.then_some(PoolItemButtonIndicatorColor::Green)
+            }
+            _ => None,
+        }
     }
 }
 

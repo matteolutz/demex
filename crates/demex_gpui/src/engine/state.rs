@@ -10,10 +10,9 @@ use demex_core::{
         state::DemexFrontendInitState,
         tick::DemexEngineTickState,
     },
-    event::DemexEvent,
+    event::{DemexEvent, FixtureSelectionWithGroup},
     patch::Patch,
     pool::{PoolItem, PoolType},
-    selection::FixtureSelection,
     utils::thread::DemexThreadStats,
 };
 use gpui::{App, AppContext, BorrowAppContext, Entity, Global, Timer};
@@ -140,7 +139,8 @@ impl<const SIZE: usize> DemexPerformanceBuffer<SIZE> {
 }
 
 pub struct DemexUiState {
-    fixture_selection: Entity<Option<FixtureSelection>>,
+    fixture_selection: Entity<Option<FixtureSelectionWithGroup>>,
+
     fixture_values: Entity<HashMap<u32, HashMap<String, FixtureChannelValue3>>>,
     patch: Entity<Patch>,
 
@@ -149,10 +149,12 @@ pub struct DemexUiState {
     pools: HashMap<PoolType, Entity<Vec<PoolItem>>>,
 
     command_history: Entity<DemexCommandHistory>,
+
+    selected_sequence: Entity<Option<u32>>,
 }
 
 impl DemexUiState {
-    pub fn fixture_selection(cx: &App) -> Entity<Option<FixtureSelection>> {
+    pub fn fixture_selection(cx: &App) -> Entity<Option<FixtureSelectionWithGroup>> {
         let this: &Self = cx.global();
         this.fixture_selection.clone()
     }
@@ -194,6 +196,11 @@ impl DemexUiState {
     pub fn try_pool(pool_type: PoolType, cx: &App) -> Option<Entity<Vec<PoolItem>>> {
         let this: &Self = cx.global();
         this.pools.get(&pool_type).cloned()
+    }
+
+    pub fn selected_sequence(cx: &App) -> Entity<Option<u32>> {
+        let this: &Self = cx.global();
+        this.selected_sequence.clone()
     }
 }
 
@@ -237,12 +244,14 @@ impl DemexUiState {
             performance: cx.new(|_| Default::default()),
             pools: HashMap::new(),
             command_history: cx.new(|_| Default::default()),
+            // TODO: just for testing
+            selected_sequence: cx.new(|_| Some(1)),
         }
     }
 
     pub fn load_frontend_state(&mut self, frontend_state: DemexFrontendInitState, cx: &mut App) {
         self.fixture_selection.update(cx, |sel, cx| {
-            *sel = frontend_state.fixture_selection;
+            *sel = frontend_state.fixture_selection.map(|sel| sel.into());
             cx.notify();
         });
 

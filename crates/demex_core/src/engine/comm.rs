@@ -11,6 +11,7 @@ use crate::{
     event::DemexEvent,
     patch::Patch,
     pool::{PoolItem, PoolType},
+    sequence::frontend::FrontendSequence,
     show::{DemexShow, DemexShowRef},
     utils::thread::{DemexThreadStats, DemexThreadStatsHandler},
 };
@@ -57,6 +58,14 @@ pub struct PoolItemRequest {
 }
 impl DemexEngineCommRequest for PoolItemRequest {
     type Response = Option<PoolItem>;
+}
+
+#[derive(Debug)]
+pub struct SequenceRequest {
+    pub sequence_id: u32,
+}
+impl DemexEngineCommRequest for SequenceRequest {
+    type Response = Option<FrontendSequence>;
 }
 
 pub struct DemexEngineCommRequestEnvelope {

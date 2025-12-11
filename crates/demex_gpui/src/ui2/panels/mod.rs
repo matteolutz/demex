@@ -7,6 +7,7 @@ pub mod fixture_selection;
 pub mod layout_view;
 pub mod performance;
 pub mod pool;
+pub mod sequence_editor;
 
 mod actions {
     gpui::actions!(panels, [AddFixtureSelection, AddFixtureList, AddLayoutView]);
@@ -29,4 +30,5 @@ fn register_panels(cx: &mut App) {
     fixture_list::register(cx);
     pool::register(cx);
     layout_view::register(cx);
+    sequence_editor::register(cx);
 }

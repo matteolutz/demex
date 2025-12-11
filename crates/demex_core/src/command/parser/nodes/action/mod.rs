@@ -25,7 +25,7 @@ use crate::{
     command::parser::nodes::action::functions::{
         move_function::MoveArgs, set_function::ObjectSetPropertyArgs,
     },
-    event::DemexEvent,
+    event::{DemexEvent, FixtureSelectionWithGroup},
     state::fixture_state_handler::FixtureStateHandler,
     utils::serde::approx_instant,
 };
@@ -466,9 +466,9 @@ impl Action {
                 fader_id,
             } => self.run_unassign_input_fader(input_device_handler, *device_idx, *fader_id),
 
-            Self::SetFixtureSelection(selection) => {
-                Ok(ActionRunResult::UpdateFixtureSelection(selection.clone()))
-            }
+            Self::SetFixtureSelection(selection) => Ok(ActionRunResult::UpdateFixtureSelection(
+                selection.clone().map(|sel| sel.into()),
+            )),
             Self::AddFixturesToSelection(fixtures) => {
                 if fixtures.is_empty() {
                     Ok(ActionRunResult::new())
@@ -477,7 +477,9 @@ impl Action {
                         None => fixtures.clone().into(),
                         Some(selection) => selection.clone().with_additional_fixtures(fixtures),
                     };
-                    Ok(ActionRunResult::UpdateFixtureSelection(Some(selection)))
+                    Ok(ActionRunResult::UpdateFixtureSelection(Some(
+                        selection.into(),
+                    )))
                 }
             }
             Self::ExecutorGo(args) => args.run(
@@ -559,6 +561,8 @@ impl Action {
         preset_handler: &PresetHandler,
         patch: &Patch,
     ) -> Result<ActionRunResult, ActionRunError> {
+        let group_id = fixture_selector.try_as_group_id();
+
         // flatten the fixture selector, so we don't have
         // outdated references to the previously selected fixtures
         let mut selection = fixture_selector
@@ -573,7 +577,9 @@ impl Action {
 
         selection.retain(|id| patch.fixture(*id).is_ok());
 
-        Ok(ActionRunResult::UpdateFixtureSelection(Some(selection)))
+        Ok(ActionRunResult::UpdateFixtureSelection(Some(
+            FixtureSelectionWithGroup::with_group(selection, group_id),
+        )))
     }
 
     pub fn run_delete_macro(

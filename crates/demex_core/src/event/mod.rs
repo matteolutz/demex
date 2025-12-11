@@ -1,4 +1,7 @@
-use crate::{command::parser::nodes::object::Object, pool::PoolType, selection::FixtureSelection};
+use crate::{command::parser::nodes::object::Object, pool::PoolType};
+
+mod selection;
+pub use selection::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DemexEvent {
@@ -26,7 +29,7 @@ pub enum DemexEvent {
 
     GlobalEncoderValueChanged(u32),
 
-    FixtureSelectionChanged(Option<FixtureSelection>),
+    FixtureSelectionChanged(Option<FixtureSelectionWithGroup>),
 
     FixtureValuesChanged(Vec<u32>),
     ObjectPropertyChanged(Object, String),

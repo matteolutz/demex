@@ -28,6 +28,7 @@ pub struct CueOut {
 
 #[derive(
     Debug,
+    Copy,
     Clone,
     PartialEq,
     Eq,
@@ -36,6 +37,7 @@ pub struct CueOut {
     Default,
     strum_macros::EnumString,
     strum_macros::Display,
+    strum_macros::EnumIter,
 )]
 pub enum CueFadingFunction {
     #[default]
@@ -66,6 +68,7 @@ impl CueFadingFunction {
     Default,
     strum_macros::EnumString,
     strum_macros::Display,
+    strum_macros::EnumIter,
 )]
 pub enum CueTrigger {
     /// Cue is triggered manually
@@ -132,11 +135,11 @@ pub enum CueTimingOriginDirection {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CueTiming {
-    // Offset (in seconds), that is applied between the fade in and down
-    // of each fixture
+    /// Offset (in seconds), that is applied between the fade in and down
+    /// of each fixture
     offset: f32,
 
-    // Oirgin, where the offset is applied
+    /// Oirgin, where the offset is applied
     direction: CueTimingOriginDirection,
 }
 
@@ -196,40 +199,40 @@ pub type CueIdx = (u32, u32);
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Cue {
-    cue_idx: CueIdx,
+    pub(crate) cue_idx: CueIdx,
 
     #[serde(default)]
-    name: String,
+    pub(crate) name: String,
 
-    data: CueDataMode,
+    pub(crate) data: CueDataMode,
 
-    selection: FixtureSelection,
+    pub(crate) selection: FixtureSelection,
 
-    // Time, to fade into the cue
-    in_fade: f32,
+    /// Time, to fade into the cue
+    pub(crate) in_fade: f32,
 
-    // Delay, before the cue starts fading in
-    in_delay: f32,
+    /// Delay, before the cue starts fading in
+    pub(crate) in_delay: f32,
 
-    // When (as a percentage of the in_fade time), snapping of values, that are not
-    // being faded, are changed.
-    snap_percent: f32,
-
-    #[serde(default)]
-    block: bool,
+    /// When (as a percentage of the in_fade time), snapping of values, that are not
+    /// being faded, are changed.
+    pub(crate) snap_percent: f32,
 
     #[serde(default)]
-    timing: CueTiming,
-
-    trigger: CueTrigger,
+    pub(crate) block: bool,
 
     #[serde(default)]
-    fading_function: CueFadingFunction,
+    pub(crate) timing: CueTiming,
+
+    pub(crate) trigger: CueTrigger,
+
+    #[serde(default)]
+    pub(crate) fading_function: CueFadingFunction,
 
     /// If the true, this cue will also move all channels except the intensity parameters of all fixtures
     /// in the next cue, that are not active in the current cue.
     #[serde(default)]
-    move_in_black: bool,
+    pub(crate) move_in_black: bool,
 }
 
 impl Cue {

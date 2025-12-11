@@ -137,7 +137,7 @@ impl TableDelegate for FixtureListTable {
         let patch = DemexUiState::patch(cx).read(cx);
 
         let fixture_selection = DemexUiState::fixture_selection(cx).read(cx).as_ref();
-        let is_selected = fixture_selection.is_some_and(|s| s.has_fixture(entry.id));
+        let is_selected = fixture_selection.is_some_and(|s| s.selection().has_fixture(entry.id));
 
         let fixture = patch.fixture(entry.id).unwrap();
 

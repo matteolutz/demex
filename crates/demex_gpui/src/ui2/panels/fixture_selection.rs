@@ -3,7 +3,7 @@ use demex_core::{
         action::{Action, functions::set_function::ObjectSetPropertyArgs},
         object::{HomeableObject, Object},
     },
-    selection::FixtureSelection,
+    event::FixtureSelectionWithGroup,
 };
 use gpui::{
     App, AppContext, ClickEvent, Context, Entity, EventEmitter, FocusHandle, Focusable,
@@ -30,7 +30,7 @@ pub(super) fn register(cx: &mut App) {
 pub struct FixtureSelectionPanel {
     focus_handle: FocusHandle,
 
-    fixture_selection: Entity<Option<FixtureSelection>>,
+    fixture_selection: Entity<Option<FixtureSelectionWithGroup>>,
 
     _subscriptions: Vec<Subscription>,
 }
@@ -83,7 +83,7 @@ impl FixtureSelectionPanel {
         DemexEngineHandler::engine(cx).exec_ui(Action::ObjectSetProperty(ObjectSetPropertyArgs {
             object: Object::HomeableObject(HomeableObject::CurrentFixtureSelection),
             key: "Wings".into(),
-            value: (sel.wings() + 1).to_string(),
+            value: (sel.selection().wings() + 1).to_string(),
         }));
     }
 }

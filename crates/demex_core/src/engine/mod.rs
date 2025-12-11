@@ -14,7 +14,7 @@ use crate::{
     engine::{
         comm::{
             DemexEngineCommEvent, DemexEngineCommRequestDispatcher, DemexEngineCommRequestHandler,
-            FixtureNameRequest, PoolItemRequest, ShowRequest, ThreadStatsRequest,
+            FixtureNameRequest, PoolItemRequest, SequenceRequest, ShowRequest, ThreadStatsRequest,
         },
         component::ComponentHandle,
         state::{DemexEngineState, DemexFrontendInitState},
@@ -152,6 +152,12 @@ impl DemexEngine {
             |PoolItemRequest { pool_type, id }: PoolItemRequest, payload| {
                 let pool = payload.show.get_pool(pool_type);
                 pool.get(pool_type, id).ok()
+            },
+        );
+        handler.register(
+            |SequenceRequest { sequence_id }: SequenceRequest, payload| {
+                let sequence = payload.show.preset_handler.get_sequence(sequence_id);
+                sequence.ok().map(|seq| seq.into())
             },
         );
     }

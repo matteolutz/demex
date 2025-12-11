@@ -201,7 +201,9 @@ impl ObjectDelegate for HomeableObject {
                 if let Some(selection) = fixture_selector_context.current_fixture() {
                     let mut selection = selection.clone();
                     selection.set_property_string(key, value)?;
-                    Ok(ActionRunResult::UpdateFixtureSelection(Some(selection)))
+                    Ok(ActionRunResult::UpdateFixtureSelection(Some(
+                        selection.into(),
+                    )))
                 } else {
                     Ok(ActionRunResult::new())
                 }
