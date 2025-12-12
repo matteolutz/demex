@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     engine::component::Component,
+    event::DemexEvent,
     group_master::GroupMaster,
     patch::Patch,
     pool::{Pool, PoolError, PoolHelper, PoolType},
@@ -77,6 +78,15 @@ impl UpdatableHandler {
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))
     }
 
+    pub fn executors_for_sequence<'a>(
+        &'a self,
+        sequence_id: u32,
+    ) -> impl Iterator<Item = &'a DemexExecutor> {
+        self.executors
+            .values()
+            .filter(move |exec| exec.runtime().sequence_id() == sequence_id)
+    }
+
     pub fn executor_mut(&mut self, id: u32) -> Result<&mut DemexExecutor, UpdatableHandlerError> {
         self.executors
             .get_mut(&id)
@@ -107,13 +117,14 @@ impl UpdatableHandler {
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
-    ) -> Vec<u32> {
+    ) -> Vec<DemexEvent> {
         self.executors
             .iter_mut()
-            .filter_map(|(_, executor)| {
+            .flat_map(|(&id, executor)| {
                 executor
                     .update(patch, fixture_handler, preset_handler, timing_handler)
-                    .then(|| executor.id())
+                    .into_iter()
+                    .map(move |event| DemexEvent::ExecutorUpdateEvent { id, event })
             })
             .collect()
     }
@@ -127,18 +138,6 @@ impl UpdatableHandler {
 
     pub fn next_executor_id(&self) -> u32 {
         self.executors.keys().max().unwrap_or(&0) + 1
-    }
-
-    pub fn start_executor(
-        &mut self,
-        id: u32,
-        fixture_handler: &mut FixtureStateHandler,
-        preset_handler: &PresetHandler,
-        time_offset: f32,
-    ) -> Result<(), UpdatableHandlerError> {
-        self.executor_mut(id)?
-            .start(fixture_handler, preset_handler, time_offset);
-        Ok(())
     }
 
     pub fn executor_cue_out(
@@ -166,10 +165,10 @@ impl UpdatableHandler {
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         time_offset: f32,
-    ) -> Result<(), UpdatableHandlerError> {
-        self.executor_mut(id)?
-            .go(fixture_handler, preset_handler, time_offset);
-        Ok(())
+    ) -> Result<Vec<DemexEvent>, UpdatableHandlerError> {
+        Ok(self
+            .executor_mut(id)?
+            .go(fixture_handler, preset_handler, time_offset))
     }
 
     pub fn executor_stomp(&mut self, id: u32) {

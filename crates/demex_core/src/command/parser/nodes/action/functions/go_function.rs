@@ -35,6 +35,8 @@ impl FunctionArgs for ExecutorGoArgs {
                 issued_at.elapsed().as_secs_f32(),
             )
             .map_err(ActionRunError::UpdatableHandlerError)
-            .map(|_| ActionRunResult::event(DemexEvent::ExecutorGo(self.executor_id)))
+            .map(|events| {
+                ActionRunResult::event(DemexEvent::ExecutorGo(self.executor_id)).with_events(events)
+            })
     }
 }

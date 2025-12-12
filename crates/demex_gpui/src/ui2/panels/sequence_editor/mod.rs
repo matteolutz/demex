@@ -1,12 +1,16 @@
-use demex_core::{engine::comm::SequenceRequest, sequence::frontend::FrontendSequence};
+use demex_core::{
+    engine::comm::{SequenceRequest, SequenceResponse},
+    event::{DemexEvent, DemexExecutorUpdateEvent},
+};
 use gpui::{
     App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement,
     ParentElement, Render, Styled, Subscription, Window, div,
 };
 use gpui_component::{
-    Sizable,
+    Sizable, StyledExt,
     button::Button,
     dock::{Panel, PanelEvent, register_panel},
+    scroll::ScrollableElement,
     table::{Table, TableState},
     v_flex,
 };
@@ -32,7 +36,7 @@ pub(super) fn register(cx: &mut App) {
 pub struct SequenceEditorPanel {
     focus_handle: FocusHandle,
 
-    sequence: Entity<Option<FrontendSequence>>,
+    sequence: Entity<Option<SequenceResponse>>,
     table_state: Entity<TableState<SequenceEditorTable>>,
 
     _subscriptions: Vec<Subscription>,
@@ -44,14 +48,17 @@ impl SequenceEditorPanel {
             TableState::new(SequenceEditorTable::new(None), window, cx).col_movable(false)
         });
 
-        let sequence: Entity<Option<FrontendSequence>> = cx.new(|_| None);
+        let sequence: Entity<Option<SequenceResponse>> = cx.new(|_| None);
 
         let _subscriptions = vec![
             cx.observe(&DemexUiState::selected_sequence(cx), |this, _, cx| {
                 this.request_sequence(cx);
             }),
             cx.observe(&sequence, |this, sequence, cx| {
-                let cues = sequence.read(cx).as_ref().map(|seq| seq.cues.clone());
+                let cues = sequence
+                    .read(cx)
+                    .as_ref()
+                    .map(|seq| seq.sequence.cues.clone());
 
                 this.table_state.update(cx, |table, cx| {
                     table.delegate_mut().update_data(cues);
@@ -59,6 +66,43 @@ impl SequenceEditorPanel {
                 });
                 cx.notify();
             }),
+            cx.subscribe(
+                &DemexEngineHandler::event_handler(cx),
+                |this, _, evt, cx| {
+                    let executor_id = this
+                        .sequence
+                        .read(cx)
+                        .as_ref()
+                        .and_then(|seq| seq.first_executor);
+
+                    let Some(executor_id) = executor_id else {
+                        return;
+                    };
+
+                    match evt {
+                        DemexEvent::ExecutorUpdateEvent { id, event } if *id == executor_id => {
+                            log::debug!("got executor update event: {:?}", event);
+                            match event {
+                                DemexExecutorUpdateEvent::CueActivate(cue_ix, at) => {
+                                    this.table_state.update(cx, |state, cx| {
+                                        state.delegate_mut().cue_activated(*cue_ix, *at);
+                                        cx.notify();
+                                        // state.refresh(cx);
+                                    });
+                                    // cx.notify();
+                                }
+                                DemexExecutorUpdateEvent::CueDeactivate(cue_ix) => {
+                                    this.table_state.update(cx, |state, cx| {
+                                        state.delegate_mut().cue_deactivated(cue_ix);
+                                        cx.notify();
+                                    });
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                },
+            ),
         ];
 
         let s = Self {
@@ -126,17 +170,25 @@ impl Render for SequenceEditorPanel {
         cx: &mut gpui::Context<Self>,
     ) -> impl IntoElement {
         let Some(sequence) = self.sequence.read(cx) else {
-            return div().child("Loading");
+            return div().child("Loading").into_any_element();
         };
 
         v_flex()
+            .overflow_x_scrollbar()
             .w_full()
             .h_full()
-            .child(sequence.name.clone())
+            .child(
+                div()
+                    .p_4()
+                    .text_lg()
+                    .font_bold()
+                    .child(sequence.sequence.name.clone()),
+            )
             .child(
                 Table::new(&self.table_state)
                     .bordered(false)
                     .with_size(cx.ui_config().ui_size()),
             )
+            .into_any_element()
     }
 }

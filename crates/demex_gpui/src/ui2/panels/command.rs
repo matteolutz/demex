@@ -1,7 +1,7 @@
 use gpui::{
     App, AppContext, BoxShadow, Context, Entity, EventEmitter, FocusHandle, Focusable,
     InteractiveElement, IntoElement, ParentElement, Render, Styled, Subscription,
-    UniformListScrollHandle, Window, black, div, point, prelude::FluentBuilder, uniform_list,
+    UniformListScrollHandle, Window, div, point, prelude::FluentBuilder, uniform_list,
 };
 use gpui_component::{
     ActiveTheme, Icon, IconName, Sizable,
@@ -341,7 +341,7 @@ impl CommandPanel {
                     .w_full()
                     .h_0()
                     .shadow(vec![BoxShadow {
-                        color: black(),
+                        color: cx.theme().background,
                         offset: point((0.0).into(), (10.0).into()),
                         blur_radius: (40.0).into(),
                         spread_radius: (20.0).into(),

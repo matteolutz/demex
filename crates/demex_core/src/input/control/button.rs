@@ -73,14 +73,17 @@ impl DemexInputButton {
     ) -> Result<Option<DemexEvent>, DemexInputDeviceError> {
         let event = match self {
             Self::ExecutorFlash { id, stomp } => {
-                updatable_handler
-                    .start_executor(*id, fixture_handler, preset_handler, 0.0)
+                let executor = updatable_handler
+                    .executor_mut(*id)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+
+                executor.start(fixture_handler, preset_handler, 0.0);
 
                 if *stomp {
                     updatable_handler.executor_stomp(*id);
                 }
 
+                // TODO: be able to send mulitple events
                 Some(DemexEvent::ExecutorGo(*id))
             }
             Self::ExecutorGo(executor_id) => {

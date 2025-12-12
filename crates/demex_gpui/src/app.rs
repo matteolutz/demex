@@ -152,7 +152,7 @@ impl DemexApp {
                         .cloned();
 
                     let Some(theme) = theme else {
-                        log::warn!("{} theme found", selected_theme);
+                        log::warn!("{} theme not found", selected_theme);
                         return;
                     };
 

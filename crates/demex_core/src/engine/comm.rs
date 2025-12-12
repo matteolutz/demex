@@ -28,6 +28,12 @@ pub enum DemexEngineCommEvent {
     FixtureValuesUpdate(HashMap<u32, HashMap<String, FixtureChannelValue3>>),
 }
 
+impl From<DemexEvent> for DemexEngineCommEvent {
+    fn from(event: DemexEvent) -> Self {
+        DemexEngineCommEvent::DemexEvent(event)
+    }
+}
+
 pub trait DemexEngineCommRequest: Send + 'static + std::fmt::Debug {
     type Response: Send + 'static;
 }
@@ -64,8 +70,12 @@ impl DemexEngineCommRequest for PoolItemRequest {
 pub struct SequenceRequest {
     pub sequence_id: u32,
 }
+pub struct SequenceResponse {
+    pub sequence: FrontendSequence,
+    pub first_executor: Option<u32>,
+}
 impl DemexEngineCommRequest for SequenceRequest {
-    type Response = Option<FrontendSequence>;
+    type Response = Option<SequenceResponse>;
 }
 
 pub struct DemexEngineCommRequestEnvelope {

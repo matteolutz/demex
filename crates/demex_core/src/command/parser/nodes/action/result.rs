@@ -44,7 +44,11 @@ impl ActionRunResult {
         }
     }
 
-    pub fn with_event(self, event: DemexEvent) -> Self {
+    pub fn with_optional_event(self, event: Option<DemexEvent>) -> Self {
+        let Some(event) = event else {
+            return self;
+        };
+
         match self {
             Self::WithEvents { result, mut events } => {
                 events.push(event);
@@ -53,6 +57,23 @@ impl ActionRunResult {
             result => Self::WithEvents {
                 result: Box::new(result),
                 events: vec![event],
+            },
+        }
+    }
+
+    pub fn with_event(self, event: DemexEvent) -> Self {
+        self.with_optional_event(Some(event))
+    }
+
+    pub fn with_events(self, new_events: impl IntoIterator<Item = DemexEvent>) -> Self {
+        match self {
+            Self::WithEvents { result, mut events } => {
+                events.extend(new_events);
+                Self::WithEvents { result, events }
+            }
+            result => Self::WithEvents {
+                result: Box::new(result),
+                events: new_events.into_iter().collect(),
             },
         }
     }
