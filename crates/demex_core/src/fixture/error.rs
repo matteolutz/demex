@@ -1,3 +1,5 @@
+use std::num::ParseIntError;
+
 use crate::{presets::error::PresetHandlerError, updatables::error::UpdatableHandlerError};
 
 #[derive(Debug)]
@@ -11,6 +13,12 @@ pub enum FixtureError {
     NoFunctionAccess,
     FixtureTypeNotFound(String),
     FixtureTypeModeNotFound(String, u32),
+
+    FixtureIdParseError(ParseIntError),
+    FixtureIdIsZero,
+
+    FixturePathIsEmpty,
+    FixturePathHasTooManyParts,
 
     GdtfFixtureTypeNotFound(uuid::Uuid),
     GdtfFixtureDmxModeNotFound(String),
@@ -26,6 +34,7 @@ pub enum FixtureError {
     GdtfFixtureHasNoColorWheelColor(u32),
     GdtfFixtureCouldNotProduceDisplayColor(u32),
     GdtfFixtureMasterGeometryNotFound(u32),
+    GdtfFixtureDmxModeGeometryNotFound(u32),
 
     NoDisplayColor(u32),
     PresetHandlerError(Box<PresetHandlerError>),
@@ -54,6 +63,19 @@ impl std::fmt::Display for FixtureError {
             }
             Self::PresetHandlerError(err) => write!(f, "Preset handler error: {}", err),
             Self::UpdatableHandlerError(err) => write!(f, "Updatable handler error: {}", err),
+
+            Self::FixturePathHasTooManyParts => {
+                write!(f, "Fixture path has too many parts")
+            }
+            Self::FixturePathIsEmpty => {
+                write!(f, "Fixture path is empty")
+            }
+            Self::FixtureIdParseError(err) => {
+                write!(f, "Fixture ID parse error: {}", err)
+            }
+            Self::FixtureIdIsZero => {
+                write!(f, "Fixture ID is zero")
+            }
 
             Self::GdtfFixtureDmxModeNotFound(mode) => {
                 write!(f, "GDTF fixture DMX mode {} not found", mode)
@@ -111,6 +133,11 @@ impl std::fmt::Display for FixtureError {
             Self::GdtfFixtureMasterGeometryNotFound(fixture_id) => write!(
                 f,
                 "GDTF fixture with id {} has no master geometry",
+                fixture_id
+            ),
+            Self::GdtfFixtureDmxModeGeometryNotFound(fixture_id) => write!(
+                f,
+                "The DMX mode for GDTF fixture with id {} has no associated geometry",
                 fixture_id
             ),
         }

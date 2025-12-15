@@ -4,9 +4,15 @@ use std::{
     io::{self, Write},
     path::PathBuf,
     sync::mpsc,
+    time,
 };
 
-use demex_core::{engine::DemexEngine, show::DemexShow};
+use demex_core::{
+    engine::DemexEngine,
+    fixture::{FixtureId, builder::FixtureBuilder},
+    show::DemexShow,
+};
+use demex_dmx::address::DmxAddress;
 use gdtf::GdtfFile;
 use itertools::Itertools;
 
@@ -126,6 +132,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .into_iter()
         .flat_map(|file| file.description.fixture_types)
         .collect::<Vec<_>>();
+
+    let test_ft = fixture_types
+        .iter()
+        .find(|ft| ft.fixture_type_id.to_string() == "2084eed1-9a18-4a12-a8bc-35de5f365b32")
+        .unwrap();
+
+    let test_builder = FixtureBuilder::new(
+        FixtureId::new(1).unwrap(),
+        "Test Wash".to_string(),
+        DmxAddress::new(1, 1),
+        test_ft,
+        test_ft.dmx_mode("6-Channel").unwrap(),
+    )
+    .should_collapse(true);
+
+    let now = time::Instant::now();
+    let tree = test_builder.build_fixture_tree().unwrap();
+    let took = now.elapsed();
+    println!("Fixture tree built in {:?}", took);
+
+    for fixture in tree {
+        println!(
+            "{}: {} ({})",
+            fixture.path(),
+            fixture.name(),
+            fixture
+                .channel_functions()
+                .map(|(attr, function)| format!("\n\t{}: {:?}", attr, function.kind()))
+                .join("")
+        );
+    }
 
     if let Some(_master_ip) = args.headless {
         log::info!("Running in headless mode, no UI will be shown");

@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     channel3::{
-        attribute::FixtureChannel3Attribute,
         channel_value::{
             FixtureChannelValue2PresetState, FixtureChannelValue3, FixtureChannelValue3Update,
         },
@@ -74,10 +73,11 @@ impl FunctionArgs for SetFeatureValueArgs {
                                 patch,
                                 fixture,
                                 |fixture_attribute_name| {
-                                    FixtureChannel3Attribute::attribute_matches(
+                                    /*FixtureChannel3Attribute::attribute_matches(
                                         fixture_attribute_name,
                                         FixtureChannel3Attribute::Dimmer.to_string().as_str(),
-                                    )
+                                    )*/
+                                    false
                                 },
                                 FixtureChannelValue3Update::Value(discrete_value),
                             )

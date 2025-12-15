@@ -1,5 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+mod fixture;
+pub use fixture::*;
+
+pub mod builder;
 pub mod error;
 
 use crate::patch::Patch;
