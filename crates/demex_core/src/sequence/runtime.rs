@@ -3,9 +3,9 @@ use std::{collections::HashMap, time};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    channel3::channel_value::FixtureChannelValue3, patch::Patch, presets::PresetHandler,
-    state::fixture_state_handler::FixtureStateHandler, timing::TimingHandler,
-    value_source::FixtureChannelValuePriority,
+    channel3::channel_value::FixtureChannelValue3, event::DemexExecutorUpdateEvent, patch::Patch,
+    presets::PresetHandler, state::fixture_state_handler::FixtureStateHandler,
+    timing::TimingHandler, value_source::FixtureChannelValuePriority,
 };
 
 use super::{
@@ -39,12 +39,9 @@ impl SequenceRuntimeState {
         }
     }
 
-    pub fn start(time_offset: f32) -> Self {
+    pub fn start(at: time::Instant) -> Self {
         Self::Cues {
-            active_cues: vec![(
-                0,
-                time::Instant::now() - time::Duration::from_secs_f32(time_offset),
-            )],
+            active_cues: vec![(0, at)],
             current_cue: 0,
         }
     }
@@ -137,10 +134,10 @@ impl SequenceRuntimeState {
         self,
         num_cues: usize,
         stop_behavior: SequenceStopBehavior,
-        time_offset: f32,
+        activated_at: time::Instant,
     ) -> (bool, Self) {
         match self {
-            Self::Stopped => (false, Self::start(time_offset)),
+            Self::Stopped => (false, Self::start(activated_at)),
             Self::CueOut { .. } => (false, Self::Stopped),
             Self::Cues {
                 mut active_cues,
@@ -150,16 +147,13 @@ impl SequenceRuntimeState {
                     (
                         false,
                         Self::CueOut {
-                            cue_out_started: time::Instant::now()
-                                - time::Duration::from_secs_f32(time_offset),
+                            cue_out_started: activated_at,
                         },
                     )
                 } else {
                     let should_clear_tracked_values = (current_cue + 1) >= num_cues;
 
                     let next_cue = (current_cue + 1) % num_cues;
-                    let activated_at =
-                        time::Instant::now() - time::Duration::from_secs_f32(time_offset);
 
                     active_cues.retain(|(i, _)| *i != next_cue);
                     active_cues.push((next_cue, activated_at));
@@ -450,16 +444,17 @@ impl SequenceRuntime {
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         priority: FixtureChannelValuePriority,
-    ) -> bool {
+    ) -> (bool, Option<Vec<DemexExecutorUpdateEvent>>) {
         if let Some((active_cues, current_cue_idx, current_cue_activated_at)) =
             self.state.when_started_mut()
         {
             let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
             if sequence.cues().is_empty() {
-                return true;
+                return (true, None);
             }
 
+            let mut events = vec![];
             let current_cue = sequence.cue(*current_cue_idx);
 
             active_cues.retain(|(cue_idx, cue_activated_at)| {
@@ -470,7 +465,13 @@ impl SequenceRuntime {
                     .duration_since(*cue_activated_at)
                     .as_secs_f32();
 
-                cue_delta <= cue_in_time || *cue_idx == *current_cue_idx
+                let retain = cue_delta <= cue_in_time || *cue_idx == *current_cue_idx;
+
+                if !retain {
+                    events.push(DemexExecutorUpdateEvent::CueDeactivate(cue.cue_idx()));
+                }
+
+                retain
             });
 
             if let Some(next_cue_idx) = Self::next_cue_idx(sequence, *current_cue_idx) {
@@ -488,9 +489,12 @@ impl SequenceRuntime {
                 };
 
                 if should_activate {
+                    let now = time::Instant::now();
                     active_cues.retain(|(i, _)| *i != next_cue_idx);
-                    active_cues.push((next_cue_idx, time::Instant::now()));
+                    active_cues.push((next_cue_idx, now));
                     *current_cue_idx = next_cue_idx;
+
+                    events.push(DemexExecutorUpdateEvent::CueActivate(next_cue.cue_idx, now));
                 }
             }
 
@@ -507,15 +511,36 @@ impl SequenceRuntime {
                 priority,
             );
 
-            active_cues.is_empty()
+            (active_cues.is_empty(), Some(events))
         } else {
-            self.state
-                .is_cue_out_done(preset_handler.get_sequence(self.sequence_id).unwrap())
+            (
+                self.state
+                    .is_cue_out_done(preset_handler.get_sequence(self.sequence_id).unwrap()),
+                None,
+            )
         }
     }
 
-    pub fn start(&mut self, time_offset: f32) {
-        self.state = SequenceRuntimeState::start(time_offset);
+    pub fn start(
+        &mut self,
+        time_offset: f32,
+        preset_handler: &PresetHandler,
+    ) -> Option<DemexExecutorUpdateEvent> {
+        let Some(first_cue) = preset_handler
+            .get_sequence(self.sequence_id)
+            .ok()
+            .and_then(|s| s.cues.first())
+        else {
+            return None;
+        };
+
+        let started_at = time::Instant::now() - time::Duration::from_secs_f32(time_offset);
+
+        self.state = SequenceRuntimeState::start(started_at);
+        Some(DemexExecutorUpdateEvent::CueActivate(
+            first_cue.cue_idx,
+            started_at,
+        ))
     }
 
     pub fn cue_out(&mut self, time_offset: f32) {
@@ -543,17 +568,23 @@ impl SequenceRuntime {
             .unwrap_or(false)
     }
 
-    pub fn next_cue(&mut self, preset_handler: &PresetHandler, time_offset: f32) -> bool {
+    pub fn next_cue(
+        &mut self,
+        preset_handler: &PresetHandler,
+        time_offset: f32,
+    ) -> (bool, Option<Vec<DemexExecutorUpdateEvent>>) {
         let sequence = preset_handler.get_sequence(self.sequence_id).unwrap();
 
         if sequence.cues().is_empty() {
-            return true;
+            return (true, None);
         }
+
+        let started_at = time::Instant::now() - time::Duration::from_secs_f32(time_offset);
 
         let (should_clear_tracked_values, new_state) = self.state.clone().next_cue(
             sequence.cues().len(),
             sequence.stop_behavior(),
-            time_offset,
+            started_at,
         );
 
         if should_clear_tracked_values {
@@ -562,7 +593,7 @@ impl SequenceRuntime {
 
         self.state = new_state;
 
-        self.state == SequenceRuntimeState::Stopped
+        (self.state == SequenceRuntimeState::Stopped, None)
     }
 
     fn next_cue_idx(sequence: &Sequence, current_cue_idx: usize) -> Option<usize> {

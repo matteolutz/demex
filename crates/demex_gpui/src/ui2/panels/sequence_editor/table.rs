@@ -36,7 +36,7 @@ impl SequenceEditorTable {
     pub fn new(data: Option<Vec<FrontendCue>>) -> Self {
         Self {
             data,
-            active_cues: [((1, 0), time::Instant::now())].into(),
+            active_cues: HashMap::new(),
             columns: vec![
                 Column::new("id", "Id").width(60.0),
                 Column::new("name", "Name").width(150.0),
@@ -54,6 +54,14 @@ impl SequenceEditorTable {
 
     pub fn update_data(&mut self, data: Option<Vec<FrontendCue>>) {
         self.data = data;
+    }
+
+    pub fn cue_activated(&mut self, cue_idx: CueIdx, at: time::Instant) {
+        self.active_cues.insert(cue_idx, at);
+    }
+
+    pub fn cue_deactivated(&mut self, cue_idx: &CueIdx) {
+        self.active_cues.remove(&cue_idx);
     }
 }
 

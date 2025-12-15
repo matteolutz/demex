@@ -7,6 +7,7 @@ pub mod fader_function;
 
 use crate::{
     channel3::feature::feature_type::FixtureChannel3FeatureType,
+    event::{DemexEvent, DemexExecutorUpdateEvent},
     fixture::{GdtfFixturePatch, error::FixtureError},
     implement_set_property,
     patch::Patch,
@@ -90,15 +91,27 @@ impl DemexExecutor {
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         time_offset: f32,
-    ) {
+    ) -> Vec<DemexEvent> {
         if !self.is_active() {
-            self.start(fixture_handler, preset_handler, time_offset);
-            return;
+            return self
+                .start(fixture_handler, preset_handler, time_offset)
+                .map(|evt| vec![evt])
+                .unwrap_or_default();
         }
 
-        if self.runtime.next_cue(preset_handler, time_offset) {
+        let (should_stop, events) = self.runtime.next_cue(preset_handler, time_offset);
+        if should_stop {
             self.stop(fixture_handler, preset_handler);
         }
+
+        events
+            .map(|events| {
+                events
+                    .into_iter()
+                    .map(|event| DemexEvent::ExecutorUpdateEvent { id: self.id, event })
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     pub fn set_value(
@@ -107,17 +120,19 @@ impl DemexExecutor {
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         time_offset: f32,
-    ) {
+    ) -> Option<DemexEvent> {
         if value == 0.0 {
             self.stop(fixture_handler, preset_handler);
-            return;
-        }
-
-        if !self.is_active() {
-            self.start(fixture_handler, preset_handler, time_offset);
+            return None;
         }
 
         self.value = value;
+
+        if !self.is_active() {
+            return self.start(fixture_handler, preset_handler, time_offset);
+        }
+
+        None
     }
 
     pub fn is_active(&self) -> bool {
@@ -136,9 +151,9 @@ impl DemexExecutor {
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         time_offset: f32,
-    ) {
+    ) -> Option<DemexEvent> {
         self.value = 1.0;
-        self.runtime.start(time_offset);
+        let event = self.runtime.start(time_offset, preset_handler);
 
         // self.started_at = Some(time::Instant::now() - time::Duration::from_secs_f32(time_offset));
 
@@ -149,6 +164,8 @@ impl DemexExecutor {
                 });
             }
         }
+
+        event.map(|event| DemexEvent::ExecutorUpdateEvent { id: self.id, event })
     }
 
     pub fn cue_out(&mut self, time_offset: f32) {
@@ -250,8 +267,8 @@ impl DemexExecutor {
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
-    ) -> bool {
-        let should_stop = self.runtime.update(
+    ) -> Vec<DemexExecutorUpdateEvent> {
+        let (should_stop, events) = self.runtime.update(
             if self.fader_function == DemexExecutorFaderFunction::Speed {
                 self.value
             } else {
@@ -268,7 +285,7 @@ impl DemexExecutor {
             self.stop(fixture_handler, preset_handler);
         }
 
-        should_stop
+        events.unwrap_or_default()
     }
 }
 

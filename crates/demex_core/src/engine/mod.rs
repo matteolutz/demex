@@ -157,7 +157,22 @@ impl DemexEngine {
         handler.register(
             |SequenceRequest { sequence_id }: SequenceRequest, payload| {
                 let sequence = payload.show.preset_handler.get_sequence(sequence_id);
-                sequence.ok().map(|seq| seq.into())
+                if let Ok(sequence) = sequence {
+                    let sequence = sequence.into();
+                    let first_executor = payload
+                        .show
+                        .updatable_handler
+                        .executors_for_sequence(sequence_id)
+                        .next()
+                        .map(|exec| exec.id());
+
+                    Some(comm::SequenceResponse {
+                        sequence,
+                        first_executor,
+                    })
+                } else {
+                    None
+                }
             },
         );
     }

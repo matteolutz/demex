@@ -140,9 +140,7 @@ impl DemexThreadDelegate for UpdateThread {
                     let (result, events) = result.get_events();
                     if let Some(events) = events {
                         for event in events {
-                            let _ = self
-                                .event_bus_tx
-                                .send(DemexEngineCommEvent::DemexEvent(event));
+                            let _ = self.event_bus_tx.send(event.into());
                         }
                     }
 
@@ -203,12 +201,14 @@ impl DemexThreadDelegate for UpdateThread {
             )
             .inspect_err(|err| log::error!("Failed to submit output values: {}", err));
 
-        let _uh_events = self.updatable_handler.update_executors(
+        for event in self.updatable_handler.update_executors(
             &patch,
             &mut self.fixture_state_handler,
             &self.preset_handler,
             &self.timing_handler,
-        );
+        ) {
+            let _ = self.event_bus_tx.send(event.into());
+        }
 
         // TODO: move the input device handler to the frontend
         /*
