@@ -33,20 +33,12 @@ impl DemexProtoSerialize for FixtureChannelValue3 {
                 FixtureChannelDiscreteValue::Home => {
                     bytes_written += demex_proto_write_u8(buf, HOME)?;
                 }
-                FixtureChannelDiscreteValue::Discrete {
-                    channel_function_idx,
-                    value,
-                } => {
+                FixtureChannelDiscreteValue::Discrete { value } => {
                     bytes_written += demex_proto_write_u8(buf, DISCRETE)?;
-                    bytes_written += demex_proto_write_u64(buf, *channel_function_idx as u64)?;
-                    bytes_written += demex_proto_write_f32(buf, *value)?;
+                    bytes_written += demex_proto_write_f32(buf, value.as_f32())?;
                 }
-                FixtureChannelDiscreteValue::DiscreteSet {
-                    channel_function_idx,
-                    channel_set,
-                } => {
+                FixtureChannelDiscreteValue::DiscreteSet { channel_set } => {
                     bytes_written += demex_proto_write_u8(buf, DISCRETE_SET)?;
-                    bytes_written += demex_proto_write_u64(buf, *channel_function_idx as u64)?;
                     bytes_written += demex_proto_write_string(buf, channel_set)?;
                 }
                 FixtureChannelDiscreteValue::Mix { a, b, mix } => {
@@ -91,25 +83,17 @@ impl DemexProtoDeserialize for FixtureChannelValue3 {
         match buf.read_u8()? {
             HOME => Ok(Self::home()),
             DISCRETE => {
-                let channel_function_idx = demex_proto_read_u64(buf)? as usize;
-                let value = demex_proto_read_f32(buf)?;
+                let value = demex_proto_read_f32(buf)?.into();
 
                 Ok(FixtureChannelValue3::Discrete(
-                    FixtureChannelDiscreteValue::Discrete {
-                        channel_function_idx,
-                        value,
-                    },
+                    FixtureChannelDiscreteValue::Discrete { value },
                 ))
             }
             DISCRETE_SET => {
-                let channel_function_idx = demex_proto_read_u64(buf)? as usize;
                 let channel_set = demex_proto_read_string(buf)?;
 
                 Ok(FixtureChannelValue3::Discrete(
-                    FixtureChannelDiscreteValue::DiscreteSet {
-                        channel_function_idx,
-                        channel_set,
-                    },
+                    FixtureChannelDiscreteValue::DiscreteSet { channel_set },
                 ))
             }
             PRESET => {

@@ -8,8 +8,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     channel3::{
-        channel_value::FixtureChannelValue3, channel_value_discrete::FixtureChannelDiscreteValue,
+        attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3,
+        channel_value_discrete::FixtureChannelDiscreteValue,
     },
+    fixture::FixturePath,
     keyframe_effect::{
         effect_keyframe::KeyframeEffectKeyframe,
         effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_layer::KeyframeEffectLayer,
@@ -22,7 +24,9 @@ pub struct KeyframeEffect {
 }
 
 impl KeyframeEffect {
-    pub fn form_data(data: HashMap<u32, HashMap<String, FixtureChannelDiscreteValue>>) -> Self {
+    pub fn from_data(
+        data: HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>>,
+    ) -> Self {
         let layer = KeyframeEffectLayer::new(vec![KeyframeEffectKeyframe::new(
             0.0,
             data.into_iter()
@@ -50,25 +54,28 @@ impl KeyframeEffect {
         &mut self.layers
     }
 
-    pub fn affected_fixtures(&self) -> BTreeSet<u32> {
+    pub fn affected_fixtures(&self) -> BTreeSet<FixturePath> {
         self.layers
             .iter()
             .flat_map(|layer| layer.affected_fixtures())
             .collect()
     }
 
-    pub fn affected_channels_for_fixture(&self, fixture_id: u32) -> Vec<&str> {
+    pub fn affected_attributes_for_fixture(
+        &self,
+        fixture_path: &FixturePath,
+    ) -> Vec<FixtureChannel3Attribute> {
         self.layers
             .iter()
-            .flat_map(|layer| layer.affected_channels_for_fixture(fixture_id))
+            .flat_map(|layer| layer.affected_attributes_for_fixture(fixture_path))
             .dedup()
             .collect()
     }
 
     pub fn value(
         &self,
-        fixture_id: u32,
-        channel: &str,
+        fixture_path: &FixturePath,
+        attribute: &FixtureChannel3Attribute,
         started_elapsed: f64,
         phase_offset_deg: f32,
         speed_multiplier: f32,
@@ -81,7 +88,7 @@ impl KeyframeEffect {
 
         self.layers
             .iter()
-            .flat_map(|layer| layer.value(fixture_id, channel, t))
+            .flat_map(|layer| layer.value(fixture_path, attribute, t))
             .next()
     }
 }

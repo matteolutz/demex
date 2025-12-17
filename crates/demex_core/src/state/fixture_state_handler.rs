@@ -1,9 +1,12 @@
 use std::{collections::HashMap, sync::mpsc, u8};
 
 use crate::{
-    channel3::{channel_value::FixtureChannelValue3, channel_value_queue::ChannelValueQueueEntry},
+    channel3::{
+        attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3,
+        channel_value_queue::ChannelValueQueueEntry,
+    },
     engine::component::Component,
-    fixture::error::FixtureError,
+    fixture::{Fixture, FixturePath, error::FixtureError},
     patch::Patch,
     presets::PresetHandler,
     state::fixture_state::FixtureState,
@@ -16,7 +19,7 @@ impl Component for FixtureStateHandler {}
 
 #[derive(Debug)]
 pub struct FixtureStateHandler {
-    fixture_states: HashMap<u32, FixtureState>,
+    fixture_states: HashMap<FixturePath, FixtureState>,
     grand_master: u8,
 }
 
@@ -30,7 +33,7 @@ impl Default for FixtureStateHandler {
 }
 
 impl FixtureStateHandler {
-    pub fn new(patch: &Patch) -> Result<Self, FixtureError> {
+    pub fn new<'a>(fixtures: impl IntoIterator<Item = &'a Fixture>) -> Result<Self, FixtureError> {
         // TODO: find a new place for this
         /*
         // check if the fixtures overlap
@@ -75,10 +78,10 @@ impl FixtureStateHandler {
         */
 
         Ok(Self {
-            fixture_states: patch
-                .fixtures()
-                .map(|f| (f.id, FixtureState::new(f, patch)))
-                .collect::<HashMap<_, _>>(),
+            fixture_states: fixtures
+                .into_iter()
+                .map(|f| (f.path(), FixtureState::new(f)))
+                .collect(),
             grand_master: u8::MAX,
         })
     }
@@ -91,20 +94,23 @@ impl FixtureStateHandler {
         &mut self.grand_master
     }
 
-    pub fn fixtures(&self) -> &HashMap<u32, FixtureState> {
+    pub fn fixtures(&self) -> &HashMap<FixturePath, FixtureState> {
         &self.fixture_states
     }
 
-    pub fn fixture(&self, fixture_id: u32) -> Result<&FixtureState, FixtureError> {
+    pub fn fixture(&self, fixture_path: &FixturePath) -> Result<&FixtureState, FixtureError> {
         self.fixture_states
-            .get(&fixture_id)
-            .ok_or(FixtureError::NotFound(fixture_id))
+            .get(fixture_path)
+            .ok_or(FixtureError::NotFound(*fixture_path))
     }
 
-    pub fn fixture_mut(&mut self, fixture_id: u32) -> Result<&mut FixtureState, FixtureError> {
+    pub fn fixture_mut(
+        &mut self,
+        fixture_path: &FixturePath,
+    ) -> Result<&mut FixtureState, FixtureError> {
         self.fixture_states
-            .get_mut(&fixture_id)
-            .ok_or(FixtureError::NotFound(fixture_id))
+            .get_mut(fixture_path)
+            .ok_or(FixtureError::NotFound(*fixture_path))
     }
 
     pub fn home_all(&mut self, clear_sources: bool) -> Result<(), FixtureError> {
@@ -121,36 +127,35 @@ impl FixtureStateHandler {
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
-        updated_output_values: &mut HashMap<u32, HashMap<String, FixtureChannelValue3>>,
+        updated_output_values: &mut HashMap<
+            FixturePath,
+            HashMap<FixtureChannel3Attribute, FixtureChannelValue3>,
+        >,
     ) -> Result<(), FixtureError> {
-        for (id, state) in self.fixture_states.iter_mut() {
-            let (_, dmx_mode, fixture) = patch.fixture_type_and_dmx_mode_by_id(*id)?;
+        for (path, state) in self.fixture_states.iter_mut() {
+            let fixture = patch.fixture(path)?;
 
-            for dmx_channel in &dmx_mode.dmx_channels {
-                let new_output_value = state.sources().get_channel_value(
-                    patch,
+            for (attribute, _) in fixture.channel_functions() {
+                let new_output_value = state.sources().get_attribute_value(
                     fixture,
                     state,
-                    dmx_channel,
+                    attribute,
                     updatable_handler,
                     preset_handler,
                     timing_handler,
                 )?;
 
-                let output_value = state
-                    .cached_output_mut()
-                    .get_mut(dmx_channel.name().as_ref())
-                    .unwrap();
+                let output_value = state.cached_output_mut().get_mut(attribute).unwrap();
 
                 if output_value.value == new_output_value {
                     continue;
                 }
 
                 output_value.update(new_output_value.clone());
-                updated_output_values.entry(*id).or_default().insert(
-                    dmx_channel.name().as_ref().to_string(),
-                    new_output_value.clone(),
-                );
+                updated_output_values
+                    .entry(*path)
+                    .or_default()
+                    .insert(*attribute, new_output_value.clone());
             }
         }
 
@@ -164,29 +169,28 @@ impl FixtureStateHandler {
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
     ) -> Result<(), FixtureError> {
-        for (id, state) in self.fixture_states.iter_mut() {
+        for (path, state) in self.fixture_states.iter_mut() {
             let mut updated_values = HashMap::new();
-            let fixture = patch.fixture(*id)?;
+            let fixture = patch.fixture(path)?;
 
-            for (channel, output_value) in state.cached_output_mut() {
+            for (attribute, output_value) in state.cached_output_mut() {
                 if !output_value.should_output(preset_handler) {
                     continue;
                 }
 
                 let discrete_value = output_value.value().clone().to_discrete(
-                    patch,
                     fixture,
-                    &channel,
+                    &attribute,
                     preset_handler,
                     timing_handler,
                 );
-                updated_values.insert(channel.clone(), discrete_value);
+                updated_values.insert(attribute.clone(), discrete_value);
                 output_value.reset();
             }
 
             value_queue_tx
                 .send(ChannelValueQueueEntry {
-                    fixture_id: *id,
+                    fixture_path: *path,
                     values: updated_values,
                 })
                 .expect("Output channel has hung up");

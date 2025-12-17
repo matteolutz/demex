@@ -91,6 +91,10 @@ impl Fixture {
         self.channel_functions.iter()
     }
 
+    pub fn has_attribute(&self, attribute: &FixtureChannel3Attribute) -> bool {
+        self.channel_functions().any(|(attr, _)| attr == attribute)
+    }
+
     pub fn replace_parent(&mut self, old_parent: &FixturePath, new_parent: FixturePath) {
         self.path = self.path.replace_parent(old_parent, new_parent);
         self.sub_fixture_paths.iter_mut().for_each(|p| {
@@ -125,6 +129,7 @@ pub struct FixtureChannelFunction {
     pub(crate) max: ClampedValue,
     pub(crate) default: ClampedValue,
     pub(crate) sets: HashMap<String, ClampedValue>,
+    pub(crate) activation_group: Option<String>,
 }
 
 impl FixtureChannelFunction {
@@ -146,6 +151,22 @@ impl FixtureChannelFunction {
     /// The default value for this attribute when no explicit value is set.
     pub fn default(&self) -> ClampedValue {
         self.default
+    }
+
+    pub fn unprojected_default(&self) -> ClampedValue {
+        self.unproject(self.default)
+    }
+
+    /// Project the value (0.0..=1.0) to the range of this channel function.
+    pub fn project(&self, value: ClampedValue) -> ClampedValue {
+        let range = self.max.as_f32() - self.min.as_f32();
+        (self.min.as_f32() + range * value.as_f32()).into()
+    }
+
+    /// Unproject the value from the range of this channel function to (0.0..=1.0).
+    pub fn unproject(&self, value: ClampedValue) -> ClampedValue {
+        let range = self.max.as_f32() - self.min.as_f32();
+        ((value.as_f32() - self.min.as_f32()) / range).into()
     }
 }
 
@@ -340,7 +361,7 @@ impl FixturePath {
     }
 
     /// Return a new [FixturePath] with `part` appended.
-    pub fn extended_with(mut self, part: FixtureId) -> FixturePath {
+    pub fn extended_with(mut self, part: FixtureId) -> Self {
         self.push(part);
         self
     }
@@ -357,16 +378,12 @@ impl FixturePath {
         self.len += other.len() as u8;
     }
 
-    pub fn with_parent(&self, parent: FixturePath) -> FixturePath {
+    pub fn with_parent(&self, parent: Self) -> Self {
         let last = self.last();
         parent.extended_with(last)
     }
 
-    pub fn replace_parent(
-        self,
-        old_parent: &FixturePath,
-        mut new_parent: FixturePath,
-    ) -> FixturePath {
+    pub fn replace_parent(self, old_parent: &Self, mut new_parent: Self) -> Self {
         assert!(
             self.starts_with(old_parent),
             "FixturePath does not start with the old parent"
@@ -379,7 +396,7 @@ impl FixturePath {
     }
 
     /// Returns `true` if `self` contains `path` as a prefix.
-    pub fn starts_with(&self, path: &FixturePath) -> bool {
+    pub fn starts_with(&self, path: &Self) -> bool {
         let path_len = path.len();
         if path_len > self.len() {
             return false;
@@ -396,19 +413,19 @@ impl AsRef<[FixtureId]> for FixturePath {
 
 impl From<FixtureId> for FixturePath {
     fn from(id: FixtureId) -> Self {
-        FixturePath::new(id)
+        Self::new(id)
     }
 }
 
 impl From<&[FixtureId]> for FixturePath {
     fn from(slice: &[FixtureId]) -> Self {
         assert!(
-            slice.len() <= FixturePath::MAX_LEN,
+            slice.len() <= Self::MAX_LEN,
             "FixturePath slice length {} exceeds capacity {}",
             slice.len(),
-            FixturePath::MAX_LEN
+            Self::MAX_LEN
         );
-        let mut ids = [FixtureId::new(1).unwrap(); FixturePath::MAX_LEN];
+        let mut ids = [FixtureId::new(1).unwrap(); Self::MAX_LEN];
         for (i, v) in slice.iter().enumerate() {
             ids[i] = *v;
         }
@@ -488,14 +505,14 @@ impl str::FromStr for FixturePath {
             return Err(FixtureError::FixturePathIsEmpty);
         }
 
-        if parts.len() > FixturePath::MAX_LEN {
+        if parts.len() > Self::MAX_LEN {
             return Err(FixtureError::FixturePathHasTooManyParts);
         }
-        let mut ids = [FixtureId::new(1).unwrap(); FixturePath::MAX_LEN];
+        let mut ids = [FixtureId::new(1).unwrap(); Self::MAX_LEN];
         for (i, part) in parts.iter().enumerate() {
             ids[i] = FixtureId::from_str(part)?;
         }
-        Ok(FixturePath {
+        Ok(Self {
             ids,
             len: parts.len() as u8,
         })

@@ -4,9 +4,10 @@ use demex_dmx::{DemexDmxOutput, DemexDmxOutputTrait};
 
 use crate::{
     channel3::{
-        channel_value_discrete::FixtureChannelDiscreteValue,
+        attribute::FixtureChannel3Attribute, channel_value_discrete::FixtureChannelDiscreteValue,
         channel_value_queue::ChannelValueQueueEntry,
     },
+    fixture::FixturePath,
     patch::Patch,
 };
 
@@ -19,7 +20,8 @@ pub struct DmxResolver {
     old_universe_data: HashMap<u16, [u8; 512]>,
     pub universe_data: HashMap<u16, [u8; 512]>,
 
-    output_values: HashMap<u32, HashMap<String, FixtureChannelDiscreteValue>>,
+    output_values:
+        HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>>,
 }
 
 impl DmxResolver {
@@ -88,7 +90,7 @@ impl DmxResolver {
     pub fn resovle(&mut self, values: Vec<ChannelValueQueueEntry>, patch: &Patch) {
         // update output values
         for entry in &values {
-            let fixture_output_values = self.output_values.entry(entry.fixture_id).or_default();
+            let fixture_output_values = self.output_values.entry(entry.fixture_path).or_default();
             for (channel, value) in &entry.values {
                 fixture_output_values.insert(channel.clone(), value.clone());
             }
@@ -96,8 +98,8 @@ impl DmxResolver {
 
         // calculate dmx values
         for entry in values {
-            let fixture_patch = patch.fixture(entry.fixture_id).unwrap();
-            let fixture_output_values = self.output_values.entry(entry.fixture_id).or_default();
+            let fixture_patch = patch.fixture(entry.fixture_path).unwrap();
+            let fixture_output_values = self.output_values.entry(entry.fixture_path).or_default();
 
             let mut dynamic_data = HashMap::new();
 

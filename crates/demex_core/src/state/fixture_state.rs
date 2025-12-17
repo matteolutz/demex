@@ -1,20 +1,16 @@
 use std::collections::HashMap;
 
-use demex_headless::sync::DemexSync;
-use serde::{Deserialize, Serialize};
-
 use crate::{
     channel3::{
-        channel_value::{FixtureChannelValue3, FixtureChannelValue3Update},
+        attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3,
         channel_value_discrete::FixtureChannelDiscreteValue,
         channel_value_state::FixtureChannelOutputValue,
-        utils::dmx_value_to_f32,
     },
-    fixture::{GdtfFixturePatch, error::FixtureError},
-    patch::Patch,
+    fixture::{Fixture, error::FixtureError},
     value_source::FixtureChannelValueSource,
 };
 
+/*
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GdtfFixtureStateSync {
     output_values: HashMap<String, FixtureChannelValue3>,
@@ -41,13 +37,14 @@ impl DemexSync for FixtureState {
         }
     }
 }
+*/
 
 #[derive(Debug, Clone)]
 pub struct FixtureState {
-    programmer_values: HashMap<String, FixtureChannelValue3>,
+    programmer_values: HashMap<FixtureChannel3Attribute, FixtureChannelValue3>,
 
     sources: Vec<FixtureChannelValueSource>,
-    cached_output: HashMap<String, FixtureChannelOutputValue>,
+    cached_output: HashMap<FixtureChannel3Attribute, FixtureChannelOutputValue>,
 }
 
 impl FixtureState {
@@ -55,15 +52,19 @@ impl FixtureState {
         &self.sources
     }
 
-    pub fn cached_output_moved(self) -> HashMap<String, FixtureChannelOutputValue> {
+    pub fn cached_output_moved(
+        self,
+    ) -> HashMap<FixtureChannel3Attribute, FixtureChannelOutputValue> {
         self.cached_output
     }
 
-    pub fn cached_output(&self) -> &HashMap<String, FixtureChannelOutputValue> {
+    pub fn cached_output(&self) -> &HashMap<FixtureChannel3Attribute, FixtureChannelOutputValue> {
         &self.cached_output
     }
 
-    pub fn cached_output_mut(&mut self) -> &mut HashMap<String, FixtureChannelOutputValue> {
+    pub fn cached_output_mut(
+        &mut self,
+    ) -> &mut HashMap<FixtureChannel3Attribute, FixtureChannelOutputValue> {
         &mut self.cached_output
     }
 
@@ -92,62 +93,47 @@ impl FixtureState {
 
     pub fn get_programmer_value(
         &self,
-        channel: &str,
+        attribute: &FixtureChannel3Attribute,
     ) -> Result<&FixtureChannelValue3, FixtureError> {
         self.programmer_values
-            .get(channel)
-            .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel.to_owned()))
+            .get(attribute)
+            .ok_or_else(|| FixtureError::GdtfAttributeNotFound(*attribute))
     }
 
     pub fn set_programmer_value(
         &mut self,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
-        channel: &str,
+        fixture: &Fixture,
+        attribute: &FixtureChannel3Attribute,
         value: FixtureChannelValue3,
     ) -> Result<(), FixtureError> {
-        let (fixture_type, _) = patch.fixture_type_and_dmx_mode(fixture)?;
-
-        let (_, logical_channel) = fixture.get_channel(patch, channel)?;
-        let logical_channel_attribute = logical_channel
-            .attribute(fixture_type)
-            .ok_or_else(|| FixtureError::GdtfChannelHasNoAttribute(channel.to_owned()))?;
+        let channel_function = fixture
+            .channel_function(attribute)
+            .ok_or(FixtureError::GdtfAttributeNotFound(*attribute))?;
 
         let programmer_value = self
             .programmer_values
-            .get_mut(channel)
-            .ok_or_else(|| FixtureError::GdtfChannelNotFound(channel.to_owned()))?;
+            .get_mut(attribute)
+            .ok_or_else(|| FixtureError::GdtfAttributeNotFound(*attribute))?;
         *programmer_value = value.clone();
 
-        if let Some(activation_group) =
-            logical_channel_attribute.activation_group(&fixture_type.attribute_definitions)
-        {
-            for (dmx_channel, _) in fixture
-                .channels(patch)?
-                .filter(|(_, other_logical_channel)| {
-                    *other_logical_channel != logical_channel
-                        && other_logical_channel
-                            .attribute(fixture_type)
-                            .and_then(|attribute| {
-                                attribute.activation_group(&fixture_type.attribute_definitions)
-                            })
-                            .is_some_and(|channel_activation_group| {
-                                channel_activation_group == activation_group
-                            })
-                })
+        if let Some(activation_group) = channel_function.activation_group.as_ref() {
+            for (other_attribute, other_channel_function) in
+                fixture
+                    .channel_functions()
+                    .filter(|(other_attribute, other_channel_function)| {
+                        attribute != *other_attribute
+                            && other_channel_function
+                                .activation_group
+                                .as_ref()
+                                .is_some_and(|other_ag| other_ag == activation_group)
+                    })
             {
-                let channel_value = self
-                    .programmer_values
-                    .get_mut(dmx_channel.name().as_ref())
-                    .unwrap();
+                let channel_value = self.programmer_values.entry(*other_attribute).or_default();
 
                 if channel_value.is_home() && !value.is_home() {
                     *channel_value =
                         FixtureChannelValue3::Discrete(FixtureChannelDiscreteValue::Discrete {
-                            channel_function_idx: 0,
-                            value: dmx_value_to_f32(
-                                dmx_channel.logical_channels[0].channel_functions[0].default,
-                            ),
+                            value: other_channel_function.unprojected_default(),
                         });
                 } else if !channel_value.is_home() && value.is_home() {
                     // set home value for function 0
@@ -158,74 +144,13 @@ impl FixtureState {
 
         Ok(())
     }
-
-    pub fn update_programmer_attribute_matches_value(
-        &mut self,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
-        filter: impl Fn(&str) -> bool,
-        slider_val: FixtureChannelValue3Update,
-    ) -> Result<(), FixtureError> {
-        for (channel, _, _) in fixture.channels_for_attribute_matches(patch, filter)? {
-            self.update_programmer_value(
-                patch,
-                fixture,
-                channel.name().as_ref(),
-                slider_val.clone(),
-            )?;
-        }
-
-        Ok(())
-    }
-
-    pub fn update_programmer_value(
-        &mut self,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
-        channel: &str,
-        slider_val: FixtureChannelValue3Update,
-    ) -> Result<(), FixtureError> {
-        let programmer_value = self.get_programmer_value(channel)?;
-
-        let channel_function_idx = match programmer_value {
-            FixtureChannelValue3::Discrete(discrete) => match discrete {
-                FixtureChannelDiscreteValue::Discrete {
-                    channel_function_idx,
-                    value: _,
-                } => *channel_function_idx,
-                FixtureChannelDiscreteValue::DiscreteSet {
-                    channel_function_idx,
-                    ..
-                } => *channel_function_idx,
-                _ => fixture.get_channel_initial_function_idx(patch, channel)?,
-            },
-            _ => fixture.get_channel_initial_function_idx(patch, channel)?,
-        };
-
-        self.set_programmer_value(
-            patch,
-            fixture,
-            channel,
-            slider_val.get_value(channel_function_idx),
-        )
-    }
 }
 
 impl FixtureState {
-    pub fn new(fixture: &GdtfFixturePatch, patch: &Patch) -> Self {
-        let (_, dmx_mode) = patch
-            .fixture_type_and_dmx_mode(fixture)
-            .expect("Fixture type DMX mode not found");
-
-        let programmer_values: HashMap<String, FixtureChannelValue3> = dmx_mode
-            .dmx_channels
-            .iter()
-            .map(|channel| {
-                (
-                    channel.name().as_ref().to_owned(),
-                    FixtureChannelValue3::home(),
-                )
-            })
+    pub fn new(fixture: &Fixture) -> Self {
+        let programmer_values: HashMap<FixtureChannel3Attribute, FixtureChannelValue3> = fixture
+            .channel_functions()
+            .map(|(attribute, _)| (*attribute, FixtureChannelValue3::home()))
             .collect();
 
         let cached_output = programmer_values

@@ -29,7 +29,7 @@ lazy_static::lazy_static! {
 }
 
 /// A GDTF attribute.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum FixtureChannel3Attribute {
     /// Controls the intensity of a fixture.
     Dimmer,

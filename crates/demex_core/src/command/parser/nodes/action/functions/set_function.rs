@@ -4,9 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     channel3::{
-        channel_value::{
-            FixtureChannelValue2PresetState, FixtureChannelValue3, FixtureChannelValue3Update,
-        },
+        channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
         feature::feature_type::FixtureChannel3FeatureType,
     },
     command::parser::nodes::{
@@ -50,8 +48,8 @@ impl FunctionArgs for SetFeatureValueArgs {
             .get_selection(preset_handler, fixture_selector_context)
             .map_err(ActionRunError::FixtureSelectorError)?;
 
-        for fixture_id in selection.fixtures() {
-            let fixture_idx = selection.offset_idx(*fixture_id).unwrap();
+        for fixture_path in selection.fixtures() {
+            let fixture_idx = selection.offset_idx(fixture_path).unwrap();
 
             let discrete_value = match self.feature_value {
                 ValueOrRange::Single(value) => value,
@@ -63,23 +61,16 @@ impl FunctionArgs for SetFeatureValueArgs {
             };
 
             if let (Ok(fixture_state), Ok(fixture)) = (
-                fixture_handler.fixture_mut(*fixture_id),
-                patch.fixture(*fixture_id),
+                fixture_handler.fixture_mut(fixture_path),
+                patch.fixture(fixture_path),
             ) {
                 match self.feature_type {
                     FixtureChannel3FeatureType::Dimmer => {
                         fixture_state
-                            .update_programmer_attribute_matches_value(
-                                patch,
+                            .set_programmer_value(
                                 fixture,
-                                |fixture_attribute_name| {
-                                    /*FixtureChannel3Attribute::attribute_matches(
-                                        fixture_attribute_name,
-                                        FixtureChannel3Attribute::Dimmer.to_string().as_str(),
-                                    )*/
-                                    false
-                                },
-                                FixtureChannelValue3Update::Value(discrete_value),
+                                &crate::channel3::attribute::FixtureChannel3Attribute::Dimmer,
+                                FixtureChannelValue3::discrete(discrete_value),
                             )
                             .map_err(ActionRunError::FixtureError)?;
                     }
@@ -164,14 +155,14 @@ impl FunctionArgs for SetFixturePresetArgs {
                     .get_preset_range(preset_id_from, preset_id_to)
                     .map_err(ActionRunError::PresetHandlerError)?;
 
-                for fixture in selection.fixtures().iter() {
-                    let fixture_offset = selection.offset(*fixture).unwrap();
+                for fixture_path in selection.fixtures().iter() {
+                    let fixture_offset = selection.offset(fixture_path).unwrap();
 
                     if let (Ok(state), Ok(fixture)) = (
-                        fixture_handler.fixture_mut(*fixture),
-                        patch.fixture(*fixture),
+                        fixture_handler.fixture_mut(fixture_path),
+                        patch.fixture(fixture_path),
                     ) {
-                        let channels = presets[0].affected_channels(fixture, patch);
+                        let attributes = presets[0].stored_attributes(fixture_path);
 
                         // get the two relevant indexes from the presets
                         let preset_idx_fl = fixture_offset
@@ -200,14 +191,9 @@ impl FunctionArgs for SetFixturePresetArgs {
                             mix: fade,
                         };
 
-                        for channel in channels {
+                        for attribute in attributes {
                             state
-                                .set_programmer_value(
-                                    patch,
-                                    fixture,
-                                    &channel,
-                                    channel_value.clone(),
-                                )
+                                .set_programmer_value(fixture, &attribute, channel_value.clone())
                                 .map_err(ActionRunError::FixtureError)?;
                         }
                     }

@@ -36,6 +36,7 @@ use crate::{
             },
         },
     },
+    fixture::FixtureId,
     presets::preset::FixturePresetId,
     sequence::cue::CueIdx,
 };
@@ -120,14 +121,26 @@ impl<'a> Parser2<'a> {
                 Ok(AtomicFixtureSelector::CurrentFixturesSelected)
             }
             &Token::Integer(f1) => {
+                let token = self.current_token()?.clone();
+                let from = FixtureId::new(f1)
+                    .map_err(|_| ParseError::UnexpectedToken(token, "FixtureID".to_string()))?;
+
                 self.advance();
+
                 match self.current_token()? {
                     &Token::KeywordThru => {
                         self.advance();
+
                         match self.current_token()? {
                             &Token::Integer(f2) => {
+                                let token = self.current_token()?.clone();
+                                let to = FixtureId::new(f2).map_err(|_| {
+                                    ParseError::UnexpectedToken(token, "FixtureID".to_string())
+                                })?;
+
                                 self.advance();
-                                Ok(AtomicFixtureSelector::FixtureRange(f1, f2))
+
+                                Ok(AtomicFixtureSelector::FixtureRange(from, to))
                             }
                             unexpectd_token => Err(ParseError::UnexpectedToken(
                                 unexpectd_token.clone(),
@@ -135,7 +148,7 @@ impl<'a> Parser2<'a> {
                             )),
                         }
                     }
-                    _ => Ok(AtomicFixtureSelector::SingleFixture(f1)),
+                    _ => Ok(AtomicFixtureSelector::SingleFixture(from)),
                 }
             }
             Token::ParenOpen => {

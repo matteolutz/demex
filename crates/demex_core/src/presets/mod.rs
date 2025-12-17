@@ -8,6 +8,7 @@ use preset::{FixturePreset, FixturePresetData, FixturePresetId};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    channel3::attribute::FixtureChannel3Attribute,
     command::parser::nodes::{
         action::{
             Action,
@@ -16,7 +17,7 @@ use crate::{
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
     engine::component::Component,
-    fixture::GdtfFixturePatch,
+    fixture::Fixture,
     patch::Patch,
     pool::{Pool, PoolError, PoolType},
     state::fixture_state_handler::FixtureStateHandler,
@@ -156,17 +157,17 @@ impl PresetHandler {
 
         let discrete_data = data
             .into_iter()
-            .map(|(f_id, values)| {
-                let fixture = patch.fixture(f_id).unwrap();
+            .map(|(f_path, values)| {
+                let fixture = patch.fixture(&f_path).unwrap();
 
                 (
-                    f_id,
+                    f_path,
                     values
                         .into_iter()
                         .map(|(channel, value)| {
                             (
                                 channel.clone(),
-                                value.to_discrete(patch, fixture, &channel, self, timing_handler),
+                                value.to_discrete(fixture, &channel, self, timing_handler),
                             )
                         })
                         .collect::<HashMap<_, _>>(),
@@ -231,17 +232,17 @@ impl PresetHandler {
 
         let discrete_data = new_data
             .into_iter()
-            .map(|(f_id, values)| {
-                let fixture = patch.fixture(f_id).unwrap();
+            .map(|(f_path, values)| {
+                let fixture = patch.fixture(&f_path).unwrap();
 
                 (
-                    f_id,
+                    f_path,
                     values
                         .into_iter()
                         .map(|(channel, value)| {
                             (
                                 channel.clone(),
-                                value.to_discrete(patch, fixture, &channel, self, timing_handler),
+                                value.to_discrete(fixture, &channel, self, timing_handler),
                             )
                         })
                         .collect::<HashMap<_, _>>(),
@@ -362,16 +363,15 @@ impl PresetHandler {
     pub fn get_preset_value_for_fixture(
         &self,
         preset_id: FixturePresetId,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
-        channel_name: &str,
+        fixture: &Fixture,
+        attribute: &FixtureChannel3Attribute,
         timing_handler: &TimingHandler,
         state: Option<&FixtureChannelValue2PresetState>,
     ) -> Option<FixtureChannelValue3> {
         let preset = self.get_preset(preset_id);
 
         if let Ok(preset) = preset {
-            preset.value(patch, fixture, channel_name, self, timing_handler, state)
+            preset.value(fixture, attribute, self, timing_handler, state)
         } else {
             None
         }
@@ -386,12 +386,15 @@ impl PresetHandler {
     ) -> Result<(), PresetHandlerError> {
         let preset = self.get_preset(preset_id)?;
 
-        for fixture_id in selection.fixtures() {
+        for fixture_path in selection.fixtures() {
+            let Ok(fixture) = patch.fixture(fixture_path) else {
+                continue;
+            };
+
             preset.apply(
-                patch,
-                *fixture_id,
+                fixture,
                 fixture_handler
-                    .fixture_mut(*fixture_id)
+                    .fixture_mut(fixture_path)
                     .map_err(PresetHandlerError::FixtureError)?,
                 selection.clone(),
             )?;

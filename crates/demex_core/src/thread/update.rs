@@ -20,6 +20,7 @@ use crate::{
         state::DemexEngineState,
     },
     event::DemexEvent,
+    fixture::FixturePath,
     input::DemexInputDeviceHandler,
     patch::Patch,
     pool::{PoolItem, PoolType},
@@ -57,10 +58,10 @@ impl UpdateThread {
         patch: Arc<ArcSwap<Patch>>,
     ) -> (
         Self,
-        HashMap<u32, FixtureState>,
+        HashMap<FixturePath, FixtureState>,
         HashMap<PoolType, Vec<PoolItem>>,
     ) {
-        let fixture_state_handler = FixtureStateHandler::new(&patch.load()).unwrap();
+        let fixture_state_handler = FixtureStateHandler::new(patch.load().fixtures()).unwrap();
         let fixture_states = fixture_state_handler.fixtures().clone();
 
         let show = DemexShowRef {

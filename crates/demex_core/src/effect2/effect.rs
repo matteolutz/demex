@@ -2,6 +2,8 @@ use std::f32;
 
 use serde::{Deserialize, Serialize};
 
+use crate::channel3::attribute::FixtureChannel3Attribute;
+
 use super::wave::Effect2Wave;
 
 pub type AttributeList = Vec<String>;
@@ -13,7 +15,7 @@ fn f32_one() -> f32 {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Effect2Part {
     wave: Effect2Wave,
-    attributes: Vec<String>,
+    attributes: Vec<FixtureChannel3Attribute>,
 
     /// Phase offfset (in deg)
     #[serde(default = "f32_one")]
@@ -44,11 +46,11 @@ impl Effect2Part {
         &mut self.wave
     }
 
-    pub fn attributes(&self) -> &[String] {
+    pub fn attributes(&self) -> &[FixtureChannel3Attribute] {
         &self.attributes
     }
 
-    pub fn attributes_mut(&mut self) -> &mut Vec<String> {
+    pub fn attributes_mut(&mut self) -> &mut Vec<FixtureChannel3Attribute> {
         &mut self.attributes
     }
 
@@ -75,13 +77,13 @@ impl Effect2 {
         &mut self.parts
     }
 
-    pub fn attributes(&self) -> impl Iterator<Item = &String> {
+    pub fn attributes(&self) -> impl Iterator<Item = &FixtureChannel3Attribute> {
         self.parts.iter().flat_map(|part| &part.attributes)
     }
 
     pub fn attribute_value(
         &self,
-        attribute_name: &str,
+        attribute: &FixtureChannel3Attribute,
         time: f64,
         phase_offset_deg: f32,
         speed: f32,
@@ -93,7 +95,7 @@ impl Effect2 {
             .find(|part| {
                 part.attributes
                     .iter()
-                    .any(|attribute| attribute == attribute_name)
+                    .any(|part_attribute| part_attribute == attribute)
             })
             .map(|part| {
                 part.wave

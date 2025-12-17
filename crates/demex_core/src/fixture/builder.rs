@@ -21,8 +21,9 @@ use crate::{
     channel3::{attribute::FixtureChannel3Attribute, clamped_value::ClampedValue},
     fixture::{
         Fixture, FixtureChannelFunction, FixtureChannelFunctionKind, FixtureId, FixturePath,
-        Relation, RelationKind, error::FixtureError,
+        GdtfFixturePatch, Relation, RelationKind, error::FixtureError,
     },
+    patch::FixtureTypeList,
 };
 
 /// Helper for building the fixture tree from a GDTF fixture type + DMX mode.
@@ -58,6 +59,30 @@ pub struct FixtureBuilder<'a> {
 }
 
 impl<'a> FixtureBuilder<'a> {
+    pub fn from_patch(
+        fixture: GdtfFixturePatch,
+        fixture_types: &'a FixtureTypeList,
+    ) -> Result<Self, FixtureError> {
+        let fixture_type = fixture_types
+            .iter()
+            .find(|ft| ft.fixture_type_id == fixture.fixture_type_id)
+            .ok_or(FixtureError::GdtfFixtureTypeNotFound(
+                fixture.fixture_type_id,
+            ))?;
+
+        let dmx_mode = fixture_type.dmx_mode(fixture.dmx_mode()).ok_or_else(|| {
+            FixtureError::GdtfFixtureDmxModeNotFound(fixture.fixture_type_dmx_mode)
+        })?;
+
+        Ok(Self::new(
+            FixtureId::new(fixture.id).unwrap(),
+            fixture.name,
+            DmxAddress::new(fixture.universe, fixture.start_address),
+            fixture_type,
+            dmx_mode,
+        ))
+    }
+
     pub fn new(
         root_id: FixtureId,
         name: String,
@@ -268,13 +293,13 @@ impl<'a> FixtureBuilder<'a> {
         };
 
         // Build child fixtures first (they will push/pop their own sibling counters).
-        let mut sub_fixtures = self.collect_child_fixtures(&path, referenced_geometry);
+        let sub_fixtures = self.collect_child_fixtures(&path, referenced_geometry);
 
         // Collect only the immediate children paths for this fixture's metadata.
-        let mut sub_fixture_paths = Self::collect_direct_sub_paths(&path, &sub_fixtures);
+        let sub_fixture_paths = Self::collect_direct_sub_paths(&path, &sub_fixtures);
 
         // Build channel functions for this referenced geometry (physical or virtual).
-        let mut channel_functions = self.create_channel_functions(
+        let channel_functions = self.create_channel_functions(
             path,
             geometry,
             referenced_geometry.name().unwrap(),
@@ -402,11 +427,26 @@ impl<'a> FixtureBuilder<'a> {
     fn attribute_from_cf(
         &self,
         cf: &gdtf::dmx_mode::ChannelFunction,
-    ) -> Option<FixtureChannel3Attribute> {
-        cf.attribute(&self.gdtf_fixture_type)
-            .and_then(|attribute| attribute.name.as_ref())
+    ) -> Option<(Option<String>, FixtureChannel3Attribute)> {
+        let Some(gdtf_attribute) = cf.attribute(&self.gdtf_fixture_type) else {
+            return None;
+        };
+
+        let attribute = gdtf_attribute
+            .name
+            .as_ref()
             // Unwrapping here is safe, as from_str for Attribute cannot fail.
-            .map(|attribute| FixtureChannel3Attribute::from_str(&*attribute).unwrap())
+            .map(|attribute| FixtureChannel3Attribute::from_str(&*attribute).unwrap());
+
+        attribute.map(|attribute| {
+            (
+                gdtf_attribute
+                    .activation_group(&self.gdtf_fixture_type.attribute_definitions)
+                    .and_then(|ag| ag.name.as_ref())
+                    .map(|name| name.to_string()),
+                attribute,
+            )
+        })
     }
 
     fn create_channel_functions(
@@ -450,7 +490,9 @@ impl<'a> FixtureBuilder<'a> {
                         .map(|(_, cf)| ClampedValue::from(cf.dmx_from))
                         .unwrap_or_else(|| ClampedValue::new(ClampedValue::MAX));
 
-                    let Some(attribute) = self.attribute_from_cf(channel_function) else {
+                    let Some((activation_group, attribute)) =
+                        self.attribute_from_cf(channel_function)
+                    else {
                         // If we cannot parse an attribute, skip this channel function.
                         continue;
                     };
@@ -508,6 +550,7 @@ impl<'a> FixtureBuilder<'a> {
                             max: to,
                             default,
                             sets,
+                            activation_group,
                         },
                     );
 
@@ -643,7 +686,7 @@ impl<'a> FixtureBuilder<'a> {
                 continue;
             };
 
-            let Some(attribute) = self.attribute_from_cf(follower_channel_function) else {
+            let Some((_, attribute)) = self.attribute_from_cf(follower_channel_function) else {
                 continue;
             };
 

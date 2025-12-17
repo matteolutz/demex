@@ -1,4 +1,4 @@
-use std::{collections::HashSet, str::FromStr};
+use std::collections::HashSet;
 
 use fader_function::DemexExecutorFaderFunction;
 use serde::{Deserialize, Serialize};
@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 pub mod fader_function;
 
 use crate::{
-    channel3::feature::feature_type::FixtureChannel3FeatureType,
+    channel3::attribute::FixtureChannel3Attribute,
     event::{DemexEvent, DemexExecutorUpdateEvent},
-    fixture::{GdtfFixturePatch, error::FixtureError},
+    fixture::{FixturePath, error::FixtureError},
     implement_set_property,
     patch::Patch,
     pool::{PoolItem, PoolItemName, PoolType},
@@ -139,7 +139,7 @@ impl DemexExecutor {
         self.runtime.is_started()
     }
 
-    pub fn fixtures(&self, preset_handler: &PresetHandler) -> HashSet<u32> {
+    pub fn fixtures(&self, preset_handler: &PresetHandler) -> HashSet<FixturePath> {
         let sequence = preset_handler
             .get_sequence(self.runtime.sequence_id())
             .unwrap();
@@ -157,8 +157,8 @@ impl DemexExecutor {
 
         // self.started_at = Some(time::Instant::now() - time::Duration::from_secs_f32(time_offset));
 
-        for fixture_id in self.fixtures(preset_handler) {
-            if let Ok(fixture_state) = fixture_handler.fixture_mut(fixture_id) {
+        for fixture_path in self.fixtures(preset_handler) {
+            if let Ok(fixture_state) = fixture_handler.fixture_mut(&fixture_path) {
                 fixture_state.push_value_source(FixtureChannelValueSource::Executor {
                     executor_id: self.id,
                 });
@@ -180,8 +180,8 @@ impl DemexExecutor {
         self.value = 0.0;
         self.runtime.stop();
 
-        for fixture_id in self.fixtures(preset_handler) {
-            if let Ok(fixture_state) = fixture_handler.fixture_mut(fixture_id) {
+        for fixture_path in self.fixtures(preset_handler) {
+            if let Ok(fixture_state) = fixture_handler.fixture_mut(&fixture_path) {
                 fixture_state.remove_value_source(FixtureChannelValueSource::Executor {
                     executor_id: self.id,
                 });
@@ -189,18 +189,15 @@ impl DemexExecutor {
         }
     }
 
-    pub fn channel_value(
+    pub fn attribute_value(
         &self,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
-        channel: &gdtf::dmx_mode::DmxChannel,
+        fixture_path: &FixturePath,
+        attribute: &FixtureChannel3Attribute,
         preset_handler: &PresetHandler,
         _timing_handler: &TimingHandler,
     ) -> Result<FadeFixtureChannelValue, FixtureError> {
         if !self.is_active() {
-            return Err(FixtureError::GdtfChannelValueNotFound(
-                channel.name().as_ref().to_owned(),
-            ));
+            return Err(FixtureError::GdtfAttributeValueNotFound(*attribute));
         }
 
         let sequence = preset_handler
@@ -208,10 +205,8 @@ impl DemexExecutor {
             .unwrap();
         let fixtures = sequence.affected_fixtures(preset_handler);
 
-        if !fixtures.contains(&fixture.id()) {
-            return Err(FixtureError::GdtfChannelValueNotFound(
-                channel.name().as_ref().to_owned(),
-            ));
+        if !fixtures.contains(fixture_path) {
+            return Err(FixtureError::GdtfAttributeValueNotFound(*attribute));
         }
 
         let _speed_multiplier = if self.fader_function == DemexExecutorFaderFunction::Speed {
@@ -220,34 +215,21 @@ impl DemexExecutor {
             1.0
         };
 
-        let (fixture_type, _) = patch.fixture_type_and_dmx_mode(fixture).unwrap();
-
-        let channel_feature = channel.logical_channels[0]
-            .attribute(fixture_type)
-            .and_then(|attribute| attribute.feature(&fixture_type.attribute_definitions));
-
         self.runtime
-            .channel_value(fixture.id(), channel, self.priority, preset_handler)
+            .attribute_value(fixture_path, attribute, self.priority, preset_handler)
             .map(|value| match &self.fader_function {
                 DemexExecutorFaderFunction::FadeAll => value.multiply(self.value),
                 DemexExecutorFaderFunction::Intensity => {
-                    if channel_feature
-                        .is_some_and(|feature| feature.name.as_ref().unwrap().as_ref() == "Dimmer")
-                    {
+                    if matches!(attribute, FixtureChannel3Attribute::Dimmer) {
                         value.multiply(self.value)
                     } else {
                         value
                     }
                 }
                 DemexExecutorFaderFunction::FadeFeatures(features) => {
-                    if channel_feature
-                        .and_then(|feature| {
-                            FixtureChannel3FeatureType::from_str(
-                                feature.name.as_ref().unwrap().as_ref(),
-                            )
-                            .ok()
-                        })
-                        .is_some_and(|feature| features.contains(&feature))
+                    if attribute
+                        .feature_type()
+                        .is_some_and(|ft| features.contains(&ft))
                     {
                         value.multiply(self.value)
                     } else {
@@ -256,9 +238,7 @@ impl DemexExecutor {
                 }
                 _ => value,
             })
-            .ok_or(FixtureError::GdtfChannelValueNotFound(
-                channel.name().as_ref().to_owned(),
-            ))
+            .ok_or(FixtureError::GdtfAttributeValueNotFound(*attribute))
     }
 
     pub fn update(

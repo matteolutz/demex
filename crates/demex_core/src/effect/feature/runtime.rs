@@ -4,15 +4,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     channel3::{
-        channel_value::FixtureChannelValue3, channel_value_discrete::FixtureChannelDiscreteValue,
+        attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3,
+        channel_value_discrete::FixtureChannelDiscreteValue,
     },
     effect::{
         error::EffectError,
         speed::{EffectSpeed, EffectSpeedSyncMode},
     },
     effect2::effect::Effect2,
-    fixture::GdtfFixturePatch,
-    patch::Patch,
+    fixture::Fixture,
     timing::TimingHandler,
     updatables::runtime::RuntimePhase,
     utils::math::instant_diff_secs,
@@ -72,42 +72,35 @@ impl FeatureEffectRuntime {
 
     pub fn get_values_with_started(
         &self,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
+        fixture: &Fixture,
         fixture_offset: f32,
         timing_handler: &TimingHandler,
         started: Option<time::Instant>,
-    ) -> Vec<(String, FixtureChannelValue3)> {
+    ) -> Vec<(FixtureChannel3Attribute, FixtureChannelValue3)> {
         self.effect()
             .attributes()
-            .flat_map(|attribute| fixture.channels_for_attribute(patch, attribute).unwrap())
-            .filter_map(|(channel, _, _)| {
+            .filter(|attribute| fixture.has_attribute(attribute))
+            .filter_map(|attribute| {
                 self.get_channel_value_with_started(
-                    channel.name().as_ref(),
-                    patch,
-                    fixture,
+                    attribute,
                     fixture_offset,
                     timing_handler,
                     started,
                 )
                 .ok()
-                .map(|value| (channel.name().as_ref().to_owned(), value))
+                .map(|value| (*attribute, value))
             })
             .collect::<Vec<_>>()
     }
 
     pub fn get_channel_value(
         &self,
-        channel_name: &str,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
+        attribute: &FixtureChannel3Attribute,
         fixture_offset: f32,
         timing_handler: &TimingHandler,
     ) -> Result<FixtureChannelValue3, EffectError> {
         self.get_channel_value_with_started(
-            channel_name,
-            patch,
-            fixture,
+            attribute,
             fixture_offset,
             timing_handler,
             self.effect_started,
@@ -116,9 +109,7 @@ impl FeatureEffectRuntime {
 
     pub fn get_channel_value_with_started(
         &self,
-        channel_name: &str,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
+        attribute: &FixtureChannel3Attribute,
         fixture_offset: f32,
         timing_handler: &TimingHandler,
         started: Option<time::Instant>,
@@ -157,33 +148,18 @@ impl FeatureEffectRuntime {
                 let effective_bps = effective_bpm / 60.0;
                 let speed_multiplier = (2.0 * f32::consts::PI) * effective_bps;
 
-                let (_, logical_channel) = fixture
-                    .get_channel(patch, channel_name)
-                    .map_err(EffectError::FixtureError)?;
+                let attribute_value = self.effect.attribute_value(
+                    attribute,
+                    started_elapsed,
+                    phase_offset,
+                    speed_multiplier,
+                );
 
-                let mut channel_value = None;
-                for (idx, channel_function) in logical_channel.channel_functions.iter().enumerate()
-                {
-                    let function_attribute = channel_function.attribute.first().unwrap().as_ref();
-                    let attribute_value = self.effect.attribute_value(
-                        function_attribute,
-                        started_elapsed,
-                        phase_offset,
-                        speed_multiplier,
-                    );
-
-                    if let Some(attribute_value) = attribute_value {
-                        channel_value = Some(FixtureChannelValue3::Discrete(
-                            FixtureChannelDiscreteValue::Discrete {
-                                channel_function_idx: idx,
-                                value: attribute_value,
-                            },
-                        ));
-                        break;
-                    }
-                }
-
-                channel_value.ok_or(EffectError::NoValueForAttribute)
+                attribute_value
+                    .map(|val| {
+                        FixtureChannelValue3::Discrete(FixtureChannelDiscreteValue::discrete(val))
+                    })
+                    .ok_or(EffectError::NoValueForAttribute)
             })
     }
 

@@ -3,8 +3,8 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fixture::{GdtfFixturePatch, error::FixtureError},
-    patch::Patch,
+    channel3::attribute::FixtureChannel3Attribute,
+    fixture::{FixturePath, error::FixtureError},
     presets::PresetHandler,
     sequence::FadeFixtureChannelValue,
     state::fixture_state::FixtureState,
@@ -65,12 +65,11 @@ impl Ord for FixtureChannelValuePriority {
 }
 
 pub trait FixtureChannelValueSourceTrait {
-    fn get_channel_value(
+    fn get_attribute_value(
         &self,
-        patch: &Patch,
-        fixture_patch: &GdtfFixturePatch,
+        fixture_path: &FixturePath,
         fixture_state: &FixtureState,
-        channel: &gdtf::dmx_mode::DmxChannel,
+        attribute: &FixtureChannel3Attribute,
         updatable_handler: &UpdatableHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
@@ -112,12 +111,11 @@ impl FixtureChannelValueSource {
 }
 
 impl FixtureChannelValueSourceTrait for &[FixtureChannelValueSource] {
-    fn get_channel_value(
+    fn get_attribute_value(
         &self,
-        patch: &Patch,
-        fixture_patch: &GdtfFixturePatch,
+        fixture_path: &FixturePath,
         fixture_state: &FixtureState,
-        channel: &gdtf::dmx_mode::DmxChannel,
+        attribute: &FixtureChannel3Attribute,
         updatable_handler: &UpdatableHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
@@ -131,30 +129,27 @@ impl FixtureChannelValueSourceTrait for &[FixtureChannelValueSource] {
                     Ok(FadeFixtureChannelValue::home_ltp())
                 } else {
                     match source {
-                        FixtureChannelValueSource::Programmer => fixture_state
-                            .get_programmer_value(channel.name().as_ref())
-                            .map(|v| {
+                        FixtureChannelValueSource::Programmer => {
+                            fixture_state.get_programmer_value(attribute).map(|v| {
                                 FadeFixtureChannelValue::new(
                                     v.clone(),
                                     1.0,
                                     FixtureChannelValuePriority::programmer(),
                                 )
-                            }),
+                            })
+                        }
                         FixtureChannelValueSource::Executor { executor_id } => {
                             let executor = updatable_handler.executor(*executor_id);
 
                             if let Ok(executor) = executor {
-                                executor.channel_value(
-                                    patch,
-                                    fixture_patch,
-                                    channel,
+                                executor.attribute_value(
+                                    fixture_path,
+                                    attribute,
                                     preset_handler,
                                     timing_handler,
                                 )
                             } else {
-                                Err(FixtureError::GdtfChannelValueNotFound(
-                                    channel.name().as_ref().to_owned(),
-                                ))
+                                Err(FixtureError::GdtfAttributeValueNotFound(*attribute))
                             }
                         }
                     }
@@ -164,9 +159,7 @@ impl FixtureChannelValueSourceTrait for &[FixtureChannelValueSource] {
             .collect::<Vec<_>>();
 
         if values.is_empty() {
-            return Err(FixtureError::GdtfChannelValueNotFound(
-                channel.name().as_ref().to_owned(),
-            ));
+            return Err(FixtureError::GdtfAttributeValueNotFound(*attribute));
         }
 
         values.sort_by_key(|v| v.priority());

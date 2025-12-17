@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use cue::{Cue, CueIdx};
 use serde::{Deserialize, Serialize};
 
-use crate::{implement_set_property, pool::PoolItem, sequence::cue::CueOut};
+use crate::{fixture::FixturePath, implement_set_property, pool::PoolItem, sequence::cue::CueOut};
 
 use super::{
     channel3::channel_value::FixtureChannelValue3, presets::PresetHandler,
@@ -188,7 +188,7 @@ impl Sequence {
         self.cues.iter_mut().find(|cue| cue.cue_idx() == cue_idx)
     }
 
-    pub fn affected_fixtures(&self, preset_handler: &PresetHandler) -> HashSet<u32> {
+    pub fn affected_fixtures(&self, preset_handler: &PresetHandler) -> HashSet<FixturePath> {
         self.cues
             .iter()
             .flat_map(|c| c.affected_fixtures(preset_handler))

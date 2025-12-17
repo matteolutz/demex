@@ -2,16 +2,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     command::parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
-    fixture::GdtfFixturePatch,
+    fixture::FixturePath,
     implement_set_property,
-    patch::Patch,
 };
 
 use super::presets::PresetHandler;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct FixtureSelection {
-    fixtures: Vec<u32>,
+    fixtures: Vec<FixturePath>,
 
     #[serde(default)]
     group: usize,
@@ -38,15 +37,15 @@ impl Default for FixtureSelection {
 }
 
 impl FixtureSelection {
-    pub fn has_fixture(&self, fixture_id: u32) -> bool {
-        self.fixtures.contains(&fixture_id)
+    pub fn has_fixture(&self, fixture_path: &FixturePath) -> bool {
+        self.fixtures.contains(fixture_path)
     }
 
     pub fn intersects_with(&self, other: &FixtureSelection) -> bool {
-        self.fixtures.iter().any(|id| other.has_fixture(*id))
+        self.fixtures.iter().any(|id| other.has_fixture(id))
     }
 
-    pub fn retain(&mut self, f: impl Fn(&u32) -> bool) {
+    pub fn retain(&mut self, f: impl Fn(&FixturePath) -> bool) {
         self.fixtures.retain(f);
     }
 
@@ -76,7 +75,7 @@ impl FixtureSelection {
     }
 
     pub fn subtract(&mut self, other: &FixtureSelection) {
-        self.fixtures.retain(|f| !other.has_fixture(*f));
+        self.fixtures.retain(|f| !other.has_fixture(f));
     }
 
     pub fn equals_selector(
@@ -89,7 +88,7 @@ impl FixtureSelection {
         selection.is_ok_and(|selection| &selection == self)
     }
 
-    pub fn with_additional_fixtures(mut self, fixtures: &[u32]) -> Self {
+    pub fn with_additional_fixtures(mut self, fixtures: &[FixturePath]) -> Self {
         for fixture in fixtures {
             if self.fixtures.contains(fixture) {
                 continue;
@@ -100,11 +99,11 @@ impl FixtureSelection {
         self
     }
 
-    pub fn master_fixture<'a>(&'a self, patch: &'a Patch) -> Option<&'a GdtfFixturePatch> {
-        patch.fixture(self.fixtures[0]).ok()
+    pub fn master_fixture(&self) -> Option<&FixturePath> {
+        self.fixtures.first()
     }
 
-    pub fn fixtures(&self) -> &[u32] {
+    pub fn fixtures(&self) -> &[FixturePath] {
         &self.fixtures
     }
 
@@ -140,20 +139,12 @@ impl FixtureSelection {
         &mut self.reverse
     }
 
-    pub fn fixtures_with_offset_idx(&self, offset_idx: usize) -> Vec<u32> {
-        self.fixtures
-            .iter()
-            .copied()
-            .filter(|f| self.offset_idx(*f).is_some_and(|o| o == offset_idx))
-            .collect::<Vec<_>>()
+    pub fn offset(&self, fixture_path: &FixturePath) -> Option<f32> {
+        Some(self.offset_idx(fixture_path)? as f32 / self.num_offsets() as f32)
     }
 
-    pub fn offset(&self, fixture_id: u32) -> Option<f32> {
-        Some(self.offset_idx(fixture_id)? as f32 / self.num_offsets() as f32)
-    }
-
-    pub fn offset_idx(&self, fixture_id: u32) -> Option<usize> {
-        let fixture_position = self.fixtures.iter().position(|&id| id == fixture_id)?;
+    pub fn offset_idx(&self, fixture_path: &FixturePath) -> Option<usize> {
+        let fixture_position = self.fixtures.iter().position(|path| path == fixture_path)?;
 
         let blocked_offset = fixture_position / self.block();
 
@@ -196,8 +187,8 @@ impl FixtureSelection {
     }
 }
 
-impl From<Vec<u32>> for FixtureSelection {
-    fn from(fixtures: Vec<u32>) -> Self {
+impl From<Vec<FixturePath>> for FixtureSelection {
+    fn from(fixtures: Vec<FixturePath>) -> Self {
         Self {
             fixtures,
             ..Default::default()
@@ -224,14 +215,20 @@ implement_set_property! {
 
 #[cfg(test)]
 mod tests {
+    use crate::fixture::{FixtureId, FixturePath};
+
     use super::FixtureSelection;
 
-    fn even_num_fixtures() -> Vec<u32> {
-        (1..=10).collect()
+    fn even_num_fixtures() -> Vec<FixturePath> {
+        (1..=10)
+            .map(|id| FixtureId::new(id).unwrap().into())
+            .collect()
     }
 
-    fn odd_num_fixtures() -> Vec<u32> {
-        (1..=11).collect()
+    fn odd_num_fixtures() -> Vec<FixturePath> {
+        (1..=11)
+            .map(|id| FixtureId::new(id).unwrap().into())
+            .collect()
     }
 
     fn assert_offsets_equal(selection: &FixtureSelection, offsets: &[usize]) {
@@ -239,7 +236,7 @@ mod tests {
             selection
                 .fixtures()
                 .iter()
-                .map(|f| selection.offset_idx(*f).unwrap())
+                .map(|f| selection.offset_idx(f).unwrap())
                 .collect::<Vec<_>>(),
             offsets
         );

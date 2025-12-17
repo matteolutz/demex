@@ -1,13 +1,17 @@
 use std::collections::{HashMap, VecDeque};
 
 use crate::{
-    channel3::channel_value_discrete::FixtureChannelDiscreteValue, engine::component::Component,
+    channel3::{
+        attribute::FixtureChannel3Attribute, channel_value_discrete::FixtureChannelDiscreteValue,
+    },
+    engine::component::Component,
+    fixture::FixturePath,
 };
 
 #[derive(Debug)]
 pub struct ChannelValueQueueEntry {
-    pub fixture_id: u32,
-    pub values: HashMap<String, FixtureChannelDiscreteValue>,
+    pub fixture_path: FixturePath,
+    pub values: HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>,
 }
 
 #[derive(Default)]
@@ -18,11 +22,13 @@ pub struct ChannelValueQueue {
 impl ChannelValueQueue {
     pub fn enqueue(
         &mut self,
-        fixture_id: u32,
-        values: HashMap<String, FixtureChannelDiscreteValue>,
+        fixture_path: FixturePath,
+        values: HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>,
     ) {
-        self.inner
-            .push_back(ChannelValueQueueEntry { fixture_id, values });
+        self.inner.push_back(ChannelValueQueueEntry {
+            fixture_path,
+            values,
+        });
     }
 
     pub fn inner_mut(&mut self) -> &mut VecDeque<ChannelValueQueueEntry> {

@@ -5,10 +5,11 @@ use std::{
 };
 
 use crate::{
-    channel3::channel_value::FixtureChannelValue3,
+    channel3::{attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3},
     command::parser::nodes::action::result::ActionRunResult,
     engine::{component::ComponentHandle, tick::DemexEngineTickState},
     event::DemexEvent,
+    fixture::FixturePath,
     patch::Patch,
     pool::{PoolItem, PoolType},
     sequence::frontend::FrontendSequence,
@@ -25,7 +26,9 @@ pub enum DemexEngineCommEvent {
     Error(String),
 
     TickStateUpdate(DemexEngineTickState),
-    FixtureValuesUpdate(HashMap<u32, HashMap<String, FixtureChannelValue3>>),
+    FixtureValuesUpdate(
+        HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelValue3>>,
+    ),
 }
 
 impl From<DemexEvent> for DemexEngineCommEvent {

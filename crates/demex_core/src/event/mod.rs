@@ -1,4 +1,4 @@
-use crate::{command::parser::nodes::object::Object, pool::PoolType};
+use crate::{command::parser::nodes::object::Object, fixture::FixturePath, pool::PoolType};
 
 mod selection;
 pub use selection::*;
@@ -38,6 +38,6 @@ pub enum DemexEvent {
 
     FixtureSelectionChanged(Option<FixtureSelectionWithGroup>),
 
-    FixtureValuesChanged(Vec<u32>),
+    FixtureValuesChanged(Vec<FixturePath>),
     ObjectPropertyChanged(Object, String),
 }

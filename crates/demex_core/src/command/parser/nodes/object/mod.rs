@@ -125,8 +125,8 @@ impl HomeableObject {
         selection: &FixtureSelection,
         fixture_state_handler: &mut FixtureStateHandler,
     ) -> Result<(), ActionRunError> {
-        for fixture_id in selection.fixtures() {
-            if let Ok(fixture_state) = fixture_state_handler.fixture_mut(*fixture_id) {
+        for fixture_path in selection.fixtures() {
+            if let Ok(fixture_state) = fixture_state_handler.fixture_mut(fixture_path) {
                 // TODO: should we clear the source list here??
                 fixture_state
                     .home(false)

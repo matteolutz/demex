@@ -3,12 +3,12 @@ use std::{f32, time};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    channel3::channel_value::FixtureChannelValue3,
+    channel3::{attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3},
     effect::{
         error::EffectError,
         speed::{EffectSpeed, EffectSpeedSyncMode},
     },
-    fixture::GdtfFixturePatch,
+    fixture::FixturePath,
     keyframe_effect::effect::KeyframeEffect,
     timing::TimingHandler,
     updatables::runtime::RuntimePhase,
@@ -59,10 +59,10 @@ impl KeyframeEffectRuntime {
         &mut self.phase
     }
 
-    pub fn get_channel_value_with_started(
+    pub fn get_attribute_value_with_started(
         &self,
-        channel_name: &str,
-        fixture: &GdtfFixturePatch,
+        attribute: &FixtureChannel3Attribute,
+        fixture_path: &FixturePath,
         fixture_offset: f32,
         timing_handler: &TimingHandler,
         started: Option<time::Instant>,
@@ -102,8 +102,8 @@ impl KeyframeEffectRuntime {
                 let speed_multiplier = (2.0 * f32::consts::PI) * effective_bps;
 
                 let channel_value = self.effect.value(
-                    fixture.id(),
-                    channel_name,
+                    fixture_path,
+                    attribute,
                     started_elapsed,
                     phase_offset,
                     speed_multiplier,

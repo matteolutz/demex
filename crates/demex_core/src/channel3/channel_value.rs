@@ -4,42 +4,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     channel3::{
-        channel_value_discrete::FixtureChannelDiscreteValue,
-        channel_value_state::FixtureChannelOutputValue,
+        attribute::FixtureChannel3Attribute, channel_value_discrete::FixtureChannelDiscreteValue,
+        channel_value_state::FixtureChannelOutputValue, clamped_value::ClampedValue,
     },
-    fixture::GdtfFixturePatch,
-    patch::Patch,
+    fixture::Fixture,
     presets::{PresetHandler, preset::FixturePresetId},
     selection::FixtureSelection,
     timing::TimingHandler,
 };
 
 use crate::utils::serde::approx_instant;
-
-#[derive(Debug, Clone)]
-pub enum FixtureChannelValue3Update {
-    Value(f32),
-    ChannelSet(String),
-}
-
-impl FixtureChannelValue3Update {
-    pub fn get_value(self, channel_function_idx: usize) -> FixtureChannelValue3 {
-        match self {
-            Self::Value(value) => {
-                FixtureChannelValue3::Discrete(FixtureChannelDiscreteValue::Discrete {
-                    channel_function_idx,
-                    value,
-                })
-            }
-            Self::ChannelSet(channel_set) => {
-                FixtureChannelValue3::Discrete(FixtureChannelDiscreteValue::DiscreteSet {
-                    channel_function_idx,
-                    channel_set,
-                })
-            }
-        }
-    }
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct FixtureChannelValue2PresetState {
@@ -142,6 +116,16 @@ impl FixtureChannelValue3 {
         matches!(self, Self::Discrete(FixtureChannelDiscreteValue::Home))
     }
 
+    pub fn discrete(value: impl Into<ClampedValue>) -> Self {
+        Self::Discrete(FixtureChannelDiscreteValue::Discrete {
+            value: value.into(),
+        })
+    }
+
+    pub fn discrete_set(channel_set: String) -> Self {
+        Self::Discrete(FixtureChannelDiscreteValue::DiscreteSet { channel_set })
+    }
+
     pub fn should_output(
         &self,
         state: &FixtureChannelOutputValue,
@@ -182,9 +166,8 @@ impl FixtureChannelValue3 {
 
     pub fn to_discrete(
         self,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
-        channel_name: &str,
+        fixture: &Fixture,
+        attribute: &FixtureChannel3Attribute,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
     ) -> FixtureChannelDiscreteValue {
@@ -193,17 +176,16 @@ impl FixtureChannelValue3 {
             Self::Preset { id, state } => preset_handler
                 .get_preset_value_for_fixture(
                     id,
-                    patch,
                     fixture,
-                    channel_name,
+                    attribute,
                     timing_handler,
                     state.as_ref(),
                 )
                 .unwrap()
-                .to_discrete(patch, fixture, channel_name, preset_handler, timing_handler),
+                .to_discrete(fixture, attribute, preset_handler, timing_handler),
             Self::Mix { a, b, mix } => {
-                let a = a.to_discrete(patch, fixture, channel_name, preset_handler, timing_handler);
-                let b = b.to_discrete(patch, fixture, channel_name, preset_handler, timing_handler);
+                let a = a.to_discrete(fixture, attribute, preset_handler, timing_handler);
+                let b = b.to_discrete(fixture, attribute, preset_handler, timing_handler);
                 FixtureChannelDiscreteValue::Mix {
                     a: Box::new(a),
                     b: Box::new(b),
@@ -230,39 +212,29 @@ impl FixtureChannelValue3 {
 
     pub fn get_as_display(
         &self,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
-        channel_name: &str,
+        fixture: &Fixture,
+        attribute: &FixtureChannel3Attribute,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
-    ) -> (usize, f32) {
+    ) -> ClampedValue {
         match self {
-            Self::Discrete(discrete) => discrete.get_as_display(patch, fixture, channel_name),
+            Self::Discrete(discrete) => discrete.get_as_display(fixture, attribute),
             Self::Mix { a, b, mix } => {
-                let (a_idx, a_val) =
-                    a.get_as_display(patch, fixture, channel_name, preset_handler, timing_handler);
-                let (b_idx, b_val) =
-                    b.get_as_display(patch, fixture, channel_name, preset_handler, timing_handler);
+                let a_val = a.get_as_display(fixture, attribute, preset_handler, timing_handler);
+                let b_val = b.get_as_display(fixture, attribute, preset_handler, timing_handler);
 
-                if a_idx == b_idx {
-                    (a_idx, (a_val * (1.0 - mix)) + (b_val * mix))
-                } else if *mix < 0.5 {
-                    (a_idx, a_val)
-                } else {
-                    (b_idx, b_val)
-                }
+                ((a_val.as_f32() * (1.0 - mix)) + (b_val.as_f32() * mix)).into()
             }
             Self::Preset { id, state } => preset_handler
                 .get_preset_value_for_fixture(
                     *id,
-                    patch,
                     fixture,
-                    channel_name,
+                    attribute,
                     timing_handler,
                     state.as_ref(),
                 )
                 .unwrap_or_default()
-                .get_as_display(patch, fixture, channel_name, preset_handler, timing_handler),
+                .get_as_display(fixture, attribute, preset_handler, timing_handler),
         }
     }
 }

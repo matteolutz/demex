@@ -3,9 +3,14 @@ use std::{collections::HashMap, time};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    channel3::channel_value::FixtureChannelValue3, event::DemexExecutorUpdateEvent, patch::Patch,
-    presets::PresetHandler, state::fixture_state_handler::FixtureStateHandler,
-    timing::TimingHandler, value_source::FixtureChannelValuePriority,
+    channel3::{attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3},
+    event::DemexExecutorUpdateEvent,
+    fixture::FixturePath,
+    patch::Patch,
+    presets::PresetHandler,
+    state::fixture_state_handler::FixtureStateHandler,
+    timing::TimingHandler,
+    value_source::FixtureChannelValuePriority,
 };
 
 use super::{
@@ -186,7 +191,10 @@ pub struct SequenceRuntime {
     state: SequenceRuntimeState,
 
     #[serde(default, skip_serializing, skip_deserializing)]
-    tracked_values: HashMap<u32, HashMap<String, Vec<(usize, FadeFixtureChannelValue)>>>,
+    tracked_values: HashMap<
+        FixturePath,
+        HashMap<FixtureChannel3Attribute, Vec<(usize, FadeFixtureChannelValue)>>,
+    >,
 }
 
 impl SequenceRuntime {
@@ -218,16 +226,16 @@ impl SequenceRuntime {
             .len()
     }
 
-    pub fn channel_value(
+    pub fn attribute_value(
         &self,
-        fixture_id: u32,
-        channel: &gdtf::dmx_mode::DmxChannel,
+        fixture_path: &FixturePath,
+        attribute: &FixtureChannel3Attribute,
         priority: FixtureChannelValuePriority,
         preset_handler: &PresetHandler,
     ) -> Option<FadeFixtureChannelValue> {
-        let tracked_value = self.tracked_values.get(&fixture_id).and_then(|values| {
-            values.iter().find_map(|(value_channel_name, values)| {
-                if value_channel_name == channel.name().as_ref() {
+        let tracked_value = self.tracked_values.get(fixture_path).and_then(|values| {
+            values.iter().find_map(|(value_attribute, values)| {
+                if value_attribute == attribute {
                     let mut value = FixtureChannelValue3::home();
                     for (_, v) in values.iter() {
                         value = FixtureChannelValue3::Mix {
@@ -270,8 +278,11 @@ impl SequenceRuntime {
     }
 
     pub fn update_cue_values<'a>(
-        tracked_values: &mut HashMap<u32, HashMap<String, Vec<(usize, FadeFixtureChannelValue)>>>,
-        fixtures: impl Iterator<Item = &'a u32>,
+        tracked_values: &mut HashMap<
+            FixturePath,
+            HashMap<FixtureChannel3Attribute, Vec<(usize, FadeFixtureChannelValue)>>,
+        >,
+        fixtures: impl Iterator<Item = &'a FixturePath>,
         cue_idx: usize,
         cue: &Cue,
         cue_delta: f32,
@@ -282,13 +293,12 @@ impl SequenceRuntime {
         priority: FixtureChannelValuePriority,
         is_mib: bool,
     ) {
-        for fixture_id in fixtures {
+        for fixture_path in fixtures {
             let fixture_cue_delta =
-                (cue_delta - cue.offset_for_fixture(*fixture_id, preset_handler)).max(0.0);
+                (cue_delta - cue.offset_for_fixture(fixture_path, preset_handler)).max(0.0);
 
             let cue_values = cue.values_for_fixture(
-                patch,
-                patch.fixture(*fixture_id).unwrap(),
+                patch.fixture(fixture_path).unwrap(),
                 preset_handler,
                 timing_handler,
                 Some(*cue_activated_at),
@@ -307,21 +317,14 @@ impl SequenceRuntime {
             }
 
             for value in cue_values {
-                if is_mib {
-                    let attribute = patch
-                        .fixture(*fixture_id)
-                        .unwrap()
-                        .get_channel_attribute(patch, value.channel_name());
-
-                    if attribute.is_ok_and(|attribute| attribute == "Dimmer") {
-                        continue;
-                    }
+                if is_mib && value.attribute() == &FixtureChannel3Attribute::Dimmer {
+                    continue;
                 }
 
-                let fixture_values = tracked_values.entry(*fixture_id).or_default();
-                let (channel_name, value) = value.into();
+                let fixture_values = tracked_values.entry(*fixture_path).or_default();
+                let (attribute, value) = value.into();
 
-                if let Some(existing_values) = fixture_values.get_mut(&channel_name) {
+                if let Some(existing_values) = fixture_values.get_mut(&attribute) {
                     if fixture_cue_fade == 0.0 {
                         continue;
                     } else if fixture_cue_fade == 1.0 {
@@ -362,7 +365,7 @@ impl SequenceRuntime {
                     }
                 } else {
                     fixture_values.insert(
-                        channel_name,
+                        attribute,
                         vec![(
                             cue_idx,
                             FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
@@ -374,7 +377,10 @@ impl SequenceRuntime {
     }
 
     pub fn update_values(
-        tracked_values: &mut HashMap<u32, HashMap<String, Vec<(usize, FadeFixtureChannelValue)>>>,
+        tracked_values: &mut HashMap<
+            FixturePath,
+            HashMap<FixtureChannel3Attribute, Vec<(usize, FadeFixtureChannelValue)>>,
+        >,
         sequence: &Sequence,
         active_cues: &[(usize, time::Instant)],
         current_cue_idx: usize,

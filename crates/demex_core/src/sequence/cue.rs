@@ -6,11 +6,14 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    channel3::channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
+    channel3::{
+        attribute::FixtureChannel3Attribute,
+        channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
+    },
     command::parser::nodes::action::functions::{
         record_function::RecordChannelTypeSelector, update_function::UpdateMode,
     },
-    fixture::GdtfFixturePatch,
+    fixture::{Fixture, FixturePath},
     implement_set_property,
     patch::Patch,
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
@@ -83,18 +86,22 @@ pub enum CueTrigger {
     Time(f32),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CueFixtureChannelValue {
     value: FixtureChannelValue3,
-    channel_name: String,
+    attribute: FixtureChannel3Attribute,
     snap: bool,
 }
 
 impl CueFixtureChannelValue {
-    pub fn new(value: FixtureChannelValue3, channel_name: String, snap: bool) -> Self {
+    pub fn new(
+        value: FixtureChannelValue3,
+        attribute: FixtureChannel3Attribute,
+        snap: bool,
+    ) -> Self {
         Self {
             value,
-            channel_name,
+            attribute,
             snap,
         }
     }
@@ -111,8 +118,8 @@ impl CueFixtureChannelValue {
         &self.value
     }
 
-    pub fn channel_name(&self) -> &str {
-        &self.channel_name
+    pub fn attribute(&self) -> &FixtureChannel3Attribute {
+        &self.attribute
     }
 
     pub fn snap(&self) -> bool {
@@ -120,9 +127,9 @@ impl CueFixtureChannelValue {
     }
 }
 
-impl From<CueFixtureChannelValue> for (String, FixtureChannelValue3) {
+impl From<CueFixtureChannelValue> for (FixtureChannel3Attribute, FixtureChannelValue3) {
     fn from(value: CueFixtureChannelValue) -> Self {
-        (value.channel_name, value.value)
+        (value.attribute, value.value)
     }
 }
 
@@ -182,7 +189,7 @@ pub struct CueBuilderEntry {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CueDataMode {
     /// Default mode, where the data is stored as a map of fixture_id -> Vec<channel_values>
-    Default(HashMap<u32, Vec<CueFixtureChannelValue>>),
+    Default(HashMap<FixturePath, Vec<CueFixtureChannelValue>>),
 
     /// Builder mode (like MA 3 recipes), where the data is stored as a list of entries
     /// that are used to build the data. Each entry has a group_id or a preset_id.
@@ -241,23 +248,23 @@ impl Cue {
         fixture_handler: &FixtureStateHandler,
         fixture_selection: &FixtureSelection,
         channel_type_selector: &RecordChannelTypeSelector,
-    ) -> Result<HashMap<u32, Vec<CueFixtureChannelValue>>, PresetHandlerError> {
+    ) -> Result<HashMap<FixturePath, Vec<CueFixtureChannelValue>>, PresetHandlerError> {
         let mut cue_data = HashMap::new();
 
-        for fixture_id in fixture_selection.fixtures() {
-            let Ok(fixture) = patch.fixture(*fixture_id) else {
+        for fixture_path in fixture_selection.fixtures() {
+            let Ok(fixture) = patch.fixture(fixture_path) else {
                 continue;
             };
 
             let channel_values = channel_type_selector
-                .get_channel_values(patch, fixture, fixture_handler)
+                .get_channel_values(fixture, fixture_handler)
                 .map_err(PresetHandlerError::FixtureError)?;
 
             if channel_values.is_empty() {
                 continue;
             }
 
-            cue_data.insert(*fixture_id, channel_values);
+            cue_data.insert(*fixture_path, channel_values);
         }
 
         Ok(cue_data)
@@ -287,7 +294,7 @@ impl Cue {
 
     pub fn new(
         cue_idx: CueIdx,
-        data: HashMap<u32, Vec<CueFixtureChannelValue>>,
+        data: HashMap<FixturePath, Vec<CueFixtureChannelValue>>,
         selection: FixtureSelection,
         in_fade: f32,
         in_delay: f32,
@@ -402,11 +409,15 @@ impl Cue {
             .total_offset(self.selection(preset_handler).num_offsets())
     }
 
-    pub fn offset_for_fixture(&self, fixture_id: u32, preset_handler: &PresetHandler) -> f32 {
+    pub fn offset_for_fixture(
+        &self,
+        fixture_path: &FixturePath,
+        preset_handler: &PresetHandler,
+    ) -> f32 {
         self.timing.offset_for_fixture(
             // TOOD: is .unwrap_or(0) the right thing to do?
             self.selection(preset_handler)
-                .offset_idx(fixture_id)
+                .offset_idx(fixture_path)
                 .unwrap_or(0),
             self.selection(preset_handler).num_offsets(),
         )
@@ -414,8 +425,7 @@ impl Cue {
 
     pub fn values_for_fixture(
         &self,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
+        fixture: &Fixture,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         cue_started: Option<time::Instant>,
@@ -429,7 +439,7 @@ impl Cue {
                     )
                 });
 
-                data.get(&fixture.id())
+                data.get(&fixture.path)
                     .unwrap_or(&vec![])
                     .iter()
                     .map(|value| value.clone().with_preset_state(preset_state.clone()))
@@ -445,7 +455,7 @@ impl Cue {
                     let group = preset_handler.get_group(entry.group_id.unwrap());
                     if let Ok(group) = group {
                         // if the group doesn't have the fixture, skip it
-                        if !group.fixture_selection().has_fixture(fixture.id()) {
+                        if !group.fixture_selection().has_fixture(&fixture.path) {
                             continue;
                         }
 
@@ -460,7 +470,6 @@ impl Cue {
                         if let Ok(preset) = preset {
                             return preset
                                 .values(
-                                    patch,
                                     fixture,
                                     preset_handler,
                                     timing_handler,
@@ -482,15 +491,14 @@ impl Cue {
 
     pub fn channel_value_for_fixture(
         &self,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
-        channel_name: &str,
+        fixture: &Fixture,
+        attribute: &FixtureChannel3Attribute,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
         cue_started: Option<time::Instant>,
     ) -> Option<FixtureChannelValue3> {
         match &self.data {
-            CueDataMode::Default(data) => data.get(&fixture.id()).and_then(|values| {
+            CueDataMode::Default(data) => data.get(&fixture.path).and_then(|values| {
                 let preset_state = cue_started.map(|cue_started| {
                     FixtureChannelValue2PresetState::new(
                         cue_started,
@@ -500,7 +508,7 @@ impl Cue {
 
                 values
                     .iter()
-                    .find(|v| v.channel_name() == channel_name)
+                    .find(|v| v.attribute() == attribute)
                     .map(|v| v.value().clone().with_preset_state(preset_state))
             }),
             CueDataMode::Builder(entries) => {
@@ -513,7 +521,7 @@ impl Cue {
                     let group = preset_handler.get_group(entry.group_id.unwrap());
                     if let Ok(group) = group {
                         // if the group doesn't have the fixture, skip it
-                        if !group.fixture_selection().has_fixture(fixture.id()) {
+                        if !group.fixture_selection().has_fixture(&fixture.path) {
                             continue;
                         }
 
@@ -527,9 +535,8 @@ impl Cue {
                         let preset = preset_handler.get_preset(entry.preset_id.unwrap());
                         if let Ok(preset) = preset {
                             return preset.value(
-                                patch,
                                 fixture,
-                                channel_name,
+                                attribute,
                                 preset_handler,
                                 timing_handler,
                                 preset_state.as_ref(),
@@ -546,7 +553,7 @@ impl Cue {
     pub fn update(
         &mut self,
         sequence_id: u32,
-        new_data: HashMap<u32, Vec<CueFixtureChannelValue>>,
+        new_data: HashMap<FixturePath, Vec<CueFixtureChannelValue>>,
         new_selection: &FixtureSelection,
         update_mode: UpdateMode,
     ) -> Result<usize, PresetHandlerError> {
@@ -556,14 +563,14 @@ impl Cue {
 
                 let mut updated = 0;
 
-                for (fixture_id, new_fixture_values) in new_data {
+                for (fixture_path, new_fixture_values) in new_data {
                     // if we already have a value for this fixture and we are not in override mode, skip
-                    if data.contains_key(&fixture_id) && update_mode != UpdateMode::Override {
+                    if data.contains_key(&fixture_path) && update_mode != UpdateMode::Override {
                         continue;
                     }
 
                     // Insert or update
-                    data.insert(fixture_id, new_fixture_values);
+                    data.insert(fixture_path, new_fixture_values);
 
                     updated += 1;
                 }
@@ -579,16 +586,16 @@ impl Cue {
 
     pub fn should_snap_channel_value_for_fixture(
         &self,
-        fixture_id: u32,
-        channel_name: &str,
+        fixture_path: &FixturePath,
+        attribute: &FixtureChannel3Attribute,
     ) -> bool {
         match &self.data {
             CueDataMode::Default(data) => data
-                .get(&fixture_id)
+                .get(&fixture_path)
                 .and_then(|values| {
                     values
                         .iter()
-                        .find(|v| v.channel_name() == channel_name)
+                        .find(|v| v.attribute() == attribute)
                         .map(|v| v.snap())
                 })
                 .unwrap_or(false),
@@ -619,7 +626,7 @@ impl Cue {
         }
     }
 
-    pub fn affected_fixtures(&self, preset_handler: &PresetHandler) -> HashSet<u32> {
+    pub fn affected_fixtures(&self, preset_handler: &PresetHandler) -> HashSet<FixturePath> {
         self.selection(preset_handler)
             .fixtures()
             .iter()
@@ -630,14 +637,13 @@ impl Cue {
     pub fn recall(&self, patch: &Patch, fixture_handler: &mut FixtureStateHandler) {
         match self.data {
             CueDataMode::Default(ref data) => {
-                for (fixture_id, data) in data {
-                    if let Ok(fixture_state) = fixture_handler.fixture_mut(*fixture_id) {
+                for (fixture_path, data) in data {
+                    if let Ok(fixture_state) = fixture_handler.fixture_mut(fixture_path) {
                         for value in data {
                             fixture_state
                                 .set_programmer_value(
-                                    patch,
-                                    patch.fixture(*fixture_id).unwrap(),
-                                    value.channel_name(),
+                                    patch.fixture(fixture_path).unwrap(),
+                                    value.attribute(),
                                     value.value().clone(),
                                 )
                                 .unwrap();

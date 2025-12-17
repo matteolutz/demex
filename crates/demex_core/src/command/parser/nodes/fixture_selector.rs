@@ -1,6 +1,9 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    fixture::FixtureId,
+    fpath,
     presets::{PresetHandler, error::PresetHandlerError},
     selection::FixtureSelection,
 };
@@ -51,11 +54,11 @@ impl std::error::Error for FixtureSelectorError {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AtomicFixtureSelector {
-    SingleFixture(u32),
-    FixtureRange(u32, u32),
+    SingleFixture(FixtureId),
+    FixtureRange(FixtureId, FixtureId),
     FixtureGroup(u32),
     SelectorGroup(Box<FixtureSelector>),
-    FixtureIdList(Vec<u32>),
+    FixtureIdList(Vec<FixtureId>),
     CurrentFixturesSelected,
     None,
 }
@@ -67,8 +70,11 @@ impl AtomicFixtureSelector {
         context: FixtureSelectorContext,
     ) -> Result<FixtureSelection, FixtureSelectorError> {
         match self {
-            Self::SingleFixture(f) => Ok(vec![*f].into()),
-            Self::FixtureRange(begin, end) => Ok((*begin..*end + 1).collect::<Vec<_>>().into()),
+            &Self::SingleFixture(f) => Ok(vec![fpath!(f)].into()),
+            &Self::FixtureRange(begin, end) => Ok((begin.as_u32()..end.as_u32() + 1)
+                .map(|id| fpath!(FixtureId::new(id).unwrap()))
+                .collect::<Vec<_>>()
+                .into()),
             Self::SelectorGroup(s) => s.get_selection(preset_handler, context),
             Self::FixtureGroup(id) => {
                 let group = preset_handler
@@ -76,7 +82,12 @@ impl AtomicFixtureSelector {
                     .map_err(FixtureSelectorError::PresetHandlerError)?;
                 Ok(group.fixture_selection().clone())
             }
-            Self::FixtureIdList(ids) => Ok(ids.clone().into()),
+            Self::FixtureIdList(ids) => Ok(ids
+                .clone()
+                .into_iter()
+                .map_into()
+                .collect::<Vec<_>>()
+                .into()),
             Self::CurrentFixturesSelected => {
                 if let Some(selection) = context.current_fixture_selection {
                     Ok(selection.clone())
@@ -160,14 +171,18 @@ impl FixtureSelector {
             Self::Modulus(fixture_selector, d, invert) => {
                 let selection = fixture_selector.get_selection(preset_handler, context)?;
                 let mut new_selection = vec![];
-                for fixture_id in selection.fixtures() {
-                    let fixture_idx = selection.offset_idx(*fixture_id).unwrap();
+                for fixture_path in selection.fixtures() {
+                    let fixture_idx = selection.offset_idx(fixture_path).unwrap();
                     if (fixture_idx as u32 % d == 0) == *invert {
                         continue;
                     }
-                    new_selection.push(*fixture_id);
+                    new_selection.push(fixture_path);
                 }
-                Ok(new_selection.into())
+                Ok(new_selection
+                    .into_iter()
+                    .copied()
+                    .collect::<Vec<_>>()
+                    .into())
             }
         }
     }

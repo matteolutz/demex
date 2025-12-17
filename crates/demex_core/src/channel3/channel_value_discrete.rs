@@ -3,7 +3,11 @@ use std::collections::HashMap;
 use gdtf::values::DmxValue;
 use serde::{Deserialize, Serialize};
 
-use crate::{channel3::utils::dmx_value_to_f32, fixture::GdtfFixturePatch, patch::Patch};
+use crate::{
+    channel3::{attribute::FixtureChannel3Attribute, clamped_value::ClampedValue},
+    fixture::{Fixture, GdtfFixturePatch},
+    patch::Patch,
+};
 
 use super::utils::{max_value, mix_dmx_value, multiply_dmx_value, multiply_dmx_value_f32};
 
@@ -13,12 +17,10 @@ pub enum FixtureChannelDiscreteValue {
     Home,
 
     Discrete {
-        channel_function_idx: usize,
-        value: f32,
+        value: ClampedValue,
     },
 
     DiscreteSet {
-        channel_function_idx: usize,
         channel_set: String,
     },
 
@@ -29,30 +31,33 @@ pub enum FixtureChannelDiscreteValue {
     },
 }
 
+impl FixtureChannelDiscreteValue {
+    pub fn discrete(value: impl Into<ClampedValue>) -> Self {
+        Self::Discrete {
+            value: value.into(),
+        }
+    }
+
+    pub fn discrete_set(channel_set: String) -> Self {
+        Self::DiscreteSet { channel_set }
+    }
+}
+
 impl PartialEq for FixtureChannelDiscreteValue {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Home, Self::Home) => true,
-            (
-                Self::Discrete {
-                    channel_function_idx: l_channel_function_idx,
-                    value: l_value,
-                },
-                Self::Discrete {
-                    channel_function_idx: r_channel_function_idx,
-                    value: r_value,
-                },
-            ) => l_channel_function_idx == r_channel_function_idx && l_value == r_value,
+            (Self::Discrete { value: l_value }, Self::Discrete { value: r_value }) => {
+                l_value == r_value
+            }
             (
                 Self::DiscreteSet {
-                    channel_function_idx: l_channel_function_idx,
                     channel_set: l_channel_set,
                 },
                 Self::DiscreteSet {
-                    channel_function_idx: r_channel_function_idx,
                     channel_set: r_channel_set,
                 },
-            ) => l_channel_function_idx == r_channel_function_idx && l_channel_set == r_channel_set,
+            ) => l_channel_set == r_channel_set,
             (
                 Self::Mix {
                     a: l_a,
@@ -75,77 +80,33 @@ impl Eq for FixtureChannelDiscreteValue {}
 impl FixtureChannelDiscreteValue {
     pub fn get_as_display(
         &self,
-        patch: &Patch,
-        fixture: &GdtfFixturePatch,
-        channel_name: &str,
-    ) -> (usize, f32) {
+        fixture: &Fixture,
+        attribute: &FixtureChannel3Attribute,
+    ) -> ClampedValue {
         match self {
             Self::Home => {
-                if let Ok((dmx_channel, _)) = fixture.get_channel(patch, channel_name) {
-                    let (logical_channel, function, default_dmx) = dmx_channel
-                        .initial_function()
-                        .map(|(logical_channel, function)| {
-                            (logical_channel, function, function.default)
-                        })
-                        .unwrap();
-
-                    let channel_function_idx = logical_channel
-                        .channel_functions
-                        .iter()
-                        .position(|ft| ft == function)
-                        .unwrap_or_default();
-
-                    (channel_function_idx, dmx_value_to_f32(default_dmx))
+                if let Some(function) = fixture.channel_function(attribute) {
+                    function.unprojected_default()
                 } else {
-                    (0, 0.0)
+                    0.0.into()
                 }
             }
-            Self::Discrete {
-                channel_function_idx,
-                value,
-            } => (*channel_function_idx, *value),
-            Self::DiscreteSet {
-                channel_function_idx,
-                channel_set,
-            } => {
-                if let Ok((dmx_channel, _)) = fixture.get_channel(patch, channel_name) {
-                    let logical_channel = &dmx_channel.logical_channels[0];
-
-                    let channel_function =
-                        &logical_channel.channel_functions[*channel_function_idx];
-
-                    let channel_function_from = dmx_value_to_f32(channel_function.dmx_from);
-                    let channel_function_to = logical_channel
-                        .channel_functions
-                        .get(*channel_function_idx + 1)
-                        .map(|channel_function| dmx_value_to_f32(channel_function.dmx_from))
-                        .unwrap_or(1.0);
-
-                    let channel_set_value = channel_function
-                        .channel_set(channel_set)
-                        .map(|channel_set| dmx_value_to_f32(channel_set.dmx_from))
-                        .map(|channel_set_from_value| {
-                            (channel_set_from_value - channel_function_from)
-                                / (channel_function_to - channel_function_from)
-                        })
-                        .unwrap_or(0.0);
-
-                    (*channel_function_idx, channel_set_value)
+            Self::Discrete { value } => *value,
+            Self::DiscreteSet { channel_set } => {
+                if let Some((cf, channel_set_value)) = fixture
+                    .channel_function(attribute)
+                    .and_then(|cf| cf.sets.get(channel_set).map(|set| (cf, set)))
+                {
+                    cf.unproject(*channel_set_value)
                 } else {
-                    (0, 0.0)
+                    0.0.into()
                 }
             }
             Self::Mix { a, b, mix } => {
-                let (a_idx, a_val) = a.get_as_display(patch, fixture, channel_name);
-                let (b_idx, b_val) = b.get_as_display(patch, fixture, channel_name);
+                let a_val = a.get_as_display(fixture, attribute);
+                let b_val = b.get_as_display(fixture, attribute);
 
-                if a_idx == b_idx {
-                    (a_idx, (a_val * (1.0 - mix)) + (b_val * mix))
-                } else if *mix < 0.5 {
-                    (a_idx, a_val)
-                } else {
-                    (b_idx, b_val)
-                }
+                ((a_val.as_f32() * (1.0 - mix)) + (b_val.as_f32() * mix)).into()
             }
         }
     }
@@ -369,16 +330,10 @@ impl FixtureChannelDiscreteValue {
     pub fn to_string(&self) -> String {
         match self {
             Self::Home => "Home".to_owned(),
-            Self::DiscreteSet {
-                channel_function_idx,
-                channel_set,
-            } => {
-                format!("\"{}\" ({})", channel_set, channel_function_idx)
+            Self::DiscreteSet { channel_set } => {
+                format!("\"{}\"", channel_set)
             }
-            Self::Discrete {
-                value,
-                channel_function_idx,
-            } => format!("{:.1}% ({})", value * 100.0, channel_function_idx),
+            Self::Discrete { value } => format!("{:.1}%", value.as_f32() * 100.0),
             Self::Mix { a, b, mix } => {
                 if *mix == 0.0 {
                     a.to_string()

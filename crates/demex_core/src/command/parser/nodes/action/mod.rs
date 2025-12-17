@@ -26,6 +26,7 @@ use crate::{
         move_function::MoveArgs, set_function::ObjectSetPropertyArgs,
     },
     event::{DemexEvent, FixtureSelectionWithGroup},
+    fixture::FixturePath,
     state::fixture_state_handler::FixtureStateHandler,
     utils::serde::approx_instant,
 };
@@ -190,7 +191,7 @@ pub enum Action {
     GrandEtc,
 
     SetFixtureSelection(Option<FixtureSelection>),
-    AddFixturesToSelection(Vec<u32>),
+    AddFixturesToSelection(Vec<FixturePath>),
     SetFixtureSelectionWing(usize),
 
     ExecutorGo(ExecutorGoArgs),
@@ -575,7 +576,7 @@ impl Action {
             ));
         }
 
-        selection.retain(|id| patch.fixture(*id).is_ok());
+        selection.retain(|path| patch.fixture(path).is_ok());
 
         Ok(ActionRunResult::UpdateFixtureSelection(Some(
             FixtureSelectionWithGroup::with_group(selection, group_id),

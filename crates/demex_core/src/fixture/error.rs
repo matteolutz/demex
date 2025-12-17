@@ -1,10 +1,13 @@
 use std::num::ParseIntError;
 
-use crate::{presets::error::PresetHandlerError, updatables::error::UpdatableHandlerError};
+use crate::{
+    channel3::attribute::FixtureChannel3Attribute, fixture::FixturePath,
+    presets::error::PresetHandlerError, updatables::error::UpdatableHandlerError,
+};
 
 #[derive(Debug)]
 pub enum FixtureError {
-    NotFound(u32),
+    NotFound(FixturePath),
 
     NoChannelValueSourceFound,
     EmptyPatch,
@@ -24,7 +27,9 @@ pub enum FixtureError {
     GdtfFixtureDmxModeNotFound(String),
     GdtfChannelValueNotConvertible(String),
     GdtfMaxDmxOffsetNotFound,
+    GdtfAttributeNotFound(FixtureChannel3Attribute),
     GdtfChannelNotFound(String),
+    GdtfAttributeValueNotFound(FixtureChannel3Attribute),
     GdtfChannelValueNotFound(String),
     GdtfNoChannelForAttributeFound(String),
     GdtfChannelHasNoAttribute(String),
@@ -44,7 +49,7 @@ pub enum FixtureError {
 impl std::fmt::Display for FixtureError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NotFound(id) => write!(f, "Fixture with ID {} not found", id),
+            Self::NotFound(id) => write!(f, "Fixture with path {} not found", id),
             Self::NoChannelValueSourceFound => write!(f, "No channel value source found"),
             Self::EmptyPatch => write!(f, "Patch is empty"),
             Self::DuplicateChannelType => write!(f, "Duplicate channel type"),
@@ -90,6 +95,9 @@ impl std::fmt::Display for FixtureError {
             Self::GdtfMaxDmxOffsetNotFound => {
                 write!(f, "GDTF fixture DMX mode has no max offset")
             }
+            Self::GdtfAttributeNotFound(attribute) => {
+                write!(f, "GDTF attribute {} not found", attribute)
+            }
             Self::GdtfChannelNotFound(channel) => {
                 write!(f, "GDTF channel {} not found", channel)
             }
@@ -98,6 +106,9 @@ impl std::fmt::Display for FixtureError {
             }
             Self::GdtfChannelValueNotFound(channel) => {
                 write!(f, "GDTF value for channel {} not found", channel)
+            }
+            Self::GdtfAttributeValueNotFound(attribute) => {
+                write!(f, "GDTF value for attribute {} not found", attribute)
             }
             Self::GdtfNoChannelForAttributeFound(attribute) => {
                 write!(f, "GDTF no channel for attribute {} found", attribute)
