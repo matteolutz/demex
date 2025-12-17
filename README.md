@@ -16,7 +16,7 @@ git clone https://github.com/matteolutz/demex
 and run the project using
 
 ```bash
-cargo run -- -s test_data/cinema.json
+cargo run --bin demex_gpui -- -s test_data/cinema.json
 ```
 
 There will be test data loaded and you can start playing around with the commands and the UI.
@@ -48,7 +48,14 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for more informations.
+This project is licensed under the GPL-3.0 License. See [LICENSE](LICENSE) for more informations.
+
+## Acknowledgements
+
+This project incorporates code from:
+
+- [zeevonk](https://github.com/BaukeWestendorp/zeevonk) — Copyright (C) 2025 Bauke Westendorp  
+  Licensed under the GNU General Public License v3.0
 
 ---
 
