@@ -137,7 +137,7 @@ impl FixtureStateHandler {
 
             for (attribute, _) in fixture.channel_functions() {
                 let new_output_value = state.sources().get_attribute_value(
-                    fixture,
+                    &fixture.path,
                     state,
                     attribute,
                     updatable_handler,
@@ -184,16 +184,19 @@ impl FixtureStateHandler {
                     preset_handler,
                     timing_handler,
                 );
-                updated_values.insert(attribute.clone(), discrete_value);
+
+                updated_values.insert(attribute.clone(), (discrete_value, None));
                 output_value.reset();
             }
 
-            value_queue_tx
-                .send(ChannelValueQueueEntry {
-                    fixture_path: *path,
-                    values: updated_values,
-                })
-                .expect("Output channel has hung up");
+            if !updated_values.is_empty() {
+                value_queue_tx
+                    .send(ChannelValueQueueEntry {
+                        fixture_path: *path,
+                        values: updated_values,
+                    })
+                    .expect("Output channel has hung up");
+            }
         }
 
         Ok(())

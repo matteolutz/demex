@@ -1,7 +1,11 @@
-use std::sync::{Arc, mpsc};
+use std::{
+    sync::{Arc, mpsc},
+    time,
+};
 
 use arc_swap::ArcSwap;
 use gdtf::fixture_type::FixtureType;
+use itertools::Itertools;
 
 use crate::{
     command::{
@@ -19,7 +23,8 @@ use crate::{
         component::ComponentHandle,
         state::{DemexEngineState, DemexFrontendInitState},
     },
-    patch::Patch,
+    fixture::FixtureChannelFunctionKind,
+    patch::{Patch, SerializablePatch},
     show::DemexShow,
     thread::{
         DemexThread, DemexThreadHandle, debug::DebugThread, output::OutputThread,
@@ -76,7 +81,7 @@ impl DemexEngine {
     ) -> (DemexEngineCommRequestDispatcher, DemexFrontendInitState) {
         self.stop_threads();
 
-        let patch = show.patch.into_patch(fixture_types);
+        let patch = Self::build_patch(show.patch, fixture_types);
         self.patch.store(Arc::new(patch.clone()));
 
         let (tx, rx) = mpsc::channel();
@@ -116,6 +121,36 @@ impl DemexEngine {
         (comm_dispatcher, frontend_state)
     }
 
+    fn build_patch(patch: SerializablePatch, fixture_types: Vec<FixtureType>) -> Patch {
+        let start = time::Instant::now();
+        log::debug!("Building patch...");
+
+        let patch = patch.into_patch(fixture_types);
+
+        log::debug!("Patch built in {:?}", start.elapsed());
+
+        for fixture in patch.fixtures() {
+            log::debug!("{} {}", fixture.path(), fixture.name());
+            for (attr, cf) in fixture.channel_functions() {
+                log::debug!(
+                    "\t{} (is_initial={}) {}",
+                    attr,
+                    cf.is_initial,
+                    match cf.kind() {
+                        FixtureChannelFunctionKind::Physical { addresses } => addresses
+                            .iter()
+                            .map(|addr| format!("{}.{}", addr.universe, addr.channel))
+                            .join(", "),
+                        FixtureChannelFunctionKind::Virtual { .. } => "Virtual".to_string(),
+                    }
+                );
+            }
+            log::debug!("");
+        }
+
+        patch
+    }
+
     fn stop_threads(&mut self) {
         if let Some(update_thread) = self.update_thread.take() {
             update_thread
@@ -140,8 +175,8 @@ impl DemexEngine {
     }
 
     fn register_comm_handlers(&self, handler: &mut DemexEngineCommRequestHandler) {
-        handler.register(|FixtureNameRequest(id): FixtureNameRequest, payload| {
-            payload.patch.fixture(id).map(|f| f.name.clone()).ok()
+        handler.register(|FixtureNameRequest(path): FixtureNameRequest, payload| {
+            payload.patch.fixture(&path).map(|f| f.name.clone()).ok()
         });
         handler.register(|_: ThreadStatsRequest, payload| {
             payload.stats.read(|stats| stats.stats().clone())

@@ -28,6 +28,7 @@ impl SerializablePatch {
         Patch {
             fixtures: self
                 .fixtures
+                .clone()
                 .into_iter()
                 .flat_map(|fixture| {
                     let builder = FixtureBuilder::from_patch(fixture, &fixture_types)
@@ -38,8 +39,7 @@ impl SerializablePatch {
                 .map(|f| (f.path(), f))
                 .collect::<HashMap<_, _>>(),
             fixture_types,
-            layout: self.layout,
-            outputs: self.outputs,
+            patch: self,
         }
     }
 }
@@ -50,8 +50,7 @@ impl Component for Patch {}
 pub struct Patch {
     fixtures: HashMap<FixturePath, Fixture>,
     fixture_types: Vec<gdtf::fixture_type::FixtureType>,
-    layout: FixtureLayout,
-    outputs: Vec<DemexDmxOutputConfig>,
+    pub(crate) patch: SerializablePatch,
 }
 
 impl Patch {
@@ -121,15 +120,15 @@ impl Patch {
     */
 
     pub fn layout(&self) -> &FixtureLayout {
-        &self.layout
+        &self.patch.layout
     }
 
     pub fn output_configs(&self) -> &[DemexDmxOutputConfig] {
-        &self.outputs
+        &self.patch.outputs
     }
 
     pub fn output_configs_mut(&mut self) -> &mut Vec<DemexDmxOutputConfig> {
-        &mut self.outputs
+        &mut self.patch.outputs
     }
 
     pub fn is_address_range_unpatched(&self, _address_range: Range<u16>, _universe: u16) -> bool {

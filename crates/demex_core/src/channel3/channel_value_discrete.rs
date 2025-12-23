@@ -1,15 +1,6 @@
-use std::collections::HashMap;
-
-use gdtf::values::DmxValue;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    channel3::{attribute::FixtureChannel3Attribute, clamped_value::ClampedValue},
-    fixture::{Fixture, GdtfFixturePatch},
-    patch::Patch,
-};
-
-use super::utils::{max_value, mix_dmx_value, multiply_dmx_value, multiply_dmx_value_f32};
+use crate::{channel3::clamped_value::ClampedValue, fixture::FixtureChannelFunction};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub enum FixtureChannelDiscreteValue {
@@ -78,41 +69,33 @@ impl PartialEq for FixtureChannelDiscreteValue {
 impl Eq for FixtureChannelDiscreteValue {}
 
 impl FixtureChannelDiscreteValue {
-    pub fn get_as_display(
-        &self,
-        fixture: &Fixture,
-        attribute: &FixtureChannel3Attribute,
-    ) -> ClampedValue {
+    pub fn to_clamped(&self, channel_function: &FixtureChannelFunction) -> ClampedValue {
         match self {
-            Self::Home => {
-                if let Some(function) = fixture.channel_function(attribute) {
-                    function.unprojected_default()
-                } else {
-                    0.0.into()
-                }
-            }
-            Self::Discrete { value } => *value,
-            Self::DiscreteSet { channel_set } => {
-                if let Some((cf, channel_set_value)) = fixture
-                    .channel_function(attribute)
-                    .and_then(|cf| cf.sets.get(channel_set).map(|set| (cf, set)))
-                {
-                    cf.unproject(*channel_set_value)
-                } else {
-                    0.0.into()
-                }
-            }
+            &Self::Discrete { value } => value,
+            Self::DiscreteSet { channel_set } => channel_function.unproject(
+                channel_function
+                    .set(channel_set)
+                    .unwrap_or_else(|| channel_function.default()),
+            ),
+            Self::Home => channel_function.unprojected_default(),
             Self::Mix { a, b, mix } => {
-                let a_val = a.get_as_display(fixture, attribute);
-                let b_val = b.get_as_display(fixture, attribute);
-
-                ((a_val.as_f32() * (1.0 - mix)) + (b_val.as_f32() * mix)).into()
+                let a = a.to_clamped(channel_function);
+                let b = b.to_clamped(channel_function);
+                ((a.as_f32() * *mix) + (b.as_f32() * (1.0 - *mix))).into()
             }
         }
     }
-}
 
-impl FixtureChannelDiscreteValue {
+    pub fn to_projected(
+        &self,
+        channel_function: &FixtureChannelFunction,
+        mult: f32,
+    ) -> ClampedValue {
+        let val = self.to_clamped(channel_function) * mult;
+        channel_function.project(val)
+    }
+
+    /*
     fn find_multiply_relation(
         patch: &Patch,
         fixture_patch: &GdtfFixturePatch,
@@ -324,6 +307,8 @@ impl FixtureChannelDiscreteValue {
             value
         }
     }
+
+    */
 }
 
 impl FixtureChannelDiscreteValue {

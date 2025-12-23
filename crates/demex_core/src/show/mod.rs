@@ -34,7 +34,7 @@ impl<'a> DemexShowRef<'a> {
             updatable_handler: self.updatable_handler.clone(),
             timing_handler: self.timing_handler.clone(),
             input_device_configs: self.input_device_configs.clone(),
-            patch: SerializablePatch::from_patch(self.patch),
+            patch: self.patch.patch.clone(),
         }
     }
 

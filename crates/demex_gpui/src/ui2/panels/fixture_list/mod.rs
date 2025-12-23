@@ -69,11 +69,12 @@ impl FixtureListPanel {
             }),
             cx.subscribe(&table_state, |_, state, evt, cx| match evt {
                 TableEvent::DoubleClickedRow(row_ix) => {
-                    let Some(fixture_id) = state.read(cx).delegate().row_fixture_id(*row_ix) else {
+                    let Some(fixture_path) = state.read(cx).delegate().row_fixture_path(*row_ix)
+                    else {
                         return;
                     };
                     DemexEngineHandler::engine(cx)
-                        .exec_ui(Action::AddFixturesToSelection(vec![fixture_id]));
+                        .exec_ui(Action::AddFixturesToSelection(vec![*fixture_path]));
                 }
                 _ => {}
             }),

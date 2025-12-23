@@ -222,7 +222,7 @@ impl LayoutViewPanel {
                     .partial_cmp(&b.position().gpui_distance_to(&world_selection_origin))
                     .unwrap_or(Ordering::Equal)
             })
-            .map(|fixture| fixture.fixture_id())
+            .map(|fixture| *fixture.fixture_path())
             .collect::<Vec<_>>();
 
         DemexEngineHandler::engine(cx).exec_ui(Action::AddFixturesToSelection(selected_fixtures));
@@ -292,7 +292,7 @@ impl LayoutViewPanel {
             let args = FixtureLayoutEntryDrawArgs {
                 is_selected: fixture_selection
                     .as_ref()
-                    .is_some_and(|fs| fs.selection().has_fixture(fixture.fixture_id())),
+                    .is_some_and(|fs| fs.selection().has_fixture(fixture.fixture_path())),
             };
 
             fixture.draw(args, self.projection.read(cx), window, cx);

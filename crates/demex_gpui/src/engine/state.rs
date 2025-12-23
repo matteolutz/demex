@@ -4,13 +4,15 @@ use std::{
 };
 
 use demex_core::{
-    channel3::channel_value::FixtureChannelValue3,
+    channel3::{attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3},
     engine::{
         comm::{PoolItemRequest, ThreadStatsRequest},
         state::DemexFrontendInitState,
         tick::DemexEngineTickState,
     },
     event::{DemexEvent, FixtureSelectionWithGroup},
+    fixture::FixturePath,
+    fpath,
     patch::Patch,
     pool::{PoolItem, PoolType},
     utils::thread::DemexThreadStats,
@@ -141,7 +143,8 @@ impl<const SIZE: usize> DemexPerformanceBuffer<SIZE> {
 pub struct DemexUiState {
     fixture_selection: Entity<Option<FixtureSelectionWithGroup>>,
 
-    fixture_values: Entity<HashMap<u32, HashMap<String, FixtureChannelValue3>>>,
+    fixture_values:
+        Entity<HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelValue3>>>,
     patch: Entity<Patch>,
 
     performance: Entity<HashMap<String, DemexPerformanceBuffer<10>>>,
@@ -159,7 +162,9 @@ impl DemexUiState {
         this.fixture_selection.clone()
     }
 
-    pub fn fixture_values(cx: &App) -> Entity<HashMap<u32, HashMap<String, FixtureChannelValue3>>> {
+    pub fn fixture_values(
+        cx: &App,
+    ) -> Entity<HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelValue3>>> {
         let this: &Self = cx.global();
         this.fixture_values.clone()
     }
@@ -354,7 +359,7 @@ impl DemexUiState {
 
     pub fn update_fixture_values(
         &self,
-        update: HashMap<u32, HashMap<String, FixtureChannelValue3>>,
+        update: HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelValue3>>,
         cx: &mut App,
     ) {
         self.fixture_values.update(cx, |fixtures, cx| {
@@ -366,7 +371,7 @@ impl DemexUiState {
                 });
             }
 
-            println!("fixture with id 1: {:?}", fixtures.get(&1));
+            println!("fixture with id 1: {:?}", fixtures.get(&fpath!(1)));
             cx.notify();
         });
     }

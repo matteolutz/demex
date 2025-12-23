@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::fixture::FixturePath;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum FixtureLayoutDecoration {
     Label {
@@ -23,7 +25,7 @@ pub enum FixtureLayoutEntryType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FixtureLayoutEntry {
-    fixture_id: u32,
+    fixture_path: FixturePath,
     // offset to center
     position: emath::Pos2,
     // size
@@ -33,21 +35,21 @@ pub struct FixtureLayoutEntry {
 
 impl FixtureLayoutEntry {
     pub fn new(
-        fixture_id: u32,
+        fixture_path: FixturePath,
         position: emath::Pos2,
         size: emath::Vec2,
         entry_type: FixtureLayoutEntryType,
     ) -> Self {
         Self {
-            fixture_id,
+            fixture_path,
             position,
             size,
             entry_type,
         }
     }
 
-    pub fn fixture_id(&self) -> u32 {
-        self.fixture_id
+    pub fn fixture_path(&self) -> &FixturePath {
+        &self.fixture_path
     }
 
     pub fn position(&self) -> &emath::Pos2 {

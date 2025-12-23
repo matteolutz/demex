@@ -19,6 +19,7 @@ use std::num::NonZeroU32;
 use std::{cmp, fmt, str};
 
 use demex_dmx::address::DmxAddress;
+use gdtf::dmx_mode::LogicalChannelMaster;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -130,6 +131,8 @@ pub struct FixtureChannelFunction {
     pub(crate) default: ClampedValue,
     pub(crate) sets: HashMap<String, ClampedValue>,
     pub(crate) activation_group: Option<String>,
+    pub(crate) master: LogicalChannelMaster,
+    pub(crate) is_initial: bool,
 }
 
 impl FixtureChannelFunction {
@@ -167,6 +170,11 @@ impl FixtureChannelFunction {
     pub fn unproject(&self, value: ClampedValue) -> ClampedValue {
         let range = self.max.as_f32() - self.min.as_f32();
         ((value.as_f32() - self.min.as_f32()) / range).into()
+    }
+
+    /// Get a channel set by name for this channel function.
+    pub fn set(&self, name: &str) -> Option<ClampedValue> {
+        self.sets.get(name).copied()
     }
 }
 
@@ -561,13 +569,14 @@ impl<'de> serde::Deserialize<'de> for FixturePath {
 #[macro_export]
 macro_rules! fpath {
     ( $first:literal $(, $rest:literal )* $(,)? ) => {{
-        let mut p = $crate::state::fixture::FixturePath::new(
-            $crate::state::fixture::FixtureId::new($first).unwrap()
+        let mut p = $crate::fixture::FixturePath::new(
+            $crate::fixture::FixtureId::new($first).unwrap()
         );
         $( p.push($crate::state::fixture::FixtureId::new($rest).unwrap()); )*
         p
     }};
     ( $first:expr $(, $rest:expr )* $(,)? ) => {{
+        #[allow(unused_mut)]
         let mut p = $crate::fixture::FixturePath::new($first);
         $( p.push($rest); )*
         p

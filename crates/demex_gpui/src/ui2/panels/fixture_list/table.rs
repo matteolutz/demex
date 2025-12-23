@@ -1,23 +1,27 @@
-use demex_core::{fixture::GdtfFixturePatch, patch::Patch};
+use demex_core::{
+    channel3::attribute::FixtureChannel3Attribute,
+    fixture::{Fixture, FixturePath},
+    patch::Patch,
+};
+use demex_dmx::address::DmxAddress;
 use gpui::{Context, IntoElement, ParentElement, Styled, div, prelude::FluentBuilder};
 use gpui_component::{
     ActiveTheme,
     table::{Column, ColumnSort, TableDelegate, TableState},
 };
-use itertools::Itertools;
 
 use crate::engine::state::DemexUiState;
 
 pub struct FixtureListTableEntry {
-    pub id: u32,
-    pub patch: (u16, u16),
+    pub path: FixturePath,
+    pub address: DmxAddress,
     pub fixture_type_name: String,
 }
 
 impl FixtureListTableEntry {
-    pub fn from_patch_and_selection(value: &GdtfFixturePatch, patch: &Patch) -> Self {
+    pub fn from_patch_and_selection(fixture: &Fixture, patch: &Patch) -> Self {
         let fixture_type_name = patch
-            .fixture_type(value.fixture_type_id)
+            .fixture_type(fixture.gdtf_fixture_type_id())
             .map(|ft| {
                 ft.name
                     .as_ref()
@@ -29,8 +33,8 @@ impl FixtureListTableEntry {
             .unwrap_or_else(|| "(unknown)".into());
 
         Self {
-            id: value.id,
-            patch: (value.universe, value.start_address),
+            path: fixture.path(),
+            address: fixture.base_address(),
             fixture_type_name: fixture_type_name,
         }
     }
@@ -60,8 +64,8 @@ impl FixtureListTable {
         s
     }
 
-    pub fn row_fixture_id(&self, row_ix: usize) -> Option<u32> {
-        self.data.get(row_ix).map(|entry| entry.id)
+    pub fn row_fixture_path(&self, row_ix: usize) -> Option<&FixturePath> {
+        self.data.get(row_ix).map(|entry| &entry.path)
     }
 
     pub fn update_data(&mut self, data: Vec<FixtureListTableEntry>) {
@@ -77,13 +81,13 @@ impl FixtureListTable {
         let col = &self.columns[col_ix];
         match col.key.as_ref() {
             "id" => match sort {
-                ColumnSort::Ascending => self.data.sort_by(|a, b| a.id.cmp(&b.id)),
-                ColumnSort::Descending => self.data.sort_by(|a, b| b.id.cmp(&a.id)),
+                ColumnSort::Ascending => self.data.sort_by(|a, b| a.path.cmp(&b.path)),
+                ColumnSort::Descending => self.data.sort_by(|a, b| b.path.cmp(&a.path)),
                 ColumnSort::Default => {}
             },
             "patch" => match sort {
-                ColumnSort::Ascending => self.data.sort_by(|a, b| a.patch.cmp(&b.patch)),
-                ColumnSort::Descending => self.data.sort_by(|a, b| b.patch.cmp(&a.patch)),
+                ColumnSort::Ascending => self.data.sort_by(|a, b| a.address.cmp(&b.address)),
+                ColumnSort::Descending => self.data.sort_by(|a, b| b.address.cmp(&a.address)),
                 ColumnSort::Default => {}
             },
 
@@ -137,46 +141,34 @@ impl TableDelegate for FixtureListTable {
         let patch = DemexUiState::patch(cx).read(cx);
 
         let fixture_selection = DemexUiState::fixture_selection(cx).read(cx).as_ref();
-        let is_selected = fixture_selection.is_some_and(|s| s.selection().has_fixture(entry.id));
+        let is_selected = fixture_selection.is_some_and(|s| s.selection().has_fixture(&entry.path));
 
-        let fixture = patch.fixture(entry.id).unwrap();
+        let fixture = patch.fixture(&entry.path).unwrap();
 
         let fixture_values = DemexUiState::fixture_values(cx)
             .read(cx)
-            .get(&fixture.id())
+            .get(&fixture.path())
             .unwrap();
 
         match column.key.as_ref() {
-            "id" => fixture.id().to_string().into_any_element(),
-            "patch" => {
-                format!("{}.{}", fixture.universe(), fixture.start_address()).into_any_element()
-            }
+            "id" => fixture.path().to_string().into_any_element(),
+            "patch" => fixture.base_address().to_string().into_any_element(),
             "name" => div()
                 .when(is_selected, |div| div.text_color(cx.theme().green))
                 .child(fixture.name().to_string())
                 .into_any_element(),
             "fixture_type" => entry.fixture_type_name.clone().into_any_element(),
             "dimmer" => {
-                let dimmer_channels = fixture.channels_for_attribute(patch, "Dimmer").unwrap();
-                let is_home = dimmer_channels.iter().all(|(dmx_channel, _, _)| {
-                    fixture_values
-                        .get(dmx_channel.name().as_ref())
-                        .unwrap()
-                        .is_home()
-                });
-                let dimmer_values = dimmer_channels
-                    .into_iter()
-                    .map(|(dmx_channel, _, _)| {
-                        fixture_values
-                            .get(dmx_channel.name().as_ref())
-                            .unwrap()
-                            .to_opaque_string()
-                    })
-                    .join(",");
+                let dimmer_value = fixture_values.get(&FixtureChannel3Attribute::Dimmer);
+                let is_home = dimmer_value.as_ref().is_some_and(|val| val.is_home());
 
                 div()
                     .when(!is_home, |div| div.text_color(cx.theme().yellow))
-                    .child(dimmer_values)
+                    .child(
+                        dimmer_value
+                            .map(|val| val.to_opaque_string())
+                            .unwrap_or_else(|| "-".to_string()),
+                    )
                     .into_any_element()
             }
             _ => unreachable!(),

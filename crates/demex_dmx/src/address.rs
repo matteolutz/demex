@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct DmxAddress {
     pub universe: u16,
     pub channel: u16,
@@ -32,5 +32,11 @@ impl DmxAddress {
             universe: target_universe_id,
             channel: new_channel,
         })
+    }
+}
+
+impl std::fmt::Display for DmxAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}", self.universe, self.channel)
     }
 }

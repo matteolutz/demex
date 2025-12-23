@@ -43,7 +43,7 @@ pub trait DemexEngineCommRequest: Send + 'static + std::fmt::Debug {
 
 // Test request
 #[derive(Debug)]
-pub struct FixtureNameRequest(pub u32);
+pub struct FixtureNameRequest(pub FixturePath);
 impl DemexEngineCommRequest for FixtureNameRequest {
     type Response = Option<String>;
 }

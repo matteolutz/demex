@@ -218,7 +218,13 @@ impl FixtureChannelValue3 {
         timing_handler: &TimingHandler,
     ) -> ClampedValue {
         match self {
-            Self::Discrete(discrete) => discrete.get_as_display(fixture, attribute),
+            Self::Discrete(discrete) => {
+                if let Some(cf) = fixture.channel_function(attribute) {
+                    discrete.to_clamped(cf)
+                } else {
+                    0.0.into()
+                }
+            }
             Self::Mix { a, b, mix } => {
                 let a_val = a.get_as_display(fixture, attribute, preset_handler, timing_handler);
                 let b_val = b.get_as_display(fixture, attribute, preset_handler, timing_handler);

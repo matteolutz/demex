@@ -7,7 +7,7 @@ use crate::{
         attribute::FixtureChannel3Attribute, channel_value_discrete::FixtureChannelDiscreteValue,
         channel_value_queue::ChannelValueQueueEntry,
     },
-    fixture::FixturePath,
+    fixture::{FixtureChannelFunctionKind, FixturePath},
     patch::Patch,
 };
 
@@ -87,49 +87,45 @@ impl DmxResolver {
         updated_universes
     }
 
+    fn universe(&mut self, universe: u16) -> &mut [u8; 512] {
+        self.universe_data
+            .entry(universe)
+            .or_insert_with(|| [0; 512])
+    }
+
     pub fn resovle(&mut self, values: Vec<ChannelValueQueueEntry>, patch: &Patch) {
         // update output values
         for entry in &values {
             let fixture_output_values = self.output_values.entry(entry.fixture_path).or_default();
-            for (channel, value) in &entry.values {
+            for (channel, (value, _)) in &entry.values {
                 fixture_output_values.insert(channel.clone(), value.clone());
             }
         }
 
         // calculate dmx values
         for entry in values {
-            let fixture_patch = patch.fixture(entry.fixture_path).unwrap();
-            let fixture_output_values = self.output_values.entry(entry.fixture_path).or_default();
+            let fixture_patch = patch.fixture(&entry.fixture_path).unwrap();
 
-            let mut dynamic_data = HashMap::new();
-
-            for (channel, value) in entry.values.into_iter() {
-                let (dmx_channel, _) = fixture_patch.get_channel(patch, &channel).unwrap();
-                let Some(channel_offsets) = &dmx_channel.offset else {
+            for (attribute, value) in entry.sorted_values(fixture_patch) {
+                let Some(channel_function) = fixture_patch.channel_function(&attribute) else {
                     continue;
                 };
 
-                // generate dmx value
-                let Some(dmx_value) = value.to_dmx(
-                    patch,
-                    fixture_patch,
-                    fixture_output_values,
-                    dmx_channel,
-                    &mut dynamic_data,
-                    1.0,
-                ) else {
-                    continue;
-                };
+                match &channel_function.kind {
+                    FixtureChannelFunctionKind::Physical { addresses } => {
+                        // project the value (0.0..=1.0) into the CF range
+                        let value = value.to_projected(channel_function, 1.0);
+                        let mut dmx_value = value.to_bytes(addresses.len());
 
-                let mut real_dmx_value = dmx_value.to(channel_offsets.len() as u8);
-                for offset in channel_offsets.iter().rev() {
-                    let universe_offset = (fixture_patch.start_address - 1) + (*offset as u16 - 1);
-
-                    self.universe_data
-                        .entry(fixture_patch.universe)
-                        .or_insert_with(|| [0; 512])[universe_offset as usize] =
-                        (real_dmx_value & 0xFF) as u8;
-                    real_dmx_value >>= 8;
+                        for address in addresses.iter().rev() {
+                            self.universe(address.universe)[address.channel as usize - 1] =
+                                (dmx_value & 0xFF) as u8; // is masking even necessary here?
+                            dmx_value >>= 8;
+                        }
+                    }
+                    FixtureChannelFunctionKind::Virtual { relations: _ } => {
+                        // TODO
+                    }
                 }
             }
         }

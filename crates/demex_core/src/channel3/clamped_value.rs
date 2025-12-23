@@ -12,7 +12,7 @@
  * the Free Software Foundation, version 3.
  */
 
-use std::{fmt, num, str};
+use std::{fmt, num, ops::Mul, str};
 
 /// A clamped value.
 ///
@@ -68,29 +68,34 @@ impl ClampedValue {
         (self.0 * 255.0).round().clamp(0.0, 255.0) as u8
     }
 
-    /// Converts the value to a 2-byte representation ([u8; 2]), big-endian.
+    /// Converts the value to a 2-byte representation (stored in u16), big-endian.
     #[inline]
-    pub fn to_u16_bytes(&self) -> [u8; 2] {
-        let val = (self.0 * 65535.0).round().clamp(0.0, 65535.0) as u16;
-        val.to_be_bytes()
+    pub fn to_u16(&self) -> u16 {
+        (self.0 * 65535.0).round().clamp(0.0, 65535.0) as u16
     }
 
-    /// Converts the value to a 3-byte representation ([u8; 3]), big-endian.
+    /// Converts the value to a 3-byte representation (stored in u32), big-endian.
     #[inline]
-    pub fn to_u24_bytes(&self) -> [u8; 3] {
+    pub fn to_u24(&self) -> u32 {
         let val = (self.0 * 16777215.0).round().clamp(0.0, 16777215.0) as u32;
-        [
-            ((val >> 16) & 0xFF) as u8,
-            ((val >> 8) & 0xFF) as u8,
-            (val & 0xFF) as u8,
-        ]
+        val & 0xFFFFFF
     }
 
-    /// Converts the value to a 4-byte representation ([u8; 4]), big-endian.
+    /// Converts the value to a 4-byte representation (u32), big-endian.
     #[inline]
-    pub fn to_u32_bytes(&self) -> [u8; 4] {
-        let val = (self.0 * 4294967295.0).round().clamp(0.0, 4294967295.0) as u32;
-        val.to_be_bytes()
+    pub fn to_u32(&self) -> u32 {
+        (self.0 * 4294967295.0).round().clamp(0.0, 4294967295.0) as u32
+    }
+
+    #[inline]
+    pub fn to_bytes(&self, bytes: usize) -> u32 {
+        match bytes {
+            1 => self.to_u8() as u32,
+            2 => self.to_u16() as u32,
+            3 => self.to_u24(),
+            4 => self.to_u32(),
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -129,5 +134,14 @@ impl str::FromStr for ClampedValue {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self::new(s.parse()?))
+    }
+}
+
+impl Mul<f32> for ClampedValue {
+    type Output = ClampedValue;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        let val = self.as_f32() * rhs;
+        val.into()
     }
 }

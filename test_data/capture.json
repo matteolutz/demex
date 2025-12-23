@@ -1,74 +1,7 @@
 {
   "engine": {
     "preset_handler": {
-      "groups": {
-        "2": {
-          "id": 2,
-          "name": "Cyberlights Shuffle",
-          "fixture_selection": {
-            "fixtures": [401, 402, 403, 404, 405, 406, 407, 408],
-            "group": 16,
-            "block": 1,
-            "wings": 4,
-            "reverse": false
-          }
-        },
-        "1": {
-          "id": 1,
-          "name": "Cyberlights",
-          "fixture_selection": {
-            "fixtures": [401, 402, 403, 404, 405, 406, 407, 408],
-            "group": 1,
-            "block": 1,
-            "wings": 1,
-            "reverse": false
-          }
-        },
-        "3": {
-          "id": 3,
-          "name": "Spots",
-          "fixture_selection": {
-            "fixtures": [301, 302, 303, 304, 305],
-            "group": 1,
-            "block": 1,
-            "wings": 1,
-            "reverse": false
-          }
-        },
-        "0": {
-          "id": 0,
-          "name": "Washes",
-          "fixture_selection": {
-            "fixtures": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "group": 1,
-            "block": 1,
-            "wings": 1,
-            "reverse": false
-          }
-        },
-        "6": {
-          "id": 6,
-          "name": "Wash LR",
-          "fixture_selection": {
-            "fixtures": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "group": 5,
-            "block": 1,
-            "wings": 1,
-            "reverse": false
-          }
-        },
-        "4": {
-          "id": 4,
-          "name": "Spot Even Odd",
-          "fixture_selection": {
-            "fixtures": [301, 302, 303, 304, 305],
-            "group": 2,
-            "block": 0,
-            "wings": 1,
-            "reverse": false
-          }
-        }
-      },
+      "groups": {},
       "macros": { "0": { "id": 0, "name": "Home", "action": "HomeAll" } },
       "command_slices": {},
       "sequences": {},

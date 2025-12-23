@@ -467,6 +467,8 @@ impl<'a> FixtureBuilder<'a> {
         let mut channel_functions = HashMap::new();
 
         for (c_ix, dmx_channel) in dmx_channels_with_geometry {
+            let initial_cf = dmx_channel.initial_function().map(|(_, cf)| cf);
+
             for (lc_ix, logical_channel) in dmx_channel.logical_channels.iter().enumerate() {
                 // NOTE: filter out channel functions with a `NoFeature` attribute as they
                 //       interfere with computing DMX ranges.
@@ -490,10 +492,9 @@ impl<'a> FixtureBuilder<'a> {
                         .map(|(_, cf)| ClampedValue::from(cf.dmx_from))
                         .unwrap_or_else(|| ClampedValue::new(ClampedValue::MAX));
 
-                    let Some((activation_group, attribute)) =
+                    let Some((activation_group, mut attribute)) =
                         self.attribute_from_cf(channel_function)
                     else {
-                        // If we cannot parse an attribute, skip this channel function.
                         continue;
                     };
 
@@ -515,6 +516,7 @@ impl<'a> FixtureBuilder<'a> {
 
                     let default = ClampedValue::from(channel_function.default);
 
+                    /*
                     // Collect the default values for the initial function.
                     if dmx_channel
                         .initial_function()
@@ -528,6 +530,7 @@ impl<'a> FixtureBuilder<'a> {
                             FixtureChannelFunctionKind::Virtual { .. } => {}
                         }
                     }
+                    */
 
                     let sets = channel_function
                         .channel_sets
@@ -542,6 +545,16 @@ impl<'a> FixtureBuilder<'a> {
                         })
                         .collect();
 
+                    // Some fixtures define multiple channel functions with the same attribute
+                    // (i.e. Cameo EVOS W3 Control1)
+                    // TODO: find a better way to handle this (maybe sub channel functions, or multiple cf's per attribute)
+                    if channel_functions.contains_key(&attribute) {
+                        let Some(inc_attribute) = attribute.try_increment() else {
+                            continue;
+                        };
+                        attribute = inc_attribute;
+                    }
+
                     channel_functions.insert(
                         attribute,
                         FixtureChannelFunction {
@@ -551,6 +564,9 @@ impl<'a> FixtureBuilder<'a> {
                             default,
                             sets,
                             activation_group,
+                            master: logical_channel.master,
+                            is_initial: initial_cf
+                                .is_some_and(|initial_cf| initial_cf == *channel_function),
                         },
                     );
 
