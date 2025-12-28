@@ -197,6 +197,7 @@ impl FixturePreset {
             .fixtures()
         {
             let fixture = patch.fixture(fixture_path);
+            log::debug!("Fixture {}", fixture_path);
 
             let Ok(fixture) = fixture else {
                 continue;
@@ -217,18 +218,24 @@ impl FixturePreset {
                     continue;
                 }
 
+                log::debug!("Using attribute: {}", attribute);
+
                 let value = fixture_handler
                     .fixture(fixture_path)
                     .unwrap()
                     .get_programmer_value(attribute);
 
-                if let Ok(value) = value {
-                    if value.is_home() {
-                        continue;
-                    }
+                let Ok(value) = value else {
+                    continue;
+                };
 
-                    new_values.insert(*attribute, value.clone());
+                log::debug!("got value: {:?}", value);
+
+                if value.is_home() {
+                    continue;
                 }
+
+                new_values.insert(*attribute, value.clone());
             }
 
             // if we have values for this fixture, insert them
@@ -236,6 +243,8 @@ impl FixturePreset {
                 data.insert(*fixture_path, new_values);
             }
         }
+
+        log::debug!("data: {:?}", data);
 
         Ok(data)
     }

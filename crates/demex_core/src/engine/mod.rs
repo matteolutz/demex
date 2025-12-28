@@ -130,6 +130,7 @@ impl DemexEngine {
         let patch = patch.into_patch(fixture_types);
 
         log::debug!("Patch built in {:?}", start.elapsed());
+        log::debug!("Built {} fixtures", patch.fixtures().count());
 
         for fixture in patch.fixtures() {
             log::debug!("{} {}", fixture.path(), fixture.name());

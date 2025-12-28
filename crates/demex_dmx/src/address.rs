@@ -14,14 +14,15 @@ impl DmxAddress {
 
 impl DmxAddress {
     pub fn with_channel_offset(self, offset: i32) -> Option<Self> {
-        let current_abs = (self.universe as i64 - 1) * 512 + (self.channel as i64 - 1);
+        let current_abs = (self.universe as i64) * 512 + (self.channel as i64 - 1);
+
         let total = current_abs + offset as i64;
 
         let universe_idx = total.div_euclid(512); // may be negative
         let new_channel_zero = total.rem_euclid(512) as u16; // 0..=511
 
-        let target_universe_id = 1 + universe_idx;
-        if target_universe_id < 1 || target_universe_id > u16::MAX as i64 {
+        let target_universe_id = universe_idx;
+        if target_universe_id < 0 || target_universe_id >= u16::MAX as i64 {
             return None;
         }
 
