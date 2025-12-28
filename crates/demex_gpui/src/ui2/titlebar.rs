@@ -73,6 +73,7 @@ impl DemexTitleBarConfig {
                                             true,
                                         )
                                         .separator()
+                                        .menu("Reload UI", Box::new(app::actions::ReloadUi))
                                         .menu_with_enable(
                                             "Reload",
                                             Box::new(app::actions::Reload),

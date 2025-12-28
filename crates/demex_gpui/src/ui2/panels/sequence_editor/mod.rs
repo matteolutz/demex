@@ -1,4 +1,5 @@
 use demex_core::{
+    command::parser::nodes::object::Object,
     engine::comm::{SequenceRequest, SequenceResponse},
     event::{DemexEvent, DemexExecutorUpdateEvent},
 };
@@ -55,13 +56,13 @@ impl SequenceEditorPanel {
                 this.request_sequence(cx);
             }),
             cx.observe(&sequence, |this, sequence, cx| {
-                let cues = sequence
+                let data = sequence
                     .read(cx)
                     .as_ref()
-                    .map(|seq| seq.sequence.cues.clone());
+                    .map(|seq| (seq.sequence.id, seq.sequence.cues.clone()));
 
                 this.table_state.update(cx, |table, cx| {
-                    table.delegate_mut().update_data(cues);
+                    table.delegate_mut().update_data(data);
                     cx.notify();
                 });
                 cx.notify();
@@ -69,6 +70,20 @@ impl SequenceEditorPanel {
             cx.subscribe(
                 &DemexEngineHandler::event_handler(cx),
                 |this, _, evt, cx| {
+                    let sequence_id = this.sequence.read(cx).as_ref().map(|seq| seq.sequence.id);
+
+                    let Some(sequence_id) = sequence_id else {
+                        return;
+                    };
+
+                    match evt {
+                        DemexEvent::ObjectPropertyChanged(obj, _)
+                            if matches!(obj, &Object::SequenceCue(cue_seq_id, _) if cue_seq_id == sequence_id) => {
+                                this.request_sequence(cx);
+                            }
+                            _ => {}
+                    }
+
                     let executor_id = this
                         .sequence
                         .read(cx)

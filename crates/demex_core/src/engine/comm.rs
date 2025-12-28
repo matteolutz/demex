@@ -7,7 +7,9 @@ use std::{
 use crate::{
     channel3::{attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3},
     command::parser::nodes::action::result::ActionRunResult,
-    engine::{component::ComponentHandle, tick::DemexEngineTickState},
+    engine::{
+        component::ComponentHandle, state::DemexFrontendInitState, tick::DemexEngineTickState,
+    },
     event::DemexEvent,
     fixture::FixturePath,
     patch::Patch,
@@ -79,6 +81,12 @@ pub struct SequenceResponse {
 }
 impl DemexEngineCommRequest for SequenceRequest {
     type Response = Option<SequenceResponse>;
+}
+
+#[derive(Debug)]
+pub struct FrontendStateRequest {}
+impl DemexEngineCommRequest for FrontendStateRequest {
+    type Response = DemexFrontendInitState;
 }
 
 pub struct DemexEngineCommRequestEnvelope {

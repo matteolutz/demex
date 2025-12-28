@@ -23,12 +23,17 @@ pub struct DemexAppArgs {
 
 pub mod actions {
     use crate::{
-        engine::showfile::{self, DemexShowFileManager},
+        engine::{
+            DemexEngineHandler,
+            showfile::{self, DemexShowFileManager},
+            state::DemexUiState,
+        },
         ui2::wm::{WindowManager, app::WindowManagerAppExt},
     };
+    use demex_core::engine::comm::FrontendStateRequest;
     use gpui::{App, KeyBinding, Menu, MenuItem, SystemMenuType};
 
-    gpui::actions!(demex, [Quit, Save, SaveAs, Open, Reload]);
+    gpui::actions!(demex, [Quit, Save, SaveAs, Open, ReloadUi, Reload]);
     pub(super) fn init(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
 
@@ -99,6 +104,13 @@ pub mod actions {
                 "Failed to reload showfile: ",
                 cx,
             );
+        });
+        cx.on_action::<ReloadUi>(|_, cx| {
+            DemexEngineHandler::send(cx, FrontendStateRequest {}, |frontend_state, cx| {
+                DemexUiState::update(cx, |ui_state, cx| {
+                    ui_state.load_frontend_state(frontend_state, cx);
+                });
+            });
         });
 
         init_menus(cx);

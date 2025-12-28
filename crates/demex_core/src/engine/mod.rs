@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     sync::{Arc, mpsc},
     time,
 };
@@ -18,7 +19,8 @@ use crate::{
     engine::{
         comm::{
             DemexEngineCommEvent, DemexEngineCommRequestDispatcher, DemexEngineCommRequestHandler,
-            FixtureNameRequest, PoolItemRequest, SequenceRequest, ShowRequest, ThreadStatsRequest,
+            FixtureNameRequest, FrontendStateRequest, PoolItemRequest, SequenceRequest,
+            ShowRequest, ThreadStatsRequest,
         },
         component::ComponentHandle,
         state::{DemexEngineState, DemexFrontendInitState},
@@ -175,6 +177,16 @@ impl DemexEngine {
     }
 
     fn register_comm_handlers(&self, handler: &mut DemexEngineCommRequestHandler) {
+        handler.register(|_: FrontendStateRequest, payload| {
+            // TODO
+            let state = DemexFrontendInitState {
+                patch: payload.patch.clone(),
+                fixture_selection: None,
+                fixture_states: HashMap::new(),
+                pools: HashMap::new(),
+            };
+            state
+        });
         handler.register(|FixtureNameRequest(path): FixtureNameRequest, payload| {
             payload.patch.fixture(&path).map(|f| f.name.clone()).ok()
         });

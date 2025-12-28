@@ -17,7 +17,7 @@ use demex_core::{
     pool::{PoolItem, PoolType},
     utils::thread::DemexThreadStats,
 };
-use gpui::{App, AppContext, BorrowAppContext, Entity, Global, Timer};
+use gpui::{App, AppContext, BorrowAppContext, Context, Entity, Global, Timer};
 
 use crate::engine::DemexEngineHandler;
 
@@ -157,6 +157,14 @@ pub struct DemexUiState {
 }
 
 impl DemexUiState {
+    pub fn read(cx: &App) -> &Self {
+        cx.global()
+    }
+
+    pub fn update(cx: &mut App, cb: impl FnOnce(&mut Self, &mut App)) {
+        cx.update_global(cb)
+    }
+
     pub fn fixture_selection(cx: &App) -> Entity<Option<FixtureSelectionWithGroup>> {
         let this: &Self = cx.global();
         this.fixture_selection.clone()

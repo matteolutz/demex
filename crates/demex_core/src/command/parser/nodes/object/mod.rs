@@ -236,6 +236,12 @@ pub enum Object {
     Macro(u32),
 }
 
+impl Object {
+    pub fn cue(seq: u32, cue_idx: CueIdx) -> Self {
+        Self::SequenceCue(seq, cue_idx)
+    }
+}
+
 impl ObjectDelegate for Object {
     fn default_action(self) -> Option<Action> {
         match self {
