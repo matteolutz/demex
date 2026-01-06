@@ -2,7 +2,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fixture::FixtureId,
+    fixture::{FixtureId, FixturePath},
     fpath,
     presets::{PresetHandler, error::PresetHandlerError},
     selection::FixtureSelection,
@@ -55,7 +55,9 @@ impl std::error::Error for FixtureSelectorError {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AtomicFixtureSelector {
     SingleFixture(FixtureId),
+    SingleFixturePath(FixturePath),
     FixtureRange(FixtureId, FixtureId),
+    FixturePathRange(FixturePath, FixtureId),
     FixtureGroup(u32),
     SelectorGroup(Box<FixtureSelector>),
     FixtureIdList(Vec<FixtureId>),
@@ -71,10 +73,22 @@ impl AtomicFixtureSelector {
     ) -> Result<FixtureSelection, FixtureSelectorError> {
         match self {
             &Self::SingleFixture(f) => Ok(vec![fpath!(f)].into()),
+            &Self::SingleFixturePath(path) => Ok(vec![path].into()),
             &Self::FixtureRange(begin, end) => Ok((begin.as_u32()..end.as_u32() + 1)
                 .map(|id| fpath!(FixtureId::new(id).unwrap()))
                 .collect::<Vec<_>>()
                 .into()),
+            &Self::FixturePathRange(begin, end) => {
+                let mut paths = vec![begin];
+
+                for i in (begin.last().as_u32() + 1)..=end.as_u32() {
+                    let mut path = begin.clone();
+                    path.replace_last(FixtureId::new(i).unwrap());
+                    paths.push(path);
+                }
+
+                Ok(paths.into())
+            }
             Self::SelectorGroup(s) => s.get_selection(preset_handler, context),
             Self::FixtureGroup(id) => {
                 let group = preset_handler
@@ -118,8 +132,12 @@ impl std::fmt::Display for AtomicFixtureSelector {
             Self::FixtureGroup(group_id) => write!(f, "Group {}", group_id),
             Self::FixtureIdList(id_list) => write!(f, "{:?}", id_list),
             Self::FixtureRange(from, to) => write!(f, "{} thru {}", from, to),
+            Self::FixturePathRange(begin, end) => {
+                write!(f, "{} thru {}", begin, end)
+            }
             Self::SelectorGroup(selector) => write!(f, "({})", selector),
             Self::SingleFixture(id) => write!(f, "{}", id),
+            Self::SingleFixturePath(path) => write!(f, "{}", path),
             Self::None => write!(f, "None"),
         }
     }

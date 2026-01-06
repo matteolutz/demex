@@ -22,6 +22,7 @@ use std::fmt;
 use std::str::FromStr;
 use std::sync::Mutex;
 
+use crate::channel3::feature::feature_group::FixtureChannel3FeatureGroup;
 use crate::channel3::feature::feature_type::FixtureChannel3FeatureType;
 
 lazy_static::lazy_static! {
@@ -1137,6 +1138,11 @@ impl FixtureChannel3Attribute {
 
             Self::Custom(name) => name.to_string(),
         }
+    }
+
+    pub fn feature_group(&self) -> Option<FixtureChannel3FeatureGroup> {
+        self.feature_type()
+            .map(|feature_type| feature_type.feature_group())
     }
 
     pub fn feature_type(&self) -> Option<FixtureChannel3FeatureType> {

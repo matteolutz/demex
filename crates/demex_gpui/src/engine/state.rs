@@ -17,7 +17,7 @@ use demex_core::{
     pool::{PoolItem, PoolType},
     utils::thread::DemexThreadStats,
 };
-use gpui::{App, AppContext, BorrowAppContext, Context, Entity, Global, Timer};
+use gpui::{App, AppContext, BorrowAppContext, Entity, Global, Timer};
 
 use crate::engine::DemexEngineHandler;
 
@@ -379,7 +379,6 @@ impl DemexUiState {
                 });
             }
 
-            println!("fixture with id 1: {:?}", fixtures.get(&fpath!(1)));
             cx.notify();
         });
     }

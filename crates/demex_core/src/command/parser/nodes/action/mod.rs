@@ -14,7 +14,7 @@ use functions::{
         RecordGroupArgs, RecordPresetArgs, RecordSequenceCueArgs, RecordSequenceCueShorthandArgs,
     },
     rename_function::RenameObjectArgs,
-    set_function::{SetFeatureValueArgs, SetFixturePresetArgs},
+    set_function::{SetAttributeValueArgs, SetFixturePresetArgs},
     stop_function::ExecutorStopArgs,
     update_function::{UpdatePresetArgs, UpdateSequenceCueArgs},
 };
@@ -56,6 +56,18 @@ pub mod result;
 pub enum ValueOrRange<T> {
     Single(T),
     Thru(T, T),
+}
+
+impl<T> From<T> for ValueOrRange<T> {
+    fn from(value: T) -> Self {
+        ValueOrRange::Single(value)
+    }
+}
+
+impl<T> From<(T, T)> for ValueOrRange<T> {
+    fn from((from, to): (T, T)) -> Self {
+        ValueOrRange::Thru(from, to)
+    }
 }
 
 impl<T: Copy> From<ValueOrRange<T>> for (T, T) {
@@ -127,7 +139,7 @@ impl DeferredAction {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum Action {
     // Set
-    SetFeatureValue(SetFeatureValueArgs),
+    SetAttributeValue(SetAttributeValueArgs),
     SetFixturePreset(SetFixturePresetArgs),
     ObjectSetProperty(ObjectSetPropertyArgs),
 
@@ -222,7 +234,7 @@ impl Action {
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
             // Set
-            Self::SetFeatureValue(args) => args.run(
+            Self::SetAttributeValue(args) => args.run(
                 issued_at,
                 fixture_handler,
                 preset_handler,

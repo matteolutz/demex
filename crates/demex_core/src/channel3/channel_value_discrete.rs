@@ -69,6 +69,10 @@ impl PartialEq for FixtureChannelDiscreteValue {
 impl Eq for FixtureChannelDiscreteValue {}
 
 impl FixtureChannelDiscreteValue {
+    pub fn is_home(&self) -> bool {
+        matches!(self, Self::Home)
+    }
+
     pub fn to_clamped(&self, channel_function: &FixtureChannelFunction) -> ClampedValue {
         match self {
             &Self::Discrete { value } => value,

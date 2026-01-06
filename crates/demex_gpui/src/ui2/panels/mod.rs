@@ -1,6 +1,7 @@
 use gpui::{App, Context, Window};
 use gpui_component::{IconName, button::Button, dock::Panel};
 
+pub mod attribute_editor;
 pub mod command;
 pub mod fixture_list;
 pub mod fixture_selection;
@@ -31,4 +32,5 @@ fn register_panels(cx: &mut App) {
     pool::register(cx);
     layout_view::register(cx);
     sequence_editor::register(cx);
+    attribute_editor::register(cx);
 }

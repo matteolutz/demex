@@ -14,7 +14,7 @@
 
 //! Fixture definitions and builders used by GDCS.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::num::NonZeroU32;
 use std::{cmp, fmt, str};
 
@@ -26,6 +26,7 @@ use uuid::Uuid;
 use crate::channel3::attribute::FixtureChannel3Attribute;
 use crate::channel3::clamped_value::ClampedValue;
 use crate::fixture::error::FixtureError;
+use crate::patch::Patch;
 
 /// A configured fixture instance.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,6 +95,21 @@ impl Fixture {
 
     pub fn has_attribute(&self, attribute: &FixtureChannel3Attribute) -> bool {
         self.channel_functions().any(|(attr, _)| attr == attribute)
+    }
+
+    pub fn get_attributes_recursive(&self, patch: &Patch) -> HashSet<FixtureChannel3Attribute> {
+        let mut attrs: HashSet<FixtureChannel3Attribute> =
+            self.channel_functions.keys().copied().collect();
+
+        for child_path in self.sub_fixtures() {
+            let Ok(child) = patch.fixture(child_path) else {
+                continue;
+            };
+
+            attrs.extend(child.get_attributes_recursive(patch));
+        }
+
+        attrs
     }
 
     pub fn replace_parent(&mut self, old_parent: &FixturePath, new_parent: FixturePath) {

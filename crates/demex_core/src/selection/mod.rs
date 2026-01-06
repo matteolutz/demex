@@ -1,9 +1,13 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    channel3::attribute::FixtureChannel3Attribute,
     command::parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
     fixture::FixturePath,
     implement_set_property,
+    patch::Patch,
 };
 
 use super::presets::PresetHandler;
@@ -33,6 +37,16 @@ impl Default for FixtureSelection {
             wings: 1,
             reverse: false,
         }
+    }
+}
+
+impl FixtureSelection {
+    pub fn get_attributes(&self, patch: &Patch) -> HashSet<FixtureChannel3Attribute> {
+        self.fixtures
+            .iter()
+            .filter_map(|fixture_path| patch.fixture(fixture_path).ok())
+            .flat_map(|fixture| fixture.get_attributes_recursive(patch))
+            .collect()
     }
 }
 
@@ -196,7 +210,7 @@ impl From<Vec<FixturePath>> for FixtureSelection {
     }
 }
 
-#[derive(strum_macros::EnumString, strum_macros::Display)]
+#[derive(Copy, Clone, strum_macros::EnumString, strum_macros::Display, strum::EnumIter)]
 pub enum FixtureSelectionProperty {
     Group,
     Block,

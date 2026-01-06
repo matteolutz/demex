@@ -135,7 +135,7 @@ impl PresetHandler {
         patch: &Patch,
         fixture_handler: &FixtureStateHandler,
         timing_handler: &TimingHandler,
-    ) -> Result<(), PresetHandlerError> {
+    ) -> Result<bool, PresetHandlerError> {
         let data = FixturePreset::generate_preset_data(
             patch,
             fixture_handler,
@@ -149,7 +149,7 @@ impl PresetHandler {
         if let Some(preset) = self.presets.get_mut(&id) {
             if should_next {
                 preset.record_next(data)?;
-                return Ok(());
+                return Ok(false);
             } else {
                 return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));
             }
@@ -184,7 +184,7 @@ impl PresetHandler {
         )?;
 
         self.presets.insert(id, preset);
-        Ok(())
+        Ok(true)
     }
 
     pub fn create_effect_preset(

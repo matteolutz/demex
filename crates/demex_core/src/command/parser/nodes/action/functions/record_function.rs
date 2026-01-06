@@ -107,7 +107,7 @@ impl FunctionArgs for RecordPresetArgs {
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
     > {
-        preset_handler
+        let created = preset_handler
             .record_preset(
                 &self.fixture_selector,
                 fixture_selector_context,
@@ -120,10 +120,16 @@ impl FunctionArgs for RecordPresetArgs {
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 
-        Ok(ActionRunResult::event(DemexEvent::PoolItemAdded(
-            PoolType::Preset(self.id.feature_group),
-            self.id.preset_id,
-        )))
+        let result = if created {
+            ActionRunResult::event(DemexEvent::PoolItemAdded(
+                PoolType::Preset(self.id.feature_group),
+                self.id.preset_id,
+            ))
+        } else {
+            ActionRunResult::Default
+        };
+
+        Ok(result)
     }
 }
 

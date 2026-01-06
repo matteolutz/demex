@@ -586,18 +586,12 @@ impl<'a> FixtureBuilder<'a> {
         cf_id: ChannelFunctionId,
         geometry_address_offset: i32,
     ) -> FixtureChannelFunctionKind {
-        log::debug!("geometry offset is: {}", geometry_address_offset);
         match &dmx_channel.offset {
             Some(offsets) => {
                 // Physical channel: map each offset to an absolute DMX address.
                 let addresses = offsets
                     .iter()
                     .map(|o| {
-                        log::debug!(
-                            "offsetting {} by {}",
-                            self.address,
-                            geometry_address_offset + o - 1
-                        );
                         self.address
                             .with_channel_offset(geometry_address_offset + o - 1)
                             .unwrap()

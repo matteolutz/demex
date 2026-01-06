@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use nodes::{
     action::{
         ConfigTypeActionData, ValueOrRange,
@@ -14,7 +16,7 @@ use nodes::{
                 RecordSequenceCueShorthandArgsId,
             },
             rename_function::RenameObjectArgs,
-            set_function::{SelectionOrSelector, SetFeatureValueArgs, SetFixturePresetArgs},
+            set_function::{SelectionOrSelector, SetAttributeValueArgs, SetFixturePresetArgs},
             update_function::{UpdateMode, UpdatePresetArgs, UpdateSequenceCueArgs},
         },
     },
@@ -22,7 +24,9 @@ use nodes::{
 };
 
 use crate::{
-    channel3::feature::feature_type::FixtureChannel3FeatureType,
+    channel3::{
+        attribute::FixtureChannel3Attribute, feature::feature_type::FixtureChannel3FeatureType,
+    },
     command::{
         lexer::token::Token,
         parser::{
@@ -37,6 +41,7 @@ use crate::{
         },
     },
     fixture::FixtureId,
+    fpath,
     presets::preset::FixturePresetId,
     sequence::cue::CueIdx,
 };
@@ -119,6 +124,41 @@ impl<'a> Parser2<'a> {
             &Token::KeywordFixturesSelected => {
                 self.advance();
                 Ok(AtomicFixtureSelector::CurrentFixturesSelected)
+            }
+            Token::FloatingPoint(_, (a, b)) => {
+                let token = self.current_token()?.clone();
+                let a = FixtureId::new(*a)
+                    .map_err(|_| ParseError::UnexpectedToken(token, "FixtureID".to_string()))?;
+                let token = self.current_token()?.clone();
+                let b = FixtureId::new(*b)
+                    .map_err(|_| ParseError::UnexpectedToken(token, "FixtureID".to_string()))?;
+
+                let from_path = fpath!(a, b);
+                self.advance();
+
+                match self.current_token()? {
+                    Token::KeywordThru => {
+                        self.advance();
+
+                        match self.current_token()? {
+                            &Token::Integer(f2) => {
+                                let token = self.current_token()?.clone();
+                                let to = FixtureId::new(f2).map_err(|_| {
+                                    ParseError::UnexpectedToken(token, "FixtureID".to_string())
+                                })?;
+
+                                self.advance();
+
+                                Ok(AtomicFixtureSelector::FixturePathRange(from_path, to))
+                            }
+                            unexpectd_token => Err(ParseError::UnexpectedToken(
+                                unexpectd_token.clone(),
+                                "Expected integer".to_owned(),
+                            )),
+                        }
+                    }
+                    _ => Ok(AtomicFixtureSelector::SingleFixturePath(from_path)),
+                }
             }
             &Token::Integer(f1) => {
                 let token = self.current_token()?.clone();
@@ -331,6 +371,28 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_attribute(&mut self) -> Result<FixtureChannel3Attribute, ParseError> {
+        match self.current_token()? {
+            &Token::KeywordIntens => {
+                self.advance();
+                Ok(FixtureChannel3Attribute::Dimmer)
+            }
+            Token::String(string) => {
+                let current_token = self.current_token()?.clone();
+                let attribute = FixtureChannel3Attribute::from_str(string).map_err(|_| {
+                    ParseError::UnexpectedToken(current_token, "Expected attribute".to_string())
+                })?;
+
+                self.advance();
+                Ok(attribute)
+            }
+            unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                unexpected_token.clone(),
+                vec!["\"intens\"", "String"],
+            )),
+        }
+    }
+
     fn parse_discrete_feature_type(&mut self) -> Result<FixtureChannel3FeatureType, ParseError> {
         match self.current_token()? {
             &Token::KeywordIntens => {
@@ -422,28 +484,33 @@ impl<'a> Parser2<'a> {
         }
     }
 
-    fn parse_channel_value_single(&mut self) -> Result<ValueOrRange<f32>, ParseError> {
+    fn parse_channel_value_single(&mut self) -> Result<Option<ValueOrRange<f32>>, ParseError> {
+        if matches!(self.current_token()?, Token::KeywordHome) {
+            self.advance();
+            return Ok(None);
+        }
+
         let value_a = self.parse_discrete_channel_value_single()?;
 
         if matches!(self.current_token()?, Token::KeywordThru) {
             self.advance();
             let value_b = self.parse_discrete_channel_value_single()?;
 
-            Ok(ValueOrRange::Thru(value_a, value_b))
+            Ok(Some(ValueOrRange::Thru(value_a, value_b)))
         } else {
-            Ok(ValueOrRange::Single(value_a))
+            Ok(Some(ValueOrRange::Single(value_a)))
         }
     }
 
     fn parse_currently_selected_set_function(&mut self) -> Result<Action, ParseError> {
-        let feature_type = self.parse_feature_type()?;
+        let attribute = self.parse_attribute()?;
 
         let feature_value = self.parse_channel_value_single()?;
 
-        Ok(Action::SetFeatureValue(SetFeatureValueArgs {
+        Ok(Action::SetAttributeValue(SetAttributeValueArgs {
             fixture_selector: FixtureSelector::current_fixtures_selected(),
-            feature_type,
-            feature_value,
+            attribute,
+            attribute_value: feature_value,
         }))
     }
 
@@ -459,14 +526,14 @@ impl<'a> Parser2<'a> {
             }));
         }
 
-        let feature_type = self.parse_feature_type()?;
+        let attribute = self.parse_attribute()?;
 
         let feature_value = self.try_parse(Self::parse_channel_value_single);
         if let Ok(feature_value) = feature_value {
-            return Ok(Action::SetFeatureValue(SetFeatureValueArgs {
+            return Ok(Action::SetAttributeValue(SetAttributeValueArgs {
                 fixture_selector,
-                feature_type,
-                feature_value,
+                attribute,
+                attribute_value: feature_value,
             }));
         }
 

@@ -33,13 +33,18 @@ pub mod actions {
     use demex_core::engine::comm::FrontendStateRequest;
     use gpui::{App, KeyBinding, Menu, MenuItem, SystemMenuType};
 
-    gpui::actions!(demex, [Quit, Save, SaveAs, Open, ReloadUi, Reload]);
+    gpui::actions!(
+        demex,
+        [Quit, Save, SaveAs, Open, ReloadUi, Reload, FocusCommand]
+    );
     pub(super) fn init(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
 
         cx.bind_keys([KeyBinding::new("secondary-s", Save, None)]);
         cx.bind_keys([KeyBinding::new("secondary-shift-s", SaveAs, None)]);
         cx.bind_keys([KeyBinding::new("secondary-o", Open, None)]);
+
+        cx.bind_keys([KeyBinding::new("secondary-tab", FocusCommand, None)]);
 
         cx.on_action::<Quit>(|_, cx| cx.quit());
         cx.on_action::<Save>(|_, cx| {
@@ -111,6 +116,10 @@ pub mod actions {
                     ui_state.load_frontend_state(frontend_state, cx);
                 });
             });
+        });
+
+        cx.on_action::<FocusCommand>(|_, _| {
+            log::debug!("focussing command input");
         });
 
         init_menus(cx);

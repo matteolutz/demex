@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     channel3::{
+        attribute::FixtureChannel3Attribute,
         channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
-        feature::feature_type::FixtureChannel3FeatureType,
     },
     command::parser::nodes::{
         action::{ValueOrRange, error::ActionRunError, result::ActionRunResult},
@@ -22,13 +22,13 @@ use crate::{
 use super::FunctionArgs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SetFeatureValueArgs {
+pub struct SetAttributeValueArgs {
     pub fixture_selector: FixtureSelector,
-    pub feature_type: FixtureChannel3FeatureType,
-    pub feature_value: ValueOrRange<f32>,
+    pub attribute: FixtureChannel3Attribute,
+    pub attribute_value: Option<ValueOrRange<f32>>,
 }
 
-impl FunctionArgs for SetFeatureValueArgs {
+impl FunctionArgs for SetAttributeValueArgs {
     fn run(
         &self,
         _issued_at: time::Instant,
@@ -51,31 +51,25 @@ impl FunctionArgs for SetFeatureValueArgs {
         for fixture_path in selection.fixtures() {
             let fixture_idx = selection.offset_idx(fixture_path).unwrap();
 
-            let discrete_value = match self.feature_value {
-                ValueOrRange::Single(value) => value,
-                ValueOrRange::Thru(start, end) => {
-                    let range = end - start;
-                    let step = range / (selection.num_offsets() - 1) as f32;
-                    start + step * fixture_idx as f32
-                }
+            let value = match self.attribute_value {
+                Some(value) => match value {
+                    ValueOrRange::Single(value) => FixtureChannelValue3::discrete(value),
+                    ValueOrRange::Thru(start, end) => {
+                        let range = end - start;
+                        let step = range / (selection.num_offsets() - 1) as f32;
+                        FixtureChannelValue3::discrete(start + step * fixture_idx as f32)
+                    }
+                },
+                None => FixtureChannelValue3::home(),
             };
 
             if let (Ok(fixture_state), Ok(fixture)) = (
                 fixture_handler.fixture_mut(fixture_path),
                 patch.fixture(fixture_path),
             ) {
-                match self.feature_type {
-                    FixtureChannel3FeatureType::Dimmer => {
-                        fixture_state
-                            .set_programmer_value(
-                                fixture,
-                                &crate::channel3::attribute::FixtureChannel3Attribute::Dimmer,
-                                FixtureChannelValue3::discrete(discrete_value),
-                            )
-                            .map_err(ActionRunError::FixtureError)?;
-                    }
-                    _ => todo!(),
-                }
+                fixture_state
+                    .set_programmer_value(fixture, &self.attribute, value)
+                    .map_err(ActionRunError::FixtureError)?;
             }
         }
 
