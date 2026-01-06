@@ -132,7 +132,9 @@ impl DemexShowFileManager {
 
     fn parse_show_file(path: &PathBuf) -> Result<DemexUiShow, Box<dyn std::error::Error>> {
         let file = fs::File::open(path)?;
-        serde_json::from_reader(file).map_err(|err| err.into())
+        serde_json::from_reader(file)
+            .inspect_err(|err| log::error!("Error parsing showfile: {}", err))
+            .map_err(|err| err.into())
     }
 
     fn write_show_to_file(
