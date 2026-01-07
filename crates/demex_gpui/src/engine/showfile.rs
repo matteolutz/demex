@@ -45,7 +45,7 @@ pub struct DemexShowFileManager {
     current_file_path: Entity<Option<PathBuf>>,
 
     last_autosave: Entity<Option<Instant>>,
-    _autosave: Task<()>,
+    _autosave: Option<Task<()>>,
 }
 
 impl Global for DemexShowFileManager {}
@@ -93,13 +93,14 @@ impl DemexShowFileManager {
 impl DemexShowFileManager {
     pub fn init(
         global_fixture_types: Vec<FixtureType>,
+        disable_autosave: bool,
         cx: &mut App,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let s = Self {
             global_fixture_types,
             current_file_path: cx.new(|_| None),
 
-            _autosave: cx.spawn(Self::autosave),
+            _autosave: (!disable_autosave).then(|| cx.spawn(Self::autosave)),
             last_autosave: cx.new(|_| None),
         };
 

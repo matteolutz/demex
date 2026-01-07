@@ -196,7 +196,7 @@ impl Render for FixtureSelectionPanel {
                         .selection()
                         .fixtures()
                         .iter()
-                        .map(|f| format!("{}({:?})", f, sel.selection().offset(f)))
+                        .map(|f| format!("{}", f))
                         .join(", "))
                     .unwrap_or_else(|| "-".to_string())
             ))

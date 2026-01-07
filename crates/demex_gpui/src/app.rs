@@ -18,6 +18,8 @@ pub struct DemexAppArgs {
     pub touchscreen_mode: bool,
     pub additional_viewports: usize,
 
+    pub disable_autosave: bool,
+
     pub theme: Option<String>,
 }
 
@@ -197,7 +199,7 @@ impl DemexApp {
                 let wm = WindowManager::new(cx).auto_quit(true);
                 cx.set_global(wm);
 
-                DemexShowFileManager::init(args.fixture_types, cx)
+                DemexShowFileManager::init(args.fixture_types, args.disable_autosave, cx)
                     .expect("Failed to initialize show file manager");
 
                 WindowManager::add_dock_windows(

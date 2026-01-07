@@ -61,6 +61,10 @@ struct Args {
     #[arg(long, conflicts_with = "headless")]
     fullscreen: bool,
 
+    /// Disable autosave in the UI.
+    #[arg(long)]
+    no_autosave: bool,
+
     /// Enable the controller mode, which allows the application to act as a controller for headless nodes.
     #[arg(long, default_value = "false", conflicts_with = "headless")]
     controller: bool,
@@ -163,6 +167,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             fixture_types,
             theme: args.ui_theme,
             additional_viewports: args.additional_viewports.unwrap_or(0),
+            disable_autosave: args.no_autosave,
         });
     }
 
