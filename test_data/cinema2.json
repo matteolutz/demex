@@ -3500,7 +3500,7 @@
         {
           "data": {
             "Artnet": {
-              "broadcast": true,
+              "broadcast": false,
               "broadcast_addresses": ["192.168.2.255"],
               "bind_ip": "192.168.2.210",
               "universes": [3]

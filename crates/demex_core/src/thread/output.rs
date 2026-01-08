@@ -55,7 +55,7 @@ impl DemexThreadDelegate for OutputThread {
     }
 
     fn its() -> f64 {
-        30.0
+        40.0
     }
 
     fn update(&mut self, thread: &mut super::DemexThread<Self>) -> bool {

@@ -250,7 +250,7 @@ impl DockWindow {
             .border_color(cx.theme().border)
             .text_color(cx.theme().muted_foreground)
             .text_sm()
-            .child(format!("demex v{} ({})", VERSION_STR, env!("GIT_HASH")))
+            .child(format!("demex v{}-{}", VERSION_STR, env!("GIT_HASH")))
             .child(format!(
                 "Last autosave: {}",
                 last_autosave

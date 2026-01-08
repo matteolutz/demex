@@ -155,7 +155,6 @@ pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, config: ArtnetOut
                 if last_poll_sent.is_none() || last_poll_sent.unwrap().elapsed().as_secs_f64() > 3.0
                 {
                     for addr in &broadcast_addresses {
-                        log::debug!("Sending ArtNet Poll to broadcast address {}..", addr);
                         socket.send_to(&poll_buff, addr).unwrap();
                     }
 
