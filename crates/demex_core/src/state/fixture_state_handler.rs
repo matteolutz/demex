@@ -6,9 +6,10 @@ use crate::{
         channel_value_queue::ChannelValueQueueEntry,
     },
     engine::component::Component,
-    fixture::{Fixture, FixturePath, error::FixtureError},
+    fixture::{Fixture, FixturePath, FixturePathMatchLevel, error::FixtureError},
     patch::Patch,
     presets::PresetHandler,
+    selection::FixtureSelection,
     state::fixture_state::FixtureState,
     timing::TimingHandler,
     updatables::UpdatableHandler,
@@ -127,6 +128,7 @@ impl FixtureStateHandler {
         preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         timing_handler: &TimingHandler,
+        highlight: Option<&FixtureSelection>,
         updated_output_values: &mut HashMap<
             FixturePath,
             HashMap<FixtureChannel3Attribute, FixtureChannelValue3>,
@@ -135,8 +137,8 @@ impl FixtureStateHandler {
         for (path, state) in self.fixture_states.iter_mut() {
             let fixture = patch.fixture(path)?;
 
-            for (attribute, _) in fixture.channel_functions() {
-                let new_output_value = state.sources().get_attribute_value(
+            for (attribute, cf) in fixture.channel_functions() {
+                let mut new_output_value = state.sources().get_attribute_value(
                     &fixture.path,
                     state,
                     attribute,
@@ -144,6 +146,15 @@ impl FixtureStateHandler {
                     preset_handler,
                     timing_handler,
                 )?;
+
+                if highlight.is_some_and(|highlight| {
+                    // all child fixtures should also be highlighted
+                    highlight.has_fixture_with_level(path, FixturePathMatchLevel::TopLevel)
+                }) {
+                    if let Some(highlight) = cf.highlight() {
+                        new_output_value = FixtureChannelValue3::discrete(highlight);
+                    }
+                }
 
                 let output_value = state.cached_output_mut().get_mut(attribute).unwrap();
 

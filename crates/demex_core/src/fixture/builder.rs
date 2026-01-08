@@ -555,6 +555,10 @@ impl<'a> FixtureBuilder<'a> {
                         attribute = inc_attribute;
                     }
 
+                    let highlight = dmx_channel.highlight.map(|value| {
+                        FixtureChannelFunction::project_cf_value(value.into(), from, to)
+                    });
+
                     channel_functions.insert(
                         attribute,
                         FixtureChannelFunction {
@@ -562,9 +566,11 @@ impl<'a> FixtureBuilder<'a> {
                             min: from,
                             max: to,
                             default,
+                            highlight,
                             sets,
                             activation_group,
                             master: logical_channel.master,
+                            snap: logical_channel.snap,
                             is_initial: initial_cf
                                 .is_some_and(|initial_cf| initial_cf == *channel_function),
                         },

@@ -158,6 +158,12 @@ impl DemexThreadDelegate for UpdateThread {
                                 DemexEvent::FixtureSelectionChanged(selection),
                             ));
                         }
+                        ActionRunResult::UpdateHighlight(highlight) => {
+                            self.state.highlight = highlight.clone().map(|sel| sel.selection);
+                            let _ = self.event_bus_tx.send(DemexEngineCommEvent::DemexEvent(
+                                DemexEvent::HighlightChanged(highlight),
+                            ));
+                        }
                         ActionRunResult::UpdatePatch(patch) => {
                             self.patch.store(Arc::new(patch));
                         }
@@ -188,6 +194,7 @@ impl DemexThreadDelegate for UpdateThread {
                 &self.preset_handler,
                 &self.updatable_handler,
                 &self.timing_handler,
+                self.state.highlight.as_ref(),
                 &mut updated_output_values,
             )
             .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));

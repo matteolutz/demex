@@ -90,6 +90,8 @@ pub enum Token {
     KeywordSpeedmaster,
     KeywordTap,
     KeywordSet,
+    KeywordHighlight,
+    KeywordUnhighlight,
 
     KeywordNuzul,
     KeywordSueud,
@@ -148,6 +150,8 @@ impl Token {
             Token::KeywordRecall => TokenType::ActionKeyword,
             Token::KeywordLock => TokenType::ActionKeyword,
             Token::KeywordSet => TokenType::ActionKeyword,
+            Token::KeywordHighlight => TokenType::ActionKeyword,
+            Token::KeywordUnhighlight => TokenType::ActionKeyword,
 
             Token::KeywordGroup => TokenType::ObjectKeyword,
             Token::KeywordMacro => TokenType::ObjectKeyword,
@@ -272,6 +276,8 @@ impl std::fmt::Display for Token {
             Token::KeywordSpeedmaster => write!(f, "speedmaster"),
             Token::KeywordTap => write!(f, "tap"),
             Token::KeywordSet => write!(f, "set"),
+            Token::KeywordHighlight => write!(f, "highlight"),
+            Token::KeywordUnhighlight => write!(f, "unhighlight"),
             Token::Eof => write!(f, "Eof"),
         }
     }

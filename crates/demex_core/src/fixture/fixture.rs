@@ -145,10 +145,14 @@ pub struct FixtureChannelFunction {
     pub(crate) min: ClampedValue,
     pub(crate) max: ClampedValue,
     pub(crate) default: ClampedValue,
+    pub(crate) highlight: Option<ClampedValue>,
+
     pub(crate) sets: HashMap<String, ClampedValue>,
+
     pub(crate) activation_group: Option<String>,
     pub(crate) master: LogicalChannelMaster,
     pub(crate) is_initial: bool,
+    pub(crate) snap: bool,
 }
 
 impl FixtureChannelFunction {
@@ -167,25 +171,55 @@ impl FixtureChannelFunction {
         self.max
     }
 
-    /// The default value for this attribute when no explicit value is set.
+    /// The default value (projected in the channel function) for this attribute when no explicit value is set.
     pub fn default(&self) -> ClampedValue {
         self.default
+    }
+
+    /// The highlight value (projected in the channel function) for this attribute
+    pub fn highlight(&self) -> Option<ClampedValue> {
+        self.highlight
+    }
+
+    /// Whether this channel function should snap instead of fade
+    pub fn snap(&self) -> bool {
+        self.snap
     }
 
     pub fn unprojected_default(&self) -> ClampedValue {
         self.unproject(self.default)
     }
 
+    pub fn unprojected_highlight(&self) -> Option<ClampedValue> {
+        self.highlight.map(|highlight| self.unproject(highlight))
+    }
+
+    pub(crate) fn project_cf_value(
+        value: ClampedValue,
+        min: ClampedValue,
+        max: ClampedValue,
+    ) -> ClampedValue {
+        let range = max.as_f32() - min.as_f32();
+        (min.as_f32() + range * value.as_f32()).into()
+    }
+
+    pub(crate) fn unproject_cf_value(
+        value: ClampedValue,
+        min: ClampedValue,
+        max: ClampedValue,
+    ) -> ClampedValue {
+        let range = max.as_f32() - min.as_f32();
+        ((value.as_f32() - min.as_f32()) / range).into()
+    }
+
     /// Project the value (0.0..=1.0) to the range of this channel function.
     pub fn project(&self, value: ClampedValue) -> ClampedValue {
-        let range = self.max.as_f32() - self.min.as_f32();
-        (self.min.as_f32() + range * value.as_f32()).into()
+        Self::project_cf_value(value, self.min, self.max)
     }
 
     /// Unproject the value from the range of this channel function to (0.0..=1.0).
     pub fn unproject(&self, value: ClampedValue) -> ClampedValue {
-        let range = self.max.as_f32() - self.min.as_f32();
-        ((value.as_f32() - self.min.as_f32()) / range).into()
+        Self::unproject_cf_value(value, self.min, self.max)
     }
 
     /// Get a channel set by name for this channel function.
@@ -300,6 +334,12 @@ impl str::FromStr for FixtureId {
             .map_err(FixtureError::FixtureIdParseError)?;
         FixtureId::new(id)
     }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum FixturePathMatchLevel {
+    Exact,
+    TopLevel,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -426,6 +466,13 @@ impl FixturePath {
             return false;
         }
         &self.as_slice()[..path_len] == path.as_slice()
+    }
+
+    pub fn matches(&self, path: &Self, level: FixturePathMatchLevel) -> bool {
+        match level {
+            FixturePathMatchLevel::Exact => self == path,
+            FixturePathMatchLevel::TopLevel => self.root() == path.root(),
+        }
     }
 }
 

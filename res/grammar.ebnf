@@ -13,6 +13,8 @@ function                    = fixture_selector set_function
                             | "rename" rename_function
                             | "update" update_function
                             | "delete" delete_function "really"
+                            | "highlight" [fixture_selector]
+                            | "unhighlight"
                             | "move" move_function
                             | "clear"
                             | "nuzul" | "sueud" | "grandetc"

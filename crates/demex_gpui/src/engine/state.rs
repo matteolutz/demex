@@ -12,7 +12,6 @@ use demex_core::{
     },
     event::{DemexEvent, FixtureSelectionWithGroup},
     fixture::FixturePath,
-    fpath,
     patch::Patch,
     pool::{PoolItem, PoolType},
     utils::thread::DemexThreadStats,
@@ -142,6 +141,7 @@ impl<const SIZE: usize> DemexPerformanceBuffer<SIZE> {
 
 pub struct DemexUiState {
     fixture_selection: Entity<Option<FixtureSelectionWithGroup>>,
+    highlight: Entity<Option<FixtureSelectionWithGroup>>,
 
     fixture_values:
         Entity<HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelValue3>>>,
@@ -168,6 +168,11 @@ impl DemexUiState {
     pub fn fixture_selection(cx: &App) -> Entity<Option<FixtureSelectionWithGroup>> {
         let this: &Self = cx.global();
         this.fixture_selection.clone()
+    }
+
+    pub fn highlight(cx: &App) -> Entity<Option<FixtureSelectionWithGroup>> {
+        let this: &Self = cx.global();
+        this.highlight.clone()
     }
 
     pub fn fixture_values(
@@ -252,6 +257,7 @@ impl DemexUiState {
     pub fn new(cx: &mut App) -> Self {
         Self {
             fixture_selection: cx.new(|_| Default::default()),
+            highlight: cx.new(|_| Default::default()),
             fixture_values: cx.new(|_| Default::default()),
             patch: cx.new(|_| Default::default()),
             performance: cx.new(|_| Default::default()),
@@ -318,6 +324,10 @@ impl DemexUiState {
                     cx.notify();
                 })
             }
+            DemexEvent::HighlightChanged(new_highlight) => self.highlight.update(cx, |hl, cx| {
+                *hl = new_highlight;
+                cx.notify();
+            }),
             DemexEvent::PoolItemAdded(pool_type, id) => {
                 DemexEngineHandler::send(cx, PoolItemRequest { pool_type, id }, move |res, cx| {
                     let Some(item) = res else {

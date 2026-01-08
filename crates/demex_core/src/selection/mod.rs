@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     channel3::attribute::FixtureChannel3Attribute,
     command::parser::nodes::fixture_selector::{FixtureSelector, FixtureSelectorContext},
-    fixture::FixturePath,
+    fixture::{FixturePath, FixturePathMatchLevel},
     implement_set_property,
     patch::Patch,
 };
@@ -53,6 +53,16 @@ impl FixtureSelection {
 impl FixtureSelection {
     pub fn has_fixture(&self, fixture_path: &FixturePath) -> bool {
         self.fixtures.contains(fixture_path)
+    }
+
+    pub fn has_fixture_with_level(
+        &self,
+        fixture_path: &FixturePath,
+        level: FixturePathMatchLevel,
+    ) -> bool {
+        self.fixtures
+            .iter()
+            .any(|path| path.matches(fixture_path, level))
     }
 
     pub fn intersects_with(&self, other: &FixtureSelection) -> bool {

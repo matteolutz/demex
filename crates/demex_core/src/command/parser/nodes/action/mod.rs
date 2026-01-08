@@ -192,6 +192,10 @@ pub enum Action {
     },
 
     FixtureSelector(FixtureSelector),
+
+    Highlight(Option<FixtureSelector>),
+    Unhighlight,
+
     ClearAll,
     Save,
     Test(String),
@@ -435,6 +439,13 @@ impl Action {
                 preset_handler,
                 patch,
             ),
+            Self::Highlight(fixture_selector) => self.run_highlight(
+                fixture_selector.as_ref(),
+                fixture_selector_context,
+                preset_handler,
+                patch,
+            ),
+            Self::Unhighlight => Ok(ActionRunResult::UpdateHighlight(None)),
             Self::Test(_) => Ok(ActionRunResult::new()),
             Self::Save => Ok(ActionRunResult::Save),
 
@@ -591,6 +602,38 @@ impl Action {
         selection.retain(|path| patch.fixture(path).is_ok());
 
         Ok(ActionRunResult::UpdateFixtureSelection(Some(
+            FixtureSelectionWithGroup::with_group(selection, group_id),
+        )))
+    }
+
+    fn run_highlight(
+        &self,
+        fixture_selector: Option<&FixtureSelector>,
+        fixture_selector_context: FixtureSelectorContext,
+        preset_handler: &PresetHandler,
+        patch: &Patch,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        let fixture_selector = fixture_selector
+            .cloned()
+            .unwrap_or_else(|| FixtureSelector::current_fixtures_selected());
+
+        let group_id = fixture_selector.try_as_group_id();
+
+        // flatten the fixture selector, so we don't have
+        // outdated references to the previously selected fixtures
+        let mut selection = fixture_selector
+            .get_selection(preset_handler, fixture_selector_context.clone())
+            .map_err(ActionRunError::FixtureSelectorError)?;
+
+        if selection.fixtures().is_empty() {
+            return Err(ActionRunError::FixtureSelectorError(
+                FixtureSelectorError::NoFixturesMatched,
+            ));
+        }
+
+        selection.retain(|path| patch.fixture(path).is_ok());
+
+        Ok(ActionRunResult::UpdateHighlight(Some(
             FixtureSelectionWithGroup::with_group(selection, group_id),
         )))
     }

@@ -41,10 +41,6 @@ pub struct FixtureListPanel {
 
 impl FixtureListPanel {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let patch = DemexUiState::patch(cx);
-        let fixture_values = DemexUiState::fixture_values(cx);
-        let fixture_selection = DemexUiState::fixture_selection(cx);
-
         let table_state = cx.new(|cx| {
             TableState::new(FixtureListTable::new(Self::get_table_data(cx)), window, cx)
                 .col_movable(false)
@@ -56,15 +52,20 @@ impl FixtureListPanel {
         };
 
         let _subscriptions = vec![
-            cx.observe(&patch, move |this, _, cx| {
+            cx.observe(&DemexUiState::patch(cx), move |this, _, cx| {
                 this.table_state.update(cx, |table, cx| {
                     table.delegate_mut().update_data(Self::get_table_data(cx));
                     table.refresh(cx);
                 });
                 cx.notify();
             }),
-            cx.observe(&fixture_values, move |this, _, cx| refresh_table(this, cx)),
-            cx.observe(&fixture_selection, move |this, _, cx| {
+            cx.observe(&DemexUiState::fixture_values(cx), move |this, _, cx| {
+                refresh_table(this, cx)
+            }),
+            cx.observe(&DemexUiState::fixture_selection(cx), move |this, _, cx| {
+                refresh_table(this, cx)
+            }),
+            cx.observe(&DemexUiState::highlight(cx), move |this, _, cx| {
                 refresh_table(this, cx)
             }),
             cx.subscribe(&table_state, |_, state, evt, cx| match evt {

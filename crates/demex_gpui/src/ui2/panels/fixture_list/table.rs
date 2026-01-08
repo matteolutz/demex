@@ -1,6 +1,6 @@
 use demex_core::{
     channel3::attribute::FixtureChannel3Attribute,
-    fixture::{Fixture, FixturePath},
+    fixture::{Fixture, FixturePath, FixturePathMatchLevel},
     patch::Patch,
 };
 use demex_dmx::address::DmxAddress;
@@ -141,6 +141,12 @@ impl TableDelegate for FixtureListTable {
         let patch = DemexUiState::patch(cx).read(cx);
 
         let fixture_selection = DemexUiState::fixture_selection(cx).read(cx).as_ref();
+        let highlight = DemexUiState::highlight(cx).read(cx).as_ref();
+
+        let is_highlighted = highlight.is_some_and(|hl| {
+            hl.selection()
+                .has_fixture_with_level(&entry.path, FixturePathMatchLevel::TopLevel)
+        });
         let is_selected = fixture_selection.is_some_and(|s| s.selection().has_fixture(&entry.path));
 
         let fixture = patch.fixture(&entry.path).unwrap();
@@ -155,6 +161,7 @@ impl TableDelegate for FixtureListTable {
             "patch" => fixture.base_address().to_string().into_any_element(),
             "name" => div()
                 .when(is_selected, |div| div.text_color(cx.theme().green))
+                .when(is_highlighted, |div| div.text_color(cx.theme().red))
                 .child(fixture.name().to_string())
                 .into_any_element(),
             "fixture_type" => entry.fixture_type_name.clone().into_any_element(),

@@ -1356,6 +1356,12 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_highlight_function(&mut self) -> Result<Action, ParseError> {
+        let fixture_selector = self.try_parse(Self::parse_fixture_selector);
+
+        Ok(Action::Highlight(fixture_selector.ok()))
+    }
+
     fn parse_function(&mut self) -> Result<Action, ParseError> {
         if matches!(self.current_token()?, Token::KeywordHome) {
             self.advance();
@@ -1453,6 +1459,16 @@ impl<'a> Parser2<'a> {
             let test_action = self.parse_string()?;
 
             return Ok(Action::Test(test_action));
+        }
+
+        if matches!(self.current_token()?, Token::KeywordHighlight) {
+            self.advance();
+            return self.parse_highlight_function();
+        }
+
+        if matches!(self.current_token()?, Token::KeywordUnhighlight) {
+            self.advance();
+            return Ok(Action::Unhighlight);
         }
 
         let currently_selected_set_function =

@@ -11,7 +11,11 @@ use crate::{
 
 #[derive(Debug, Clone, Default)]
 pub struct DemexEngineState {
+    /// The currently selected fixtures.
     pub fixture_selection: Option<FixtureSelection>,
+
+    /// The currently highlighted fixtures.
+    pub highlight: Option<FixtureSelection>,
 }
 
 impl Component for DemexEngineState {}

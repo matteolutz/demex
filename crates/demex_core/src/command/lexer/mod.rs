@@ -138,6 +138,8 @@ impl<'a> Lexer<'a> {
                     "tap" => Some(Token::KeywordTap),
                     "grandetc" => Some(Token::KeywordGrandEtc),
                     "set" => Some(Token::KeywordSet),
+                    "highlight" | "hl" => Some(Token::KeywordHighlight),
+                    "unhighlight" | "uhl" => Some(Token::KeywordUnhighlight),
                     _ => None,
                 };
 

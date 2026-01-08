@@ -37,6 +37,7 @@ pub enum DemexEvent {
     GlobalEncoderValueChanged(u32),
 
     FixtureSelectionChanged(Option<FixtureSelectionWithGroup>),
+    HighlightChanged(Option<FixtureSelectionWithGroup>),
 
     FixtureValuesChanged(Vec<FixturePath>),
     ObjectPropertyChanged(Object, String),

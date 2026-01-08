@@ -6,7 +6,7 @@ use demex_core::{
 };
 use gpui::{
     App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Subscription,
-    Window, WindowOptions,
+    Window, WindowOptions, div, prelude::FluentBuilder,
 };
 use gpui_component::{
     ActiveTheme, Root, TitleBar,
@@ -16,7 +16,7 @@ use gpui_component::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    engine::showfile::DemexShowFileManager,
+    engine::{showfile::DemexShowFileManager, state::DemexUiState},
     ui2::{
         ext::GpuiContextExtension,
         panels::{
@@ -185,7 +185,10 @@ impl DockWindow {
     ) -> Self {
         let dock_area = cx.new(|cx| Self::init_dockarea(config, window, cx));
 
-        let _subscriptions = vec![cx.observe_and_notify(&DemexShowFileManager::last_autosave(cx))];
+        let _subscriptions = vec![
+            cx.observe_and_notify(&DemexShowFileManager::last_autosave(cx)),
+            cx.observe_and_notify(&DemexUiState::highlight(cx)),
+        ];
 
         Self {
             title_bar: cx.new(|cx| DemexTitleBar::dock_window(cx)),
@@ -239,6 +242,7 @@ impl DockWindow {
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let last_autosave = DemexShowFileManager::last_autosave(cx).read(cx).clone();
+        let highlight = DemexUiState::highlight(cx).read(cx);
 
         h_flex()
             .justify_between()
@@ -251,6 +255,16 @@ impl DockWindow {
             .text_color(cx.theme().muted_foreground)
             .text_sm()
             .child(format!("demex v{}-{}", VERSION_STR, env!("GIT_HASH")))
+            .child(
+                div()
+                    .flex_1()
+                    .flex()
+                    .gap_2()
+                    .px_4()
+                    .when(highlight.is_some(), |this| {
+                        this.child(div().text_color(cx.theme().red).child("HIGHLIGHT"))
+                    }),
+            )
             .child(format!(
                 "Last autosave: {}",
                 last_autosave

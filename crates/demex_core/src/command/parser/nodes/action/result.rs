@@ -13,6 +13,7 @@ pub enum ActionRunResult {
     Warn(String),
 
     UpdateFixtureSelection(Option<FixtureSelectionWithGroup>),
+    UpdateHighlight(Option<FixtureSelectionWithGroup>),
     UpdatePatch(Patch),
 
     Lock,
