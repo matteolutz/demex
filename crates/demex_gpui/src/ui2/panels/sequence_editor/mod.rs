@@ -8,7 +8,7 @@ use gpui::{
     ParentElement, Render, Styled, Subscription, Window, div,
 };
 use gpui_component::{
-    Sizable, StyledExt,
+    ActiveTheme, Sizable, StyledExt,
     button::Button,
     dock::{Panel, PanelEvent, register_panel},
     scroll::ScrollableElement,
@@ -61,8 +61,13 @@ impl SequenceEditorPanel {
                     .as_ref()
                     .map(|seq| (seq.sequence.id, seq.sequence.cues.clone()));
 
+                let active_cues = sequence.read(cx).as_ref().and_then(|seq| seq.first_executor.as_ref()).map(|(_, cues)| {
+                    cues.clone()
+                });
+
                 this.table_state.update(cx, |table, cx| {
                     table.delegate_mut().update_data(data);
+                    table.delegate_mut().update_active_cues(active_cues);
                     cx.notify();
                 });
                 cx.notify();
@@ -88,13 +93,20 @@ impl SequenceEditorPanel {
                         .sequence
                         .read(cx)
                         .as_ref()
-                        .and_then(|seq| seq.first_executor);
+                        .and_then(|seq| seq.first_executor.as_ref())
+                        .map(|(id, _)| *id);
 
                     let Some(executor_id) = executor_id else {
                         return;
                     };
 
                     match evt {
+                        DemexEvent::ExecutorStop(id) if *id == executor_id => {
+                            this.table_state.update(cx, |state, cx| {
+                                state.delegate_mut().executor_stop();
+                                cx.notify();
+                            });
+                        },
                         DemexEvent::ExecutorUpdateEvent { id, event } if *id == executor_id => {
                             log::debug!("got executor update event: {:?}", event);
                             match event {
@@ -184,8 +196,23 @@ impl Render for SequenceEditorPanel {
         _window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl IntoElement {
+        if DemexUiState::selected_sequence(cx).read(cx).is_none() {
+            return v_flex()
+                .size_full()
+                .justify_center()
+                .items_center()
+                .text_color(cx.theme().muted_foreground)
+                .child("No sequence selected")
+                .into_any_element();
+        }
+
         let Some(sequence) = self.sequence.read(cx) else {
-            return div().child("Loading").into_any_element();
+            return v_flex()
+                .size_full()
+                .justify_center()
+                .items_center()
+                .child("Loading")
+                .into_any_element();
         };
 
         v_flex()

@@ -118,7 +118,6 @@ impl DemexEventHandler {
                     )
                 });
             }
-            ActionRunResult::WithEvents { .. } => unreachable!(),
             _ => {}
         }
     }

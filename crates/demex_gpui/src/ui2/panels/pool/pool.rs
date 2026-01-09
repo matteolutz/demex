@@ -1,4 +1,9 @@
-use demex_core::pool::{PoolItem, PoolType};
+use std::collections::HashMap;
+
+use demex_core::{
+    event::DemexEvent,
+    pool::{PoolItem, PoolType},
+};
 use gpui::{
     App, AppContext, Bounds, Context, Entity, IntoElement, ParentElement, Pixels, Render, Styled,
     Subscription, Window, div, prelude::FluentBuilder, px,
@@ -7,13 +12,13 @@ use gpui_component::PixelsExt;
 use itertools::Itertools;
 
 use crate::{
-    engine::state::DemexUiState,
+    engine::{DemexEngineHandler, state::DemexUiState},
     ui2::{
         ext::GpuiContextExtension,
         panels::pool::{
-            pool_action::handle_pool_item_click,
+            pool_action::{apply_pool_type_to_button, handle_pool_item_click},
             pool_button::{PoolButton, PoolItemButtonIndicatorColor},
-            pool_item::PoolItemNameExt,
+            pool_item::{PoolItemNameExt, PoolItemState},
             pool_quick_actions::{PoolQuickActions, PoolQuickActionsState},
         },
         utils::bounds,
@@ -30,6 +35,8 @@ pub struct Pool {
 
     pool_items: Entity<Vec<PoolItem>>,
     pool_type: PoolType,
+
+    pool_item_states: Entity<HashMap<u32, PoolItemState>>,
 
     _subscriptions: Vec<Subscription>,
 }
@@ -51,10 +58,41 @@ impl Pool {
         Self {
             pool_items,
             pool_type,
+            pool_item_states: cx.new(|_| HashMap::new()),
             bounds,
             quick_actions_state,
             _subscriptions,
         }
+    }
+
+    fn clear_states(&self, cx: &mut Context<Self>) {
+        self.pool_item_states.update(cx, |states, _| {
+            states.clear();
+        });
+        cx.notify();
+    }
+
+    fn clear_and_set_state(&self, id: u32, state: PoolItemState, cx: &mut Context<Self>) {
+        self.pool_item_states.update(cx, |states, _| {
+            states.clear();
+            states.insert(id, state);
+        });
+        cx.notify();
+    }
+
+    fn modify_state(
+        &self,
+        id: u32,
+        f: impl FnOnce(Option<PoolItemState>) -> Option<PoolItemState>,
+        cx: &mut Context<Self>,
+    ) {
+        self.pool_item_states.update(cx, |states, _| {
+            let state = states.remove(&id);
+            if let Some(new_state) = f(state) {
+                states.insert(id, new_state);
+            };
+        });
+        cx.notify();
     }
 
     fn get_pool_type_subscriptions(
@@ -62,26 +100,69 @@ impl Pool {
         cx: &mut Context<Self>,
     ) -> Vec<Subscription> {
         match pool_type {
-            PoolType::Group => vec![cx.observe_and_notify(&DemexUiState::fixture_selection(cx))],
-            _ => vec![],
-        }
-    }
-
-    fn get_pool_item_color(
-        &self,
-        pool_item_id: u32,
-        cx: &App,
-    ) -> Option<PoolItemButtonIndicatorColor> {
-        match self.pool_type {
             PoolType::Group => {
-                let is_selected = DemexUiState::fixture_selection(cx)
-                    .read(cx)
-                    .as_ref()
-                    .and_then(|sel| sel.group_id())
-                    .is_some_and(|group_id| group_id == pool_item_id);
-                is_selected.then_some(PoolItemButtonIndicatorColor::Green)
+                vec![cx.observe(
+                    &DemexUiState::fixture_selection(cx),
+                    |this, selection, cx| {
+                        if let Some(group_id) =
+                            selection.read(cx).as_ref().and_then(|sel| sel.group_id())
+                        {
+                            this.clear_and_set_state(
+                                group_id,
+                                PoolItemState {
+                                    indicator_color: PoolItemButtonIndicatorColor::Green,
+                                },
+                                cx,
+                            );
+                        } else {
+                            this.clear_states(cx);
+                        }
+
+                        cx.notify();
+                    },
+                )]
             }
-            _ => None,
+            PoolType::Executor => {
+                vec![cx.subscribe(
+                    &DemexEngineHandler::event_handler(cx),
+                    |this, _, evt, cx| match evt {
+                        DemexEvent::ExecutorGo(id) => {
+                            this.modify_state(
+                                *id,
+                                |_| {
+                                    Some(PoolItemState {
+                                        indicator_color: PoolItemButtonIndicatorColor::Red,
+                                    })
+                                },
+                                cx,
+                            );
+                        }
+                        DemexEvent::ExecutorStop(id) => {
+                            this.modify_state(*id, |_| None, cx);
+                        }
+                        _ => {}
+                    },
+                )]
+            }
+            PoolType::Sequence => {
+                vec![cx.observe(
+                    &DemexUiState::selected_sequence(cx),
+                    |this, selected_sequence, cx| {
+                        if let Some(selected_seq) = selected_sequence.read(cx) {
+                            this.clear_and_set_state(
+                                *selected_seq,
+                                PoolItemState {
+                                    indicator_color: PoolItemButtonIndicatorColor::Blue,
+                                },
+                                cx,
+                            );
+                        } else {
+                            this.clear_states(cx);
+                        }
+                    },
+                )]
+            }
+            _ => vec![],
         }
     }
 }
@@ -117,14 +198,9 @@ impl Pool {
                 PoolButton::new(item.id as usize)
                     .size(px(element_size))
                     .quick_actions_state(&self.quick_actions_state)
-                    .action("Test", |_, _| log::debug!("PoolButton: Test"))
-                    .action("Test 2", |_, _| log::debug!("PoolButton: Test 2"))
-                    .action("Test 3", |_, _| log::debug!("PoolButton: Test 3"))
-                    .action("Test 4", |_, _| log::debug!("PoolButton: Test 4"))
-                    .action("Test 5", |_, _| log::debug!("PoolButton: Test 5"))
-                    .action("Test 6", |_, _| log::debug!("PoolButton: Test 6"))
-                    .action("Test 7", |_, _| log::debug!("PoolButton: Test 7"))
-                    .action("Test 8", |_, _| log::debug!("PoolButton: Test 8"))
+                    .when(true, |this| {
+                        apply_pool_type_to_button(self.pool_type, this, item.id)
+                    })
                     .item_name(item.name.clone().to_name(cx))
                     .on_click({
                         let id = item.id;
@@ -132,9 +208,10 @@ impl Pool {
                             handle_pool_item_click(this.pool_type, id, cx)
                         })
                     })
-                    .when_some(self.get_pool_item_color(item.id, cx), |this, color| {
-                        this.indicator_color(color)
-                    })
+                    .when_some(
+                        self.pool_item_states.read(cx).get(&item.id),
+                        |this, state| this.indicator_color(state.indicator_color),
+                    )
                     .item_id(item.id)
             }))
     }

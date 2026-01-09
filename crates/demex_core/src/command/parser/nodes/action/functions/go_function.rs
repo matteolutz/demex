@@ -1,7 +1,4 @@
-use crate::{
-    command::parser::nodes::action::{error::ActionRunError, result::ActionRunResult},
-    event::DemexEvent,
-};
+use crate::command::parser::nodes::action::{error::ActionRunError, result::ActionRunResult};
 
 use super::FunctionArgs;
 
@@ -23,6 +20,7 @@ impl FunctionArgs for ExecutorGoArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _timing_handler: &mut crate::timing::TimingHandler,
         _patch: &crate::patch::Patch,
+        event_list: &mut crate::event::list::DemexEventList,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
@@ -33,10 +31,9 @@ impl FunctionArgs for ExecutorGoArgs {
                 fixture_handler,
                 preset_handler,
                 issued_at.elapsed().as_secs_f32(),
+                event_list,
             )
             .map_err(ActionRunError::UpdatableHandlerError)
-            .map(|events| {
-                ActionRunResult::event(DemexEvent::ExecutorGo(self.executor_id)).with_events(events)
-            })
+            .map(|_| ActionRunResult::Default)
     }
 }

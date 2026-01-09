@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    event::DemexEvent,
+    event::{DemexEvent, list::DemexEventList},
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
     selection::FixtureSelection,
     sequence::cue::CueIdx,
@@ -107,6 +107,7 @@ pub trait ObjectDelegate: 'static + Sized {
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         fixture_selector_context: FixtureSelectorContext,
+        event_list: &mut DemexEventList,
         key: String,
         value: String,
     ) -> Result<ActionRunResult, ActionRunError>;
@@ -142,6 +143,7 @@ impl HomeableObject {
         fixture_state_handler: &mut FixtureStateHandler,
         updatable_handler: &mut UpdatableHandler,
         fixture_selector_context: FixtureSelectorContext,
+        event_list: &mut DemexEventList,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
             HomeableObject::CurrentFixtureSelection => {
@@ -161,7 +163,7 @@ impl HomeableObject {
             }
             HomeableObject::Executor(executor_id) => {
                 if let Ok(fader) = updatable_handler.executor_mut(*executor_id) {
-                    fader.stop(fixture_state_handler, preset_handler);
+                    fader.stop(fixture_state_handler, preset_handler, event_list);
                 }
 
                 Ok(ActionRunResult::new())
@@ -189,6 +191,7 @@ impl ObjectDelegate for HomeableObject {
         _preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         fixture_selector_context: FixtureSelectorContext,
+        _: &mut DemexEventList,
         key: String,
         value: String,
     ) -> Result<ActionRunResult, ActionRunError> {
@@ -255,6 +258,7 @@ impl ObjectDelegate for Object {
         preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         fixture_selector_context: FixtureSelectorContext,
+        event_list: &mut DemexEventList,
         key: String,
         value: String,
     ) -> Result<ActionRunResult, ActionRunError> {
@@ -265,6 +269,7 @@ impl ObjectDelegate for Object {
                 preset_handler,
                 updatable_handler,
                 fixture_selector_context,
+                event_list,
                 key,
                 value,
             ),
@@ -290,10 +295,8 @@ impl ObjectDelegate for Object {
                 .and_then(|cue| cue.set_property_string(key, value)),
         };
 
-        result.map(|result| ActionRunResult::WithEvents {
-            result: Box::new(result),
-            events: vec![DemexEvent::ObjectPropertyChanged(self.clone(), cloned_key)],
-        })
+        event_list.push(DemexEvent::ObjectPropertyChanged(self.clone(), cloned_key));
+        result
     }
 }
 

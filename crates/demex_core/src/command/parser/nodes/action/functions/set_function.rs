@@ -39,6 +39,7 @@ impl FunctionArgs for SetAttributeValueArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
         patch: &Patch,
+        event_list: &mut crate::event::list::DemexEventList,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
@@ -73,9 +74,10 @@ impl FunctionArgs for SetAttributeValueArgs {
             }
         }
 
-        Ok(ActionRunResult::event(DemexEvent::FixtureValuesChanged(
+        event_list.push(DemexEvent::FixtureValuesChanged(
             selection.fixtures().to_vec(),
-        )))
+        ));
+        Ok(ActionRunResult::Default)
     }
 }
 
@@ -131,6 +133,7 @@ impl FunctionArgs for SetFixturePresetArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
         patch: &Patch,
+        event_list: &mut crate::event::list::DemexEventList,
     ) -> Result<ActionRunResult, ActionRunError> {
         let selection = self
             .selection_or_selector
@@ -195,9 +198,8 @@ impl FunctionArgs for SetFixturePresetArgs {
             }
         }
 
-        Ok(ActionRunResult::event(DemexEvent::FixtureValuesChanged(
-            fixtures,
-        )))
+        event_list.push(DemexEvent::FixtureValuesChanged(fixtures));
+        Ok(ActionRunResult::Default)
     }
 }
 
@@ -219,11 +221,13 @@ impl FunctionArgs for ObjectSetPropertyArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _timing_handler: &mut TimingHandler,
         _patch: &Patch,
+        event_list: &mut crate::event::list::DemexEventList,
     ) -> Result<ActionRunResult, ActionRunError> {
         self.object.clone().set(
             preset_handler,
             updatable_handler,
             fixture_selector_context,
+            event_list,
             self.key.clone(),
             self.value.clone(),
         )

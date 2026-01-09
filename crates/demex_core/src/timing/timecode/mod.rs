@@ -3,7 +3,8 @@ use state::TimecodeState;
 use trigger::TimecodeTrigger;
 
 use crate::{
-    presets::PresetHandler, state::fixture_state_handler::FixtureStateHandler,
+    event::list::DemexEventList, presets::PresetHandler,
+    state::fixture_state_handler::FixtureStateHandler,
     timing::timecode::scheduler::TimecodeTriggerScheduler, updatables::UpdatableHandler,
 };
 
@@ -93,6 +94,7 @@ impl Timecode {
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
+        event_list: &mut DemexEventList,
     ) {
         if !self.state.is_running() {
             return;
@@ -104,6 +106,7 @@ impl Timecode {
                 fixture_handler,
                 preset_handler,
                 updatable_handler,
+                event_list,
             );
         }
     }

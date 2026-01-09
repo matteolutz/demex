@@ -149,7 +149,7 @@ impl FixtureStateHandler {
 
                 if highlight.is_some_and(|highlight| {
                     // all child fixtures should also be highlighted
-                    highlight.has_fixture_with_level(path, FixturePathMatchLevel::TopLevel)
+                    highlight.has_fixture_with_level(path, FixturePathMatchLevel::NotSibling)
                 }) {
                     if let Some(highlight) = cf.highlight() {
                         new_output_value = FixtureChannelValue3::discrete(highlight);

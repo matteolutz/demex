@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    event::list::DemexEventList,
     presets::{PresetHandler, preset::FixturePresetId},
     selection::FixtureSelection,
     state::fixture_state_handler::FixtureStateHandler,
@@ -41,6 +42,7 @@ impl TimecodeTrigger {
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
+        event_list: &mut DemexEventList,
     ) {
         let time_offset = (trigger_millis - self.millis) as f32 / 1000.0;
 
@@ -51,6 +53,7 @@ impl TimecodeTrigger {
                     fixture_handler,
                     preset_handler,
                     time_offset,
+                    event_list,
                 );
             }
             _ => todo!(),

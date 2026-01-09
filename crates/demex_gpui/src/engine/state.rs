@@ -263,8 +263,7 @@ impl DemexUiState {
             performance: cx.new(|_| Default::default()),
             pools: HashMap::new(),
             command_history: cx.new(|_| Default::default()),
-            // TODO: just for testing
-            selected_sequence: cx.new(|_| Some(1)),
+            selected_sequence: cx.new(|_| None),
         }
     }
 

@@ -8,6 +8,7 @@ use crate::{
     fixture::FixturePath,
     patch::Patch,
     presets::PresetHandler,
+    sequence::cue::CueIdx,
     state::fixture_state_handler::FixtureStateHandler,
     timing::TimingHandler,
     value_source::FixtureChannelValuePriority,
@@ -181,6 +182,13 @@ impl SequenceRuntimeState {
             Self::Stopped | Self::CueOut { .. } => vec![],
         }
     }
+
+    pub fn current_cue_indices_with_time(&self) -> Vec<(usize, time::Instant)> {
+        match self {
+            Self::Cues { active_cues, .. } => active_cues.clone(),
+            Self::Stopped | Self::CueOut { .. } => vec![],
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -216,6 +224,14 @@ impl SequenceRuntime {
 
     pub fn current_cues(&self) -> Vec<usize> {
         self.state.current_cue_indices()
+    }
+
+    pub fn current_cue_ids(&self, sequence: &Sequence) -> Vec<(CueIdx, time::Instant)> {
+        self.state
+            .current_cue_indices_with_time()
+            .into_iter()
+            .map(|(idx, time)| (sequence.cue(idx).cue_idx, time))
+            .collect()
     }
 
     pub fn num_cues(&self, preset_handler: &PresetHandler) -> usize {

@@ -6,6 +6,8 @@ pub use selection::*;
 mod executor;
 pub use executor::*;
 
+pub mod list;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DemexEvent {
     ExecutorGo(u32),

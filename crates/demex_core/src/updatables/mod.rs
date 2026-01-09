@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     engine::component::Component,
-    event::DemexEvent,
+    event::{DemexEvent, list::DemexEventList},
     group_master::GroupMaster,
     patch::Patch,
     pool::{Pool, PoolError, PoolHelper, PoolType},
@@ -56,6 +56,7 @@ impl UpdatableHandler {
         &mut self,
         id: u32,
         sequence_id: u32,
+        event_list: &mut DemexEventList,
     ) -> Result<(), UpdatableHandlerError> {
         if self.executors.contains_key(&id) {
             return Err(UpdatableHandlerError::UpdatableAlreadyExists(id));
@@ -69,6 +70,8 @@ impl UpdatableHandler {
                 DemexExecutorFaderFunction::default(),
             ),
         );
+        event_list.push(DemexEvent::PoolItemAdded(PoolType::Executor, id));
+
         Ok(())
     }
 
@@ -101,9 +104,10 @@ impl UpdatableHandler {
         &mut self,
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
+        event_list: &mut DemexEventList,
     ) {
         for (_, fader) in self.executors.iter_mut() {
-            fader.stop(fixture_handler, preset_handler);
+            fader.stop(fixture_handler, preset_handler, event_list);
         }
     }
 
@@ -117,22 +121,33 @@ impl UpdatableHandler {
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
-    ) -> Vec<DemexEvent> {
-        self.executors
-            .iter_mut()
-            .flat_map(|(&id, executor)| {
-                executor
-                    .update(patch, fixture_handler, preset_handler, timing_handler)
-                    .into_iter()
-                    .map(move |event| DemexEvent::ExecutorUpdateEvent { id, event })
-            })
-            .collect()
+        event_list: &mut DemexEventList,
+    ) {
+        for executor in self.executors.values_mut() {
+            executor.update(
+                patch,
+                fixture_handler,
+                preset_handler,
+                timing_handler,
+                event_list,
+            )
+        }
     }
 
-    pub fn delete_executor(&mut self, id: u32) -> Result<(), UpdatableHandlerError> {
+    pub fn delete_executor(
+        &mut self,
+        id: u32,
+        event_list: &mut DemexEventList,
+    ) -> Result<(), UpdatableHandlerError> {
         self.executors
             .remove(&id)
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
+        event_list.push(DemexEvent::PoolItemsDeleted {
+            pool_type: PoolType::Executor,
+            from_id: id,
+            to_id: id,
+        });
+
         Ok(())
     }
 
@@ -154,8 +169,10 @@ impl UpdatableHandler {
         id: u32,
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
+        event_list: &mut DemexEventList,
     ) -> Result<(), UpdatableHandlerError> {
-        self.executor_mut(id)?.stop(fixture_handler, preset_handler);
+        self.executor_mut(id)?
+            .stop(fixture_handler, preset_handler, event_list);
         Ok(())
     }
 
@@ -165,10 +182,11 @@ impl UpdatableHandler {
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         time_offset: f32,
-    ) -> Result<Vec<DemexEvent>, UpdatableHandlerError> {
-        Ok(self
-            .executor_mut(id)?
-            .go(fixture_handler, preset_handler, time_offset))
+        event_list: &mut DemexEventList,
+    ) -> Result<(), UpdatableHandlerError> {
+        self.executor_mut(id)?
+            .go(fixture_handler, preset_handler, time_offset, event_list);
+        Ok(())
     }
 
     pub fn executor_stomp(&mut self, id: u32) {

@@ -2,6 +2,7 @@ use std::{
     any::{Any, TypeId},
     collections::HashMap,
     sync::mpsc,
+    time,
 };
 
 use crate::{
@@ -14,7 +15,7 @@ use crate::{
     fixture::FixturePath,
     patch::Patch,
     pool::{PoolItem, PoolType},
-    sequence::frontend::FrontendSequence,
+    sequence::{cue::CueIdx, frontend::FrontendSequence},
     show::{DemexShow, DemexShowRef},
     utils::thread::{DemexThreadStats, DemexThreadStatsHandler},
 };
@@ -77,10 +78,18 @@ pub struct SequenceRequest {
 }
 pub struct SequenceResponse {
     pub sequence: FrontendSequence,
-    pub first_executor: Option<u32>,
+    pub first_executor: Option<(u32, Vec<(CueIdx, time::Instant)>)>,
 }
 impl DemexEngineCommRequest for SequenceRequest {
     type Response = Option<SequenceResponse>;
+}
+
+#[derive(Debug)]
+pub struct ExecutorSequenceRequest {
+    pub executor_id: u32,
+}
+impl DemexEngineCommRequest for ExecutorSequenceRequest {
+    type Response = Option<FrontendSequence>;
 }
 
 #[derive(Debug)]

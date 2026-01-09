@@ -19,7 +19,7 @@ use crate::{
         component::ComponentHandle,
         state::DemexEngineState,
     },
-    event::DemexEvent,
+    event::{DemexEvent, list::DemexEventList},
     fixture::FixturePath,
     input::DemexInputDeviceHandler,
     patch::Patch,
@@ -41,6 +41,8 @@ pub struct UpdateThread {
     updatable_handler: UpdatableHandler,
     timing_handler: TimingHandler,
     patch: Arc<ArcSwap<Patch>>,
+
+    event_list: DemexEventList,
 
     fixture_state_handler: FixtureStateHandler,
     state: DemexEngineState,
@@ -93,6 +95,8 @@ impl UpdateThread {
             timing_handler,
             patch,
 
+            event_list: DemexEventList::default(),
+
             fixture_state_handler,
             state,
         };
@@ -132,20 +136,13 @@ impl DemexThreadDelegate for UpdateThread {
                 &mut DemexInputDeviceHandler::new(vec![]),
                 &mut self.timing_handler,
                 &patch,
+                &mut self.event_list,
             ) {
                 Ok(result) => {
                     if action.issuer != ActionIssuer::Ui {
                         log::debug!("Action run result: {:?}", result);
                     }
 
-                    let (result, events) = result.get_events();
-                    if let Some(events) = events {
-                        for event in events {
-                            let _ = self.event_bus_tx.send(event.into());
-                        }
-                    }
-
-                    // Also send the result itself (maybe it should trigger a ui action)
                     let _ = self
                         .event_bus_tx
                         .send(DemexEngineCommEvent::ActionRunResult(result.clone()));
@@ -167,7 +164,6 @@ impl DemexThreadDelegate for UpdateThread {
                         ActionRunResult::UpdatePatch(patch) => {
                             self.patch.store(Arc::new(patch));
                         }
-                        ActionRunResult::WithEvents { .. } => unreachable!(),
                         _ => {}
                     }
                 }
@@ -184,6 +180,7 @@ impl DemexThreadDelegate for UpdateThread {
             &mut self.fixture_state_handler,
             &self.preset_handler,
             &mut self.updatable_handler,
+            &mut self.event_list,
         );
 
         let mut updated_output_values = HashMap::new();
@@ -209,21 +206,20 @@ impl DemexThreadDelegate for UpdateThread {
             )
             .inspect_err(|err| log::error!("Failed to submit output values: {}", err));
 
-        for event in self.updatable_handler.update_executors(
+        self.updatable_handler.update_executors(
             &patch,
             &mut self.fixture_state_handler,
             &self.preset_handler,
             &self.timing_handler,
-        ) {
-            let _ = self.event_bus_tx.send(event.into());
-        }
-
+            &mut self.event_list,
+        );
         // TODO: move the input device handler to the frontend
         /*
         input_device_event_handler.write(|handler| {
             handler.push_events(uh_events.into_iter().map(DemexEvent::ExecutorStop))
         });*/
 
+        let _ = self.event_list.send(&self.event_bus_tx);
         if !updated_output_values.is_empty() {
             let _ = self
                 .event_bus_tx

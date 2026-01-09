@@ -7,6 +7,7 @@ use timecode::Timecode;
 
 use crate::{
     engine::component::Component,
+    event::list::DemexEventList,
     input::{
         midi::MidiQuarterTimecodePiece,
         timecode::{packet::TimecodePacket, synchronizer::TimecodeSynchronizer},
@@ -104,6 +105,7 @@ impl TimingHandler {
         fixture_handler: &mut FixtureStateHandler,
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
+        event_list: &mut DemexEventList,
     ) {
         self.timecode_synchronizer.update_estimated();
 
@@ -113,6 +115,7 @@ impl TimingHandler {
                 fixture_handler,
                 preset_handler,
                 updatable_handler,
+                event_list,
             )
         });
     }

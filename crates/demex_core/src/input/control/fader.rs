@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    event::DemexEvent,
+    event::{DemexEvent, list::DemexEventList},
     input::{
         DemexInputDeviceUpdateArgs, control::DemexInputDeviceControlTrait,
         error::DemexInputDeviceError, event::DemexInputDeviceFaderUpdate,
@@ -46,8 +46,9 @@ impl DemexInputFader {
         preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         timing_handler: &mut TimingHandler,
-    ) -> Result<Option<DemexEvent>, DemexInputDeviceError> {
-        let event = match self {
+        event_list: &mut DemexEventList,
+    ) -> Result<(), DemexInputDeviceError> {
+        match self {
             Self::Fader {
                 executor_id: fader_id,
             } => {
@@ -55,9 +56,7 @@ impl DemexInputFader {
                     .executor_mut(*fader_id)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
-                fader.set_value(value, fixture_handler, preset_handler, 0.0);
-
-                Some(DemexEvent::ExecutorFaderValueChanged(*fader_id))
+                fader.set_value(value, fixture_handler, preset_handler, 0.0, event_list);
             }
             Self::Groupmaster(id) => {
                 let master = updatable_handler
@@ -65,8 +64,7 @@ impl DemexInputFader {
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
                 *master.value_mut() = value;
-
-                Some(DemexEvent::GroupmasterValueChanged(*id))
+                event_list.push(DemexEvent::GroupmasterValueChanged(*id));
             }
             Self::SpeedMaster {
                 speed_master_id,
@@ -81,17 +79,17 @@ impl DemexInputFader {
 
                 speed_master.set_bpm(value);
 
-                Some(DemexEvent::SpeedmasterFaderValueChanged(*speed_master_id))
+                event_list.push(DemexEvent::SpeedmasterFaderValueChanged(*speed_master_id));
             }
             Self::Grandmaster => {
                 let byte_value = (value * 255.0) as u8;
                 *fixture_handler.grand_master_mut() = byte_value;
 
-                Some(DemexEvent::GrandmasterFaderValueChanged)
+                event_list.push(DemexEvent::GrandmasterFaderValueChanged);
             }
         };
 
-        Ok(event)
+        Ok(())
     }
 
     pub fn value(

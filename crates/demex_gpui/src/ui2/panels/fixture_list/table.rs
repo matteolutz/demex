@@ -145,7 +145,7 @@ impl TableDelegate for FixtureListTable {
 
         let is_highlighted = highlight.is_some_and(|hl| {
             hl.selection()
-                .has_fixture_with_level(&entry.path, FixturePathMatchLevel::TopLevel)
+                .has_fixture_with_level(&entry.path, FixturePathMatchLevel::NotSibling)
         });
         let is_selected = fixture_selection.is_some_and(|s| s.selection().has_fixture(&entry.path));
 

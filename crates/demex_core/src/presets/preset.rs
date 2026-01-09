@@ -1,6 +1,5 @@
 use std::{collections::HashMap, f32};
 
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{

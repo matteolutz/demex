@@ -8,6 +8,7 @@ pub enum PoolType {
     Executor,
     Preset(FixtureChannel3FeatureGroup),
     Sequence,
+    SequenceCue(u32),
     Group,
     Macro,
 }

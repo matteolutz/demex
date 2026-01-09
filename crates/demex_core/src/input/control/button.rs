@@ -10,7 +10,7 @@ use crate::{
             fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
         },
     },
-    event::DemexEvent,
+    event::{DemexEvent, list::DemexEventList},
     input::{
         DemexInputDeviceUpdateArgs, control::DemexInputDeviceControlTrait,
         error::DemexInputDeviceError, event::DemexInputDeviceButtonUpdate,
@@ -70,35 +70,35 @@ impl DemexInputButton {
         action_queue: &mut ActionQueue,
         global_fixture_selection: &mut Option<FixtureSelection>,
         command_input: &mut Vec<Token>,
-    ) -> Result<Option<DemexEvent>, DemexInputDeviceError> {
-        let event = match self {
+        event_list: &mut DemexEventList,
+    ) -> Result<(), DemexInputDeviceError> {
+        match self {
             Self::ExecutorFlash { id, stomp } => {
                 let executor = updatable_handler
                     .executor_mut(*id)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
 
-                executor.start(fixture_handler, preset_handler, 0.0);
+                executor.start(fixture_handler, preset_handler, 0.0, event_list);
 
                 if *stomp {
                     updatable_handler.executor_stomp(*id);
                 }
-
-                // TODO: be able to send mulitple events
-                Some(DemexEvent::ExecutorGo(*id))
             }
             Self::ExecutorGo(executor_id) => {
                 updatable_handler
-                    .executor_go(*executor_id, fixture_handler, preset_handler, 0.0)
+                    .executor_go(
+                        *executor_id,
+                        fixture_handler,
+                        preset_handler,
+                        0.0,
+                        event_list,
+                    )
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
-
-                Some(DemexEvent::ExecutorGo(*executor_id))
             }
             Self::ExecutorStop(executor_id) => {
                 updatable_handler
-                    .stop_executor(*executor_id, fixture_handler, preset_handler)
+                    .stop_executor(*executor_id, fixture_handler, preset_handler, event_list)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
-
-                Some(DemexEvent::ExecutorStop(*executor_id))
             }
             Self::SelectivePreset {
                 selection,
@@ -116,12 +116,9 @@ impl DemexInputButton {
                 preset_handler
                     .apply_preset(*preset_id, fixture_handler, patch, selection.clone())
                     .map_err(DemexInputDeviceError::PresetHandlerError)?;
-
-                None
             }
             Self::Macro { action } => {
                 action_queue.enqueue_now(action.clone(), ActionIssuer::Macro);
-                None
             }
             Self::FixtureSelector { fixture_selector } => {
                 let selection = Some(
@@ -132,24 +129,22 @@ impl DemexInputButton {
 
                 // FIXME: make this an engine method
                 *global_fixture_selection = selection.clone();
-                Some(DemexEvent::FixtureSelectionChanged(
+                event_list.push(DemexEvent::FixtureSelectionChanged(
                     selection.map(|sel| sel.into()),
-                ))
+                ));
             }
             Self::TokenInsert { tokens } => {
                 command_input.extend_from_slice(tokens);
-                None
             }
             Self::SpeedMasterTap { speed_master_id } => {
                 timing_handler
                     .tap_speed_master_value(*speed_master_id, time::Instant::now())
                     .map_err(DemexInputDeviceError::TimingHandlerError)?;
-                None
             }
-            Self::Unused => None,
+            Self::Unused => {}
         };
 
-        Ok(event)
+        Ok(())
     }
 
     pub fn handle_release(
@@ -157,14 +152,14 @@ impl DemexInputButton {
         _fixture_handler: &mut FixtureStateHandler,
         _preset_handler: &PresetHandler,
         updatable_handler: &mut UpdatableHandler,
-    ) -> Result<Option<DemexEvent>, DemexInputDeviceError> {
-        let event = match self {
+        _event_list: &mut DemexEventList,
+    ) -> Result<(), DemexInputDeviceError> {
+        match self {
             Self::ExecutorGo(executor_id) => {
                 let _executor = updatable_handler
                     .executor(*executor_id)
                     .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
                 // TODO
-                None
             }
             Self::ExecutorFlash { id, stomp } => {
                 updatable_handler
@@ -174,14 +169,11 @@ impl DemexInputButton {
                 if *stomp {
                     updatable_handler.executor_unstomp(*id);
                 }
-
-                // Some(DemexEvent::ExecutorStop(*id))
-                None
             }
-            _ => None,
+            _ => {}
         };
 
-        Ok(event)
+        Ok(())
     }
 }
 

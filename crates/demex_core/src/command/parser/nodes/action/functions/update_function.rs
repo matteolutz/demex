@@ -45,6 +45,7 @@ impl FunctionArgs for UpdatePresetArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         timing_handler: &mut TimingHandler,
         patch: &Patch,
+        _: &mut crate::event::list::DemexEventList,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
@@ -111,6 +112,7 @@ impl FunctionArgs for UpdateSequenceCueArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
         patch: &Patch,
+        _: &mut crate::event::list::DemexEventList,
     ) -> Result<ActionRunResult, ActionRunError> {
         let sequence_id = match self.id {
             UpdateSequenceCueArgsId::SequenceId(id) => id,

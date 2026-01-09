@@ -1,7 +1,7 @@
 use std::time;
 
 use crate::{
-    command::parser::nodes::fixture_selector::FixtureSelectorContext,
+    command::parser::nodes::fixture_selector::FixtureSelectorContext, event::list::DemexEventList,
     input::DemexInputDeviceHandler, patch::Patch, presets::PresetHandler,
     state::fixture_state_handler::FixtureStateHandler, timing::TimingHandler,
     updatables::UpdatableHandler,
@@ -32,5 +32,6 @@ pub trait FunctionArgs {
         input_device_handler: &mut DemexInputDeviceHandler,
         timing_handler: &mut TimingHandler,
         patch: &Patch,
+        event_list: &mut DemexEventList,
     ) -> Result<ActionRunResult, ActionRunError>;
 }

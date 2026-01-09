@@ -17,6 +17,7 @@ use crate::{
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
     engine::component::Component,
+    event::{DemexEvent, list::DemexEventList},
     fixture::Fixture,
     patch::Patch,
     pool::{Pool, PoolError, PoolType},
@@ -77,6 +78,7 @@ impl PresetHandler {
         fixture_selection: FixtureSelection,
         id: u32,
         name: Option<String>,
+        event_list: &mut DemexEventList,
     ) -> Result<(), PresetHandlerError> {
         if self.groups.contains_key(&id) {
             return Err(PresetHandlerError::PresetAlreadyExists(id));
@@ -84,6 +86,8 @@ impl PresetHandler {
 
         let group = FixtureGroup::new(id, name, fixture_selection);
         self.groups.insert(id, group);
+        event_list.push(DemexEvent::PoolItemAdded(PoolType::Group, id));
+
         Ok(())
     }
 
@@ -116,10 +120,20 @@ impl PresetHandler {
         self.groups.keys().max().unwrap_or(&0) + 1
     }
 
-    pub fn delete_group(&mut self, id: u32) -> Result<(), PresetHandlerError> {
+    pub fn delete_group(
+        &mut self,
+        id: u32,
+        event_list: &mut DemexEventList,
+    ) -> Result<(), PresetHandlerError> {
         self.groups
             .remove(&id)
             .ok_or(PresetHandlerError::PresetNotFound(id))?;
+        event_list.push(DemexEvent::PoolItemsDeleted {
+            pool_type: PoolType::Group,
+            from_id: id,
+            to_id: id,
+        });
+
         Ok(())
     }
 }
@@ -135,7 +149,8 @@ impl PresetHandler {
         patch: &Patch,
         fixture_handler: &FixtureStateHandler,
         timing_handler: &TimingHandler,
-    ) -> Result<bool, PresetHandlerError> {
+        event_list: &mut DemexEventList,
+    ) -> Result<(), PresetHandlerError> {
         let data = FixturePreset::generate_preset_data(
             patch,
             fixture_handler,
@@ -149,7 +164,7 @@ impl PresetHandler {
         if let Some(preset) = self.presets.get_mut(&id) {
             if should_next {
                 preset.record_next(data)?;
-                return Ok(false);
+                return Ok(());
             } else {
                 return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));
             }
@@ -184,13 +199,19 @@ impl PresetHandler {
         )?;
 
         self.presets.insert(id, preset);
-        Ok(true)
+        event_list.push(DemexEvent::PoolItemAdded(
+            PoolType::Preset(id.feature_group),
+            id.preset_id,
+        ));
+
+        Ok(())
     }
 
     pub fn create_effect_preset(
         &mut self,
         id: FixturePresetId,
         name: Option<String>,
+        event_list: &mut DemexEventList,
     ) -> Result<(), PresetHandlerError> {
         if self.presets.contains_key(&id) {
             return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));
@@ -205,6 +226,11 @@ impl PresetHandler {
         )?;
 
         self.presets.insert(id, preset);
+        event_list.push(DemexEvent::PoolItemAdded(
+            PoolType::Preset(id.feature_group),
+            id.preset_id,
+        ));
+
         Ok(())
     }
 
@@ -261,6 +287,7 @@ impl PresetHandler {
         &mut self,
         id: FixturePresetId,
         target_preset: FixturePresetId,
+        event_list: &mut DemexEventList,
     ) -> Result<(), PresetHandlerError> {
         let mut preset_to_move = self.get_preset(id)?.clone();
 
@@ -275,6 +302,12 @@ impl PresetHandler {
         preset_to_move.move_to(target_preset);
         self.presets.remove(&id);
         self.presets.insert(target_preset, preset_to_move);
+
+        event_list.push(DemexEvent::PoolItemMoved {
+            pool_type: PoolType::Preset(target_preset.feature_group),
+            from_id: id.preset_id,
+            to_id: target_preset.preset_id,
+        });
 
         Ok(())
     }
@@ -414,6 +447,7 @@ impl PresetHandler {
         &mut self,
         preset_id_from: FixturePresetId,
         preset_id_to: FixturePresetId,
+        event_list: &mut DemexEventList,
     ) -> Result<usize, PresetHandlerError> {
         if preset_id_from.feature_group != preset_id_to.feature_group {
             return Err(PresetHandlerError::FeatureGroupMismatch(
@@ -431,6 +465,12 @@ impl PresetHandler {
             count += 1;
         }
 
+        event_list.push(DemexEvent::PoolItemsDeleted {
+            pool_type: PoolType::Preset(preset_id_from.feature_group),
+            from_id: preset_id_from.preset_id,
+            to_id: preset_id_to.preset_id,
+        });
+
         Ok(count)
     }
 }
@@ -442,12 +482,15 @@ impl PresetHandler {
         id: u32,
         name: Option<String>,
         action: Box<Action>,
+        event_list: &mut DemexEventList,
     ) -> Result<(), PresetHandlerError> {
         if self.macros.contains_key(&id) {
             return Err(PresetHandlerError::PresetAlreadyExists(id));
         }
 
         self.macros.insert(id, MMacro::new(id, name, action));
+        event_list.push(DemexEvent::PoolItemAdded(PoolType::Macro, id));
+
         Ok(())
     }
 
@@ -533,6 +576,7 @@ impl PresetHandler {
         &mut self,
         id: u32,
         name: Option<String>,
+        event_list: &mut DemexEventList,
     ) -> Result<(), PresetHandlerError> {
         if self.sequences.contains_key(&id) {
             return Err(PresetHandlerError::PresetAlreadyExists(id));
@@ -542,6 +586,7 @@ impl PresetHandler {
             id,
             Sequence::new(id, name.unwrap_or(format!("Sequence {}", id))),
         );
+        event_list.push(DemexEvent::PoolItemAdded(PoolType::Sequence, id));
 
         Ok(())
     }
@@ -593,6 +638,7 @@ impl PresetHandler {
         cue_idx: Option<CueIdx>,
         channel_type_selector: &RecordChannelTypeSelector,
         fixture_types: &Patch,
+        event_list: &mut DemexEventList,
     ) -> Result<(), PresetHandlerError> {
         // does this cue already exist?
         if let Some(cue_idx) = cue_idx {
@@ -650,12 +696,21 @@ impl PresetHandler {
         for (idx, c) in cues.iter().enumerate() {
             if c.cue_idx() > discrete_cue_idx {
                 cues.insert(idx, cue);
+
+                event_list.push(DemexEvent::PoolItemAdded(
+                    PoolType::SequenceCue(sequence_id),
+                    idx as u32,
+                ));
                 return Ok(());
             }
         }
 
         // if we didn't insert the cue yet, it means it's the last cue
         cues.push(cue);
+        event_list.push(DemexEvent::PoolItemAdded(
+            PoolType::SequenceCue(sequence_id),
+            (cues.len() - 1) as u32,
+        ));
 
         Ok(())
     }
@@ -706,10 +761,20 @@ impl PresetHandler {
         &self.sequences
     }
 
-    pub fn delete_sequence(&mut self, id: u32) -> Result<(), PresetHandlerError> {
+    pub fn delete_sequence(
+        &mut self,
+        id: u32,
+        event_list: &mut DemexEventList,
+    ) -> Result<(), PresetHandlerError> {
         self.sequences
             .remove(&id)
             .ok_or(PresetHandlerError::PresetNotFound(id))?;
+        event_list.push(DemexEvent::PoolItemsDeleted {
+            pool_type: PoolType::Sequence,
+            from_id: id,
+            to_id: id,
+        });
+
         Ok(())
     }
 
@@ -718,6 +783,7 @@ impl PresetHandler {
         sequence_id: u32,
         cue_from: CueIdx,
         cue_to: CueIdx,
+        event_list: &mut DemexEventList,
     ) -> Result<usize, PresetHandlerError> {
         if cue_from > cue_to {
             return Err(PresetHandlerError::InvalidCueRange(cue_from, cue_to));
@@ -728,10 +794,28 @@ impl PresetHandler {
             .get_mut(&sequence_id)
             .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?;
 
+        let cue_from_idx = sequence
+            .cues()
+            .iter()
+            .position(|c| c.cue_idx() == cue_from)
+            .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_from))?;
+
+        let cue_to_idx = sequence
+            .cues()
+            .iter()
+            .position(|c| c.cue_idx() == cue_to)
+            .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_to))?;
+
         let initial_len = sequence.cues().len();
         sequence
             .cues_mut()
             .retain(|c| c.cue_idx() < cue_from || c.cue_idx() > cue_to);
+
+        event_list.push(DemexEvent::PoolItemsDeleted {
+            pool_type: PoolType::SequenceCue(sequence_id),
+            from_id: cue_from_idx as u32,
+            to_id: cue_to_idx as u32,
+        });
 
         Ok(initial_len - sequence.cues().len())
     }

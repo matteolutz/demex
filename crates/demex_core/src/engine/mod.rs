@@ -19,8 +19,8 @@ use crate::{
     engine::{
         comm::{
             DemexEngineCommEvent, DemexEngineCommRequestDispatcher, DemexEngineCommRequestHandler,
-            FixtureNameRequest, FrontendStateRequest, PoolItemRequest, SequenceRequest,
-            ShowRequest, ThreadStatsRequest,
+            ExecutorSequenceRequest, FixtureNameRequest, FrontendStateRequest, PoolItemRequest,
+            SequenceRequest, ShowRequest, ThreadStatsRequest,
         },
         component::ComponentHandle,
         state::{DemexEngineState, DemexFrontendInitState},
@@ -203,20 +203,34 @@ impl DemexEngine {
                 pool.get(pool_type, id).ok()
             },
         );
+        handler.register(|ExecutorSequenceRequest { executor_id }, payload| {
+            let executor = payload.show.updatable_handler.executor(executor_id).ok();
+            let sequence_id = executor.map(|exec| exec.runtime().sequence_id());
+
+            let frontend_sequence = sequence_id
+                .and_then(|id| payload.show.preset_handler.get_sequence(id).ok())
+                .map(|seq| seq.into());
+
+            frontend_sequence
+        });
         handler.register(
             |SequenceRequest { sequence_id }: SequenceRequest, payload| {
                 let sequence = payload.show.preset_handler.get_sequence(sequence_id);
                 if let Ok(sequence) = sequence {
-                    let sequence = sequence.into();
+                    let frontend_sequence = sequence.into();
+
                     let first_executor = payload
                         .show
                         .updatable_handler
                         .executors_for_sequence(sequence_id)
                         .next()
-                        .map(|exec| exec.id());
+                        .map(|exec| {
+                            let active_cues = exec.runtime().current_cue_ids(sequence);
+                            (exec.id(), active_cues)
+                        });
 
                     Some(comm::SequenceResponse {
-                        sequence,
+                        sequence: frontend_sequence,
                         first_executor,
                     })
                 } else {

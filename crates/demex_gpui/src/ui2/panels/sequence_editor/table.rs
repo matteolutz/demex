@@ -60,6 +60,15 @@ impl SequenceEditorTable {
 
     pub fn update_data(&mut self, data: Option<(u32, Vec<FrontendCue>)>) {
         self.data = data;
+        self.active_cues.clear();
+    }
+
+    pub fn update_active_cues(&mut self, active_cues: Option<Vec<(CueIdx, time::Instant)>>) {
+        if let Some(active_cues) = active_cues {
+            self.active_cues = active_cues.into_iter().collect();
+        } else {
+            self.active_cues.clear();
+        }
     }
 
     pub fn cue_activated(&mut self, cue_idx: CueIdx, at: time::Instant) {
@@ -68,6 +77,10 @@ impl SequenceEditorTable {
 
     pub fn cue_deactivated(&mut self, cue_idx: &CueIdx) {
         self.active_cues.remove(&cue_idx);
+    }
+
+    pub fn executor_stop(&mut self) {
+        self.active_cues.clear();
     }
 
     fn set_property(

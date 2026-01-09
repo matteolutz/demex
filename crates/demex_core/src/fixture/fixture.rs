@@ -338,8 +338,14 @@ impl str::FromStr for FixtureId {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum FixturePathMatchLevel {
+    /// The path matches exactly.
     Exact,
-    TopLevel,
+
+    /// The top-level fixture id matches.
+    Root,
+
+    /// All fixtures that are not siblings of the given path.
+    NotSibling,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -471,7 +477,17 @@ impl FixturePath {
     pub fn matches(&self, path: &Self, level: FixturePathMatchLevel) -> bool {
         match level {
             FixturePathMatchLevel::Exact => self == path,
-            FixturePathMatchLevel::TopLevel => self.root() == path.root(),
+            FixturePathMatchLevel::Root => self.root() == path.root(),
+            FixturePathMatchLevel::NotSibling => {
+                let path_len = path.len();
+                if path_len == self.len() {
+                    self == path
+                } else if path_len < self.len() {
+                    &self.as_slice()[..path_len] == path.as_slice()
+                } else {
+                    &path.as_slice()[..self.len()] == self.as_slice()
+                }
+            }
         }
     }
 }

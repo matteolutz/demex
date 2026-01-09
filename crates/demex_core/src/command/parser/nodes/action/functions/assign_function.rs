@@ -153,6 +153,7 @@ impl FunctionArgs for AssignButtonArgs {
         input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         timing_handler: &mut TimingHandler,
         _: &Patch,
+        _: &mut crate::event::list::DemexEventList,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
@@ -211,6 +212,7 @@ impl FunctionArgs for AssignFaderArgs {
         input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
         _: &Patch,
+        _: &mut crate::event::list::DemexEventList,
     ) -> Result<ActionRunResult, ActionRunError> {
         let device = input_device_handler
             .device_mut(self.device_idx)

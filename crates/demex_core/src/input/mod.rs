@@ -12,12 +12,13 @@ use crate::{
             nodes::{action::queue::ActionQueue, fixture_selector::FixtureSelectorContext},
         },
     },
+    event::list::DemexEventList,
     input::{
         control::{
             DemexInputDeviceControlTrait, button::DemexInputButton, encoder::DemexInputEncoder,
             fader::DemexInputFader,
         },
-        event::{DemexInputDeviceControlUpdate, handler::DemexInputDeviceEventHandler},
+        event::DemexInputDeviceControlUpdate,
     },
     patch::Patch,
     presets::PresetHandler,
@@ -138,7 +139,7 @@ impl DemexInputDeviceHandler {
         command_input: &mut Vec<Token>,
         parse_command_input: F,
         encoder_channels: Option<&EncoderChannels>,
-        event_handler: &mut DemexInputDeviceEventHandler,
+        event_list: &mut DemexEventList,
     ) -> Result<(), DemexInputDeviceError>
     where
         F: Fn(&[Token]) -> Option<ParseError>,
@@ -166,7 +167,7 @@ impl DemexInputDeviceHandler {
                         let button = device.config().buttons().get(&button_id);
 
                         if let Some(button) = button {
-                            if let Some(event) = button.handle_press(
+                            button.handle_press(
                                 fixture_handler,
                                 preset_handler,
                                 updatable_handler,
@@ -176,9 +177,8 @@ impl DemexInputDeviceHandler {
                                 macro_exec_cue,
                                 global_fixture_selection,
                                 command_input,
-                            )? {
-                                event_handler.push_event(event);
-                            }
+                                event_list,
+                            )?;
                         } else if parse_error.is_some_and(|err| {
                             err.was_expected(ExpectedParseSlice::ButtonId { is_unassign: false })
                         }) {
@@ -195,13 +195,12 @@ impl DemexInputDeviceHandler {
                             .get(&button_id)
                             .ok_or(DemexInputDeviceError::ButtonNotFound(button_id))?;
 
-                        if let Some(event) = button.handle_release(
+                        button.handle_release(
                             fixture_handler,
                             preset_handler,
                             updatable_handler,
-                        )? {
-                            event_handler.push_event(event);
-                        }
+                            event_list,
+                        )?;
                     }
 
                     DemexInputDeviceMessage::FaderTouch(fader_id) => {
@@ -235,15 +234,14 @@ impl DemexInputDeviceHandler {
                         let fader = device.config().faders().get(&fader_id);
 
                         if let Some(fader) = fader {
-                            if let Some(event) = fader.handle_change(
+                            fader.handle_change(
                                 value,
                                 fixture_handler,
                                 preset_handler,
                                 updatable_handler,
                                 timing_handler,
-                            )? {
-                                event_handler.push_event(event);
-                            }
+                                event_list,
+                            )?;
                         } else if parse_error.is_some_and(|err| {
                             err.was_expected(ExpectedParseSlice::FaderId { is_unassign: false })
                         }) {
@@ -261,15 +259,14 @@ impl DemexInputDeviceHandler {
                                 .get(&fader_id)
                                 .ok_or(DemexInputDeviceError::ButtonNotFound(fader_id))?;
 
-                            if let Some(event) = fader.handle_change(
+                            fader.handle_change(
                                 value,
                                 fixture_handler,
                                 preset_handler,
                                 updatable_handler,
                                 timing_handler,
-                            )? {
-                                event_handler.push_event(event);
-                            }
+                                event_list,
+                            )?;
                         }
                     }
                     DemexInputDeviceMessage::Timecode(timecode_packet) => {
@@ -281,7 +278,7 @@ impl DemexInputDeviceHandler {
                     DemexInputDeviceMessage::GlobalEncoderClick(_) => {}
                     DemexInputDeviceMessage::GlobalEncoderValueChanged { encoder_idx, value } => {
                         let encoder = DemexInputEncoder::GlobalEncoder { encoder_idx };
-                        if let Some(event) = encoder.handle_change(
+                        encoder.handle_change(
                             value,
                             fixture_selector_context.clone(),
                             fixture_handler,
@@ -290,9 +287,8 @@ impl DemexInputDeviceHandler {
                             updatable_handler,
                             timing_handler,
                             patch,
-                        )? {
-                            event_handler.push_event(event);
-                        }
+                            event_list,
+                        )?;
                     }
                 };
             }
@@ -350,7 +346,7 @@ impl DemexInputDeviceHandler {
                 }
             }
 
-            for event in event_handler.events() {
+            for event in event_list.events() {
                 for (id, button) in device.config.buttons() {
                     if let Some(update) = button.should_update(args.clone(), event).ok().flatten() {
                         device_events.push(DemexInputDeviceControlUpdate::Button {
@@ -398,7 +394,6 @@ impl DemexInputDeviceHandler {
             device.profile.tick(args)?;
         }
 
-        event_handler.clear_events();
         if !self.has_initialized {
             self.has_initialized = true;
         }

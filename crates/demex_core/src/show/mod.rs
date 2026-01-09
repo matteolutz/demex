@@ -41,9 +41,11 @@ impl<'a> DemexShowRef<'a> {
     pub fn get_pool(&self, pool_type: PoolType) -> &dyn Pool {
         match pool_type {
             PoolType::Executor => self.updatable_handler,
-            PoolType::Preset(_) | PoolType::Sequence | PoolType::Group | PoolType::Macro => {
-                self.preset_handler
-            }
+            PoolType::Preset(_)
+            | PoolType::Sequence
+            | PoolType::SequenceCue(_)
+            | PoolType::Group
+            | PoolType::Macro => self.preset_handler,
         }
     }
 }

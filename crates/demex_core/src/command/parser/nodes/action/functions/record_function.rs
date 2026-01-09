@@ -14,10 +14,9 @@ use crate::{
             },
         },
     },
-    event::DemexEvent,
+    event::list::DemexEventList,
     fixture::{Fixture, error::FixtureError},
     patch::Patch,
-    pool::PoolType,
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
     sequence::cue::{CueFixtureChannelValue, CueIdx},
     state::fixture_state_handler::FixtureStateHandler,
@@ -103,11 +102,12 @@ impl FunctionArgs for RecordPresetArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         timing_handler: &mut TimingHandler,
         patch: &Patch,
+        event_list: &mut crate::event::list::DemexEventList,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
     > {
-        let created = preset_handler
+        preset_handler
             .record_preset(
                 &self.fixture_selector,
                 fixture_selector_context,
@@ -117,19 +117,11 @@ impl FunctionArgs for RecordPresetArgs {
                 patch,
                 fixture_handler,
                 timing_handler,
+                event_list,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 
-        let result = if created {
-            ActionRunResult::event(DemexEvent::PoolItemAdded(
-                PoolType::Preset(self.id.feature_group),
-                self.id.preset_id,
-            ))
-        } else {
-            ActionRunResult::Default
-        };
-
-        Ok(result)
+        Ok(ActionRunResult::Default)
     }
 }
 
@@ -151,6 +143,7 @@ impl FunctionArgs for RecordGroupArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
         _: &Patch,
+        event_list: &mut crate::event::list::DemexEventList,
     ) -> Result<ActionRunResult, ActionRunError> {
         let selection = self
             .fixture_selector
@@ -160,13 +153,10 @@ impl FunctionArgs for RecordGroupArgs {
         let id = self.id.unwrap_or_else(|| preset_handler.next_group_id());
 
         preset_handler
-            .record_group(selection, id, self.name.clone())
+            .record_group(selection, id, self.name.clone(), event_list)
             .map_err(ActionRunError::PresetHandlerError)?;
 
-        Ok(ActionRunResult::event(DemexEvent::PoolItemAdded(
-            PoolType::Group,
-            id,
-        )))
+        Ok(ActionRunResult::Default)
     }
 }
 
@@ -189,6 +179,7 @@ impl FunctionArgs for RecordSequenceCueArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
         patch: &Patch,
+        event_list: &mut crate::event::list::DemexEventList,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
             .record_sequence_cue(
@@ -199,6 +190,7 @@ impl FunctionArgs for RecordSequenceCueArgs {
                 self.cue_idx,
                 &self.channel_type_selector,
                 patch,
+                event_list,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 
@@ -247,10 +239,11 @@ impl RecordSequenceCueShorthandArgs {
         fixture_selector_context: FixtureSelectorContext,
         patch: &Patch,
         name: String,
+        event_list: &mut DemexEventList,
     ) -> Result<u32, PresetHandlerError> {
         let sequence_id = preset_handler.next_sequence_id();
 
-        preset_handler.create_sequence(sequence_id, Some(name))?;
+        preset_handler.create_sequence(sequence_id, Some(name), event_list)?;
 
         preset_handler.record_sequence_cue(
             sequence_id,
@@ -260,6 +253,7 @@ impl RecordSequenceCueShorthandArgs {
             self.cue_idx,
             &self.channel_type_selector,
             patch,
+            event_list,
         )?;
 
         Ok(sequence_id)
@@ -277,6 +271,7 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _timing_handler: &mut TimingHandler,
         patch: &Patch,
+        event_list: &mut crate::event::list::DemexEventList,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self.id {
             RecordSequenceCueShorthandArgsId::ExecutorId(executor_id) => {
@@ -297,6 +292,7 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                             self.cue_idx,
                             &self.channel_type_selector,
                             patch,
+                            event_list,
                         )
                         .map_err(ActionRunError::PresetHandlerError)?;
 
@@ -311,17 +307,15 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                             self.sequence_name.clone().unwrap_or_else(|| {
                                 format!("Sequence {}", preset_handler.next_sequence_id())
                             }),
+                            event_list,
                         )
                         .map_err(ActionRunError::PresetHandlerError)?;
 
                     updatable_handler
-                        .create_executor(executor_id, sequence_id)
+                        .create_executor(executor_id, sequence_id, event_list)
                         .map_err(ActionRunError::UpdatableHandlerError)?;
 
-                    Ok(ActionRunResult::events(vec![
-                        DemexEvent::PoolItemAdded(PoolType::Sequence, sequence_id),
-                        DemexEvent::PoolItemAdded(PoolType::Executor, executor_id),
-                    ]))
+                    Ok(ActionRunResult::Default)
                 }
             }
         }

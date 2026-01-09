@@ -30,6 +30,7 @@ impl FunctionArgs for RenameObjectArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
         _: &Patch,
+        _: &mut crate::event::list::DemexEventList,
     ) -> Result<ActionRunResult, ActionRunError> {
         match &self.object {
             Object::Preset(preset_id) => preset_handler

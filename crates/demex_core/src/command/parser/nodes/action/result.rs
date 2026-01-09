@@ -1,7 +1,4 @@
-use crate::{
-    event::{DemexEvent, FixtureSelectionWithGroup},
-    patch::Patch,
-};
+use crate::{event::FixtureSelectionWithGroup, patch::Patch};
 
 #[derive(Debug, Clone, Default)]
 pub enum ActionRunResult {
@@ -19,11 +16,10 @@ pub enum ActionRunResult {
     Lock,
 
     Save,
-
-    WithEvents {
+    /*WithEvents {
         result: Box<ActionRunResult>,
         events: Vec<DemexEvent>,
-    },
+    },*/
 }
 
 impl ActionRunResult {
@@ -31,6 +27,7 @@ impl ActionRunResult {
         Self::Default
     }
 
+    /*
     pub fn event(event: DemexEvent) -> Self {
         Self::WithEvents {
             result: Box::new(Self::new()),
@@ -85,4 +82,5 @@ impl ActionRunResult {
             _ => (self, None),
         }
     }
+    */
 }

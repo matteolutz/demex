@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     EncoderChannels,
     command::parser::nodes::fixture_selector::FixtureSelectorContext,
-    event::DemexEvent,
+    event::{DemexEvent, list::DemexEventList},
     input::{
         DemexInputDeviceUpdateArgs,
         control::DemexInputDeviceControlTrait,
@@ -40,8 +40,9 @@ impl DemexInputEncoder {
         _updatable_handler: &mut UpdatableHandler,
         _timing_handler: &mut TimingHandler,
         patch: &Patch,
-    ) -> Result<Option<DemexEvent>, DemexInputDeviceError> {
-        let event = match self {
+        event_list: &mut DemexEventList,
+    ) -> Result<(), DemexInputDeviceError> {
+        match self {
             Self::GlobalEncoder { encoder_idx } => {
                 handle_global_encoder_change(
                     *encoder_idx,
@@ -52,11 +53,11 @@ impl DemexInputEncoder {
                     patch,
                 );
 
-                Some(DemexEvent::GlobalEncoderValueChanged(*encoder_idx))
+                event_list.push(DemexEvent::GlobalEncoderValueChanged(*encoder_idx));
             }
-        };
+        }
 
-        Ok(event)
+        Ok(())
     }
 
     pub fn value(&self, args: DemexInputDeviceUpdateArgs) -> Result<f32, DemexInputDeviceError> {

@@ -25,7 +25,7 @@ use crate::{
     command::parser::nodes::action::functions::{
         move_function::MoveArgs, set_function::ObjectSetPropertyArgs,
     },
-    event::{DemexEvent, FixtureSelectionWithGroup},
+    event::{FixtureSelectionWithGroup, list::DemexEventList},
     fixture::FixturePath,
     state::fixture_state_handler::FixtureStateHandler,
     utils::serde::approx_instant,
@@ -122,6 +122,7 @@ impl DeferredAction {
         input_device_handler: &mut DemexInputDeviceHandler,
         timing_handler: &mut TimingHandler,
         patch: &Patch,
+        event_list: &mut DemexEventList,
     ) -> Result<ActionRunResult, ActionRunError> {
         self.action.run(
             fixture_handler,
@@ -131,6 +132,7 @@ impl DeferredAction {
             input_device_handler,
             timing_handler,
             patch,
+            event_list,
             self.issued_at,
         )
     }
@@ -234,6 +236,7 @@ impl Action {
         input_device_handler: &mut DemexInputDeviceHandler,
         timing_handler: &mut TimingHandler,
         patch: &Patch,
+        event_list: &mut DemexEventList,
         issued_at: time::Instant,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
@@ -247,6 +250,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
             Self::SetFixturePreset(args) => args.run(
                 issued_at,
@@ -257,6 +261,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
             Self::ObjectSetProperty(args) => args.run(
                 issued_at,
@@ -267,6 +272,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
 
             // Home
@@ -275,6 +281,7 @@ impl Action {
                 fixture_handler,
                 updatable_handler,
                 fixture_selector_context,
+                event_list,
             ),
 
             Self::HomeAll => self.run_home_all(fixture_handler),
@@ -289,6 +296,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
             Self::RecordGroup2(args) => args.run(
                 issued_at,
@@ -299,6 +307,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
             Self::RecordSequenceCue(args) => args.run(
                 issued_at,
@@ -309,6 +318,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
             Self::RecordSequenceCueShorthand(args) => args.run(
                 issued_at,
@@ -319,6 +329,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
 
             // Rename
@@ -331,6 +342,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
 
             // Create
@@ -343,6 +355,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
             Self::CreateExecutor(args) => args.run(
                 issued_at,
@@ -353,6 +366,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
             Self::CreateMacro(args) => args.run(
                 issued_at,
@@ -363,6 +377,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
             Self::CreateEffectPreset(args) => args.run(
                 issued_at,
@@ -373,6 +388,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
 
             // Update
@@ -385,6 +401,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
             Self::UpdateSequenceCue(args) => args.run(
                 issued_at,
@@ -395,6 +412,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
 
             Self::RecallSequenceCue(args) => args.run(
@@ -406,6 +424,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
 
             // Delete
@@ -418,6 +437,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
 
             // Move
@@ -430,6 +450,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
 
             Self::ClearAll => Ok(ActionRunResult::UpdateFixtureSelection(None)),
@@ -468,6 +489,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
 
             Self::AssignButton(args) => args.run(
@@ -479,6 +501,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
 
             Self::UnassignInputButton {
@@ -515,6 +538,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
             Self::ExecutorStop(args) => args.run(
                 issued_at,
@@ -525,6 +549,7 @@ impl Action {
                 input_device_handler,
                 timing_handler,
                 patch,
+                event_list,
             ),
             Self::ExecutorSetFaderValue(executor_id, fader_value) => {
                 let executor = updatable_handler
@@ -535,11 +560,10 @@ impl Action {
                     fixture_handler,
                     preset_handler,
                     issued_at.elapsed().as_secs_f32(),
+                    event_list,
                 );
 
-                Ok(ActionRunResult::event(
-                    DemexEvent::ExecutorFaderValueChanged(*executor_id),
-                ))
+                Ok(ActionRunResult::Default)
             }
 
             Self::RunMacro(macro_id) => {
@@ -554,6 +578,7 @@ impl Action {
                     input_device_handler,
                     timing_handler,
                     patch,
+                    event_list,
                     issued_at,
                 )
             }

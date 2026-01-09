@@ -1,7 +1,9 @@
 use demex_core::pool::PoolItemName;
 use gpui::App;
 
-use crate::engine::state::DemexUiState;
+use crate::{
+    engine::state::DemexUiState, ui2::panels::pool::pool_button::PoolItemButtonIndicatorColor,
+};
 
 pub trait PoolItemNameExt {
     fn to_name(self, cx: &App) -> String;
@@ -23,4 +25,9 @@ impl PoolItemNameExt for PoolItemName {
             }
         }
     }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct PoolItemState {
+    pub(crate) indicator_color: PoolItemButtonIndicatorColor,
 }

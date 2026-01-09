@@ -1,7 +1,4 @@
-use crate::{
-    command::parser::nodes::action::{error::ActionRunError, result::ActionRunResult},
-    event::DemexEvent,
-};
+use crate::command::parser::nodes::action::{error::ActionRunError, result::ActionRunResult};
 
 use super::FunctionArgs;
 
@@ -23,13 +20,19 @@ impl FunctionArgs for ExecutorStopArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _timing_handler: &mut crate::timing::TimingHandler,
         _patch: &crate::patch::Patch,
+        event_list: &mut crate::event::list::DemexEventList,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
     > {
         updatable_handler
-            .stop_executor(self.executor_id, fixture_handler, preset_handler)
+            .stop_executor(
+                self.executor_id,
+                fixture_handler,
+                preset_handler,
+                event_list,
+            )
             .map_err(ActionRunError::UpdatableHandlerError)
-            .map(|_| ActionRunResult::event(DemexEvent::ExecutorStop(self.executor_id)))
+            .map(|_| ActionRunResult::Default)
     }
 }

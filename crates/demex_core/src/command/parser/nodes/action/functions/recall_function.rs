@@ -28,6 +28,7 @@ impl FunctionArgs for RecallSequenceCueArgs {
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _timing_handler: &mut crate::timing::TimingHandler,
         patch: &Patch,
+        _: &mut crate::event::list::DemexEventList,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
