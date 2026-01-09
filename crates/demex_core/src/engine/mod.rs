@@ -13,14 +13,19 @@ use crate::{
         lexer::Lexer,
         parser::{
             Parser2,
-            nodes::action::{Action, ActionIssuer, queue::ActionQueue},
+            nodes::{
+                action::{Action, ActionIssuer, queue::ActionQueue},
+                fixture_selector::FixtureSelectorContext,
+                object::ObjectDelegate,
+            },
         },
     },
     engine::{
         comm::{
             DemexEngineCommEvent, DemexEngineCommRequestDispatcher, DemexEngineCommRequestHandler,
-            ExecutorSequenceRequest, FixtureNameRequest, FrontendStateRequest, PoolItemRequest,
-            SequenceRequest, ShowRequest, ThreadStatsRequest,
+            ExecutorSequenceRequest, FixtureNameRequest, FrontendStateRequest,
+            ObjectPropertyRequest, PoolItemRequest, SequenceRequest, ShowRequest,
+            ThreadStatsRequest,
         },
         component::ComponentHandle,
         state::{DemexEngineState, DemexFrontendInitState},
@@ -203,6 +208,25 @@ impl DemexEngine {
                 pool.get(pool_type, id).ok()
             },
         );
+        handler.register(|ObjectPropertyRequest { object, property }, payload| {
+            object
+                .clone()
+                .get(
+                    payload.show.preset_handler,
+                    payload.show.updatable_handler,
+                    FixtureSelectorContext::new(&payload.state.fixture_selection),
+                    property.clone(),
+                )
+                .inspect_err(move |err| {
+                    log::warn!(
+                        "Failed to get object {:?} property {:?}: {}",
+                        object,
+                        property,
+                        err
+                    )
+                })
+                .ok()
+        });
         handler.register(|ExecutorSequenceRequest { executor_id }, payload| {
             let executor = payload.show.updatable_handler.executor(executor_id).ok();
             let sequence_id = executor.map(|exec| exec.runtime().sequence_id());

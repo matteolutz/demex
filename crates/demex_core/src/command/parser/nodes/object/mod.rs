@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -54,6 +56,19 @@ macro_rules! implement_set_property {
 
                     Ok(ActionRunResult::new())
                 }
+
+                fn get_property(
+                    &self,
+                    key: Self::ObjectSetPropertyKeyType,
+                ) -> Result<String, ActionRunError> {
+                    match key {
+                        $(
+                            <$property_enum>::$property_variant => {
+                                Ok(self.$($field).+.to_string())
+                            }
+                        ),*
+                    }
+                }
             }
         }
     };
@@ -76,6 +91,8 @@ pub trait ObjectSetPropertyDelegate: 'static + Sized {
         key: Self::ObjectSetPropertyKeyType,
         value: String,
     ) -> Result<ActionRunResult, ActionRunError>;
+
+    fn get_property(&self, key: Self::ObjectSetPropertyKeyType) -> Result<String, ActionRunError>;
 }
 
 trait ObjectSetPropertyStringDelegate: 'static + Sized {
@@ -84,6 +101,7 @@ trait ObjectSetPropertyStringDelegate: 'static + Sized {
         key: String,
         value: String,
     ) -> Result<ActionRunResult, ActionRunError>;
+    fn get_property_string(&self, key: String) -> Result<String, ActionRunError>;
 }
 
 impl<T: ObjectSetPropertyDelegate> ObjectSetPropertyStringDelegate for T {
@@ -98,9 +116,17 @@ impl<T: ObjectSetPropertyDelegate> ObjectSetPropertyStringDelegate for T {
 
         self.set_property(key, value)
     }
+
+    fn get_property_string(&self, key: String) -> Result<String, ActionRunError> {
+        let key = key
+            .parse()
+            .map_err(|_| ActionRunError::ObjectError(ObjectError::ObjectSetKeyInvalid(key)))?;
+
+        self.get_property(key)
+    }
 }
 
-pub trait ObjectDelegate: 'static + Sized {
+pub trait ObjectDelegate: 'static + Sized + Display {
     fn default_action(self) -> Option<Action>;
     fn set(
         self,
@@ -111,6 +137,13 @@ pub trait ObjectDelegate: 'static + Sized {
         key: String,
         value: String,
     ) -> Result<ActionRunResult, ActionRunError>;
+    fn get(
+        self,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+        fixture_selector_context: FixtureSelectorContext,
+        key: String,
+    ) -> Result<String, ActionRunError>;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -176,6 +209,17 @@ impl HomeableObject {
     }
 }
 
+impl Display for HomeableObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::CurrentFixtureSelection => write!(f, "~"),
+            Self::Executor(id) => write!(f, "Executor {}", id),
+            Self::FixtureSelector(selector) => write!(f, "{}", selector),
+            Self::Programmer => write!(f, "Programmer"),
+        }
+    }
+}
+
 impl ObjectDelegate for HomeableObject {
     fn default_action(self) -> Option<Action> {
         match self {
@@ -183,6 +227,32 @@ impl ObjectDelegate for HomeableObject {
                 Some(Action::FixtureSelector(fixture_selector))
             }
             _ => Some(Action::Edit(Object::HomeableObject(self))),
+        }
+    }
+
+    fn get(
+        self,
+        _preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+        fixture_selector_context: FixtureSelectorContext,
+        key: String,
+    ) -> Result<String, ActionRunError> {
+        match self {
+            Self::Executor(id) => updatable_handler
+                .executor(id)
+                .map_err(ActionRunError::UpdatableHandlerError)
+                .and_then(|executor| executor.get_property_string(key)),
+            Self::CurrentFixtureSelection => {
+                if let Some(selection) = fixture_selector_context.current_fixture() {
+                    selection.get_property_string(key)
+                } else {
+                    Err(ActionRunError::ObjectError(ObjectError::ObjectNotPresent))
+                }
+            }
+            unmatched => Err(ActionRunError::ActionNotImplementedForObject(
+                "get".to_string(),
+                Object::HomeableObject(unmatched),
+            )),
         }
     }
 
@@ -245,11 +315,62 @@ impl Object {
     }
 }
 
+impl Display for Object {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::HomeableObject(object) => object.fmt(f),
+            Self::Macro(id) => write!(f, "Macro {}", id),
+            Self::Preset(id) => write!(f, "{} Preset {}", id.feature_group, id.preset_id),
+            Self::Sequence(id) => write!(f, "Sequence {}", id),
+            Self::SequenceCue(id, cue_idx) => {
+                write!(f, "Sequence {} Cue {}.{}", id, cue_idx.0, cue_idx.1)
+            }
+        }
+    }
+}
+
 impl ObjectDelegate for Object {
     fn default_action(self) -> Option<Action> {
         match self {
             Self::HomeableObject(homeable_object) => homeable_object.default_action(),
             _ => Some(Action::Edit(self)),
+        }
+    }
+
+    fn get(
+        self,
+        preset_handler: &PresetHandler,
+        updatable_handler: &UpdatableHandler,
+        fixture_selector_context: FixtureSelectorContext,
+        key: String,
+    ) -> Result<String, ActionRunError> {
+        match self {
+            Self::HomeableObject(object) => object.get(
+                preset_handler,
+                updatable_handler,
+                fixture_selector_context,
+                key,
+            ),
+            Self::Macro(macro_id) => preset_handler
+                .get_macro(macro_id)
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|m| m.get_property_string(key)),
+            Self::Preset(preset_id) => preset_handler
+                .get_preset(preset_id)
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|preset| preset.get_property_string(key)),
+            Self::Sequence(sequence_id) => preset_handler
+                .get_sequence(sequence_id)
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|s| s.get_property_string(key)),
+            Self::SequenceCue(sequence_id, cue_idx) => preset_handler
+                .get_sequence(sequence_id)
+                .and_then(|s| {
+                    s.find_cue(cue_idx)
+                        .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_idx))
+                })
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|cue| cue.get_property_string(key)),
         }
     }
 

@@ -5,6 +5,8 @@ pub enum ObjectError {
     ObjectVariantMismatch(Object, Object),
     ObjectSetKeyInvalid(String),
     ObjectSetValueInvalid(String, String),
+
+    ObjectNotPresent,
 }
 
 impl std::fmt::Display for ObjectError {
@@ -23,6 +25,7 @@ impl std::fmt::Display for ObjectError {
                     key, value
                 )
             }
+            ObjectError::ObjectNotPresent => write!(f, "Object not present"),
         }
     }
 }

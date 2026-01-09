@@ -239,6 +239,7 @@ impl DemexThreadDelegate for UpdateThread {
                 input_device_configs: &vec![],
                 patch: &patch,
             },
+            state: &self.state,
         };
         self.request_handler.handle_all(handler_payload);
 

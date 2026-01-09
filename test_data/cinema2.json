@@ -3507,7 +3507,7 @@
             }
           },
           "device_id": "Controller",
-          "disabled": false
+          "disabled": true
         }
       ]
     }

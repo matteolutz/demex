@@ -7,9 +7,11 @@ use std::{
 
 use crate::{
     channel3::{attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3},
-    command::parser::nodes::action::result::ActionRunResult,
+    command::parser::nodes::{action::result::ActionRunResult, object::Object},
     engine::{
-        component::ComponentHandle, state::DemexFrontendInitState, tick::DemexEngineTickState,
+        component::ComponentHandle,
+        state::{DemexEngineState, DemexFrontendInitState},
+        tick::DemexEngineTickState,
     },
     event::DemexEvent,
     fixture::FixturePath,
@@ -70,6 +72,15 @@ pub struct PoolItemRequest {
 }
 impl DemexEngineCommRequest for PoolItemRequest {
     type Response = Option<PoolItem>;
+}
+
+#[derive(Debug)]
+pub struct ObjectPropertyRequest {
+    pub object: Object,
+    pub property: String,
+}
+impl DemexEngineCommRequest for ObjectPropertyRequest {
+    type Response = Option<String>;
 }
 
 #[derive(Debug)]
@@ -140,6 +151,7 @@ pub(crate) struct DemexEngineCommRequestHandlerPayload<'a> {
     pub patch: &'a Patch,
     pub stats: &'a ComponentHandle<DemexThreadStatsHandler>,
     pub show: DemexShowRef<'a>,
+    pub state: &'a DemexEngineState,
 }
 
 pub(crate) struct DemexEngineCommRequestHandler {

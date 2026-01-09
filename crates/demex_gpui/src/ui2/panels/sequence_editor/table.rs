@@ -27,7 +27,14 @@ use gpui_component::{
 };
 use strum::IntoEnumIterator;
 
-use crate::{engine::DemexEngineHandler, ui2::config::AppConfigExt};
+use crate::{
+    engine::DemexEngineHandler,
+    ui2::{
+        config::AppConfigExt,
+        window::set_property::{SetPropertyWindow, SetPropertyWindowPropertyType},
+        wm::{WindowManager, edit_window::WindowManagerExtension},
+    },
+};
 
 pub struct SequenceEditorTable {
     data: Option<(u32, Vec<FrontendCue>)>,
@@ -128,8 +135,8 @@ impl TableDelegate for SequenceEditorTable {
         _window: &mut gpui::Window,
         cx: &mut Context<TableState<Self>>,
     ) -> gpui::Stateful<gpui::Div> {
-        if !self.active_cues.is_empty() {
-            self.next_render.take();
+        if !self.active_cues.is_empty() && self.next_render.is_none() {
+            // let _ = self.next_render.take();
 
             self.next_render = Some(cx.spawn(async |this, cx| {
                 Timer::after(Duration::from_secs_f64(1.0 / 60.0)).await;
@@ -137,7 +144,7 @@ impl TableDelegate for SequenceEditorTable {
                     this.refresh(cx);
                     cx.notify();
                 });
-            }))
+            }));
         }
 
         div().id("header")
@@ -187,25 +194,88 @@ impl TableDelegate for SequenceEditorTable {
                         .h_full()
                         .w(DefiniteLength::Fraction(current_fade)),
                 )
-                .child(cue.name.clone())
+                .child(
+                    Button::new("edit-name")
+                        .on_click(move |_, window, cx| {
+                            WindowManager::open_edit_window::<SetPropertyWindow>(cx, |cx| {
+                                SetPropertyWindow::new(
+                                    Object::SequenceCue(sequence_id, cue_idx),
+                                    CueProperty::Name,
+                                    SetPropertyWindowPropertyType::String,
+                                    window,
+                                    cx,
+                                )
+                            });
+                        })
+                        .text()
+                        .label(cue.name.clone()),
+                )
                 .into_any_element(),
             "in-fade" => div()
                 .size_full()
                 .flex()
                 .items_center()
-                .child(format!("{:.2}s", cue.in_fade))
+                .justify_center()
+                .child(
+                    Button::new("edit-in-fade")
+                        .on_click(move |_, window, cx| {
+                            WindowManager::open_edit_window::<SetPropertyWindow>(cx, |cx| {
+                                SetPropertyWindow::new(
+                                    Object::SequenceCue(sequence_id, cue_idx),
+                                    CueProperty::InFade,
+                                    SetPropertyWindowPropertyType::relative_seconds(),
+                                    window,
+                                    cx,
+                                )
+                            });
+                        })
+                        .text()
+                        .label(format!("{:.2}s", cue.in_fade)),
+                )
                 .into_any_element(),
             "in-delay" => div()
                 .size_full()
                 .flex()
                 .items_center()
-                .child(format!("{:.2}s", cue.in_delay))
+                .justify_center()
+                .child(
+                    Button::new("edit-in-delay")
+                        .on_click(move |_, window, cx| {
+                            WindowManager::open_edit_window::<SetPropertyWindow>(cx, |cx| {
+                                SetPropertyWindow::new(
+                                    Object::SequenceCue(sequence_id, cue_idx),
+                                    CueProperty::InDelay,
+                                    SetPropertyWindowPropertyType::relative_seconds(),
+                                    window,
+                                    cx,
+                                )
+                            });
+                        })
+                        .text()
+                        .label(format!("{:.2}s", cue.in_delay)),
+                )
                 .into_any_element(),
             "snap-percent" => div()
                 .size_full()
                 .flex()
                 .items_center()
-                .child(format!("{}%", cue.snap_percent * 100.0))
+                .justify_center()
+                .child(
+                    Button::new("edit-snap-percent")
+                        .on_click(move |_, window, cx| {
+                            WindowManager::open_edit_window::<SetPropertyWindow>(cx, |cx| {
+                                SetPropertyWindow::new(
+                                    Object::SequenceCue(sequence_id, cue_idx),
+                                    CueProperty::SnapPercent,
+                                    SetPropertyWindowPropertyType::Percentage,
+                                    window,
+                                    cx,
+                                )
+                            });
+                        })
+                        .text()
+                        .label(format!("{}%", cue.snap_percent * 100.0)),
+                )
                 .into_any_element(),
             "block" => div()
                 .size_full()
@@ -213,7 +283,7 @@ impl TableDelegate for SequenceEditorTable {
                 .items_center()
                 .justify_center()
                 .child(
-                    Checkbox::new("block")
+                    Checkbox::new("edit-block")
                         .with_size(cx.ui_config().ui_size())
                         .checked(cue.block)
                         .on_click(move |value, _, cx| {
@@ -232,7 +302,7 @@ impl TableDelegate for SequenceEditorTable {
                 .items_center()
                 .justify_center()
                 .child(
-                    Checkbox::new("mib")
+                    Checkbox::new("edit-mib")
                         .with_size(cx.ui_config().ui_size())
                         .checked(cue.move_in_black)
                         .on_click(move |value, _, cx| {
@@ -245,11 +315,11 @@ impl TableDelegate for SequenceEditorTable {
                         }),
                 )
                 .into_any_element(),
-            "trigger" => Button::new("trigger")
+            "trigger" => Button::new("edit-trigger")
                 .ghost()
                 .label(format!("{}", cue.trigger))
                 .into_any_element(),
-            "fading" => Button::new("fading")
+            "fading" => Button::new("edit-fading")
                 .ghost()
                 .label(format!("{}", cue.fading_function))
                 .dropdown_menu({
