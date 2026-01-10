@@ -223,7 +223,7 @@ impl TableDelegate for SequenceEditorTable {
                                 SetPropertyWindow::new(
                                     Object::SequenceCue(sequence_id, cue_idx),
                                     CueProperty::InFade,
-                                    SetPropertyWindowPropertyType::relative_seconds(),
+                                    SetPropertyWindowPropertyType::relative_positive_seconds(),
                                     window,
                                     cx,
                                 )
@@ -245,7 +245,7 @@ impl TableDelegate for SequenceEditorTable {
                                 SetPropertyWindow::new(
                                     Object::SequenceCue(sequence_id, cue_idx),
                                     CueProperty::InDelay,
-                                    SetPropertyWindowPropertyType::relative_seconds(),
+                                    SetPropertyWindowPropertyType::relative_positive_seconds(),
                                     window,
                                     cx,
                                 )

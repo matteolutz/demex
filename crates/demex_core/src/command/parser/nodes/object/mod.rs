@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     event::{DemexEvent, list::DemexEventList},
+    pool::PoolType,
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
     selection::FixtureSelection,
     sequence::cue::CueIdx,
@@ -144,6 +145,8 @@ pub trait ObjectDelegate: 'static + Sized + Display {
         fixture_selector_context: FixtureSelectorContext,
         key: String,
     ) -> Result<String, ActionRunError>;
+
+    fn get_pool_type_and_id(self) -> Option<(PoolType, u32)>;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -227,6 +230,13 @@ impl ObjectDelegate for HomeableObject {
                 Some(Action::FixtureSelector(fixture_selector))
             }
             _ => Some(Action::Edit(Object::HomeableObject(self))),
+        }
+    }
+
+    fn get_pool_type_and_id(self) -> Option<(PoolType, u32)> {
+        match self {
+            Self::Executor(id) => Some((PoolType::Executor, id)),
+            _ => None,
         }
     }
 
@@ -334,6 +344,19 @@ impl ObjectDelegate for Object {
         match self {
             Self::HomeableObject(homeable_object) => homeable_object.default_action(),
             _ => Some(Action::Edit(self)),
+        }
+    }
+
+    fn get_pool_type_and_id(self) -> Option<(PoolType, u32)> {
+        match self {
+            Self::HomeableObject(obj) => obj.get_pool_type_and_id(),
+            Self::Macro(id) => Some((PoolType::Macro, id)),
+            Self::Sequence(id) => Some((PoolType::Sequence, id)),
+            Self::SequenceCue(seq_id, cue_id) => {
+                // TODO: find solution for this
+                Some((PoolType::SequenceCue(seq_id), cue_id.0 ^ cue_id.1))
+            }
+            Self::Preset(id) => Some((PoolType::Preset(id.feature_group), id.preset_id)),
         }
     }
 

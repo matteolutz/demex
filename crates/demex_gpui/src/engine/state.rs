@@ -5,6 +5,7 @@ use std::{
 
 use demex_core::{
     channel3::{attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3},
+    command::parser::nodes::object::ObjectDelegate,
     engine::{
         comm::{PoolItemRequest, ThreadStatsRequest},
         state::DemexFrontendInitState,
@@ -327,6 +328,28 @@ impl DemexUiState {
                 *hl = new_highlight;
                 cx.notify();
             }),
+            DemexEvent::ObjectPropertyChanged(object, _) => {
+                if let Some((pool_type, id)) = object.get_pool_type_and_id() {
+                    DemexEngineHandler::send(
+                        cx,
+                        PoolItemRequest { pool_type, id },
+                        move |res, cx| {
+                            let Some(item) = res else {
+                                return;
+                            };
+
+                            cx.update_global(|this: &mut Self, cx| {
+                                let pool = this.get_or_insert_pool(pool_type, cx);
+                                pool.update(cx, |pool_items, cx| {
+                                    pool_items.retain(|item| item.id != id);
+                                    pool_items.push(item);
+                                    cx.notify();
+                                });
+                            })
+                        },
+                    );
+                }
+            }
             DemexEvent::PoolItemAdded(pool_type, id) => {
                 DemexEngineHandler::send(cx, PoolItemRequest { pool_type, id }, move |res, cx| {
                     let Some(item) = res else {

@@ -2,15 +2,17 @@ use demex_core::{
     command::parser::nodes::object::Object,
     engine::comm::{SequenceRequest, SequenceResponse},
     event::{DemexEvent, DemexExecutorUpdateEvent},
+    sequence::SequenceProperty,
 };
 use gpui::{
     App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement,
-    ParentElement, Render, Styled, Subscription, Window, div,
+    ParentElement, Render, Styled, Subscription, Window,
 };
 use gpui_component::{
     ActiveTheme, Sizable, StyledExt,
-    button::Button,
+    button::{Button, ButtonVariants},
     dock::{Panel, PanelEvent, register_panel},
+    h_flex,
     scroll::ScrollableElement,
     table::{Table, TableState},
     v_flex,
@@ -21,6 +23,8 @@ use crate::{
     ui2::{
         config::AppConfigExt,
         panels::{sequence_editor::table::SequenceEditorTable, toolbar_buttons},
+        window::set_property::{SetPropertyWindow, SetPropertyWindowPropertyType},
+        wm::{WindowManager, edit_window::WindowManagerExtension},
     },
 };
 
@@ -61,9 +65,11 @@ impl SequenceEditorPanel {
                     .as_ref()
                     .map(|seq| (seq.sequence.id, seq.sequence.cues.clone()));
 
-                let active_cues = sequence.read(cx).as_ref().and_then(|seq| seq.first_executor.as_ref()).map(|(_, cues)| {
-                    cues.clone()
-                });
+                let active_cues = sequence
+                    .read(cx)
+                    .as_ref()
+                    .and_then(|seq| seq.first_executor.as_ref())
+                    .map(|(_, cues)| cues.clone());
 
                 this.table_state.update(cx, |table, cx| {
                     table.delegate_mut().update_data(data);
@@ -83,10 +89,13 @@ impl SequenceEditorPanel {
 
                     match evt {
                         DemexEvent::ObjectPropertyChanged(obj, _)
-                            if matches!(obj, &Object::SequenceCue(cue_seq_id, _) if cue_seq_id == sequence_id) => {
-                                this.request_sequence(cx);
-                            }
-                            _ => {}
+                            if matches!(obj,
+                                &Object::SequenceCue(cue_seq_id, _) if cue_seq_id == sequence_id
+                            ) || matches!(obj, &Object::Sequence(id) if id == sequence_id) =>
+                        {
+                            this.request_sequence(cx);
+                        }
+                        _ => {}
                     }
 
                     let executor_id = this
@@ -106,7 +115,7 @@ impl SequenceEditorPanel {
                                 state.delegate_mut().executor_stop();
                                 cx.notify();
                             });
-                        },
+                        }
                         DemexEvent::ExecutorUpdateEvent { id, event } if *id == executor_id => {
                             log::debug!("got executor update event: {:?}", event);
                             match event {
@@ -220,11 +229,27 @@ impl Render for SequenceEditorPanel {
             .w_full()
             .h_full()
             .child(
-                div()
-                    .p_4()
-                    .text_lg()
-                    .font_bold()
-                    .child(sequence.sequence.name.clone()),
+                h_flex().p_4().child(
+                    Button::new("edit-sequence-name")
+                        .on_click({
+                            let sequence_id = sequence.sequence.id;
+                            move |_, window, cx| {
+                                WindowManager::open_edit_window::<SetPropertyWindow>(cx, |cx| {
+                                    SetPropertyWindow::new(
+                                        Object::Sequence(sequence_id),
+                                        SequenceProperty::Name,
+                                        SetPropertyWindowPropertyType::String,
+                                        window,
+                                        cx,
+                                    )
+                                });
+                            }
+                        })
+                        .text()
+                        .text_lg()
+                        .font_bold()
+                        .label(sequence.sequence.name.clone()),
+                ),
             )
             .child(
                 Table::new(&self.table_state)

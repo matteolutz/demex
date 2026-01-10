@@ -1,5 +1,8 @@
 use std::ops::RangeInclusive;
 
+use gpui::Context;
+use gpui_component::input::InputState;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TimeUnit {
     Seconds,
@@ -17,11 +20,18 @@ impl TimeUnit {
 pub enum SetPropertyWindowPropertyType {
     String,
 
-    Integer { range: Option<RangeInclusive<u32>> },
-    Float { range: Option<RangeInclusive<f32>> },
+    Integer {
+        range: Option<RangeInclusive<u32>>,
+    },
+    Float {
+        range: Option<RangeInclusive<f32>>,
+    },
     Percentage,
 
-    RelativeTime { unit: TimeUnit },
+    RelativeTime {
+        unit: TimeUnit,
+        allow_negative: bool,
+    },
 }
 
 impl SetPropertyWindowPropertyType {
@@ -49,13 +59,17 @@ impl SetPropertyWindowPropertyType {
         }
     }
 
-    pub fn relative_time(unit: TimeUnit) -> Self {
-        Self::RelativeTime { unit }
+    pub fn relative_time(unit: TimeUnit, allow_negative: bool) -> Self {
+        Self::RelativeTime {
+            unit,
+            allow_negative,
+        }
     }
 
-    pub fn relative_seconds() -> Self {
+    pub fn relative_positive_seconds() -> Self {
         Self::RelativeTime {
             unit: TimeUnit::Seconds,
+            allow_negative: false,
         }
     }
 }
@@ -65,7 +79,55 @@ impl SetPropertyWindowPropertyType {
         match self {
             Self::Float { .. } | Self::Integer { .. } | Self::String => value.to_string(),
             Self::Percentage => format!("{}%", value),
-            Self::RelativeTime { unit } => format!("{}{}", value, unit.get_suffix()),
+            Self::RelativeTime {
+                unit,
+                allow_negative: _,
+            } => format!("{}{}", value, unit.get_suffix()),
+        }
+    }
+
+    pub fn get_validator(self) -> Box<dyn Fn(&str, &mut Context<InputState>) -> bool + 'static> {
+        match self {
+            Self::String => Box::new(|_, _| true),
+            Self::Float { range } => Box::new(move |value, _| {
+                let Some(value) = value.parse::<f32>().ok() else {
+                    return false;
+                };
+
+                if let Some(range) = &range {
+                    return range.contains(&value);
+                }
+
+                true
+            }),
+            Self::Integer { range } => Box::new(move |value, _| {
+                let Some(value) = value.parse::<u32>().ok() else {
+                    return false;
+                };
+
+                if let Some(range) = &range {
+                    return range.contains(&value);
+                }
+
+                true
+            }),
+            Self::Percentage => Box::new(move |value, _| {
+                let Some(value) = value.parse::<f32>().ok() else {
+                    return false;
+                };
+
+                (0.0..=100.0).contains(&value)
+            }),
+            Self::RelativeTime {
+                unit: _,
+                allow_negative,
+            } => Box::new(move |value, _| {
+                let Some(value) = value.parse::<f32>().ok() else {
+                    return false;
+                };
+
+                allow_negative || (!allow_negative && value >= 0.0)
+            }),
         }
     }
 }
