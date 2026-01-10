@@ -9,7 +9,7 @@ use gpui::{
     Window, WindowOptions, div, prelude::FluentBuilder,
 };
 use gpui_component::{
-    ActiveTheme, Root, TitleBar,
+    ActiveTheme, Root,
     dock::{DockArea, DockAreaState, DockItem, DockPlacement, PanelStyle},
     h_flex, v_flex,
 };
@@ -25,7 +25,7 @@ use crate::{
             layout_view::LayoutViewPanel, performance::PerformancePanel, pool::PoolPanel,
             sequence_editor::SequenceEditorPanel,
         },
-        titlebar::DemexTitleBar,
+        titlebar::{DemexTitleBar, titlebar_options},
         wm::DEMEX_APP_ID,
     },
 };
@@ -38,7 +38,7 @@ pub struct DockWindowConfig {
 impl DockWindowConfig {
     pub(super) fn gpui_window_options() -> WindowOptions {
         WindowOptions {
-            titlebar: Some(TitleBar::title_bar_options()),
+            titlebar: Some(titlebar_options()),
             app_id: Some(DEMEX_APP_ID.to_string()),
             ..Default::default()
         }

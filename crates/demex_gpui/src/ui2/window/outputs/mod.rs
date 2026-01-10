@@ -120,11 +120,11 @@ impl Render for OutputsConfigWindow {
                     .on_action(cx.listener(|this, _: &actions::Escape, _, cx| {
                         this.close(cx);
                     }))
-                    .on_action(|_: &actions::AddUsbSerial, window, cx| {
-                        WindowManager::open_edit_window::<AddSerialOutputWindow>(cx, |cx| AddSerialOutputWindow::new(window, cx));
+                    .on_action(|_: &actions::AddUsbSerial, _, cx| {
+                        WindowManager::open_edit_window::<AddSerialOutputWindow>(cx, |window, cx| AddSerialOutputWindow::new(window, cx));
                     })
-                    .on_action(|_: &actions::AddDebug, window, cx| {
-                        WindowManager::open_edit_window::<AddDebugOutputWindow>(cx, |cx| AddDebugOutputWindow::new(window, cx));
+                    .on_action(|_: &actions::AddDebug, _, cx| {
+                        WindowManager::open_edit_window::<AddDebugOutputWindow>(cx, |window, cx| AddDebugOutputWindow::new(window, cx));
                     })
                     .size_full()
                     .p_4()

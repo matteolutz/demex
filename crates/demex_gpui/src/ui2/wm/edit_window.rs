@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use gpui::{
     AnyView, App, AppContext, Context, Entity, ParentElement, Render, SharedString, Styled, Window,
     WindowBounds, WindowKind,
@@ -77,12 +79,13 @@ pub struct EditWindow<V: EditWindowDelegate> {
 }
 
 impl<V: EditWindowDelegate> WindowDelegate for EditWindow<V> {
-    type InitData = Entity<V>;
+    type InitData = Rc<dyn Fn(&mut Window, &mut Context<V>) -> V>;
 
     fn create(window: &mut Window, cx: &mut App, data: Self::InitData) -> Self
     where
         Self: Sized,
     {
+        let data = cx.new(|cx| data(window, cx));
         let window_title = data.read(cx).window_title(window, cx).into();
 
         Self {
@@ -149,16 +152,15 @@ impl<V: EditWindowDelegate> WindowDelegate for EditWindow<V> {
 pub trait WindowManagerExtension<V: EditWindowDelegate> {
     fn open_edit_window<D: EditWindowDelegate>(
         cx: &mut App,
-        data: impl FnOnce(&mut Context<V>) -> V,
+        data: impl Fn(&mut Window, &mut Context<V>) -> V + 'static,
     );
 }
 
 impl<V: EditWindowDelegate> WindowManagerExtension<V> for WindowManager {
     fn open_edit_window<D: EditWindowDelegate>(
         cx: &mut App,
-        data: impl FnOnce(&mut Context<V>) -> V,
+        data: impl Fn(&mut Window, &mut Context<V>) -> V + 'static,
     ) {
-        let e = cx.new(|cx| data(cx));
-        Self::open_singleton_window::<EditWindow<V>>(cx, e);
+        Self::open_singleton_window::<EditWindow<V>>(cx, Rc::new(data));
     }
 }

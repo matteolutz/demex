@@ -196,16 +196,19 @@ impl TableDelegate for SequenceEditorTable {
                 )
                 .child(
                     Button::new("edit-name")
-                        .on_click(move |_, window, cx| {
-                            WindowManager::open_edit_window::<SetPropertyWindow>(cx, |cx| {
-                                SetPropertyWindow::new(
-                                    Object::SequenceCue(sequence_id, cue_idx),
-                                    CueProperty::Name,
-                                    SetPropertyWindowPropertyType::String,
-                                    window,
-                                    cx,
-                                )
-                            });
+                        .on_click(move |_, _, cx| {
+                            WindowManager::open_edit_window::<SetPropertyWindow>(
+                                cx,
+                                move |window, cx| {
+                                    SetPropertyWindow::new(
+                                        Object::SequenceCue(sequence_id, cue_idx),
+                                        CueProperty::Name,
+                                        SetPropertyWindowPropertyType::String,
+                                        window,
+                                        cx,
+                                    )
+                                },
+                            );
                         })
                         .text()
                         .label(cue.name.clone()),
@@ -218,16 +221,19 @@ impl TableDelegate for SequenceEditorTable {
                 .justify_center()
                 .child(
                     Button::new("edit-in-fade")
-                        .on_click(move |_, window, cx| {
-                            WindowManager::open_edit_window::<SetPropertyWindow>(cx, |cx| {
-                                SetPropertyWindow::new(
-                                    Object::SequenceCue(sequence_id, cue_idx),
-                                    CueProperty::InFade,
-                                    SetPropertyWindowPropertyType::relative_positive_seconds(),
-                                    window,
-                                    cx,
-                                )
-                            });
+                        .on_click(move |_, _, cx| {
+                            WindowManager::open_edit_window::<SetPropertyWindow>(
+                                cx,
+                                move |window, cx| {
+                                    SetPropertyWindow::new(
+                                        Object::SequenceCue(sequence_id, cue_idx),
+                                        CueProperty::InFade,
+                                        SetPropertyWindowPropertyType::relative_positive_seconds(),
+                                        window,
+                                        cx,
+                                    )
+                                },
+                            );
                         })
                         .text()
                         .label(format!("{:.2}s", cue.in_fade)),
@@ -240,16 +246,19 @@ impl TableDelegate for SequenceEditorTable {
                 .justify_center()
                 .child(
                     Button::new("edit-in-delay")
-                        .on_click(move |_, window, cx| {
-                            WindowManager::open_edit_window::<SetPropertyWindow>(cx, |cx| {
-                                SetPropertyWindow::new(
-                                    Object::SequenceCue(sequence_id, cue_idx),
-                                    CueProperty::InDelay,
-                                    SetPropertyWindowPropertyType::relative_positive_seconds(),
-                                    window,
-                                    cx,
-                                )
-                            });
+                        .on_click(move |_, _, cx| {
+                            WindowManager::open_edit_window::<SetPropertyWindow>(
+                                cx,
+                                move |window, cx| {
+                                    SetPropertyWindow::new(
+                                        Object::SequenceCue(sequence_id, cue_idx),
+                                        CueProperty::InDelay,
+                                        SetPropertyWindowPropertyType::relative_positive_seconds(),
+                                        window,
+                                        cx,
+                                    )
+                                },
+                            );
                         })
                         .text()
                         .label(format!("{:.2}s", cue.in_delay)),
@@ -262,16 +271,19 @@ impl TableDelegate for SequenceEditorTable {
                 .justify_center()
                 .child(
                     Button::new("edit-snap-percent")
-                        .on_click(move |_, window, cx| {
-                            WindowManager::open_edit_window::<SetPropertyWindow>(cx, |cx| {
-                                SetPropertyWindow::new(
-                                    Object::SequenceCue(sequence_id, cue_idx),
-                                    CueProperty::SnapPercent,
-                                    SetPropertyWindowPropertyType::Percentage,
-                                    window,
-                                    cx,
-                                )
-                            });
+                        .on_click(move |_, _, cx| {
+                            WindowManager::open_edit_window::<SetPropertyWindow>(
+                                cx,
+                                move |window, cx| {
+                                    SetPropertyWindow::new(
+                                        Object::SequenceCue(sequence_id, cue_idx),
+                                        CueProperty::SnapPercent,
+                                        SetPropertyWindowPropertyType::Percentage,
+                                        window,
+                                        cx,
+                                    )
+                                },
+                            );
                         })
                         .text()
                         .label(format!("{}%", cue.snap_percent * 100.0)),

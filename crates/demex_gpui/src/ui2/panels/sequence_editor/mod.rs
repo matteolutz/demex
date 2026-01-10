@@ -233,16 +233,19 @@ impl Render for SequenceEditorPanel {
                     Button::new("edit-sequence-name")
                         .on_click({
                             let sequence_id = sequence.sequence.id;
-                            move |_, window, cx| {
-                                WindowManager::open_edit_window::<SetPropertyWindow>(cx, |cx| {
-                                    SetPropertyWindow::new(
-                                        Object::Sequence(sequence_id),
-                                        SequenceProperty::Name,
-                                        SetPropertyWindowPropertyType::String,
-                                        window,
-                                        cx,
-                                    )
-                                });
+                            move |_, _, cx| {
+                                WindowManager::open_edit_window::<SetPropertyWindow>(
+                                    cx,
+                                    move |window, cx| {
+                                        SetPropertyWindow::new(
+                                            Object::Sequence(sequence_id),
+                                            SequenceProperty::Name,
+                                            SetPropertyWindowPropertyType::String,
+                                            window,
+                                            cx,
+                                        )
+                                    },
+                                );
                             }
                         })
                         .text()

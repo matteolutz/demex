@@ -1,6 +1,6 @@
 use gpui::{
     AnyElement, App, Context, InteractiveElement, IntoElement, ParentElement, Render, SharedString,
-    Styled, Subscription, Window, div,
+    Styled, Subscription, TitlebarOptions, Window, div,
 };
 use gpui_component::{
     Sizable, TitleBar,
@@ -21,6 +21,17 @@ use crate::{
 
 mod actions {
     gpui::actions!(titlebar, [NewFile, ResetView]);
+}
+
+pub fn titlebar_options() -> TitlebarOptions {
+    #[cfg(target_os = "linux")]
+    {
+        TitlebarOptions::default()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        TitleBar::title_bar_options()
+    }
 }
 
 #[derive(Default)]
@@ -96,9 +107,10 @@ impl DemexTitleBarConfig {
                                 .link()
                                 .label("Settings")
                                 .on_click(|_, _, cx| {
-                                    WindowManager::open_edit_window::<SettingsWindow>(cx, |cx| {
-                                        SettingsWindow::new(cx)
-                                    });
+                                    WindowManager::open_edit_window::<SettingsWindow>(
+                                        cx,
+                                        |_, cx| SettingsWindow::new(cx),
+                                    );
                                 }),
                         )
                         .child(
@@ -109,7 +121,7 @@ impl DemexTitleBarConfig {
                                 .on_click(|_, _, cx| {
                                     WindowManager::open_edit_window::<OutputsConfigWindow>(
                                         cx,
-                                        |cx| OutputsConfigWindow::new(cx),
+                                        |_, cx| OutputsConfigWindow::new(cx),
                                     );
                                 }),
                         )
@@ -169,16 +181,23 @@ impl Render for DemexTitleBar {
         window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
-        TitleBar::new().child(
+        #[cfg(target_os = "linux")]
+        {
             div()
-                .w_full()
-                .on_action(Self::handle_new)
-                .on_action(Self::handle_reset_view)
-                .flex()
-                .justify_start()
-                .items_center()
-                .gap_2()
-                .children(self.config.into_children(window, cx)),
-        )
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            TitleBar::new().child(
+                div()
+                    .w_full()
+                    .on_action(Self::handle_new)
+                    .on_action(Self::handle_reset_view)
+                    .flex()
+                    .justify_start()
+                    .items_center()
+                    .gap_2()
+                    .children(self.config.into_children(window, cx)),
+            )
+        }
     }
 }

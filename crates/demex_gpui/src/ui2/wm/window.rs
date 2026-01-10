@@ -4,8 +4,9 @@ use gpui::{
     AnyView, App, Pixels, SharedString, Window, WindowHandle, WindowKind, WindowOptions, px,
 };
 use gpui::{WindowBounds, prelude::*};
-use gpui_component::{Root, TitleBar};
+use gpui_component::Root;
 
+use crate::ui2::titlebar::titlebar_options;
 use crate::ui2::wm::DEMEX_APP_ID;
 use crate::ui2::wm::app::WindowManagerAppExt;
 
@@ -125,7 +126,7 @@ fn singleton_window_options(
     WindowOptions {
         window_bounds,
         kind,
-        titlebar: Some(TitleBar::title_bar_options()),
+        titlebar: Some(titlebar_options()),
         app_id: Some(DEMEX_APP_ID.to_string()),
         ..Default::default()
     }
