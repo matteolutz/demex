@@ -123,26 +123,31 @@ impl Pool {
                 )]
             }
             PoolType::Executor => {
-                vec![cx.subscribe(
-                    &DemexEngineHandler::event_handler(cx),
-                    |this, _, evt, cx| match evt {
-                        DemexEvent::ExecutorGo(id) => {
-                            this.modify_state(
-                                *id,
-                                |_| {
-                                    Some(PoolItemState {
-                                        indicator_color: PoolItemButtonIndicatorColor::Red,
-                                    })
-                                },
-                                cx,
-                            );
-                        }
-                        DemexEvent::ExecutorStop(id) => {
-                            this.modify_state(*id, |_| None, cx);
-                        }
-                        _ => {}
-                    },
-                )]
+                let sequence_pool = DemexUiState::pool(PoolType::Sequence, cx);
+
+                vec![
+                    cx.subscribe(
+                        &DemexEngineHandler::event_handler(cx),
+                        |this, _, evt, cx| match evt {
+                            DemexEvent::ExecutorGo(id) => {
+                                this.modify_state(
+                                    *id,
+                                    |_| {
+                                        Some(PoolItemState {
+                                            indicator_color: PoolItemButtonIndicatorColor::Red,
+                                        })
+                                    },
+                                    cx,
+                                );
+                            }
+                            DemexEvent::ExecutorStop(id) => {
+                                this.modify_state(*id, |_| None, cx);
+                            }
+                            _ => {}
+                        },
+                    ),
+                    cx.observe_and_notify(&sequence_pool),
+                ]
             }
             PoolType::Sequence => {
                 vec![cx.observe(
