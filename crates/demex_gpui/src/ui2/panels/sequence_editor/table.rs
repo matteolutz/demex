@@ -135,8 +135,8 @@ impl TableDelegate for SequenceEditorTable {
         _window: &mut gpui::Window,
         cx: &mut Context<TableState<Self>>,
     ) -> gpui::Stateful<gpui::Div> {
-        if !self.active_cues.is_empty() && self.next_render.is_none() {
-            // let _ = self.next_render.take();
+        if !self.active_cues.is_empty() {
+            let _ = self.next_render.take();
 
             self.next_render = Some(cx.spawn(async |this, cx| {
                 Timer::after(Duration::from_secs_f64(1.0 / 60.0)).await;
