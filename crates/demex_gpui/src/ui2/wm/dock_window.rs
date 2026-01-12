@@ -9,7 +9,7 @@ use gpui::{
     Window, WindowOptions, div, prelude::FluentBuilder,
 };
 use gpui_component::{
-    ActiveTheme, Root,
+    ActiveTheme, Root, Sizable,
     dock::{DockArea, DockAreaState, DockItem, DockPlacement, PanelStyle},
     h_flex, v_flex,
 };
@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     engine::{showfile::DemexShowFileManager, state::DemexUiState},
     ui2::{
+        config::AppConfigExt,
         ext::GpuiContextExtension,
         panels::{
             attribute_editor::AttributeEditorPanel, command::CommandPanel,
@@ -162,8 +163,9 @@ impl DockWindow {
         window: &mut Window,
         cx: &mut Context<DockArea>,
     ) -> DockArea {
-        let mut da =
-            DockArea::new("dock-area", Some(5), window, cx).panel_style(PanelStyle::TabBar);
+        let mut da = DockArea::new("dock-area", Some(5), window, cx)
+            .panel_style(PanelStyle::TabBar)
+            .with_size(cx.ui_config().ui_size());
 
         let should_load_default = config
             .map(|config| da.load(config.dock_area_state, window, cx).ok())

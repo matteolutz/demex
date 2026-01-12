@@ -2657,7 +2657,7 @@ dependencies = [
 [[package]]
 name = "gpui-component"
 version = "0.5.0-preview2"
-source = "git+https://github.com/matteolutz/gpui-component?branch=demex#f705d10f7268f0f75f66693333709158562aabc7"
+source = "git+https://github.com/matteolutz/gpui-component?branch=demex#6ffbb721bff434e2941683b7b8d5d79116e951e2"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -2695,7 +2695,7 @@ dependencies = [
 [[package]]
 name = "gpui-component-macros"
 version = "0.5.0-preview2"
-source = "git+https://github.com/matteolutz/gpui-component?branch=demex#f705d10f7268f0f75f66693333709158562aabc7"
+source = "git+https://github.com/matteolutz/gpui-component?branch=demex#6ffbb721bff434e2941683b7b8d5d79116e951e2"
 dependencies = [
  "proc-macro2",
  "quote",

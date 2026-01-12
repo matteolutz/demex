@@ -2,12 +2,12 @@ use gpui::{App, BorrowAppContext, Global};
 
 #[derive(Default)]
 pub struct DemexUiConfig {
-    pub touchcreen_mode: bool,
+    pub touchscreen_mode: bool,
 }
 
 impl DemexUiConfig {
     pub fn ui_size(&self) -> gpui_component::Size {
-        if self.touchcreen_mode {
+        if self.touchscreen_mode {
             gpui_component::Size::Large
         } else {
             Default::default()

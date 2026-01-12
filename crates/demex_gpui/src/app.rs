@@ -189,7 +189,7 @@ impl DemexApp {
                 }
 
                 let ui_config = DemexUiConfig {
-                    touchcreen_mode: args.touchscreen_mode,
+                    touchscreen_mode: args.touchscreen_mode,
                 };
                 cx.set_global(ui_config);
 

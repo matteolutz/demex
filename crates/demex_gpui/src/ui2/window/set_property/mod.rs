@@ -80,6 +80,7 @@ impl SetPropertyWindow {
                     this.input_state.update(cx, |state, cx| {
                         state.set_value(value, window, cx);
                         state.focus(window, cx);
+                        state.select_all_content(cx);
                     });
                 }
                 cx.notify();

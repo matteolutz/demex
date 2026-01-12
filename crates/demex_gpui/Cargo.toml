@@ -8,6 +8,8 @@ rfd = { version = "0.15.2"}
 open = { version = "5.3.2"}
 
 gpui = { version = "0.2.2", features = ["leak-detection"] }
+
+# gpui-component = { path = "../../../gpui-component/crates/ui" }
 gpui-component = { git = "https://github.com/matteolutz/gpui-component", branch = "demex" }
 
 anyhow = {version = "1.0.100" }

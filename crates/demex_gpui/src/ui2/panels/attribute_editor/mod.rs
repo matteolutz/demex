@@ -7,7 +7,7 @@ use gpui::{
     prelude::FluentBuilder,
 };
 use gpui_component::{
-    ActiveTheme, Disableable, IconName,
+    ActiveTheme, Disableable, IconName, Sizable,
     button::{Button, ButtonVariant, ButtonVariants},
     dock::{Panel, PanelEvent, register_panel},
     slider::Slider,
@@ -17,12 +17,15 @@ use itertools::Itertools;
 
 use crate::{
     engine::state::DemexUiState,
-    ui2::panels::{
-        attribute_editor::{
-            attribute_state::AttributeEditorAttributeState,
-            value_display::AttributeValueDisplayMode,
+    ui2::{
+        config::AppConfigExt,
+        panels::{
+            attribute_editor::{
+                attribute_state::AttributeEditorAttributeState,
+                value_display::AttributeValueDisplayMode,
+            },
+            toolbar_buttons,
         },
-        toolbar_buttons,
     },
 };
 
@@ -264,7 +267,13 @@ impl AttributeEditorPanel {
                                     }),
                             )
                             .child(div().flex_1())
-                            .child(Slider::new(&attr.slider_state).flex_none().w_full().px_2())
+                            .child(
+                                Slider::new(&attr.slider_state)
+                                    .with_size(cx.ui_config().ui_size())
+                                    .flex_none()
+                                    .w_full()
+                                    .px_2(),
+                            )
                     }),
             )
     }
@@ -283,6 +292,7 @@ impl Render for AttributeEditorPanel {
             .h_full()
             .child(
                 TabBar::new("tabs")
+                    .with_size(cx.ui_config().ui_size())
                     .selected_index(*self.selected_tab.read(cx))
                     .on_click(cx.listener(|this, tab, _, cx| {
                         this.selected_tab.update(cx, |selected_tab, cx| {
