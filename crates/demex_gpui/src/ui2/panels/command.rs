@@ -330,7 +330,7 @@ impl CommandPanel {
                         )
                         .size_full()
                         .y_flipped(false)
-                        .track_scroll(self.command_history_scroll_handle.clone()),
+                        .track_scroll(&self.command_history_scroll_handle),
                     ),
             )
             .child(

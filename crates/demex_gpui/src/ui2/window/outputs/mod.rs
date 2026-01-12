@@ -239,7 +239,7 @@ impl Render for OutputsConfigWindow {
                                     }),
                                 )
                                 .size_full()
-                                .track_scroll(self.output_list_scroll_handle.clone()),
+                                .track_scroll(&self.output_list_scroll_handle),
                             ),
                     )
     }

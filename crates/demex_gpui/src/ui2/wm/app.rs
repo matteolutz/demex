@@ -24,13 +24,13 @@ impl WindowManagerAppExt for App {
 }
 
 pub trait WindowManagerAsyncAppExt {
-    fn update_wm<R, F>(&mut self, f: F) -> gpui::Result<R>
+    fn update_wm<R, F>(&mut self, f: F) -> R
     where
         F: FnOnce(&mut WindowManager, &mut App) -> R;
 }
 
 impl WindowManagerAsyncAppExt for AsyncApp {
-    fn update_wm<R, F>(&mut self, f: F) -> gpui::Result<R>
+    fn update_wm<R, F>(&mut self, f: F) -> R
     where
         F: FnOnce(&mut WindowManager, &mut App) -> R,
     {

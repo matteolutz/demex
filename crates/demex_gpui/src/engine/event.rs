@@ -66,14 +66,12 @@ impl DemexEventHandler {
             DemexEngineCommEvent::TickStateUpdate(tick_state) => {
                 cx.update_global(|ui_state: &mut DemexUiState, cx| {
                     ui_state.update_from_tick(tick_state, cx);
-                })
-                .unwrap();
+                });
             }
             DemexEngineCommEvent::FixtureValuesUpdate(fixture_values) => {
                 cx.update_global(|ui_state: &mut DemexUiState, cx| {
                     ui_state.update_fixture_values(fixture_values, cx);
-                })
-                .unwrap();
+                });
             }
         }
     }
@@ -81,11 +79,9 @@ impl DemexEventHandler {
     fn handle_event(event_handler: &Entity<Self>, event: DemexEvent, cx: &mut AsyncApp) {
         cx.update_global(|ui_state: &mut DemexUiState, cx| {
             ui_state.update_from_event(event.clone(), cx);
-        })
-        .unwrap();
+        });
 
-        cx.update_entity(&event_handler, |_, cx| cx.emit(event))
-            .unwrap();
+        cx.update_entity(&event_handler, |_, cx| cx.emit(event));
     }
 
     fn handle_action_run_result(result: ActionRunResult, cx: &mut AsyncApp) {

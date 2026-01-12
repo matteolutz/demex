@@ -7,10 +7,11 @@ edition.workspace = true
 rfd = { version = "0.15.2"}
 open = { version = "5.3.2"}
 
-gpui = { version = "*", features = ["leak-detection"] }
+# gpui = { version = "*", features = ["leak-detection"] }
+gpui = { git = "https://github.com/zed-industries/zed" }
 
 # gpui-component = { path = "../../../gpui-component/crates/ui" }
-gpui-component = { git = "https://github.com/matteolutz/gpui-component", branch = "demex" }
+gpui-component = { git = "https://github.com/matteolutz/gpui-component", branch = "main" }
 
 anyhow = {version = "1.0.100" }
 

@@ -72,7 +72,7 @@ impl DemexShowFileManager {
             let has_file =
                 cx.read_global(|this: &Self, cx| this.current_file_path.read(cx).is_some());
 
-            if has_file.ok().is_none_or(|has_file| !has_file) {
+            if !has_file {
                 continue;
             }
 

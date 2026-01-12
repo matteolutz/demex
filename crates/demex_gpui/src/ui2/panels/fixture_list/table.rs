@@ -114,8 +114,8 @@ impl TableDelegate for FixtureListTable {
         self.data.len()
     }
 
-    fn column(&self, col_ix: usize, _cx: &gpui::App) -> &gpui_component::table::Column {
-        &self.columns[col_ix]
+    fn column(&self, col_ix: usize, _cx: &gpui::App) -> gpui_component::table::Column {
+        self.columns[col_ix].clone()
     }
 
     fn perform_sort(

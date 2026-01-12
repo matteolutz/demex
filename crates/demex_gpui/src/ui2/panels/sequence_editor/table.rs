@@ -117,8 +117,8 @@ impl TableDelegate for SequenceEditorTable {
         self.data.as_ref().map(|data| data.1.len()).unwrap_or(0)
     }
 
-    fn column(&self, col_ix: usize, _cx: &gpui::App) -> &gpui_component::table::Column {
-        &self.columns[col_ix]
+    fn column(&self, col_ix: usize, _cx: &gpui::App) -> gpui_component::table::Column {
+        self.columns[col_ix].clone()
     }
 
     fn render_tr(
