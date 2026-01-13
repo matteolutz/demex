@@ -3,9 +3,9 @@ use std::rc::Rc;
 use gpui::{
     App, ClickEvent, Div, ElementId, Entity, Hsla, InteractiveElement, IntoElement, MouseButton,
     ParentElement, RenderOnce, SharedString, Stateful, StatefulInteractiveElement, StyleRefinement,
-    Styled, Window, div, prelude::FluentBuilder,
+    Styled, Window, canvas, div, prelude::FluentBuilder,
 };
-use gpui_component::{ActiveTheme, Disableable, StyledExt, v_flex};
+use gpui_component::{ActiveTheme, Colorize, Disableable, StyledExt, v_flex};
 
 use crate::ui2::panels::pool::pool_quick_actions::{PoolQuickAction, PoolQuickActionsState};
 
@@ -178,12 +178,35 @@ impl PoolButton {
 
 impl RenderOnce for PoolButton {
     fn render(self, _window: &mut gpui::Window, cx: &mut gpui::App) -> impl gpui::IntoElement {
+        let lighten_factor = 0.5;
+
         self.base
             .relative()
+            .child(
+                canvas(
+                    {
+                        let quick_actions_state = self.quick_actions_state.clone();
+                        let id = self.id.clone();
+
+                        move |bounds, _, cx| {
+                            if let Some(state) = quick_actions_state {
+                                state.update(cx, |state, _| {
+                                    state.update_bounds(id, bounds);
+                                });
+                            }
+                        }
+                    },
+                    |_, _, _, _| {},
+                )
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full(),
+            )
             .when(!self.disabled, |this| {
-                this.bg(cx.theme().secondary)
-                    .hover(|this| this.bg(cx.theme().secondary_hover))
-                    .active(|this| this.bg(cx.theme().secondary_active))
+                this.bg(cx.theme().secondary.lighten(lighten_factor))
+                    .hover(|this| this.bg(cx.theme().secondary_hover.lighten(lighten_factor)))
+                    .active(|this| this.bg(cx.theme().secondary_active.lighten(lighten_factor)))
             })
             .when_some(self.on_click, |this, on_click| {
                 this.on_click(move |event, window, cx| {
@@ -229,8 +252,13 @@ impl RenderOnce for PoolButton {
                         .child(format!("{}", item_id)),
                 )
             })
-            .when_some(self.quick_actions_state, |div, state| {
-                Self::when_quick_actions_state(div, state, self.quick_actions, self.id)
-            })
+            .when_some(
+                (!self.disabled)
+                    .then_some(self.quick_actions_state)
+                    .flatten(),
+                |div, state| {
+                    Self::when_quick_actions_state(div, state, self.quick_actions, self.id)
+                },
+            )
     }
 }

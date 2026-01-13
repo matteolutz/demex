@@ -1,4 +1,4 @@
-use std::{rc::Rc, time::Duration};
+use std::{collections::HashMap, rc::Rc, time::Duration};
 
 use gpui::{
     App, Bounds, BoxShadow, Context, ElementId, Entity, InteractiveElement, IntoElement,
@@ -29,6 +29,8 @@ struct CurrentPoolButton {
 #[derive(Default)]
 pub struct PoolQuickActionsState {
     current_pool_button: Option<CurrentPoolButton>,
+
+    pool_button_bounds: HashMap<ElementId, Bounds<Pixels>>,
 }
 
 impl PoolQuickActionsState {
@@ -39,6 +41,10 @@ impl PoolQuickActionsState {
         id: ElementId,
         cx: &mut Context<Self>,
     ) {
+        if actions.is_empty() {
+            return;
+        }
+
         let timer = cx.spawn({
             let id = id.clone();
             async move |this, cx| {
@@ -100,29 +106,23 @@ impl PoolQuickActionsState {
 
         self.current_pool_button = None;
     }
+
+    pub(super) fn update_bounds(&mut self, id: ElementId, bounds: Bounds<Pixels>) {
+        self.pool_button_bounds.insert(id, bounds);
+    }
 }
 
 #[derive(IntoElement)]
 pub struct PoolQuickActions {
     state: Entity<PoolQuickActionsState>,
-    bounds: Bounds<Pixels>,
-
-    element_size: f32,
-    element_padding: f32,
+    container_bounds: Bounds<Pixels>,
 }
 
 impl PoolQuickActions {
-    pub fn new(
-        state: &Entity<PoolQuickActionsState>,
-        bounds: Bounds<Pixels>,
-        element_size: f32,
-        element_padding: f32,
-    ) -> Self {
+    pub fn new(state: &Entity<PoolQuickActionsState>, container_bounds: Bounds<Pixels>) -> Self {
         Self {
             state: state.clone(),
-            bounds,
-            element_size,
-            element_padding,
+            container_bounds,
         }
     }
 }
@@ -168,15 +168,18 @@ impl RenderOnce for PoolQuickActions {
             return div();
         }
 
-        let effective_size = self.element_size + self.element_padding;
-        let mut button_origin = current_pool_button.mouse_down_pos - self.bounds.origin;
-        button_origin.x = button_origin.x - (button_origin.x % px(effective_size));
-        button_origin.y = button_origin.y - (button_origin.y % px(effective_size));
+        let Some(current_pool_button_bounds) = self
+            .state
+            .read(cx)
+            .pool_button_bounds
+            .get(&current_pool_button.id)
+        else {
+            return div();
+        };
 
-        let half_size = self.element_size / 2.0;
-        let button_center = button_origin + point(px(half_size), px(half_size));
+        let button_center = current_pool_button_bounds.center() - self.container_bounds.origin;
 
-        let container_size = px(self.element_size + 80.0);
+        let container_size = current_pool_button_bounds.size.width + px(80.0);
 
         div()
             .absolute()

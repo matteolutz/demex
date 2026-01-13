@@ -13,11 +13,11 @@ use crate::ui2::panels::{
     toolbar_buttons,
 };
 
-mod pool;
-mod pool_action;
-mod pool_button;
-mod pool_item;
-mod pool_quick_actions;
+pub mod pool;
+pub mod pool_action;
+pub mod pool_button;
+pub mod pool_item;
+pub mod pool_quick_actions;
 pub mod pool_type;
 
 const POOL_PANEL_NAME: &str = "demex-pool";

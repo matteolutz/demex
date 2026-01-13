@@ -16,6 +16,18 @@ impl TimeUnit {
     }
 }
 
+#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub enum NumberInputMode {
+    #[default]
+    None,
+    Integer {
+        allow_negative: bool,
+    },
+    Float {
+        allow_negative: bool,
+    },
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum SetPropertyWindowPropertyType {
     String,
@@ -70,6 +82,22 @@ impl SetPropertyWindowPropertyType {
         Self::RelativeTime {
             unit: TimeUnit::Seconds,
             allow_negative: false,
+        }
+    }
+
+    pub fn number_input_mode(&self) -> NumberInputMode {
+        match self {
+            Self::Integer { .. } => NumberInputMode::Integer {
+                allow_negative: true,
+            },
+            Self::Float { .. } => NumberInputMode::Float {
+                allow_negative: true,
+            },
+            &Self::RelativeTime { allow_negative, .. } => NumberInputMode::Float { allow_negative },
+            Self::Percentage => NumberInputMode::Float {
+                allow_negative: false,
+            },
+            Self::String => NumberInputMode::None,
         }
     }
 }

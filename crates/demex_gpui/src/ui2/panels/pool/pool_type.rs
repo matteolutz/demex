@@ -1,7 +1,10 @@
 use demex_core::pool::PoolType;
+use gpui::{App, Hsla};
+use gpui_component::ActiveTheme;
 
 pub trait PoolTypeExt {
     fn to_string(&self) -> String;
+    fn color(&self, cx: &App) -> Hsla;
 }
 
 impl PoolTypeExt for PoolType {
@@ -13,6 +16,16 @@ impl PoolTypeExt for PoolType {
             Self::Executor => format!("Executor"),
             Self::Group => format!("Group"),
             Self::Macro => format!("Macro"),
+        }
+    }
+
+    fn color(&self, cx: &App) -> Hsla {
+        match self {
+            Self::Group => cx.theme().red,
+            Self::Preset(_) => cx.theme().blue,
+            Self::Macro => cx.theme().yellow,
+            Self::Sequence | Self::SequenceCue(_) => cx.theme().cyan,
+            Self::Executor => cx.theme().green,
         }
     }
 }

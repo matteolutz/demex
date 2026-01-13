@@ -6,6 +6,7 @@ pub mod command;
 pub mod fixture_list;
 pub mod fixture_selection;
 pub mod layout_view;
+pub mod multipool;
 pub mod performance;
 pub mod pool;
 pub mod sequence_editor;
@@ -33,4 +34,5 @@ fn register_panels(cx: &mut App) {
     layout_view::register(cx);
     sequence_editor::register(cx);
     attribute_editor::register(cx);
+    multipool::register(cx);
 }

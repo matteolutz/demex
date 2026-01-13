@@ -21,9 +21,14 @@ use crate::{
         config::AppConfigExt,
         ext::GpuiContextExtension,
         panels::{
-            attribute_editor::AttributeEditorPanel, command::CommandPanel,
-            fixture_list::FixtureListPanel, fixture_selection::FixtureSelectionPanel,
-            layout_view::LayoutViewPanel, performance::PerformancePanel, pool::PoolPanel,
+            attribute_editor::AttributeEditorPanel,
+            command::CommandPanel,
+            fixture_list::FixtureListPanel,
+            fixture_selection::FixtureSelectionPanel,
+            layout_view::LayoutViewPanel,
+            multipool::{MultiPoolPanel, config::MultiPoolConfig},
+            performance::PerformancePanel,
+            pool::PoolPanel,
             sequence_editor::SequenceEditorPanel,
         },
         titlebar::{DemexTitleBar, titlebar_options},
@@ -112,6 +117,13 @@ impl DockWindow {
         );
         da.add_panel(
             Arc::new(cx.new(|cx| PoolPanel::new(PoolType::Executor, cx))),
+            DockPlacement::Center,
+            None,
+            window,
+            cx,
+        );
+        da.add_panel(
+            Arc::new(cx.new(|cx| MultiPoolPanel::new(MultiPoolConfig::example(), cx))),
             DockPlacement::Center,
             None,
             window,

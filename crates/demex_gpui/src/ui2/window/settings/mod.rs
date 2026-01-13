@@ -8,12 +8,12 @@ mod actions {
 
     pub const CONTEXT: &str = "demex-settings-window";
 
-    gpui::actions!([Escape]);
+    gpui::actions!([QuitSettings]);
 
     pub fn init(cx: &mut App) {
         cx.bind_keys([
-            KeyBinding::new("escape", Escape, Some(CONTEXT)),
-            KeyBinding::new("ctrl-m", Escape, Some(CONTEXT)),
+            KeyBinding::new("escape", QuitSettings, Some(CONTEXT)),
+            KeyBinding::new("ctrl-m", QuitSettings, Some(CONTEXT)),
         ]);
     }
 }
@@ -56,7 +56,7 @@ impl Render for SettingsWindow {
     ) -> impl gpui::IntoElement {
         div()
             .key_context(actions::CONTEXT)
-            .on_action(cx.listener(|this, _: &actions::Escape, _, cx| {
+            .on_action(cx.listener(|this, _: &actions::QuitSettings, _, cx| {
                 this.close(cx);
             }))
             .size_full()

@@ -7,7 +7,7 @@ use demex_core::{
 };
 use gpui::{
     App, AppContext, Context, Entity, InteractiveElement, IntoElement, ParentElement, Render,
-    Styled, Subscription, Window, WindowBounds, prelude::FluentBuilder, size,
+    Styled, Subscription, Window, WindowBounds, div, prelude::FluentBuilder, size,
 };
 
 mod property_type;
@@ -17,7 +17,16 @@ use gpui_component::{
 };
 pub use property_type::*;
 
-use crate::{engine::DemexEngineHandler, ui2::wm::edit_window::EditWindowDelegate};
+mod grid;
+
+use crate::{
+    engine::DemexEngineHandler,
+    ui2::{
+        components::number_input_grid::{NumberInputGrid, NumberInputGridEvent},
+        window::set_property::grid::NumberInputModeExt,
+        wm::edit_window::EditWindowDelegate,
+    },
+};
 
 mod actions {
     use gpui::{App, KeyBinding};
@@ -54,6 +63,13 @@ impl SetPropertyWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {
+        match property_type.number_input_mode() {
+            NumberInputMode::Float { .. } | NumberInputMode::Integer { .. } => {
+                window.resize(size(350.0.into(), 400.0.into()));
+            }
+            NumberInputMode::None => {}
+        }
+
         let property = property.to_string();
         let value = cx.new(|_| None);
         let input_state = cx
@@ -123,6 +139,44 @@ impl SetPropertyWindow {
 }
 
 impl SetPropertyWindow {
+    pub fn render_number_input_grid(
+        &mut self,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        let Some(buttons) = self
+            .property_type
+            .number_input_mode()
+            .get_number_grid_buttons()
+        else {
+            return div();
+        };
+
+        div().size_full().child(
+            NumberInputGrid::new(3, 5)
+                .buttons(buttons)
+                .on_click(cx.listener(|this, event, window, cx| match event {
+                    NumberInputGridEvent::Insert(text) => {
+                        this.input_state.update(cx, |state, cx| {
+                            state.insert(text, window, cx);
+                        });
+                    }
+                    NumberInputGridEvent::Delete => this.input_state.update(cx, |state, cx| {
+                        if state.cursor() == 0 {
+                            return;
+                        }
+
+                        let mut text = state.value().to_string();
+                        text.remove(state.cursor() - 1);
+                        state.set_value(text, window, cx);
+                    }),
+                    NumberInputGridEvent::Submit => {
+                        this.submit(cx);
+                    }
+                })),
+        )
+    }
+
     pub fn render_input(
         &mut self,
         _window: &mut gpui::Window,
@@ -172,8 +226,9 @@ impl Render for SetPropertyWindow {
             .p_4()
             .gap_4()
             .items_center()
-            .justify_between()
+            .justify_center()
             .child(self.render_input(window, cx))
+            .child(self.render_number_input_grid(window, cx))
     }
 }
 

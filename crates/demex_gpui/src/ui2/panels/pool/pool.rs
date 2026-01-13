@@ -237,15 +237,7 @@ impl Render for Pool {
                 .when_some(
                     self.bounds.read(cx).clone(),
                     |this, bounds: Bounds<Pixels>| {
-                        let width = bounds.size.width;
-                        let (_, element_size) = self.cols_and_element_size(width);
-
-                        this.child(PoolQuickActions::new(
-                            &self.quick_actions_state,
-                            bounds,
-                            element_size,
-                            ELEMENT_PADDING,
-                        ))
+                        this.child(PoolQuickActions::new(&self.quick_actions_state, bounds))
                     },
                 ),
         )
