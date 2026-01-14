@@ -19,6 +19,7 @@ pub struct RenameObjectArgs {
     pub new_name: String,
 }
 
+// TODO: use set property instead of rename
 impl FunctionArgs for RenameObjectArgs {
     fn run(
         &self,
@@ -26,7 +27,7 @@ impl FunctionArgs for RenameObjectArgs {
         _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
         preset_handler: &mut crate::presets::PresetHandler,
         _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::updatables::UpdatableHandler,
+        updatable_handler: &mut crate::updatables::UpdatableHandler,
         _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
         _: &mut TimingHandler,
         _: &Patch,
@@ -72,6 +73,18 @@ impl FunctionArgs for RenameObjectArgs {
                 .rename_sequence_cue(*sequence_id, *cue_idx, self.new_name.clone())
                 .map_err(ActionRunError::PresetHandlerError)
                 .map(|_| ActionRunResult::new()),
+
+            Object::ExecutorCue(executor_id, cue_idx) => updatable_handler
+                .executor(*executor_id)
+                .map_err(ActionRunError::UpdatableHandlerError)
+                .and_then(|executor| {
+                    let sequence_id = executor.runtime().sequence_id();
+
+                    preset_handler
+                        .rename_sequence_cue(sequence_id, *cue_idx, self.new_name.clone())
+                        .map_err(ActionRunError::PresetHandlerError)
+                        .map(|_| ActionRunResult::new())
+                }),
         }
     }
 }

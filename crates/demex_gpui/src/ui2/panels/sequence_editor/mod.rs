@@ -2,6 +2,7 @@ use demex_core::{
     command::parser::nodes::object::Object,
     engine::comm::{SequenceRequest, SequenceResponse},
     event::{DemexEvent, DemexExecutorUpdateEvent},
+    pool::PoolType,
     sequence::SequenceProperty,
 };
 use gpui::{
@@ -95,6 +96,10 @@ impl SequenceEditorPanel {
                         {
                             this.request_sequence(cx);
                         }
+                        DemexEvent::PoolItemAdded(pool_type, _) | DemexEvent::PoolItemsDeleted { pool_type, ..}
+                              if matches!(pool_type, PoolType::SequenceCue(id) if *id == sequence_id) => {
+                                  this.request_sequence(cx);
+                            }
                         _ => {}
                     }
 

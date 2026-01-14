@@ -287,6 +287,13 @@ impl<'a> Parser2<'a> {
             self.advance();
             let executor_id = self.parse_integer()?;
 
+            if matches!(self.current_token()?, Token::KeywordCue) {
+                return Err(ParseError::UnexpectedToken(
+                    self.current_token()?.clone(),
+                    "Expected not 'cue'".to_string(),
+                ));
+            }
+
             return Ok(HomeableObject::Executor(executor_id));
         }
 
@@ -337,6 +344,18 @@ impl<'a> Parser2<'a> {
             }
 
             return Ok(Object::Sequence(sequence_id));
+        }
+
+        if matches!(self.current_token()?, Token::KeywordExecutor) {
+            self.advance();
+
+            let executor_id = self.parse_integer()?;
+
+            expect_and_consume_token!(self, Token::KeywordCue, "cue");
+
+            let cue_idx = self.parse_discrete_cue_idx()?;
+
+            return Ok(Object::ExecutorCue(executor_id, cue_idx));
         }
 
         if matches!(self.current_token()?, Token::KeywordPreset) {

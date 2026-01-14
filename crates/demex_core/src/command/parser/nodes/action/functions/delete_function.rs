@@ -100,6 +100,35 @@ impl FunctionArgs for DeleteArgs {
                 }
             }
             (
+                Object::ExecutorCue(executor_id_from, cue_idx_from),
+                Object::ExecutorCue(executor_id_to, cue_idx_to),
+            ) => {
+                if executor_id_from != executor_id_to {
+                    return Err(ActionRunError::ActionNotImplementedForObjectRange(
+                        "Delete".to_owned(),
+                        self.object_range.clone(),
+                    ));
+                }
+
+                let sequence_id = updatable_handler
+                    .executor(*executor_id_from)
+                    .map(|executor| executor.runtime().sequence_id())
+                    .map_err(ActionRunError::UpdatableHandlerError)?;
+
+                preset_handler
+                    .delete_sequence_cues(sequence_id, *cue_idx_from, *cue_idx_to, event_list)
+                    .map_err(ActionRunError::PresetHandlerError)?;
+
+                if cue_idx_from == cue_idx_to {
+                    Ok(ActionRunResult::new())
+                } else {
+                    Ok(ActionRunResult::Info(format!(
+                        "Deleted cue {}.{} to {}.{} in sequence {}",
+                        cue_idx_from.0, cue_idx_from.1, cue_idx_to.0, cue_idx_to.1, sequence_id
+                    )))
+                }
+            }
+            (
                 Object::HomeableObject(homeable_object_from),
                 Object::HomeableObject(homeable_object_to),
             ) => match (homeable_object_from, homeable_object_to) {

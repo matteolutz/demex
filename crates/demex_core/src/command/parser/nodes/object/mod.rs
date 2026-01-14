@@ -315,6 +315,7 @@ pub enum Object {
     HomeableObject(HomeableObject),
     Sequence(u32),
     SequenceCue(u32, CueIdx),
+    ExecutorCue(u32, CueIdx),
     Preset(FixturePresetId),
     Macro(u32),
 }
@@ -334,6 +335,9 @@ impl Display for Object {
             Self::Sequence(id) => write!(f, "Sequence {}", id),
             Self::SequenceCue(id, cue_idx) => {
                 write!(f, "Sequence {} Cue {}.{}", id, cue_idx.0, cue_idx.1)
+            }
+            Self::ExecutorCue(id, cue_idx) => {
+                write!(f, "Executor {} Cue {}.{}", id, cue_idx.0, cue_idx.1)
             }
         }
     }
@@ -356,6 +360,7 @@ impl ObjectDelegate for Object {
                 // TODO: find solution for this
                 Some((PoolType::SequenceCue(seq_id), cue_id.0 ^ cue_id.1))
             }
+            Self::ExecutorCue(_, _) => None,
             Self::Preset(id) => Some((PoolType::Preset(id.feature_group), id.preset_id)),
         }
     }
@@ -394,6 +399,21 @@ impl ObjectDelegate for Object {
                 })
                 .map_err(ActionRunError::PresetHandlerError)
                 .and_then(|cue| cue.get_property_string(key)),
+            Self::ExecutorCue(executor_id, cue_idx) => updatable_handler
+                .executor(executor_id)
+                .map_err(ActionRunError::UpdatableHandlerError)
+                .and_then(|executor| {
+                    let sequence_id = executor.runtime().sequence_id();
+
+                    preset_handler
+                        .get_sequence(sequence_id)
+                        .and_then(|s| {
+                            s.find_cue(cue_idx)
+                                .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_idx))
+                        })
+                        .map_err(ActionRunError::PresetHandlerError)
+                        .and_then(|cue| cue.get_property_string(key))
+                }),
         }
     }
 
@@ -437,6 +457,21 @@ impl ObjectDelegate for Object {
                 })
                 .map_err(ActionRunError::PresetHandlerError)
                 .and_then(|cue| cue.set_property_string(key, value)),
+            Self::ExecutorCue(executor_id, cue_idx) => updatable_handler
+                .executor(executor_id)
+                .map_err(ActionRunError::UpdatableHandlerError)
+                .and_then(|executor| {
+                    let sequence_id = executor.runtime().sequence_id();
+
+                    preset_handler
+                        .get_sequence_mut(sequence_id)
+                        .and_then(|s| {
+                            s.find_cue_mut(cue_idx)
+                                .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_idx))
+                        })
+                        .map_err(ActionRunError::PresetHandlerError)
+                        .and_then(|cue| cue.set_property_string(key, value))
+                }),
         };
 
         event_list.push(DemexEvent::ObjectPropertyChanged(self.clone(), cloned_key));
