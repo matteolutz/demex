@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use gdtf::fixture_type::FixtureType;
 use gpui::UpdateGlobal;
+use itertools::Itertools;
 
 use crate::{
     engine::{showfile::DemexShowFileManager, state::DemexUiState},
@@ -156,7 +157,11 @@ impl DemexApp {
                 log::info!("Watching themes directory: {}", themes_dir.display());
                 if let Err(err) = ThemeRegistry::watch_dir(themes_dir.clone(), cx, move |cx| {
                     let theme_reg = ThemeRegistry::global(cx);
-                    log::debug!("Found {} themes", theme_reg.themes().len());
+                    log::debug!(
+                        "Found {} themes ({})",
+                        theme_reg.themes().len(),
+                        theme_reg.themes().keys().join(", ")
+                    );
 
                     let Some(selected_theme) = args.theme.as_ref() else {
                         return;

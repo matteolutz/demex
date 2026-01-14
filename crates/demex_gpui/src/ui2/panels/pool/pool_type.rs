@@ -4,6 +4,7 @@ use gpui_component::ActiveTheme;
 
 pub trait PoolTypeExt {
     fn to_string(&self) -> String;
+    fn to_short_string(&self) -> String;
     fn color(&self, cx: &App) -> Hsla;
 }
 
@@ -14,6 +15,17 @@ impl PoolTypeExt for PoolType {
             Self::Sequence => format!("Sequence"),
             Self::SequenceCue(seq_id) => format!("Sequence {} Cue", seq_id),
             Self::Executor => format!("Executor"),
+            Self::Group => format!("Group"),
+            Self::Macro => format!("Macro"),
+        }
+    }
+
+    fn to_short_string(&self) -> String {
+        match self {
+            Self::Preset(feature_group) => feature_group.to_string(),
+            Self::Sequence => format!("Seq"),
+            Self::SequenceCue(seq_id) => format!("Seq {} Q", seq_id),
+            Self::Executor => format!("Exec"),
             Self::Group => format!("Group"),
             Self::Macro => format!("Macro"),
         }

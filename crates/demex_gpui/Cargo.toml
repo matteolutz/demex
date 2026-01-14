@@ -8,7 +8,7 @@ rfd = { version = "0.17.1"}
 open = { version = "5.3.2"}
 
 # gpui = { version = "*", features = ["leak-detection"] }
-gpui = { git = "https://github.com/zed-industries/zed" }
+gpui = { git = "https://github.com/zed-industries/zed"  }
 
 # gpui-component = { path = "../../../gpui-component/crates/ui" }
 gpui-component = { git = "https://github.com/matteolutz/gpui-component", branch = "main" }
@@ -42,3 +42,4 @@ demex_core.workspace = true
 tree-sitter-demex.workspace = true
 rust-embed = "8.9.0"
 dirs = "6.0.0"
+smol = "2.0.2"

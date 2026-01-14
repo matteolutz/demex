@@ -17,7 +17,8 @@ use demex_core::{
     pool::{PoolItem, PoolType},
     utils::thread::DemexThreadStats,
 };
-use gpui::{App, AppContext, BorrowAppContext, Entity, Global, Timer};
+use gpui::{App, AppContext, BorrowAppContext, Entity, Global};
+use smol::Timer;
 
 use crate::engine::DemexEngineHandler;
 

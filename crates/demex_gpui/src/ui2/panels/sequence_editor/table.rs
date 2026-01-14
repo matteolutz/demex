@@ -15,8 +15,7 @@ use demex_core::{
     },
 };
 use gpui::{
-    App, Context, DefiniteLength, InteractiveElement, IntoElement, ParentElement, Styled, Task,
-    Timer, div,
+    App, Context, DefiniteLength, InteractiveElement, IntoElement, ParentElement, Styled, Task, div,
 };
 use gpui_component::{
     ActiveTheme, Sizable,
@@ -25,6 +24,7 @@ use gpui_component::{
     menu::{DropdownMenu, PopupMenuItem},
     table::{Column, TableDelegate, TableState},
 };
+use smol::Timer;
 use strum::IntoEnumIterator;
 
 use crate::{

@@ -6,8 +6,9 @@ use std::{
 
 use demex_core::{engine::comm::ShowRequest, show::DemexShow, utils::version::VERSION_STR};
 use gdtf::fixture_type::FixtureType;
-use gpui::{App, AppContext, AsyncApp, BorrowAppContext, Entity, Global, Task, Timer};
+use gpui::{App, AppContext, AsyncApp, BorrowAppContext, Entity, Global, Task};
 use serde::{Deserialize, Serialize};
+use smol::Timer;
 
 use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},

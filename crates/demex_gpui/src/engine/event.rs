@@ -6,8 +6,9 @@
  *
  */
 
-use gpui::{AsyncApp, Entity, EventEmitter, Task, Timer, prelude::*};
+use gpui::{AsyncApp, Entity, EventEmitter, Task, prelude::*};
 use gpui_component::{button::Button, notification::Notification};
+use smol::Timer;
 use std::{sync::mpsc, time::Duration};
 
 use demex_core::{

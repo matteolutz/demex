@@ -5,16 +5,21 @@ use demex_core::{
             functions::{go_function::ExecutorGoArgs, set_function::SetFixturePresetArgs},
         },
         fixture_selector::FixtureSelector,
+        object::Object,
     },
     engine::comm::ExecutorSequenceRequest,
     pool::PoolType,
-    presets::preset::FixturePresetId,
+    presets::preset::{FixturePresetId, FixturePresetProperty},
 };
 use gpui::App;
 
 use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},
-    ui2::panels::pool::pool_button::PoolButton,
+    ui2::{
+        panels::pool::pool_button::PoolButton,
+        window::set_property::{SetPropertyWindow, SetPropertyWindowPropertyType},
+        wm::{WindowManager, edit_window::WindowManagerExtension},
+    },
 };
 
 pub fn handle_pool_item_click(pool_type: PoolType, pool_item_id: u32, cx: &mut App) {
@@ -62,6 +67,20 @@ pub fn apply_pool_type_to_button(
                     }
                 },
             );
+        }),
+        PoolType::Preset(feature_group) => button.action("Rename", move |_, cx| {
+            WindowManager::open_edit_window::<SetPropertyWindow>(cx, move |window, cx| {
+                SetPropertyWindow::new(
+                    Object::Preset(FixturePresetId {
+                        feature_group,
+                        preset_id: pool_item_id,
+                    }),
+                    FixturePresetProperty::Name,
+                    SetPropertyWindowPropertyType::String,
+                    window,
+                    cx,
+                )
+            });
         }),
         _ => button,
     }

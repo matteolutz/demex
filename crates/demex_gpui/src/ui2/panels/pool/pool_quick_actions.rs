@@ -2,10 +2,11 @@ use std::{collections::HashMap, rc::Rc, time::Duration};
 
 use gpui::{
     App, Bounds, BoxShadow, Context, ElementId, Entity, InteractiveElement, IntoElement,
-    ParentElement, Pixels, Point, RenderOnce, SharedString, Styled, Task, Timer, Window, div,
-    point, prelude::FluentBuilder, px,
+    ParentElement, Pixels, Point, RenderOnce, SharedString, Styled, Task, Window, div, point,
+    prelude::FluentBuilder, px,
 };
 use gpui_component::{ActiveTheme, StyledExt, v_flex};
+use smol::Timer;
 
 const QUICK_ACTIONS_TIMEOUT: f32 = 0.5;
 const QUICK_ACTIONS_MOUSE_MOVE_THRESHOLD: f64 = 5.0;
@@ -128,8 +129,12 @@ impl PoolQuickActions {
 }
 
 impl PoolQuickActions {
-    fn render_action_button(idx: usize, action: &PoolQuickAction, cx: &App) -> impl IntoElement {
-        let on_action = action.action.clone();
+    fn render_action_button(
+        idx: usize,
+        action: Option<&PoolQuickAction>,
+        cx: &App,
+    ) -> impl IntoElement {
+        let on_action = action.map(|action| action.action.clone());
 
         v_flex()
             .id(idx)
@@ -141,20 +146,24 @@ impl PoolQuickActions {
             .when(idx == 5, |this| this.rounded_bl_sm()) // Bottom left
             .when(idx == 7, |this| this.rounded_br_sm()) // Bottom right
             //.rounded_sm()
-            .hover(|this| {
-                this.bg(cx.theme().secondary_active)
-                    .border_color(cx.theme().primary)
+            .when(action.is_some(), |this| {
+                this.hover(|this| {
+                    this.bg(cx.theme().secondary_active)
+                        .border_color(cx.theme().primary)
+                })
             })
             .size_full()
             .justify_center()
             .items_center()
-            .on_mouse_up(gpui::MouseButton::Left, move |_, window, app| {
-                (on_action)(window, app)
+            .when_some(on_action, |this, on_action| {
+                this.on_mouse_up(gpui::MouseButton::Left, move |_, window, app| {
+                    (on_action)(window, app)
+                })
             })
             .p_1()
             .text_sm()
             .font_semibold()
-            .child(action.name.clone())
+            .when_some(action, |this, action| this.child(action.name.clone()))
     }
 }
 
@@ -203,24 +212,15 @@ impl RenderOnce for PoolQuickActions {
                         blur_radius: px(20.0),
                         spread_radius: px(20.0),
                     }])
-                    .children(
-                        current_pool_button
-                            .actions
-                            .iter()
-                            .take(4)
-                            .enumerate()
-                            .map(|(idx, action)| Self::render_action_button(idx, action, cx)),
-                    )
+                    .children((0..4).map(|idx| {
+                        let action = current_pool_button.actions.get(idx);
+                        Self::render_action_button(idx, action, cx)
+                    }))
                     .child(div())
-                    .children(
-                        current_pool_button
-                            .actions
-                            .iter()
-                            .skip(4)
-                            .take(4)
-                            .enumerate()
-                            .map(|(idx, action)| Self::render_action_button(idx + 4, action, cx)),
-                    ),
+                    .children((4..8).map(|idx| {
+                        let action = current_pool_button.actions.get(idx);
+                        Self::render_action_button(idx, action, cx)
+                    })),
             )
     }
 }
