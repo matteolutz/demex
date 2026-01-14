@@ -18,6 +18,9 @@ pub mod recall_function;
 pub mod record_function;
 pub mod rename_function;
 pub mod set_function;
+pub mod speedmaster_functions;
+pub mod start_function;
+pub mod stomp_function;
 pub mod stop_function;
 pub mod update_function;
 

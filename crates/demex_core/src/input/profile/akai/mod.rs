@@ -228,7 +228,7 @@ impl ApcMiniMk2InputDeviceProfile {
                     ApcMiniMk2ButtonLedMode::Intens10
                 },
             ),
-            DemexInputButton::TokenInsert { .. } | DemexInputButton::Macro { .. } => (
+            DemexInputButton::Macro { .. } => (
                 ApcMiniMk2ButtonLedColor::Blue,
                 ApcMiniMk2ButtonLedMode::IntensFull,
             ),

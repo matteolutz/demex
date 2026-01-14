@@ -1,0 +1,39 @@
+use crate::command::parser::nodes::action::{error::ActionRunError, result::ActionRunResult};
+
+use super::FunctionArgs;
+
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExecutorStartArgs {
+    pub executor_id: u32,
+}
+
+impl FunctionArgs for ExecutorStartArgs {
+    fn run(
+        &self,
+        issued_at: std::time::Instant,
+        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
+        preset_handler: &mut crate::presets::PresetHandler,
+        _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
+        updatable_handler: &mut crate::updatables::UpdatableHandler,
+        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _timing_handler: &mut crate::timing::TimingHandler,
+        _patch: &crate::patch::Patch,
+        event_list: &mut crate::event::list::DemexEventList,
+    ) -> Result<
+        crate::command::parser::nodes::action::result::ActionRunResult,
+        crate::command::parser::nodes::action::error::ActionRunError,
+    > {
+        updatable_handler
+            .executor_start(
+                self.executor_id,
+                fixture_handler,
+                preset_handler,
+                issued_at.elapsed().as_secs_f32(),
+                event_list,
+            )
+            .map_err(ActionRunError::UpdatableHandlerError)
+            .map(|_| ActionRunResult::Default)
+    }
+}

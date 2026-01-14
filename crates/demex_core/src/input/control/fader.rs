@@ -139,12 +139,15 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceFaderUpdate> for DemexInputFad
         &self,
         args: DemexInputDeviceUpdateArgs,
     ) -> Result<DemexInputDeviceFaderUpdate, DemexInputDeviceError> {
+        todo!()
+        /*
         self.value(
             args.fixture_handler,
             args.updatable_handler,
             args.timing_handler,
         )
         .map(DemexInputDeviceFaderUpdate::FaderValueChange)
+        */
     }
 
     fn should_update(
@@ -152,6 +155,8 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceFaderUpdate> for DemexInputFad
         args: DemexInputDeviceUpdateArgs,
         event: &DemexEvent,
     ) -> Result<Option<DemexInputDeviceFaderUpdate>, DemexInputDeviceError> {
+        todo!()
+        /*
         let update = match self {
             Self::Fader { executor_id } => {
                 if matches!(event,
@@ -217,5 +222,6 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceFaderUpdate> for DemexInputFad
         };
 
         Ok(update)
+        */
     }
 }

@@ -189,6 +189,27 @@ impl UpdatableHandler {
         Ok(())
     }
 
+    pub fn executor_start(
+        &mut self,
+        id: u32,
+        fixture_handler: &mut FixtureStateHandler,
+        preset_handler: &PresetHandler,
+        time_offset: f32,
+        event_list: &mut DemexEventList,
+    ) -> Result<(), UpdatableHandlerError> {
+        self.executor_mut(id)?
+            .start(fixture_handler, preset_handler, time_offset, event_list);
+        Ok(())
+    }
+
+    pub fn executor_set_stomped(&mut self, id: u32, stomped: bool) {
+        if stomped {
+            self.executor_stomp(id);
+        } else {
+            self.executor_unstomp(id);
+        }
+    }
+
     pub fn executor_stomp(&mut self, id: u32) {
         self.executor_unstomp(id);
         self.stomps.push(StompSource::Executor(id));

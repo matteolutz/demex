@@ -3,12 +3,9 @@ use std::time;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    command::{
-        lexer::token::Token,
-        parser::nodes::{
-            action::{Action, ValueOrRange, error::ActionRunError, result::ActionRunResult},
-            fixture_selector::{FixtureSelector, FixtureSelectorContext},
-        },
+    command::parser::nodes::{
+        action::{Action, ValueOrRange, error::ActionRunError, result::ActionRunResult},
+        fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
     input::{
         control::{button::DemexInputButton, fader::DemexInputFader},
@@ -36,7 +33,6 @@ pub enum AssignButtonArgsMode {
         fixture_selector: Option<FixtureSelector>,
     },
     Macro(Box<Action>),
-    Tokens(Vec<Token>),
     SpeedmasterTap(u32),
 }
 
@@ -68,7 +64,7 @@ impl AssignButtonArgsMode {
                     .get_speed_master_value(*speed_master_id)
                     .map_err(ActionRunError::TimingHandlerError)?;
             }
-            Self::Tokens(_) | Self::FixtureSelector(_) | Self::Macro(_) => {}
+            Self::FixtureSelector(_) | Self::Macro(_) => {}
         };
 
         Ok(())
@@ -122,9 +118,6 @@ impl AssignButtonArgsMode {
             }
             AssignButtonArgsMode::Macro(action) => Ok(vec![DemexInputButton::Macro {
                 action: *action.clone(),
-            }]),
-            AssignButtonArgsMode::Tokens(tokens) => Ok(vec![DemexInputButton::TokenInsert {
-                tokens: tokens.clone(),
             }]),
             AssignButtonArgsMode::SpeedmasterTap(speed_master_id) => {
                 Ok(vec![DemexInputButton::SpeedMasterTap {

@@ -7,9 +7,6 @@ use crate::{
 pub(crate) fn get_global_encoder_value(
     _encoder_idx: u32,
     _fixture_selector_context: FixtureSelectorContext,
-    _fixture_handler: &FixtureStateHandler,
-    _preset_handler: &PresetHandler,
-    _timing_handler: &TimingHandler,
     _encoder_channels: Option<&EncoderChannels>,
     _patch: &Patch,
 ) -> Option<f32> {

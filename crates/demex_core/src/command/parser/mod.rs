@@ -1235,27 +1235,6 @@ impl<'a> Parser2<'a> {
                     button_id,
                 }))
             }
-            Token::KeywordTokens => {
-                self.advance();
-
-                expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
-
-                let (device_idx, button_id) = self.parse_button_id(false)?;
-
-                expect_and_consume_token!(self, Token::KeywordWith, "\"with\"");
-
-                let mut tokens = Vec::new();
-                while !matches!(self.current_token()?, Token::Eof) {
-                    tokens.push(self.current_token()?.clone());
-                    self.advance();
-                }
-
-                Ok(Action::AssignButton(AssignButtonArgs {
-                    mode: AssignButtonArgsMode::Tokens(tokens),
-                    device_idx: device_idx as usize,
-                    button_id,
-                }))
-            }
             Token::KeywordGrandmaster => {
                 self.advance();
 

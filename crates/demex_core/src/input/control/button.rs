@@ -6,7 +6,18 @@ use crate::{
     command::{
         lexer::token::Token,
         parser::nodes::{
-            action::{Action, ActionIssuer, queue::ActionQueue},
+            action::{
+                Action, ActionIssuer, ValueOrRange,
+                functions::{
+                    go_function::ExecutorGoArgs,
+                    set_function::{SelectionOrSelector, SetFixturePresetArgs},
+                    speedmaster_functions::SpeedMasterTapArgs,
+                    start_function::ExecutorStartArgs,
+                    stomp_function::ExecutorStompArgs,
+                    stop_function::ExecutorStopArgs,
+                },
+                queue::ActionQueue,
+            },
             fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
         },
     },
@@ -50,10 +61,6 @@ pub enum DemexInputButton {
         action: Action,
     },
 
-    TokenInsert {
-        tokens: Vec<Token>,
-    },
-
     #[default]
     Unused,
 }
@@ -61,85 +68,71 @@ pub enum DemexInputButton {
 impl DemexInputButton {
     pub fn handle_press(
         &self,
-        fixture_handler: &mut FixtureStateHandler,
-        preset_handler: &mut PresetHandler,
-        updatable_handler: &mut UpdatableHandler,
-        timing_handler: &mut TimingHandler,
-        patch: &Patch,
-        fixture_selector_context: FixtureSelectorContext,
         action_queue: &mut ActionQueue,
-        global_fixture_selection: &mut Option<FixtureSelection>,
-        command_input: &mut Vec<Token>,
-        event_list: &mut DemexEventList,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
-            Self::ExecutorFlash { id, stomp } => {
-                let executor = updatable_handler
-                    .executor_mut(*id)
-                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+            &Self::ExecutorFlash {
+                id: executor_id,
+                stomp,
+            } => {
+                action_queue.enqueue_now(
+                    Action::ExecutorStart(ExecutorStartArgs { executor_id }),
+                    ActionIssuer::InputDevice,
+                );
 
-                executor.start(fixture_handler, preset_handler, 0.0, event_list);
-
-                if *stomp {
-                    updatable_handler.executor_stomp(*id);
+                if stomp {
+                    action_queue.enqueue_now(
+                        Action::ExecutorStomp(ExecutorStompArgs {
+                            executor_id,
+                            stomped: true,
+                        }),
+                        ActionIssuer::InputDevice,
+                    );
                 }
             }
-            Self::ExecutorGo(executor_id) => {
-                updatable_handler
-                    .executor_go(
-                        *executor_id,
-                        fixture_handler,
-                        preset_handler,
-                        0.0,
-                        event_list,
-                    )
-                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+            &Self::ExecutorGo(executor_id) => {
+                action_queue.enqueue_now(
+                    Action::ExecutorGo(ExecutorGoArgs { executor_id }),
+                    ActionIssuer::InputDevice,
+                );
             }
-            Self::ExecutorStop(executor_id) => {
-                updatable_handler
-                    .stop_executor(*executor_id, fixture_handler, preset_handler, event_list)
-                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+            &Self::ExecutorStop(executor_id) => {
+                action_queue.enqueue_now(
+                    Action::ExecutorStop(ExecutorStopArgs { executor_id }),
+                    ActionIssuer::InputDevice,
+                );
             }
             Self::SelectivePreset {
                 selection,
                 preset_id,
             } => {
-                let selection = if let Some(selection) = selection {
-                    Some(selection)
-                } else {
-                    global_fixture_selection.as_ref()
-                }
-                .ok_or(DemexInputDeviceError::FixtureSelectorError(
-                    FixtureSelectorError::NoFixturesMatched,
-                ))?;
-
-                preset_handler
-                    .apply_preset(*preset_id, fixture_handler, patch, selection.clone())
-                    .map_err(DemexInputDeviceError::PresetHandlerError)?;
+                action_queue.enqueue_now(
+                    Action::SetFixturePreset(SetFixturePresetArgs {
+                        selection_or_selector: selection
+                            .clone()
+                            .map(|sel| SelectionOrSelector::Selection(sel))
+                            .unwrap_or(SelectionOrSelector::Current),
+                        preset_id: (*preset_id).into(),
+                    }),
+                    ActionIssuer::InputDevice,
+                );
             }
             Self::Macro { action } => {
                 action_queue.enqueue_now(action.clone(), ActionIssuer::Macro);
             }
             Self::FixtureSelector { fixture_selector } => {
-                let selection = Some(
-                    fixture_selector
-                        .get_selection(preset_handler, fixture_selector_context)
-                        .map_err(DemexInputDeviceError::FixtureSelectorError)?,
+                action_queue.enqueue_now(
+                    Action::FixtureSelector(fixture_selector.clone()),
+                    ActionIssuer::InputDevice,
                 );
-
-                // FIXME: make this an engine method
-                *global_fixture_selection = selection.clone();
-                event_list.push(DemexEvent::FixtureSelectionChanged(
-                    selection.map(|sel| sel.into()),
-                ));
             }
-            Self::TokenInsert { tokens } => {
-                command_input.extend_from_slice(tokens);
-            }
-            Self::SpeedMasterTap { speed_master_id } => {
-                timing_handler
-                    .tap_speed_master_value(*speed_master_id, time::Instant::now())
-                    .map_err(DemexInputDeviceError::TimingHandlerError)?;
+            &Self::SpeedMasterTap { speed_master_id } => {
+                action_queue.enqueue_now(
+                    Action::SpeedMasterTap(SpeedMasterTapArgs {
+                        speedmaster_id: speed_master_id,
+                    }),
+                    ActionIssuer::InputDevice,
+                );
             }
             Self::Unused => {}
         };
@@ -149,25 +142,26 @@ impl DemexInputButton {
 
     pub fn handle_release(
         &self,
-        _fixture_handler: &mut FixtureStateHandler,
-        _preset_handler: &PresetHandler,
-        updatable_handler: &mut UpdatableHandler,
-        _event_list: &mut DemexEventList,
+        action_queue: &mut ActionQueue,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
-            Self::ExecutorGo(executor_id) => {
-                let _executor = updatable_handler
-                    .executor(*executor_id)
-                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
-                // TODO
-            }
-            Self::ExecutorFlash { id, stomp } => {
-                updatable_handler
-                    .executor_cue_out(*id, 0.0)
-                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+            &Self::ExecutorFlash {
+                id: executor_id,
+                stomp,
+            } => {
+                action_queue.enqueue_now(
+                    Action::ExecutorStop(ExecutorStopArgs { executor_id }),
+                    ActionIssuer::InputDevice,
+                );
 
-                if *stomp {
-                    updatable_handler.executor_unstomp(*id);
+                if stomp {
+                    action_queue.enqueue_now(
+                        Action::ExecutorStomp(ExecutorStompArgs {
+                            executor_id,
+                            stomped: false,
+                        }),
+                        ActionIssuer::InputDevice,
+                    );
                 }
             }
             _ => {}
@@ -182,6 +176,8 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceButtonUpdate> for DemexInputBu
         &self,
         args: DemexInputDeviceUpdateArgs,
     ) -> Result<DemexInputDeviceButtonUpdate, DemexInputDeviceError> {
+        todo!()
+        /*
         match self {
             Self::ExecutorFlash { id, .. } | Self::ExecutorGo(id) | Self::ExecutorStop(id) => {
                 let executor = args
@@ -197,6 +193,7 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceButtonUpdate> for DemexInputBu
             }
             _ => Ok(DemexInputDeviceButtonUpdate::default()),
         }
+        */
     }
 
     fn should_update(
@@ -220,7 +217,6 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceButtonUpdate> for DemexInputBu
             Self::SelectivePreset { .. } => None,
             Self::Macro { .. } => None,
             Self::SpeedMasterTap { .. } => None,
-            Self::TokenInsert { .. } => None,
             Self::Unused => None,
         };
 

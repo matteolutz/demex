@@ -64,10 +64,7 @@ impl DemexInputEncoder {
         match self {
             Self::GlobalEncoder { encoder_idx } => Ok(get_global_encoder_value(
                 *encoder_idx,
-                FixtureSelectorContext::new(args.global_fixture_selection),
-                args.fixture_handler,
-                args.preset_handler,
-                args.timing_handler,
+                args.fixture_selector_context.clone(),
                 args.encoder_channels,
                 args.patch,
             )
@@ -89,10 +86,7 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceEncoderUpdate> for DemexInputE
                 {
                     let value = get_global_encoder_value(
                         *encoder_idx,
-                        FixtureSelectorContext::new(args.global_fixture_selection),
-                        args.fixture_handler,
-                        args.preset_handler,
-                        args.timing_handler,
+                        args.fixture_selector_context,
                         args.encoder_channels,
                         args.patch,
                     );

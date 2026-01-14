@@ -24,6 +24,8 @@ use strum::EnumIter;
 use crate::{
     command::parser::nodes::action::functions::{
         move_function::MoveArgs, set_function::ObjectSetPropertyArgs,
+        speedmaster_functions::SpeedMasterTapArgs, start_function::ExecutorStartArgs,
+        stomp_function::ExecutorStompArgs,
     },
     event::{FixtureSelectionWithGroup, list::DemexEventList},
     fixture::FixturePath,
@@ -100,6 +102,7 @@ pub enum ActionIssuer {
     Command,
     Macro,
     Ui,
+    InputDevice,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -212,9 +215,13 @@ pub enum Action {
     AddFixturesToSelection(Vec<FixturePath>),
     SetFixtureSelectionWing(usize),
 
+    ExecutorStart(ExecutorStartArgs),
+    ExecutorStomp(ExecutorStompArgs),
     ExecutorGo(ExecutorGoArgs),
     ExecutorStop(ExecutorStopArgs),
     ExecutorSetFaderValue(u32, f32),
+
+    SpeedMasterTap(SpeedMasterTapArgs),
 
     RunMacro(u32),
 
@@ -529,6 +536,28 @@ impl Action {
                     )))
                 }
             }
+            Self::ExecutorStomp(args) => args.run(
+                issued_at,
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+                patch,
+                event_list,
+            ),
+            Self::ExecutorStart(args) => args.run(
+                issued_at,
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+                patch,
+                event_list,
+            ),
             Self::ExecutorGo(args) => args.run(
                 issued_at,
                 fixture_handler,
@@ -565,6 +594,18 @@ impl Action {
 
                 Ok(ActionRunResult::Default)
             }
+
+            Self::SpeedMasterTap(args) => args.run(
+                issued_at,
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+                patch,
+                event_list,
+            ),
 
             Self::RunMacro(macro_id) => {
                 let mmacro = preset_handler

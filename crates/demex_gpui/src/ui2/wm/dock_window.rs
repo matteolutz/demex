@@ -237,7 +237,7 @@ impl DockWindow {
 
     pub fn focus_panel(&mut self, panel_name: &str, window: &mut Window, cx: &mut App) -> bool {
         self.dock_area.update(cx, |da, cx| {
-            let mut center_item = da.items().clone();
+            let mut center_item = da.center().clone();
 
             if Self::_focus_panel(&mut center_item, panel_name) {
                 da.set_center(center_item, window, cx);

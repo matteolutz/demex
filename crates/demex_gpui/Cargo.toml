@@ -3,6 +3,19 @@ name = "demex_gpui"
 version.workspace = true
 edition.workspace = true
 
+[package.metadata.bundle]
+name = "demex"
+identifier = "de.matteolutz.demex"
+icon = ["assets/icons/32x32.png", "assets/icons/128x128.png", "assets/icons/128x128@2x.png"]
+copyright = "Copyright (c) Matteo Lutz 2026. All rights reserved."
+category = "public.app-category.utilities"
+
+deb_depends = ["build-essential", "pkg-config", "libasound2-dev", "libudev-dev", "libx11-dev", "libxkbcommon-dev", "libxkbcommon-x11-0", "libxkbcommon-x11-dev"]
+
+osx_frameworks = ["Metal"]
+osx_url_schemes = ["de.matteolutz.demex"]
+
+
 [dependencies]
 rfd = { version = "0.17.1"}
 open = { version = "5.3.2"}
