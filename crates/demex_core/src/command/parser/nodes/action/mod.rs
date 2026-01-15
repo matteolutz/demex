@@ -2,7 +2,7 @@ use std::{ops::RangeInclusive, time};
 
 use demex_dmx::DemexDmxOutputConfig;
 use functions::{
-    FunctionArgs,
+    FunctionDelegate,
     assign_function::{AssignButtonArgs, AssignFaderArgs},
     create_function::{
         CreateEffectPresetArgs, CreateExecutorArgs, CreateMacroArgs, CreateSequenceArgs,
@@ -55,6 +55,52 @@ pub mod error;
 pub mod functions;
 pub mod queue;
 pub mod result;
+
+pub struct DeferredActionRunArgs<'a> {
+    pub patch: &'a Patch,
+
+    pub fixture_handler: &'a mut FixtureStateHandler,
+    pub preset_handler: &'a mut PresetHandler,
+    pub updatable_handler: &'a mut UpdatableHandler,
+    pub input_device_handler: &'a mut DemexInputDeviceHandler,
+    pub timing_handler: &'a mut TimingHandler,
+
+    pub fixture_selector_context: FixtureSelectorContext<'a>,
+
+    pub event_list: &'a mut DemexEventList,
+}
+
+impl<'a> DeferredActionRunArgs<'a> {
+    pub fn into_action(self, issued_at: time::Instant) -> ActionRunArgs<'a> {
+        ActionRunArgs {
+            issued_at,
+            patch: self.patch,
+            fixture_handler: self.fixture_handler,
+            preset_handler: self.preset_handler,
+            updatable_handler: self.updatable_handler,
+            input_device_handler: self.input_device_handler,
+            timing_handler: self.timing_handler,
+            fixture_selector_context: self.fixture_selector_context,
+            event_list: self.event_list,
+        }
+    }
+}
+
+pub struct ActionRunArgs<'a> {
+    pub issued_at: time::Instant,
+
+    pub patch: &'a Patch,
+
+    pub fixture_handler: &'a mut FixtureStateHandler,
+    pub preset_handler: &'a mut PresetHandler,
+    pub updatable_handler: &'a mut UpdatableHandler,
+    pub input_device_handler: &'a mut DemexInputDeviceHandler,
+    pub timing_handler: &'a mut TimingHandler,
+
+    pub fixture_selector_context: FixtureSelectorContext<'a>,
+
+    pub event_list: &'a mut DemexEventList,
+}
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ValueOrRange<T> {
@@ -118,28 +164,8 @@ pub struct DeferredAction {
 }
 
 impl DeferredAction {
-    pub fn run(
-        &self,
-        fixture_handler: &mut FixtureStateHandler,
-        preset_handler: &mut PresetHandler,
-        fixture_selector_context: FixtureSelectorContext,
-        updatable_handler: &mut UpdatableHandler,
-        input_device_handler: &mut DemexInputDeviceHandler,
-        timing_handler: &mut TimingHandler,
-        patch: &Patch,
-        event_list: &mut DemexEventList,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        self.action.run(
-            fixture_handler,
-            preset_handler,
-            fixture_selector_context,
-            updatable_handler,
-            input_device_handler,
-            timing_handler,
-            patch,
-            event_list,
-            self.issued_at,
-        )
+    pub fn run(&self, args: DeferredActionRunArgs) -> Result<ActionRunResult, ActionRunError> {
+        self.action.run(args.into_action(self.issued_at))
     }
 }
 
@@ -238,245 +264,52 @@ pub enum Action {
 }
 
 impl Action {
-    pub fn run(
-        &self,
-        fixture_handler: &mut FixtureStateHandler,
-        preset_handler: &mut PresetHandler,
-        fixture_selector_context: FixtureSelectorContext,
-        updatable_handler: &mut UpdatableHandler,
-        input_device_handler: &mut DemexInputDeviceHandler,
-        timing_handler: &mut TimingHandler,
-        patch: &Patch,
-        event_list: &mut DemexEventList,
-        issued_at: time::Instant,
-    ) -> Result<ActionRunResult, ActionRunError> {
+    pub fn run(&self, args: ActionRunArgs) -> Result<ActionRunResult, ActionRunError> {
         match self {
             // Set
-            Self::SetAttributeValue(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
-            Self::SetFixturePreset(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
-            Self::ObjectSetProperty(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::SetAttributeValue(fun) => fun.run(args),
+            Self::SetFixturePreset(fun) => fun.run(args),
+            Self::ObjectSetProperty(fun) => fun.run(args),
 
             // Home
-            Self::Home(homeable_object) => homeable_object.home(
-                preset_handler,
-                fixture_handler,
-                updatable_handler,
-                fixture_selector_context,
-                event_list,
-            ),
+            Self::Home(homeable_object) => homeable_object.home(args),
 
-            Self::HomeAll => self.run_home_all(fixture_handler),
+            Self::HomeAll => self.run_home_all(args.fixture_handler),
 
             // Record
-            Self::RecordPreset(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
-            Self::RecordGroup2(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
-            Self::RecordSequenceCue(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
-            Self::RecordSequenceCueShorthand(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::RecordPreset(fun) => fun.run(args),
+            Self::RecordGroup2(fun) => fun.run(args),
+            Self::RecordSequenceCue(fun) => fun.run(args),
+            Self::RecordSequenceCueShorthand(fun) => fun.run(args),
 
             // Rename
-            Self::Rename(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::Rename(fun) => fun.run(args),
 
             // Create
-            Self::CreateSequence(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
-            Self::CreateExecutor(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
-            Self::CreateMacro(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
-            Self::CreateEffectPreset(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::CreateSequence(fun) => fun.run(args),
+            Self::CreateExecutor(fun) => fun.run(args),
+            Self::CreateMacro(fun) => fun.run(args),
+            Self::CreateEffectPreset(fun) => fun.run(args),
 
             // Update
-            Self::UpdatePreset(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
-            Self::UpdateSequenceCue(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::UpdatePreset(fun) => fun.run(args),
+            Self::UpdateSequenceCue(fun) => fun.run(args),
 
-            Self::RecallSequenceCue(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::RecallSequenceCue(fun) => fun.run(args),
 
             // Delete
-            Self::Delete(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::Delete(fun) => fun.run(args),
 
             // Move
-            Self::Move(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::Move(fun) => fun.run(args),
 
             Self::ClearAll => Ok(ActionRunResult::UpdateFixtureSelection(None)),
-            Self::FixtureSelector(fixture_selector) => self.run_fixture_selector(
-                fixture_selector,
-                fixture_selector_context,
-                preset_handler,
-                patch,
-            ),
-            Self::Highlight(fixture_selector) => self.run_highlight(
-                fixture_selector.as_ref(),
-                fixture_selector_context,
-                preset_handler,
-                patch,
-            ),
+            Self::FixtureSelector(fixture_selector) => {
+                self.run_fixture_selector(fixture_selector.clone(), args)
+            }
+            Self::Highlight(fixture_selector) => {
+                self.run_highlight(fixture_selector.as_ref(), args)
+            }
             Self::Unhighlight => Ok(ActionRunResult::UpdateHighlight(None)),
             Self::Test(_) => Ok(ActionRunResult::new()),
             Self::Save => Ok(ActionRunResult::Save),
@@ -486,43 +319,23 @@ impl Action {
             Self::GrandEtc => Ok(ActionRunResult::Warn("Ha ha ha, very funny".to_owned())),
 
             Self::UpdateOutputConfigs(configs) => {
-                let mut patch = patch.clone();
+                let mut patch = args.patch.clone();
                 *patch.output_configs_mut() = configs.clone();
                 Ok(ActionRunResult::UpdatePatch(patch))
             }
 
-            Self::AssignFader(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::AssignFader(fun) => fun.run(args),
 
-            Self::AssignButton(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::AssignButton(fun) => fun.run(args),
 
             Self::UnassignInputButton {
                 device_idx,
                 button_id,
-            } => self.run_unassign_input_button(input_device_handler, *device_idx, *button_id),
+            } => self.run_unassign_input_button(args.input_device_handler, *device_idx, *button_id),
             Self::UnassignInputFader {
                 device_idx,
                 fader_id,
-            } => self.run_unassign_input_fader(input_device_handler, *device_idx, *fader_id),
+            } => self.run_unassign_input_fader(args.input_device_handler, *device_idx, *fader_id),
 
             Self::SetFixtureSelection(selection) => Ok(ActionRunResult::UpdateFixtureSelection(
                 selection.clone().map(|sel| sel.into()),
@@ -531,7 +344,7 @@ impl Action {
                 if fixtures.is_empty() {
                     Ok(ActionRunResult::new())
                 } else {
-                    let selection = match fixture_selector_context.current_fixture() {
+                    let selection = match args.fixture_selector_context.current_fixture() {
                         None => fixtures.clone().into(),
                         Some(selection) => selection.clone().with_additional_fixtures(fixtures),
                     };
@@ -540,104 +353,36 @@ impl Action {
                     )))
                 }
             }
-            Self::ExecutorStomp(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
-            Self::ExecutorStart(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
-            Self::ExecutorGo(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
-            Self::ExecutorStop(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::ExecutorStomp(fun) => fun.run(args),
+            Self::ExecutorStart(fun) => fun.run(args),
+            Self::ExecutorGo(fun) => fun.run(args),
+            Self::ExecutorStop(fun) => fun.run(args),
             Self::ExecutorSetFaderValue(executor_id, fader_value) => {
-                let executor = updatable_handler
+                let executor = args
+                    .updatable_handler
                     .executor_mut(*executor_id)
                     .map_err(ActionRunError::UpdatableHandlerError)?;
                 executor.set_value(
                     *fader_value,
-                    fixture_handler,
-                    preset_handler,
-                    issued_at.elapsed().as_secs_f32(),
-                    event_list,
+                    args.fixture_handler,
+                    args.preset_handler,
+                    args.issued_at.elapsed().as_secs_f32(),
+                    args.event_list,
                 );
 
                 Ok(ActionRunResult::Default)
             }
 
-            Self::CueSetTrigger(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::CueSetTrigger(fun) => fun.run(args),
 
-            Self::SpeedMasterTap(args) => args.run(
-                issued_at,
-                fixture_handler,
-                preset_handler,
-                fixture_selector_context,
-                updatable_handler,
-                input_device_handler,
-                timing_handler,
-                patch,
-                event_list,
-            ),
+            Self::SpeedMasterTap(fun) => fun.run(args),
 
             Self::RunMacro(macro_id) => {
-                let mmacro = preset_handler
+                let mmacro = args
+                    .preset_handler
                     .get_macro(*macro_id)
                     .map_err(ActionRunError::PresetHandlerError)?;
-                mmacro.action().clone().run(
-                    fixture_handler,
-                    preset_handler,
-                    fixture_selector_context,
-                    updatable_handler,
-                    input_device_handler,
-                    timing_handler,
-                    patch,
-                    event_list,
-                    issued_at,
-                )
+                mmacro.action().clone().run(args)
             }
 
             Self::Lock => Ok(ActionRunResult::Lock),
@@ -662,17 +407,15 @@ impl Action {
 
     fn run_fixture_selector(
         &self,
-        fixture_selector: &FixtureSelector,
-        fixture_selector_context: FixtureSelectorContext,
-        preset_handler: &PresetHandler,
-        patch: &Patch,
+        fixture_selector: FixtureSelector,
+        args: ActionRunArgs,
     ) -> Result<ActionRunResult, ActionRunError> {
         let group_id = fixture_selector.try_as_group_id();
 
         // flatten the fixture selector, so we don't have
         // outdated references to the previously selected fixtures
         let mut selection = fixture_selector
-            .get_selection(preset_handler, fixture_selector_context.clone())
+            .get_selection(args.preset_handler, args.fixture_selector_context.clone())
             .map_err(ActionRunError::FixtureSelectorError)?;
 
         if selection.fixtures().is_empty() {
@@ -681,7 +424,7 @@ impl Action {
             ));
         }
 
-        selection.retain(|path| patch.fixture(path).is_ok());
+        selection.retain(|path| args.patch.fixture(path).is_ok());
 
         Ok(ActionRunResult::UpdateFixtureSelection(Some(
             FixtureSelectionWithGroup::with_group(selection, group_id),
@@ -691,9 +434,7 @@ impl Action {
     fn run_highlight(
         &self,
         fixture_selector: Option<&FixtureSelector>,
-        fixture_selector_context: FixtureSelectorContext,
-        preset_handler: &PresetHandler,
-        patch: &Patch,
+        args: ActionRunArgs,
     ) -> Result<ActionRunResult, ActionRunError> {
         let fixture_selector = fixture_selector
             .cloned()
@@ -704,7 +445,7 @@ impl Action {
         // flatten the fixture selector, so we don't have
         // outdated references to the previously selected fixtures
         let mut selection = fixture_selector
-            .get_selection(preset_handler, fixture_selector_context.clone())
+            .get_selection(args.preset_handler, args.fixture_selector_context.clone())
             .map_err(ActionRunError::FixtureSelectorError)?;
 
         if selection.fixtures().is_empty() {
@@ -713,7 +454,7 @@ impl Action {
             ));
         }
 
-        selection.retain(|path| patch.fixture(path).is_ok());
+        selection.retain(|path| args.patch.fixture(path).is_ok());
 
         Ok(ActionRunResult::UpdateHighlight(Some(
             FixtureSelectionWithGroup::with_group(selection, group_id),

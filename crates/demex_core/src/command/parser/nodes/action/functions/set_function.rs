@@ -1,5 +1,3 @@
-use std::time;
-
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -8,19 +6,17 @@ use crate::{
         channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
     },
     command::parser::nodes::{
-        action::{ValueOrRange, error::ActionRunError, result::ActionRunResult},
+        action::{ActionRunArgs, ValueOrRange, error::ActionRunError, result::ActionRunResult},
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
         object::{Object, ObjectDelegate},
     },
     event::DemexEvent,
-    patch::Patch,
     presets::{PresetHandler, preset::FixturePresetId},
     selection::FixtureSelection,
     sequence::cue::{CueIdx, CueProperty, CueTrigger},
-    timing::TimingHandler,
 };
 
-use super::FunctionArgs;
+use super::FunctionDelegate;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetAttributeValueArgs {
@@ -29,25 +25,17 @@ pub struct SetAttributeValueArgs {
     pub attribute_value: Option<ValueOrRange<f32>>,
 }
 
-impl FunctionArgs for SetAttributeValueArgs {
+impl FunctionDelegate for SetAttributeValueArgs {
     fn run(
         &self,
-        _issued_at: time::Instant,
-        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _: &mut TimingHandler,
-        patch: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
+        args: ActionRunArgs,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
     > {
         let selection = self
             .fixture_selector
-            .get_selection(preset_handler, fixture_selector_context)
+            .get_selection(args.preset_handler, args.fixture_selector_context)
             .map_err(ActionRunError::FixtureSelectorError)?;
 
         for fixture_path in selection.fixtures() {
@@ -66,8 +54,8 @@ impl FunctionArgs for SetAttributeValueArgs {
             };
 
             if let (Ok(fixture_state), Ok(fixture)) = (
-                fixture_handler.fixture_mut(fixture_path),
-                patch.fixture(fixture_path),
+                args.fixture_handler.fixture_mut(fixture_path),
+                args.patch.fixture(fixture_path),
             ) {
                 fixture_state
                     .set_programmer_value(fixture, &self.attribute, value)
@@ -75,7 +63,7 @@ impl FunctionArgs for SetAttributeValueArgs {
             }
         }
 
-        event_list.push(DemexEvent::FixtureValuesChanged(
+        args.event_list.push(DemexEvent::FixtureValuesChanged(
             selection.fixtures().to_vec(),
         ));
         Ok(ActionRunResult::Default)
@@ -123,33 +111,23 @@ impl SetFixturePresetArgs {
     }
 }
 
-impl FunctionArgs for SetFixturePresetArgs {
-    fn run(
-        &self,
-        _issued_at: time::Instant,
-        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _: &mut TimingHandler,
-        patch: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
-    ) -> Result<ActionRunResult, ActionRunError> {
+impl FunctionDelegate for SetFixturePresetArgs {
+    fn run(&self, args: ActionRunArgs) -> Result<ActionRunResult, ActionRunError> {
         let selection = self
             .selection_or_selector
-            .get_selection(preset_handler, fixture_selector_context)?;
+            .get_selection(args.preset_handler, args.fixture_selector_context)?;
 
         let fixtures = selection.fixtures().to_vec();
 
         match self.preset_id {
             ValueOrRange::Single(preset_id) => {
-                preset_handler
-                    .apply_preset(preset_id, fixture_handler, patch, selection)
+                args.preset_handler
+                    .apply_preset(preset_id, args.fixture_handler, args.patch, selection)
                     .map_err(ActionRunError::PresetHandlerError)?;
             }
             ValueOrRange::Thru(preset_id_from, preset_id_to) => {
-                let presets = preset_handler
+                let presets = args
+                    .preset_handler
                     .get_preset_range(preset_id_from, preset_id_to)
                     .map_err(ActionRunError::PresetHandlerError)?;
 
@@ -157,8 +135,8 @@ impl FunctionArgs for SetFixturePresetArgs {
                     let fixture_offset = selection.offset(fixture_path).unwrap();
 
                     if let (Ok(state), Ok(fixture)) = (
-                        fixture_handler.fixture_mut(fixture_path),
-                        patch.fixture(fixture_path),
+                        args.fixture_handler.fixture_mut(fixture_path),
+                        args.patch.fixture(fixture_path),
                     ) {
                         let attributes = presets[0].stored_attributes(fixture_path);
 
@@ -199,7 +177,8 @@ impl FunctionArgs for SetFixturePresetArgs {
             }
         }
 
-        event_list.push(DemexEvent::FixtureValuesChanged(fixtures));
+        args.event_list
+            .push(DemexEvent::FixtureValuesChanged(fixtures));
         Ok(ActionRunResult::Default)
     }
 }
@@ -211,24 +190,13 @@ pub struct ObjectSetPropertyArgs {
     pub value: String,
 }
 
-impl FunctionArgs for ObjectSetPropertyArgs {
-    fn run(
-        &self,
-        _issued_at: time::Instant,
-        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut PresetHandler,
-        fixture_selector_context: FixtureSelectorContext,
-        updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _timing_handler: &mut TimingHandler,
-        _patch: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
-    ) -> Result<ActionRunResult, ActionRunError> {
+impl FunctionDelegate for ObjectSetPropertyArgs {
+    fn run(&self, args: ActionRunArgs) -> Result<ActionRunResult, ActionRunError> {
         self.object.clone().set(
-            preset_handler,
-            updatable_handler,
-            fixture_selector_context,
-            event_list,
+            args.preset_handler,
+            args.updatable_handler,
+            args.fixture_selector_context,
+            args.event_list,
             self.key.clone(),
             self.value.clone(),
         )
@@ -242,24 +210,13 @@ pub struct CueSetTriggerArgs {
     pub trigger: CueTrigger,
 }
 
-impl FunctionArgs for CueSetTriggerArgs {
-    fn run(
-        &self,
-        _issued_at: time::Instant,
-        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut PresetHandler,
-        fixture_selector_context: FixtureSelectorContext,
-        updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _timing_handler: &mut TimingHandler,
-        _patch: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
-    ) -> Result<ActionRunResult, ActionRunError> {
+impl FunctionDelegate for CueSetTriggerArgs {
+    fn run(&self, args: ActionRunArgs) -> Result<ActionRunResult, ActionRunError> {
         Object::SequenceCue(self.sequence_id, self.cue_idx).set_any(
-            preset_handler,
-            updatable_handler,
-            fixture_selector_context,
-            event_list,
+            args.preset_handler,
+            args.updatable_handler,
+            args.fixture_selector_context,
+            args.event_list,
             CueProperty::Trigger.to_string(),
             Box::new(self.trigger.clone()),
         )

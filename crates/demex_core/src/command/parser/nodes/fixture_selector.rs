@@ -8,7 +8,7 @@ use crate::{
     selection::FixtureSelection,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct FixtureSelectorContext<'a> {
     current_fixture_selection: &'a Option<FixtureSelection>,
 }

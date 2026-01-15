@@ -164,6 +164,7 @@ impl PoolQuickActions {
             .p_1()
             .text_sm()
             .font_semibold()
+            .text_center()
             .when_some(action, |this, action| this.child(action.name.clone()))
     }
 }

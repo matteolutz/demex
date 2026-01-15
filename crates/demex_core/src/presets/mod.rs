@@ -103,15 +103,6 @@ impl PresetHandler {
             .ok_or(PresetHandlerError::PresetNotFound(id))
     }
 
-    pub fn rename_group(&mut self, id: u32, new_name: String) -> Result<(), PresetHandlerError> {
-        let group = self
-            .groups
-            .get_mut(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))?;
-        *group.name_mut() = new_name;
-        Ok(())
-    }
-
     pub fn groups(&self) -> &HashMap<u32, FixtureGroup> {
         &self.groups
     }
@@ -340,16 +331,6 @@ impl PresetHandler {
             + 1
     }
 
-    pub fn rename_preset(
-        &mut self,
-        preset_id: FixturePresetId,
-        new_name: String,
-    ) -> Result<(), PresetHandlerError> {
-        let preset = self.get_preset_mut(preset_id)?;
-        *preset.name_mut() = new_name;
-        Ok(())
-    }
-
     pub fn get_preset_range(
         &self,
         preset_id_from: FixturePresetId,
@@ -510,15 +491,6 @@ impl PresetHandler {
         self.macros.keys().max().unwrap_or(&0) + 1
     }
 
-    pub fn rename_macro(&mut self, id: u32, new_name: String) -> Result<(), PresetHandlerError> {
-        let mmacro = self
-            .macros
-            .get_mut(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))?;
-        *mmacro.name_mut() = new_name;
-        Ok(())
-    }
-
     pub fn delete_macro(&mut self, id: u32) -> Result<(), PresetHandlerError> {
         self.macros
             .remove(&id)
@@ -539,19 +511,6 @@ impl PresetHandler {
         }
 
         self.command_slices.insert(slice.id(), slice);
-        Ok(())
-    }
-
-    pub fn rename_command_slice(
-        &mut self,
-        id: u32,
-        new_name: String,
-    ) -> Result<(), PresetHandlerError> {
-        let slice = self
-            .command_slices
-            .get_mut(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))?;
-        *slice.name_mut() = new_name;
         Ok(())
     }
 
@@ -712,36 +671,6 @@ impl PresetHandler {
             discrete_cue_idx.into(),
         ));
 
-        Ok(())
-    }
-
-    pub fn rename_sequence(&mut self, id: u32, new_name: String) -> Result<(), PresetHandlerError> {
-        let sequence = self
-            .sequences
-            .get_mut(&id)
-            .ok_or(PresetHandlerError::PresetNotFound(id))?;
-        *sequence.name_mut() = new_name;
-        Ok(())
-    }
-
-    pub fn rename_sequence_cue(
-        &mut self,
-        sequence_id: u32,
-        cue_idx: CueIdx,
-        new_name: String,
-    ) -> Result<(), PresetHandlerError> {
-        let sequence = self
-            .sequences
-            .get_mut(&sequence_id)
-            .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?;
-
-        let cue = sequence
-            .cues_mut()
-            .iter_mut()
-            .find(|c| c.cue_idx() == cue_idx)
-            .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_idx))?;
-
-        *cue.name_mut() = new_name;
         Ok(())
     }
 

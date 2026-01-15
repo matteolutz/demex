@@ -1,35 +1,26 @@
-use std::time;
-
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    command::parser::nodes::{
-        action::{error::ActionRunError, result::ActionRunResult},
-        object::{HomeableObject, Object, ObjectRange},
-    },
-    patch::Patch,
-    timing::TimingHandler,
+use crate::command::parser::nodes::{
+    action::{ActionRunArgs, error::ActionRunError, result::ActionRunResult},
+    object::{HomeableObject, Object, ObjectRange},
 };
 
-use super::FunctionArgs;
+use super::FunctionDelegate;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeleteArgs {
     pub object_range: ObjectRange,
 }
 
-impl FunctionArgs for DeleteArgs {
+impl FunctionDelegate for DeleteArgs {
     fn run(
         &self,
-        _issued_at: time::Instant,
-        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _: &mut TimingHandler,
-        _: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
+        ActionRunArgs {
+            preset_handler,
+            updatable_handler,
+            event_list,
+            ..
+        }: ActionRunArgs,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,

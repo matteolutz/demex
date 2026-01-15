@@ -1,15 +1,14 @@
-use std::time;
-
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    command::parser::nodes::action::{error::ActionRunError, result::ActionRunResult},
-    patch::Patch,
+    command::parser::nodes::action::{
+        ActionRunArgs, error::ActionRunError, result::ActionRunResult,
+    },
     presets::error::PresetHandlerError,
     sequence::cue::CueIdx,
 };
 
-use super::FunctionArgs;
+use super::FunctionDelegate;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecallSequenceCueArgs {
@@ -17,18 +16,15 @@ pub struct RecallSequenceCueArgs {
     pub cue_idx: CueIdx,
 }
 
-impl FunctionArgs for RecallSequenceCueArgs {
+impl FunctionDelegate for RecallSequenceCueArgs {
     fn run(
         &self,
-        _issued_at: time::Instant,
-        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _timing_handler: &mut crate::timing::TimingHandler,
-        patch: &Patch,
-        _: &mut crate::event::list::DemexEventList,
+        ActionRunArgs {
+            preset_handler,
+            patch,
+            fixture_handler,
+            ..
+        }: ActionRunArgs,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,

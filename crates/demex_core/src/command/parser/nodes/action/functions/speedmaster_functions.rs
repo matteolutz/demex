@@ -1,6 +1,8 @@
-use crate::command::parser::nodes::action::{error::ActionRunError, result::ActionRunResult};
+use crate::command::parser::nodes::action::{
+    ActionRunArgs, error::ActionRunError, result::ActionRunResult,
+};
 
-use super::FunctionArgs;
+use super::FunctionDelegate;
 
 use serde::{Deserialize, Serialize};
 
@@ -9,18 +11,14 @@ pub struct SpeedMasterTapArgs {
     pub speedmaster_id: u32,
 }
 
-impl FunctionArgs for SpeedMasterTapArgs {
+impl FunctionDelegate for SpeedMasterTapArgs {
     fn run(
         &self,
-        issued_at: std::time::Instant,
-        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        _preset_handler: &mut crate::presets::PresetHandler,
-        _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        timing_handler: &mut crate::timing::TimingHandler,
-        _patch: &crate::patch::Patch,
-        _event_list: &mut crate::event::list::DemexEventList,
+        ActionRunArgs {
+            timing_handler,
+            issued_at,
+            ..
+        }: ActionRunArgs,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,

@@ -1,15 +1,13 @@
-use std::time;
-
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    command::parser::nodes::action::{Action, error::ActionRunError, result::ActionRunResult},
-    patch::Patch,
+    command::parser::nodes::action::{
+        Action, ActionRunArgs, error::ActionRunError, result::ActionRunResult,
+    },
     presets::preset::FixturePresetId,
-    timing::TimingHandler,
 };
 
-use super::FunctionArgs;
+use super::FunctionDelegate;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateSequenceArgs {
@@ -17,18 +15,14 @@ pub struct CreateSequenceArgs {
     pub name: Option<String>,
 }
 
-impl FunctionArgs for CreateSequenceArgs {
+impl FunctionDelegate for CreateSequenceArgs {
     fn run(
         &self,
-        _issued_at: time::Instant,
-        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _: &mut TimingHandler,
-        _: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
+        ActionRunArgs {
+            preset_handler,
+            event_list,
+            ..
+        }: ActionRunArgs,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
@@ -49,18 +43,14 @@ pub struct CreateExecutorArgs {
     pub sequence_id: u32,
 }
 
-impl FunctionArgs for CreateExecutorArgs {
+impl FunctionDelegate for CreateExecutorArgs {
     fn run(
         &self,
-        _issued_at: time::Instant,
-        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        _preset_handler: &mut crate::presets::PresetHandler,
-        _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _: &mut TimingHandler,
-        _: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
+        ActionRunArgs {
+            updatable_handler,
+            event_list,
+            ..
+        }: ActionRunArgs,
     ) -> Result<ActionRunResult, ActionRunError> {
         let id = self
             .id
@@ -81,18 +71,14 @@ pub struct CreateMacroArgs {
     pub name: Option<String>,
 }
 
-impl FunctionArgs for CreateMacroArgs {
+impl FunctionDelegate for CreateMacroArgs {
     fn run(
         &self,
-        _issued_at: time::Instant,
-        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _: &mut TimingHandler,
-        _: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
+        ActionRunArgs {
+            preset_handler,
+            event_list,
+            ..
+        }: ActionRunArgs,
     ) -> Result<ActionRunResult, ActionRunError> {
         let id = self.id.unwrap_or_else(|| preset_handler.next_macro_id());
 
@@ -110,18 +96,14 @@ pub struct CreateEffectPresetArgs {
     pub name: Option<String>,
 }
 
-impl FunctionArgs for CreateEffectPresetArgs {
+impl FunctionDelegate for CreateEffectPresetArgs {
     fn run(
         &self,
-        _issued_at: time::Instant,
-        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _: &mut TimingHandler,
-        _: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
+        ActionRunArgs {
+            preset_handler,
+            event_list,
+            ..
+        }: ActionRunArgs,
     ) -> Result<ActionRunResult, ActionRunError> {
         preset_handler
             .create_effect_preset(self.id, self.name.clone(), event_list)

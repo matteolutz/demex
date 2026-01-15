@@ -1,6 +1,8 @@
-use crate::command::parser::nodes::action::{error::ActionRunError, result::ActionRunResult};
+use crate::command::parser::nodes::action::{
+    ActionRunArgs, error::ActionRunError, result::ActionRunResult,
+};
 
-use super::FunctionArgs;
+use super::FunctionDelegate;
 
 use serde::{Deserialize, Serialize};
 
@@ -9,28 +11,20 @@ pub struct ExecutorStopArgs {
     pub executor_id: u32,
 }
 
-impl FunctionArgs for ExecutorStopArgs {
+impl FunctionDelegate for ExecutorStopArgs {
     fn run(
         &self,
-        _issued_at: std::time::Instant,
-        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        _fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _timing_handler: &mut crate::timing::TimingHandler,
-        _patch: &crate::patch::Patch,
-        event_list: &mut crate::event::list::DemexEventList,
+        args: ActionRunArgs,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
     > {
-        updatable_handler
+        args.updatable_handler
             .stop_executor(
                 self.executor_id,
-                fixture_handler,
-                preset_handler,
-                event_list,
+                args.fixture_handler,
+                args.preset_handler,
+                args.event_list,
             )
             .map_err(ActionRunError::UpdatableHandlerError)
             .map(|_| ActionRunResult::Default)

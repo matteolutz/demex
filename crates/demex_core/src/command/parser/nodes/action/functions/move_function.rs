@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     command::parser::nodes::action::{
-        error::ActionRunError, functions::FunctionArgs, result::ActionRunResult,
+        ActionRunArgs, error::ActionRunError, functions::FunctionDelegate, result::ActionRunResult,
     },
     presets::preset::FixturePresetId,
 };
@@ -13,18 +13,14 @@ pub struct MoveArgs {
     pub target_preset: FixturePresetId,
 }
 
-impl FunctionArgs for MoveArgs {
+impl FunctionDelegate for MoveArgs {
     fn run(
         &self,
-        _: std::time::Instant,
-        _: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        _: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _: &mut crate::updatables::UpdatableHandler,
-        _: &mut crate::input::DemexInputDeviceHandler,
-        _: &mut crate::timing::TimingHandler,
-        _: &crate::patch::Patch,
-        event_list: &mut crate::event::list::DemexEventList,
+        ActionRunArgs {
+            preset_handler,
+            event_list,
+            ..
+        }: ActionRunArgs,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,

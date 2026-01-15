@@ -1,5 +1,3 @@
-use std::time;
-
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -8,18 +6,16 @@ use crate::{
         parser::{
             error::ParseError,
             nodes::{
-                action::{error::ActionRunError, result::ActionRunResult},
+                action::{ActionRunArgs, error::ActionRunError, result::ActionRunResult},
                 fixture_selector::FixtureSelector,
             },
         },
     },
-    patch::Patch,
     presets::preset::FixturePresetId,
     sequence::cue::CueIdx,
-    timing::TimingHandler,
 };
 
-use super::{FunctionArgs, record_function::RecordChannelTypeSelector};
+use super::{FunctionDelegate, record_function::RecordChannelTypeSelector};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum UpdateMode {
@@ -34,30 +30,23 @@ pub struct UpdatePresetArgs {
     pub update_mode: UpdateMode,
 }
 
-impl FunctionArgs for UpdatePresetArgs {
+impl FunctionDelegate for UpdatePresetArgs {
     fn run(
         &self,
-        _issued_at: time::Instant,
-        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        timing_handler: &mut TimingHandler,
-        patch: &Patch,
-        _: &mut crate::event::list::DemexEventList,
+        args: ActionRunArgs,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
     > {
-        let num_updated = preset_handler
+        let num_updated = args
+            .preset_handler
             .update_preset(
                 &self.fixture_selector,
-                fixture_selector_context,
+                args.fixture_selector_context,
                 self.id,
-                patch,
-                fixture_handler,
-                timing_handler,
+                args.patch,
+                args.fixture_handler,
+                args.timing_handler,
                 self.update_mode,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
@@ -101,37 +90,28 @@ pub struct UpdateSequenceCueArgs {
     pub update_mode: UpdateMode,
 }
 
-impl FunctionArgs for UpdateSequenceCueArgs {
-    fn run(
-        &self,
-        _issued_at: time::Instant,
-        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _: &mut TimingHandler,
-        patch: &Patch,
-        _: &mut crate::event::list::DemexEventList,
-    ) -> Result<ActionRunResult, ActionRunError> {
+impl FunctionDelegate for UpdateSequenceCueArgs {
+    fn run(&self, args: ActionRunArgs) -> Result<ActionRunResult, ActionRunError> {
         let sequence_id = match self.id {
             UpdateSequenceCueArgsId::SequenceId(id) => id,
-            UpdateSequenceCueArgsId::ExecutorId(id) => updatable_handler
+            UpdateSequenceCueArgsId::ExecutorId(id) => args
+                .updatable_handler
                 .executor(id)
                 .map(|executor| executor.runtime().sequence_id())
                 .map_err(ActionRunError::UpdatableHandlerError)?,
         };
 
-        let num_updated = preset_handler
+        let num_updated = args
+            .preset_handler
             .update_sequence_cue(
                 sequence_id,
                 self.cue_idx,
                 &self.fixture_selector,
-                fixture_selector_context,
-                fixture_handler,
+                args.fixture_selector_context,
+                args.fixture_handler,
                 &self.channel_type_selector,
                 self.update_mode,
-                patch,
+                args.patch,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 

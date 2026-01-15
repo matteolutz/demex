@@ -3,6 +3,7 @@ use std::{any::Any, fmt::Display};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    command::parser::nodes::action::ActionRunArgs,
     event::{DemexEvent, list::DemexEventList},
     pool::PoolType,
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
@@ -231,16 +232,19 @@ impl HomeableObject {
 
     pub fn home(
         &self,
-        preset_handler: &PresetHandler,
-        fixture_state_handler: &mut FixtureStateHandler,
-        updatable_handler: &mut UpdatableHandler,
-        fixture_selector_context: FixtureSelectorContext,
-        event_list: &mut DemexEventList,
+        ActionRunArgs {
+            preset_handler,
+            fixture_selector_context,
+            fixture_handler,
+            updatable_handler,
+            event_list,
+            ..
+        }: ActionRunArgs,
     ) -> Result<ActionRunResult, ActionRunError> {
         match self {
             HomeableObject::CurrentFixtureSelection => {
                 if let Some(selection) = fixture_selector_context.current_fixture() {
-                    Self::home_fixture_selection(selection, fixture_state_handler)?;
+                    Self::home_fixture_selection(selection, fixture_handler)?;
                 }
                 Ok(ActionRunResult::new())
             }
@@ -249,7 +253,7 @@ impl HomeableObject {
                     .get_selection(preset_handler, fixture_selector_context)
                     .map_err(ActionRunError::FixtureSelectorError)?;
 
-                Self::home_fixture_selection(&selection, fixture_state_handler)?;
+                Self::home_fixture_selection(&selection, fixture_handler)?;
 
                 Ok(ActionRunResult::new())
             }
@@ -258,18 +262,18 @@ impl HomeableObject {
                     .get_group(*group_id)
                     .map_err(ActionRunError::PresetHandlerError)?;
 
-                Self::home_fixture_selection(group.fixture_selection(), fixture_state_handler)?;
+                Self::home_fixture_selection(group.fixture_selection(), fixture_handler)?;
 
                 Ok(ActionRunResult::Default)
             }
             HomeableObject::Executor(executor_id) => {
                 if let Ok(fader) = updatable_handler.executor_mut(*executor_id) {
-                    fader.stop(fixture_state_handler, preset_handler, event_list);
+                    fader.stop(fixture_handler, preset_handler, event_list);
                 }
 
                 Ok(ActionRunResult::new())
             }
-            HomeableObject::Programmer => fixture_state_handler
+            HomeableObject::Programmer => fixture_handler
                 .home_all(false)
                 .map_err(ActionRunError::FixtureError)
                 .map(|_| ActionRunResult::new()),
@@ -303,6 +307,9 @@ impl ObjectDelegate for HomeableObject {
         match self {
             Self::Executor(id) => Some((PoolType::Executor, id)),
             Self::Group(id) => Some((PoolType::Group, id)),
+            Self::FixtureSelector(selector) => selector
+                .try_as_group_id()
+                .map(|group_id| (PoolType::Group, group_id)),
             _ => None,
         }
     }

@@ -1,5 +1,3 @@
-use std::time;
-
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -9,7 +7,7 @@ use crate::{
         parser::{
             error::ParseError,
             nodes::{
-                action::{error::ActionRunError, result::ActionRunResult},
+                action::{ActionRunArgs, error::ActionRunError, result::ActionRunResult},
                 fixture_selector::{FixtureSelector, FixtureSelectorContext},
             },
         },
@@ -20,11 +18,10 @@ use crate::{
     presets::{PresetHandler, error::PresetHandlerError, preset::FixturePresetId},
     sequence::cue::{CueFixtureChannelValue, CueIdx},
     state::fixture_state_handler::FixtureStateHandler,
-    timing::TimingHandler,
     updatables::error::UpdatableHandlerError,
 };
 
-use super::FunctionArgs;
+use super::FunctionDelegate;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RecordChannelTypeSelector {
@@ -91,33 +88,25 @@ pub struct RecordPresetArgs {
     pub should_next: bool,
 }
 
-impl FunctionArgs for RecordPresetArgs {
+impl FunctionDelegate for RecordPresetArgs {
     fn run(
         &self,
-        _issued_at: time::Instant,
-        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        timing_handler: &mut TimingHandler,
-        patch: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
+        args: ActionRunArgs,
     ) -> Result<
         crate::command::parser::nodes::action::result::ActionRunResult,
         crate::command::parser::nodes::action::error::ActionRunError,
     > {
-        preset_handler
+        args.preset_handler
             .record_preset(
                 &self.fixture_selector,
-                fixture_selector_context,
+                args.fixture_selector_context,
                 self.id,
                 self.name.clone(),
                 self.should_next,
-                patch,
-                fixture_handler,
-                timing_handler,
-                event_list,
+                args.patch,
+                args.fixture_handler,
+                args.timing_handler,
+                args.event_list,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 
@@ -132,18 +121,15 @@ pub struct RecordGroupArgs {
     pub name: Option<String>,
 }
 
-impl FunctionArgs for RecordGroupArgs {
+impl FunctionDelegate for RecordGroupArgs {
     fn run(
         &self,
-        _issued_at: time::Instant,
-        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _: &mut TimingHandler,
-        _: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
+        ActionRunArgs {
+            preset_handler,
+            fixture_selector_context,
+            event_list,
+            ..
+        }: ActionRunArgs,
     ) -> Result<ActionRunResult, ActionRunError> {
         let selection = self
             .fixture_selector
@@ -168,29 +154,18 @@ pub struct RecordSequenceCueArgs {
     pub channel_type_selector: RecordChannelTypeSelector,
 }
 
-impl FunctionArgs for RecordSequenceCueArgs {
-    fn run(
-        &self,
-        _issued_at: time::Instant,
-        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        _updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _: &mut TimingHandler,
-        patch: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
-    ) -> Result<ActionRunResult, ActionRunError> {
-        preset_handler
+impl FunctionDelegate for RecordSequenceCueArgs {
+    fn run(&self, args: ActionRunArgs) -> Result<ActionRunResult, ActionRunError> {
+        args.preset_handler
             .record_sequence_cue(
                 self.sequence_id,
-                fixture_handler,
+                args.fixture_handler,
                 &self.fixture_selector,
-                fixture_selector_context,
+                args.fixture_selector_context,
                 self.cue_idx,
                 &self.channel_type_selector,
-                patch,
-                event_list,
+                args.patch,
+                args.event_list,
             )
             .map_err(ActionRunError::PresetHandlerError)?;
 
@@ -260,22 +235,11 @@ impl RecordSequenceCueShorthandArgs {
     }
 }
 
-impl FunctionArgs for RecordSequenceCueShorthandArgs {
-    fn run(
-        &self,
-        _issued_at: time::Instant,
-        fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
-        preset_handler: &mut crate::presets::PresetHandler,
-        fixture_selector_context: crate::command::parser::nodes::fixture_selector::FixtureSelectorContext,
-        updatable_handler: &mut crate::updatables::UpdatableHandler,
-        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
-        _timing_handler: &mut TimingHandler,
-        patch: &Patch,
-        event_list: &mut crate::event::list::DemexEventList,
-    ) -> Result<ActionRunResult, ActionRunError> {
+impl FunctionDelegate for RecordSequenceCueShorthandArgs {
+    fn run(&self, args: ActionRunArgs) -> Result<ActionRunResult, ActionRunError> {
         match self.id {
             RecordSequenceCueShorthandArgsId::ExecutorId(executor_id) => {
-                if let Ok(executor) = updatable_handler.executor_mut(executor_id) {
+                if let Ok(executor) = args.updatable_handler.executor_mut(executor_id) {
                     // if the executor is already present, but a sequence name is provided, we want to error
                     if self.sequence_name.is_some() {
                         return Err(ActionRunError::UpdatableHandlerError(
@@ -283,16 +247,16 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                         ));
                     }
 
-                    preset_handler
+                    args.preset_handler
                         .record_sequence_cue(
                             executor.runtime().sequence_id(),
-                            fixture_handler,
+                            args.fixture_handler,
                             &self.fixture_selector,
-                            fixture_selector_context,
+                            args.fixture_selector_context,
                             self.cue_idx,
                             &self.channel_type_selector,
-                            patch,
-                            event_list,
+                            args.patch,
+                            args.event_list,
                         )
                         .map_err(ActionRunError::PresetHandlerError)?;
 
@@ -300,19 +264,19 @@ impl FunctionArgs for RecordSequenceCueShorthandArgs {
                 } else {
                     let sequence_id = self
                         .create_sequence(
-                            fixture_handler,
-                            preset_handler,
-                            fixture_selector_context,
-                            patch,
+                            args.fixture_handler,
+                            args.preset_handler,
+                            args.fixture_selector_context,
+                            args.patch,
                             self.sequence_name.clone().unwrap_or_else(|| {
-                                format!("Sequence {}", preset_handler.next_sequence_id())
+                                format!("Sequence {}", args.preset_handler.next_sequence_id())
                             }),
-                            event_list,
+                            args.event_list,
                         )
                         .map_err(ActionRunError::PresetHandlerError)?;
 
-                    updatable_handler
-                        .create_executor(executor_id, sequence_id, event_list)
+                    args.updatable_handler
+                        .create_executor(executor_id, sequence_id, args.event_list)
                         .map_err(ActionRunError::UpdatableHandlerError)?;
 
                     Ok(ActionRunResult::Default)

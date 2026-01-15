@@ -8,7 +8,9 @@ use arc_swap::ArcSwap;
 use crate::{
     channel3::channel_value_queue::ChannelValueQueueEntry,
     command::parser::nodes::{
-        action::{ActionIssuer, queue::ActionQueue, result::ActionRunResult},
+        action::{
+            ActionIssuer, DeferredActionRunArgs, queue::ActionQueue, result::ActionRunResult,
+        },
         fixture_selector::FixtureSelectorContext,
     },
     engine::{
@@ -126,18 +128,22 @@ impl DemexThreadDelegate for UpdateThread {
         let mut action_queue = self.action_queue.lock_write();
 
         // Handle queued actions
-        // FIXME: just for testing
+        // TODO: maybe limit amount of actions per frame
         for action in action_queue.inner_mut().drain(..) {
-            match action.run(
-                &mut self.fixture_state_handler,
-                &mut self.preset_handler,
-                FixtureSelectorContext::new(&self.state.fixture_selection),
-                &mut self.updatable_handler,
-                &mut DemexInputDeviceHandler::new(vec![]),
-                &mut self.timing_handler,
-                &patch,
-                &mut self.event_list,
-            ) {
+            let args = DeferredActionRunArgs {
+                fixture_handler: &mut self.fixture_state_handler,
+                preset_handler: &mut self.preset_handler,
+                fixture_selector_context: FixtureSelectorContext::new(
+                    &self.state.fixture_selection,
+                ),
+                updatable_handler: &mut self.updatable_handler,
+                input_device_handler: &mut DemexInputDeviceHandler::new(vec![]),
+                timing_handler: &mut self.timing_handler,
+                patch: &patch,
+                event_list: &mut self.event_list,
+            };
+
+            match action.run(args) {
                 Ok(result) => {
                     if action.issuer != ActionIssuer::Ui {
                         log::debug!("Action run result: {:?}", result);
