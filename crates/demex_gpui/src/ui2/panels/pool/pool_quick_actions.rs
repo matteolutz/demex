@@ -6,7 +6,6 @@ use gpui::{
     prelude::FluentBuilder, px,
 };
 use gpui_component::{ActiveTheme, StyledExt, v_flex};
-use smol::Timer;
 
 const QUICK_ACTIONS_TIMEOUT: f32 = 0.5;
 const QUICK_ACTIONS_MOUSE_MOVE_THRESHOLD: f64 = 5.0;
@@ -49,7 +48,9 @@ impl PoolQuickActionsState {
         let timer = cx.spawn({
             let id = id.clone();
             async move |this, cx| {
-                Timer::after(Duration::from_secs_f32(QUICK_ACTIONS_TIMEOUT)).await;
+                cx.background_executor()
+                    .timer(Duration::from_secs_f32(QUICK_ACTIONS_TIMEOUT))
+                    .await;
 
                 let _ = this.update(cx, |state, cx| {
                     let Some(current_pool_button) = state.current_pool_button.as_mut() else {

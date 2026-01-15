@@ -8,7 +8,6 @@ use demex_core::{engine::comm::ShowRequest, show::DemexShow, utils::version::VER
 use gdtf::fixture_type::FixtureType;
 use gpui::{App, AppContext, AsyncApp, BorrowAppContext, Entity, Global, Task};
 use serde::{Deserialize, Serialize};
-use smol::Timer;
 
 use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},
@@ -68,7 +67,7 @@ impl DemexShowFileManager {
         let autosave_duration = Duration::from_secs(20);
 
         loop {
-            Timer::after(autosave_duration).await;
+            cx.background_executor().timer(autosave_duration).await;
 
             let has_file =
                 cx.read_global(|this: &Self, cx| this.current_file_path.read(cx).is_some());

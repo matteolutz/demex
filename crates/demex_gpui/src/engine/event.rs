@@ -8,7 +8,6 @@
 
 use gpui::{AsyncApp, Entity, EventEmitter, Task, prelude::*};
 use gpui_component::{button::Button, notification::Notification};
-use smol::Timer;
 use std::{sync::mpsc, time::Duration};
 
 use demex_core::{
@@ -34,7 +33,9 @@ impl DemexEventHandler {
     ) -> Self {
         let _tasks = vec![cx.spawn(async move |event_handler, cx| {
             loop {
-                Timer::after(Duration::from_millis(16)).await;
+                cx.background_executor()
+                    .timer(Duration::from_millis(16))
+                    .await;
 
                 let Some(event_handler) = event_handler.upgrade() else {
                     continue;

@@ -18,7 +18,6 @@ use demex_core::{
     utils::thread::DemexThreadStats,
 };
 use gpui::{App, AppContext, BorrowAppContext, Entity, Global};
-use smol::Timer;
 
 use crate::engine::DemexEngineHandler;
 
@@ -248,7 +247,9 @@ impl DemexUiState {
                     )
                 });
 
-                Timer::after(Duration::from_millis(500)).await;
+                cx.background_executor()
+                    .timer(Duration::from_millis(500))
+                    .await;
             }
         })
         .detach();

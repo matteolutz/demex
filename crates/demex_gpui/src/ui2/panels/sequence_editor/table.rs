@@ -24,7 +24,6 @@ use gpui_component::{
     menu::{DropdownMenu, PopupMenuItem},
     table::{Column, TableDelegate, TableState},
 };
-use smol::Timer;
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -139,7 +138,10 @@ impl TableDelegate for SequenceEditorTable {
             let _ = self.next_render.take();
 
             self.next_render = Some(cx.spawn(async |this, cx| {
-                Timer::after(Duration::from_secs_f64(1.0 / 60.0)).await;
+                cx.background_executor()
+                    .timer(Duration::from_secs_f64(1.0 / 60.0))
+                    .await;
+
                 let _ = this.update(cx, |this, cx| {
                     this.refresh(cx);
                     cx.notify();
