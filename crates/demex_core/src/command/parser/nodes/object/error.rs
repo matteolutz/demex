@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use crate::command::parser::nodes::object::Object;
 
 #[derive(Debug)]
@@ -5,6 +7,7 @@ pub enum ObjectError {
     ObjectVariantMismatch(Object, Object),
     ObjectSetKeyInvalid(String),
     ObjectSetValueInvalid(String, String),
+    ObjectSetValueInvalidAny(String, Box<dyn Any>),
 
     ObjectNotPresent,
 }
@@ -22,6 +25,13 @@ impl std::fmt::Display for ObjectError {
                 write!(
                     f,
                     "Invalid set value for object key \"{}\": \"{}\"",
+                    key, value
+                )
+            }
+            ObjectError::ObjectSetValueInvalidAny(key, value) => {
+                write!(
+                    f,
+                    "Invalid set value for object key \"{}\": {:?}",
                     key, value
                 )
             }

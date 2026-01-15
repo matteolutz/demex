@@ -108,6 +108,34 @@ impl DemexEngineHandler {
             .detach();
     }
 
+    pub fn send_in_visual<T: 'static, R, CB>(
+        window: &mut Window,
+        cx: &mut Context<T>,
+        req: R,
+        cb: CB,
+    ) where
+        R: DemexEngineCommRequest,
+        CB: FnOnce(&mut T, R::Response, &mut Window, &mut Context<T>) + Send + 'static,
+    {
+        let this: &Self = cx.global();
+        let rx_resp = this.dispatcher.send(req);
+
+        let entity = cx.entity();
+
+        window
+            .spawn(cx, async move |cx: &mut AsyncWindowContext| {
+                let boxed = rx_resp.recv().unwrap();
+                let res = *boxed.downcast::<R::Response>().unwrap();
+
+                let _ = cx.update(|window, cx| {
+                    entity.update(cx, |entity, cx| {
+                        cb(entity, res, window, cx);
+                    });
+                });
+            })
+            .detach();
+    }
+
     pub fn send_with<R, T, CB>(cx: &mut App, entity: Entity<T>, req: R, cb: CB)
     where
         R: DemexEngineCommRequest,

@@ -23,8 +23,10 @@ use strum::EnumIter;
 
 use crate::{
     command::parser::nodes::action::functions::{
-        move_function::MoveArgs, set_function::ObjectSetPropertyArgs,
-        speedmaster_functions::SpeedMasterTapArgs, start_function::ExecutorStartArgs,
+        move_function::MoveArgs,
+        set_function::{CueSetTriggerArgs, ObjectSetPropertyArgs},
+        speedmaster_functions::SpeedMasterTapArgs,
+        start_function::ExecutorStartArgs,
         stomp_function::ExecutorStompArgs,
     },
     event::{FixtureSelectionWithGroup, list::DemexEventList},
@@ -220,6 +222,8 @@ pub enum Action {
     ExecutorGo(ExecutorGoArgs),
     ExecutorStop(ExecutorStopArgs),
     ExecutorSetFaderValue(u32, f32),
+
+    CueSetTrigger(CueSetTriggerArgs),
 
     SpeedMasterTap(SpeedMasterTapArgs),
 
@@ -594,6 +598,18 @@ impl Action {
 
                 Ok(ActionRunResult::Default)
             }
+
+            Self::CueSetTrigger(args) => args.run(
+                issued_at,
+                fixture_handler,
+                preset_handler,
+                fixture_selector_context,
+                updatable_handler,
+                input_device_handler,
+                timing_handler,
+                patch,
+                event_list,
+            ),
 
             Self::SpeedMasterTap(args) => args.run(
                 issued_at,

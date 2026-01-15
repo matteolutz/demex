@@ -16,6 +16,7 @@ use crate::{
     patch::Patch,
     presets::{PresetHandler, preset::FixturePresetId},
     selection::FixtureSelection,
+    sequence::cue::{CueIdx, CueProperty, CueTrigger},
     timing::TimingHandler,
 };
 
@@ -230,6 +231,37 @@ impl FunctionArgs for ObjectSetPropertyArgs {
             event_list,
             self.key.clone(),
             self.value.clone(),
+        )
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CueSetTriggerArgs {
+    pub sequence_id: u32,
+    pub cue_idx: CueIdx,
+    pub trigger: CueTrigger,
+}
+
+impl FunctionArgs for CueSetTriggerArgs {
+    fn run(
+        &self,
+        _issued_at: time::Instant,
+        _fixture_handler: &mut crate::state::fixture_state_handler::FixtureStateHandler,
+        preset_handler: &mut PresetHandler,
+        fixture_selector_context: FixtureSelectorContext,
+        updatable_handler: &mut crate::updatables::UpdatableHandler,
+        _input_device_handler: &mut crate::input::DemexInputDeviceHandler,
+        _timing_handler: &mut TimingHandler,
+        _patch: &Patch,
+        event_list: &mut crate::event::list::DemexEventList,
+    ) -> Result<ActionRunResult, ActionRunError> {
+        Object::SequenceCue(self.sequence_id, self.cue_idx).set_any(
+            preset_handler,
+            updatable_handler,
+            fixture_selector_context,
+            event_list,
+            CueProperty::Trigger.to_string(),
+            Box::new(self.trigger.clone()),
         )
     }
 }

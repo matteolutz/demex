@@ -1,4 +1,7 @@
+use std::str::FromStr;
+
 use demex_core::{
+    command::parser::nodes::action::{Action, functions::set_function::CueSetTriggerArgs},
     engine::comm::SequenceCueRequest,
     sequence::cue::{CueIdx, CueTrigger},
 };
@@ -8,10 +11,9 @@ use gpui::{
 };
 use gpui_component::{
     input::{InputState, NumberInput},
-    select::{Select, SelectItem, SelectState},
+    select::{Select, SelectEvent, SelectItem, SelectState},
     v_flex,
 };
-use itertools::Itertools;
 use strum::IntoEnumIterator;
 
 use crate::{engine::DemexEngineHandler, ui2::wm::edit_window::EditWindowDelegate};
@@ -21,10 +23,13 @@ mod actions {
 
     pub const CONTEXT: &str = "demex-edit-cue-trigger-window";
 
-    gpui::actions!([QuitEditCueTrigger]);
+    gpui::actions!([QuitEditCueTrigger, SubmitEditCueTrigger]);
 
     pub fn init(cx: &mut App) {
-        cx.bind_keys([KeyBinding::new("escape", QuitEditCueTrigger, Some(CONTEXT))]);
+        cx.bind_keys([
+            KeyBinding::new("escape", QuitEditCueTrigger, Some(CONTEXT)),
+            KeyBinding::new("enter", SubmitEditCueTrigger, Some(CONTEXT)),
+        ]);
     }
 }
 
@@ -59,11 +64,12 @@ impl SelectItem for CueTriggerItem {
     }
 }
 
+// TODO: improve this
 pub struct EditCueTriggerWindow {
     sequence_id: u32,
     cue_idx: CueIdx,
 
-    select_state: Entity<SelectState<Vec<CueTriggerItem>>>,
+    select_state: Entity<SelectState<Vec<SharedString>>>,
     input_state: Entity<InputState>,
 
     _subscriptions: Vec<Subscription>,
@@ -76,12 +82,32 @@ impl EditCueTriggerWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {
-        let select_state = cx
-            .new(|cx| SelectState::new(CueTrigger::iter().map_into().collect(), None, window, cx));
+        let select_state = cx.new(|cx| {
+            SelectState::new(
+                CueTrigger::iter()
+                    .map(|trigger| trigger.to_string().into())
+                    .collect(),
+                None,
+                window,
+                cx,
+            )
+        });
 
         let input_state = cx.new(|cx| InputState::new(window, cx));
 
-        DemexEngineHandler::send_in(
+        let _subscriptions = vec![cx.subscribe_in(
+            &select_state,
+            window,
+            move |this, _, evt: &SelectEvent<Vec<SharedString>>, window, cx| match evt {
+                SelectEvent::Confirm(trigger) => this.update_text_input_state(
+                    trigger.as_ref().and_then(|t| CueTrigger::from_str(t).ok()),
+                    window,
+                    cx,
+                ),
+            },
+        )];
+
+        DemexEngineHandler::send_in_visual(
             window,
             cx,
             SequenceCueRequest {
@@ -90,18 +116,16 @@ impl EditCueTriggerWindow {
             },
             {
                 let select_state = select_state.clone();
-                move |cue, window, cx| {
+                move |this, cue, window, cx| {
                     if let Some(cue) = cue {
                         select_state.update(cx, |state, cx| {
-                            state.set_selected_value(&cue.trigger, window, cx);
+                            state.set_selected_value(&cue.trigger.to_string().into(), window, cx);
                         });
+                        this.update_text_input_state(Some(cue.trigger), window, cx);
                     }
                 }
             },
         );
-
-        // TODO: subscribe to select state change, and update input state if needed
-        let _subscriptions = vec![];
 
         Self {
             sequence_id,
@@ -112,6 +136,53 @@ impl EditCueTriggerWindow {
 
             _subscriptions,
         }
+    }
+
+    fn update_text_input_state(
+        &self,
+        trigger: Option<CueTrigger>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        match trigger {
+            Some(CueTrigger::Time(time)) => {
+                self.input_state.update(cx, |state, cx| {
+                    state.set_value(time.to_string(), window, cx);
+                });
+                cx.notify();
+            }
+            _ => {}
+        }
+    }
+
+    fn submit(&self, cx: &mut Context<Self>) {
+        let Some(mut trigger) = self
+            .select_state
+            .read(cx)
+            .selected_value()
+            .cloned()
+            .and_then(|trigger| CueTrigger::from_str(trigger.as_str()).ok())
+        else {
+            return;
+        };
+
+        match &mut trigger {
+            &mut CueTrigger::Time(ref mut time) => {
+                let input_value = self.input_state.read(cx).value();
+                log::debug!("input value is: {:?}", input_value);
+
+                *time = input_value.parse().unwrap_or_default();
+            }
+            _ => {}
+        }
+
+        DemexEngineHandler::engine(cx).exec_ui(Action::CueSetTrigger(CueSetTriggerArgs {
+            sequence_id: self.sequence_id,
+            cue_idx: self.cue_idx,
+            trigger: trigger,
+        }));
+
+        self.close(cx);
     }
 }
 
@@ -144,6 +215,11 @@ impl Render for EditCueTriggerWindow {
             .on_action(cx.listener(|this, _: &actions::QuitEditCueTrigger, _, cx| {
                 this.close(cx);
             }))
+            .on_action(
+                cx.listener(|this, _: &actions::SubmitEditCueTrigger, _, cx| {
+                    this.submit(cx);
+                }),
+            )
             .justify_center()
             .p_4()
             .gap_2()
@@ -152,7 +228,7 @@ impl Render for EditCueTriggerWindow {
                 self.select_state
                     .read(cx)
                     .selected_value()
-                    .is_some_and(|val| matches!(val, CueTrigger::Time(_))),
+                    .is_some_and(|val| val == "Time"),
                 |this| this.child(NumberInput::new(&self.input_state).suffix("s").w_full()),
             )
     }
