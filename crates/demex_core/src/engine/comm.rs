@@ -17,7 +17,10 @@ use crate::{
     fixture::FixturePath,
     patch::Patch,
     pool::{PoolItem, PoolType},
-    sequence::{cue::CueIdx, frontend::FrontendSequence},
+    sequence::{
+        cue::CueIdx,
+        frontend::{FrontendCue, FrontendSequence},
+    },
     show::{DemexShow, DemexShowRef},
     utils::thread::{DemexThreadStats, DemexThreadStatsHandler},
 };
@@ -93,6 +96,15 @@ pub struct SequenceResponse {
 }
 impl DemexEngineCommRequest for SequenceRequest {
     type Response = Option<SequenceResponse>;
+}
+
+#[derive(Debug)]
+pub struct SequenceCueRequest {
+    pub sequence_id: u32,
+    pub cue_idx: CueIdx,
+}
+impl DemexEngineCommRequest for SequenceCueRequest {
+    type Response = Option<FrontendCue>;
 }
 
 #[derive(Debug)]

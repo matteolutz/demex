@@ -24,8 +24,8 @@ use crate::{
         comm::{
             DemexEngineCommEvent, DemexEngineCommRequestDispatcher, DemexEngineCommRequestHandler,
             ExecutorSequenceRequest, FixtureNameRequest, FrontendStateRequest,
-            ObjectPropertyRequest, PoolItemRequest, SequenceRequest, ShowRequest,
-            ThreadStatsRequest,
+            ObjectPropertyRequest, PoolItemRequest, SequenceCueRequest, SequenceRequest,
+            ShowRequest, ThreadStatsRequest,
         },
         component::ComponentHandle,
         state::{DemexEngineState, DemexFrontendInitState},
@@ -237,6 +237,21 @@ impl DemexEngine {
 
             frontend_sequence
         });
+        handler.register(
+            |SequenceCueRequest {
+                 sequence_id,
+                 cue_idx,
+             },
+             payload| {
+                payload
+                    .show
+                    .preset_handler
+                    .get_sequence(sequence_id)
+                    .ok()
+                    .and_then(|seq| seq.find_cue(cue_idx))
+                    .map(|cue| cue.into())
+            },
+        );
         handler.register(
             |SequenceRequest { sequence_id }: SequenceRequest, payload| {
                 let sequence = payload.show.preset_handler.get_sequence(sequence_id);

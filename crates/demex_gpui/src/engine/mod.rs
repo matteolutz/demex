@@ -10,7 +10,7 @@ use demex_core::{
     show::DemexShow,
 };
 use gdtf::fixture_type::FixtureType;
-use gpui::{App, AppContext, AsyncApp, Context, Entity, Global};
+use gpui::{App, AppContext, AsyncApp, AsyncWindowContext, Context, Entity, Global, Window};
 
 use crate::engine::event::DemexEventHandler;
 
@@ -86,6 +86,26 @@ impl DemexEngineHandler {
             });
         })
         .detach();
+    }
+
+    pub fn send_in<R, CB>(window: &mut Window, cx: &mut App, req: R, cb: CB)
+    where
+        R: DemexEngineCommRequest,
+        CB: FnOnce(R::Response, &mut Window, &mut App) + Send + 'static,
+    {
+        let this: &Self = cx.global();
+        let rx_resp = this.dispatcher.send(req);
+
+        window
+            .spawn(cx, async move |cx: &mut AsyncWindowContext| {
+                let boxed = rx_resp.recv().unwrap();
+                let res = *boxed.downcast::<R::Response>().unwrap();
+
+                let _ = cx.update(|window, cx| {
+                    cb(res, window, cx);
+                });
+            })
+            .detach();
     }
 
     pub fn send_with<R, T, CB>(cx: &mut App, entity: Entity<T>, req: R, cb: CB)

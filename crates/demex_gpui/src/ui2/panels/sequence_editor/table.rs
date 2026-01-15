@@ -30,7 +30,10 @@ use crate::{
     engine::DemexEngineHandler,
     ui2::{
         config::AppConfigExt,
-        window::set_property::{SetPropertyWindow, SetPropertyWindowPropertyType},
+        window::{
+            edit_cue_trigger::EditCueTriggerWindow,
+            set_property::{SetPropertyWindow, SetPropertyWindowPropertyType},
+        },
         wm::{WindowManager, edit_window::WindowManagerExtension},
     },
 };
@@ -332,6 +335,14 @@ impl TableDelegate for SequenceEditorTable {
             "trigger" => Button::new("edit-trigger")
                 .ghost()
                 .label(format!("{}", cue.trigger))
+                .on_click(move |_, _, cx| {
+                    WindowManager::open_edit_window::<EditCueTriggerWindow>(
+                        cx,
+                        move |window, cx| {
+                            EditCueTriggerWindow::new(sequence_id, cue_idx, window, cx)
+                        },
+                    );
+                })
                 .into_any_element(),
             "fading" => Button::new("edit-fading")
                 .ghost()
