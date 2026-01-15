@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{pool::PoolItem, selection::FixtureSelection};
+use crate::{implement_set_property, pool::PoolItem, selection::FixtureSelection};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FixtureGroup {
@@ -38,6 +38,17 @@ impl FixtureGroup {
     pub fn fixture_selection_mut(&mut self) -> &mut FixtureSelection {
         &mut self.fixture_selection
     }
+}
+
+#[derive(strum_macros::EnumString, strum_macros::Display)]
+pub enum FixtureGroupProperty {
+    Name,
+}
+
+implement_set_property! {
+    for FixtureGroup with FixtureGroupProperty,
+
+    Name => name as String
 }
 
 impl From<&FixtureGroup> for PoolItem {

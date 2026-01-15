@@ -180,7 +180,7 @@ impl TableDelegate for SequenceEditorTable {
                 .flex()
                 .items_center()
                 .size_full()
-                .child(format!("{}.{}", cue.cue_idx.0, cue.cue_idx.1))
+                .child(cue_idx.to_string())
                 .into_any_element(),
             "name" => div()
                 .size_full()

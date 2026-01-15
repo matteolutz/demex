@@ -1,7 +1,11 @@
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
-use crate::channel3::feature::feature_group::FixtureChannel3FeatureGroup;
+use crate::{
+    channel3::feature::feature_group::FixtureChannel3FeatureGroup,
+    command::parser::nodes::object::{HomeableObject, Object},
+    presets::preset::FixturePresetId,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PoolType {
@@ -25,5 +29,16 @@ impl PoolType {
             .into_iter()
             .chain(FixtureChannel3FeatureGroup::iter().map(|fg| Self::Preset(fg)))
             .collect()
+    }
+
+    pub fn get_object(&self, id: u32) -> Object {
+        match self {
+            Self::Macro => Object::Macro(id),
+            Self::Executor => HomeableObject::Executor(id).into(),
+            Self::Group => HomeableObject::Group(id).into(),
+            &Self::Preset(feature_group) => Object::Preset(FixturePresetId::new(feature_group, id)),
+            Self::Sequence => Object::Sequence(id),
+            &Self::SequenceCue(seq_id) => Object::SequenceCue(seq_id, id.into()),
+        }
     }
 }

@@ -1,3 +1,5 @@
+use std::num::TryFromIntError;
+
 use itertools::Itertools;
 
 use crate::command::{lexer::token::Token, parser::expected::ExpectedParseSlice};
@@ -17,6 +19,8 @@ pub enum ParseError {
     ObjectError(ObjectError),
     UnexpectedEndOfInput,
 
+    TryFromIntError(TryFromIntError),
+
     UnexpectedArgs(String),
 }
 
@@ -26,6 +30,7 @@ impl ParseError {
             ParseError::UnexpectedVariant(variants) => {
                 variants.iter().any(|(_, e)| e.was_expected(expected))
             }
+            ParseError::TryFromIntError(_) => false,
             ParseError::UnexpectedToken(_, _) => false,
             ParseError::UnexpectedTokenAlternatives(_, _) => false,
             ParseError::Expected(_, expecteds) => expecteds.contains(&expected),
@@ -75,6 +80,10 @@ impl std::fmt::Display for ParseError {
                 write!(f, "No default action for object: {:?}", o)
             }
             ParseError::ObjectError(e) => write!(f, "Object error: {}", e),
+
+            ParseError::TryFromIntError(err) => {
+                write!(f, "Failed to parse integer: {}", err)
+            }
 
             ParseError::UnexpectedArgs(e) => write!(f, "Unexpected args: {}", e),
         }

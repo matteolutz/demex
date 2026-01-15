@@ -38,8 +38,8 @@ mod actions {
 
     pub fn init(cx: &mut App) {
         cx.bind_keys([
-            KeyBinding::new("secondary-up", PrevCommand, Some(CONTEXT)),
-            KeyBinding::new("secondary-down", NextCommand, Some(CONTEXT)),
+            KeyBinding::new("secondary-k", PrevCommand, Some(CONTEXT)),
+            KeyBinding::new("secondary-j", NextCommand, Some(CONTEXT)),
         ]);
     }
 }
@@ -216,6 +216,8 @@ impl CommandPanel {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        log::debug!("prev commnand");
+
         let command_history_len = DemexUiState::command_history(cx).read(cx).len();
 
         self.command_history_idx.update(cx, |idx, cx| {

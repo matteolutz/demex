@@ -153,6 +153,7 @@ pub trait ObjectDelegate: 'static + Sized + Display {
 pub enum HomeableObject {
     CurrentFixtureSelection,
     FixtureSelector(FixtureSelector),
+    Group(u32),
     Executor(u32),
     Programmer,
 }
@@ -197,6 +198,15 @@ impl HomeableObject {
 
                 Ok(ActionRunResult::new())
             }
+            HomeableObject::Group(group_id) => {
+                let group = preset_handler
+                    .get_group(*group_id)
+                    .map_err(ActionRunError::PresetHandlerError)?;
+
+                Self::home_fixture_selection(group.fixture_selection(), fixture_state_handler)?;
+
+                Ok(ActionRunResult::Default)
+            }
             HomeableObject::Executor(executor_id) => {
                 if let Ok(fader) = updatable_handler.executor_mut(*executor_id) {
                     fader.stop(fixture_state_handler, preset_handler, event_list);
@@ -217,6 +227,7 @@ impl Display for HomeableObject {
         match self {
             Self::CurrentFixtureSelection => write!(f, "~"),
             Self::Executor(id) => write!(f, "Executor {}", id),
+            Self::Group(id) => write!(f, "Group {}", id),
             Self::FixtureSelector(selector) => write!(f, "{}", selector),
             Self::Programmer => write!(f, "Programmer"),
         }
@@ -236,13 +247,14 @@ impl ObjectDelegate for HomeableObject {
     fn get_pool_type_and_id(self) -> Option<(PoolType, u32)> {
         match self {
             Self::Executor(id) => Some((PoolType::Executor, id)),
+            Self::Group(id) => Some((PoolType::Group, id)),
             _ => None,
         }
     }
 
     fn get(
         self,
-        _preset_handler: &PresetHandler,
+        preset_handler: &PresetHandler,
         updatable_handler: &UpdatableHandler,
         fixture_selector_context: FixtureSelectorContext,
         key: String,
@@ -259,6 +271,25 @@ impl ObjectDelegate for HomeableObject {
                     Err(ActionRunError::ObjectError(ObjectError::ObjectNotPresent))
                 }
             }
+            Self::Group(id) => preset_handler
+                .get_group(id)
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|group| group.get_property_string(key)),
+            Self::FixtureSelector(selector) => {
+                if let Some(group_id) = selector.try_as_group_id() {
+                    HomeableObject::Group(group_id).get(
+                        preset_handler,
+                        updatable_handler,
+                        fixture_selector_context,
+                        key,
+                    )
+                } else {
+                    Err(ActionRunError::ActionNotImplementedForObject(
+                        "get".to_string(),
+                        Object::HomeableObject(Self::FixtureSelector(selector)),
+                    ))
+                }
+            }
             unmatched => Err(ActionRunError::ActionNotImplementedForObject(
                 "get".to_string(),
                 Object::HomeableObject(unmatched),
@@ -268,10 +299,10 @@ impl ObjectDelegate for HomeableObject {
 
     fn set(
         self,
-        _preset_handler: &mut PresetHandler,
+        preset_handler: &mut PresetHandler,
         updatable_handler: &mut UpdatableHandler,
         fixture_selector_context: FixtureSelectorContext,
-        _: &mut DemexEventList,
+        event_list: &mut DemexEventList,
         key: String,
         value: String,
     ) -> Result<ActionRunResult, ActionRunError> {
@@ -291,6 +322,27 @@ impl ObjectDelegate for HomeableObject {
                     Ok(ActionRunResult::new())
                 }
             }
+            Self::Group(id) => preset_handler
+                .get_group_mut(id)
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|group| group.set_property_string(key, value)),
+            Self::FixtureSelector(selector) => {
+                if let Some(group_id) = selector.try_as_group_id() {
+                    HomeableObject::Group(group_id).set(
+                        preset_handler,
+                        updatable_handler,
+                        fixture_selector_context,
+                        event_list,
+                        key,
+                        value,
+                    )
+                } else {
+                    Err(ActionRunError::ActionNotImplementedForObject(
+                        "set".to_string(),
+                        Object::HomeableObject(Self::FixtureSelector(selector)),
+                    ))
+                }
+            }
             unmatched => Err(ActionRunError::ActionNotImplementedForObject(
                 "set".to_string(),
                 Object::HomeableObject(unmatched),
@@ -307,6 +359,12 @@ impl HomeableObject {
             (Self::Executor(_), Self::Executor(_)) => true,
             _ => false,
         }
+    }
+}
+
+impl From<HomeableObject> for Object {
+    fn from(value: HomeableObject) -> Self {
+        Object::HomeableObject(value)
     }
 }
 
@@ -334,10 +392,10 @@ impl Display for Object {
             Self::Preset(id) => write!(f, "{} Preset {}", id.feature_group, id.preset_id),
             Self::Sequence(id) => write!(f, "Sequence {}", id),
             Self::SequenceCue(id, cue_idx) => {
-                write!(f, "Sequence {} Cue {}.{}", id, cue_idx.0, cue_idx.1)
+                write!(f, "Sequence {} Cue {}", id, cue_idx)
             }
             Self::ExecutorCue(id, cue_idx) => {
-                write!(f, "Executor {} Cue {}.{}", id, cue_idx.0, cue_idx.1)
+                write!(f, "Executor {} Cue {}", id, cue_idx)
             }
         }
     }
@@ -357,8 +415,7 @@ impl ObjectDelegate for Object {
             Self::Macro(id) => Some((PoolType::Macro, id)),
             Self::Sequence(id) => Some((PoolType::Sequence, id)),
             Self::SequenceCue(seq_id, cue_id) => {
-                // TODO: find solution for this
-                Some((PoolType::SequenceCue(seq_id), cue_id.0 ^ cue_id.1))
+                Some((PoolType::SequenceCue(seq_id), cue_id.into()))
             }
             Self::ExecutorCue(_, _) => None,
             Self::Preset(id) => Some((PoolType::Preset(id.feature_group), id.preset_id)),

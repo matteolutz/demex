@@ -57,12 +57,14 @@ pub struct SetPropertyWindow {
 
 impl SetPropertyWindow {
     pub fn new(
-        object: Object,
+        object: impl Into<Object>,
         property: impl ToString,
         property_type: SetPropertyWindowPropertyType,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {
+        let object = object.into();
+
         match property_type.number_input_mode() {
             NumberInputMode::Float { .. } | NumberInputMode::Integer { .. } => {
                 window.resize(size(350.0.into(), 400.0.into()));

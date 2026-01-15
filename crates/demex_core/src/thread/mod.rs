@@ -41,6 +41,7 @@ impl<D: DemexThreadDelegate> DemexThreadHandle<D> {
         self.join()
     }
 
+    #[allow(unused)]
     pub fn send(
         &self,
         message: D::ThreadMessage,
@@ -48,6 +49,7 @@ impl<D: DemexThreadDelegate> DemexThreadHandle<D> {
         self.tx.send(DemexThreadMessage::Update(message))
     }
 
+    #[allow(unused)]
     pub fn sender(&self) -> mpsc::Sender<DemexThreadMessage<D>> {
         self.tx.clone()
     }

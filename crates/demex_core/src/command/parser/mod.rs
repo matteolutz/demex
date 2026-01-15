@@ -676,11 +676,18 @@ impl<'a> Parser2<'a> {
         match self.current_token()? {
             &Token::Integer(value) => {
                 self.advance();
-                Ok((value, 0))
+
+                let value: u16 = value.try_into().map_err(ParseError::TryFromIntError)?;
+
+                Ok((value, 0).into())
             }
             &Token::FloatingPoint(_, (major, minor)) => {
                 self.advance();
-                Ok((major, minor))
+
+                let major: u16 = major.try_into().map_err(ParseError::TryFromIntError)?;
+                let minor: u16 = minor.try_into().map_err(ParseError::TryFromIntError)?;
+
+                Ok((major, minor).into())
             }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
@@ -837,7 +844,18 @@ impl<'a> Parser2<'a> {
 
                 let id = self.parse_integer()?;
 
-                let cue_idx = self.try_parse(Self::parse_cue_idx_or_next).unwrap_or(None);
+                let cue_idx = match self.current_token()? {
+                    // old syntax, still supported for convenience
+                    Token::KeywordNext => {
+                        self.advance();
+                        None
+                    }
+                    Token::KeywordCue => {
+                        self.advance();
+                        self.parse_cue_idx_or_next()?
+                    }
+                    _ => None,
+                };
 
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
 

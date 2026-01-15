@@ -5,11 +5,15 @@ use demex_core::{
             functions::{go_function::ExecutorGoArgs, set_function::SetFixturePresetArgs},
         },
         fixture_selector::FixtureSelector,
-        object::Object,
+        object::{HomeableObject, Object},
     },
     engine::comm::ExecutorSequenceRequest,
     pool::PoolType,
-    presets::preset::{FixturePresetId, FixturePresetProperty},
+    presets::{
+        group::FixtureGroupProperty,
+        preset::{FixturePresetId, FixturePresetProperty},
+    },
+    sequence::{SequenceProperty, frontend::FrontendSequence},
 };
 use gpui::App;
 
@@ -52,23 +56,49 @@ pub fn apply_pool_type_to_button(
     pool_item_id: u32,
 ) -> PoolButton {
     match pool_type {
-        PoolType::Executor => button.action("Edit Seq", move |_, cx| {
-            DemexEngineHandler::send(
-                cx,
-                ExecutorSequenceRequest {
-                    executor_id: pool_item_id,
-                },
-                |seq, cx| {
-                    if let Some(seq) = seq {
-                        DemexUiState::selected_sequence(cx).update(cx, |selected_sequence, cx| {
-                            *selected_sequence = Some(seq.id);
-                            cx.notify();
-                        });
-                    }
-                },
-            );
-        }),
-        PoolType::Preset(feature_group) => button.action("Rename", move |_, cx| {
+        PoolType::Executor => {
+            fn get_sequence(
+                executor_id: u32,
+                cx: &mut App,
+                cb: impl FnOnce(Option<FrontendSequence>, &mut App) + Send + 'static,
+            ) {
+                DemexEngineHandler::send(cx, ExecutorSequenceRequest { executor_id }, cb)
+            }
+
+            button
+                .action("Name", move |_, cx| {
+                    get_sequence(pool_item_id, cx, |seq, cx| {
+                        if let Some(seq) = seq {
+                            WindowManager::open_edit_window::<SetPropertyWindow>(
+                                cx,
+                                move |window, cx| {
+                                    SetPropertyWindow::new(
+                                        Object::Sequence(seq.id),
+                                        SequenceProperty::Name,
+                                        SetPropertyWindowPropertyType::String,
+                                        window,
+                                        cx,
+                                    )
+                                },
+                            );
+                        }
+                    });
+                })
+                .action("Edit Seq", move |_, cx| {
+                    get_sequence(pool_item_id, cx, |seq, cx| {
+                        if let Some(seq) = seq {
+                            DemexUiState::selected_sequence(cx).update(
+                                cx,
+                                |selected_sequence, cx| {
+                                    *selected_sequence = Some(seq.id);
+                                    cx.notify();
+                                },
+                            );
+                        }
+                    });
+                })
+        }
+        PoolType::Preset(feature_group) => button.action("Name", move |_, cx| {
             WindowManager::open_edit_window::<SetPropertyWindow>(cx, move |window, cx| {
                 SetPropertyWindow::new(
                     Object::Preset(FixturePresetId {
@@ -76,6 +106,17 @@ pub fn apply_pool_type_to_button(
                         preset_id: pool_item_id,
                     }),
                     FixturePresetProperty::Name,
+                    SetPropertyWindowPropertyType::String,
+                    window,
+                    cx,
+                )
+            });
+        }),
+        PoolType::Group => button.action("Name", move |_, cx| {
+            WindowManager::open_edit_window::<SetPropertyWindow>(cx, move |window, cx| {
+                SetPropertyWindow::new(
+                    HomeableObject::Group(pool_item_id),
+                    FixtureGroupProperty::Name,
                     SetPropertyWindowPropertyType::String,
                     window,
                     cx,

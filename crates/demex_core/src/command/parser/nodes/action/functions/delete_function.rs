@@ -90,12 +90,8 @@ impl FunctionArgs for DeleteArgs {
                     Ok(ActionRunResult::new())
                 } else {
                     Ok(ActionRunResult::Info(format!(
-                        "Deleted cue {}.{} to {}.{} in sequence {}",
-                        cue_idx_from.0,
-                        cue_idx_from.1,
-                        cue_idx_to.0,
-                        cue_idx_to.1,
-                        sequence_id_from
+                        "Deleted cue {} to {} in sequence {}",
+                        cue_idx_from, cue_idx_to, sequence_id_from
                     )))
                 }
             }
@@ -123,8 +119,8 @@ impl FunctionArgs for DeleteArgs {
                     Ok(ActionRunResult::new())
                 } else {
                     Ok(ActionRunResult::Info(format!(
-                        "Deleted cue {}.{} to {}.{} in sequence {}",
-                        cue_idx_from.0, cue_idx_from.1, cue_idx_to.0, cue_idx_to.1, sequence_id
+                        "Deleted cue {} to {} in sequence {}",
+                        cue_idx_from, cue_idx_to, sequence_id
                     )))
                 }
             }

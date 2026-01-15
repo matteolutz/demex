@@ -202,7 +202,51 @@ impl Default for CueDataMode {
     }
 }
 
-pub type CueIdx = (u32, u32);
+#[derive(
+    Debug, Copy, Clone, Serialize, Deserialize, Default, Hash, PartialEq, Eq, PartialOrd, Ord,
+)]
+pub struct CueIdx(u16, u16);
+
+impl CueIdx {
+    pub fn major(&self) -> u16 {
+        self.0
+    }
+
+    pub fn minor(&self) -> u16 {
+        self.1
+    }
+
+    pub fn next_major(&self) -> Self {
+        Self(self.major() + 1, 0)
+    }
+}
+
+impl std::fmt::Display for CueIdx {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}", self.0, self.1)
+    }
+}
+
+impl From<u32> for CueIdx {
+    fn from(value: u32) -> Self {
+        let major = ((value >> 0xF) & 0xF) as u16;
+        let minor = (value & 0xF) as u16;
+
+        Self(major, minor)
+    }
+}
+
+impl From<(u16, u16)> for CueIdx {
+    fn from((major, minor): (u16, u16)) -> Self {
+        Self(major, minor)
+    }
+}
+
+impl From<CueIdx> for u32 {
+    fn from(value: CueIdx) -> Self {
+        ((value.major() as u32) << 0xF) & value.minor() as u32
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Cue {
@@ -275,7 +319,7 @@ impl Cue {
     pub fn new_default_builder(cue_idx: CueIdx) -> Self {
         Self {
             cue_idx,
-            name: format!("Cue {}.{}", cue_idx.0, cue_idx.1),
+            name: format!("Cue {}", cue_idx),
 
             data: CueDataMode::Builder(Vec::new()),
             // Unused
@@ -304,7 +348,7 @@ impl Cue {
     ) -> Self {
         Self {
             cue_idx,
-            name: format!("Cue {}.{}", cue_idx.0, cue_idx.1),
+            name: format!("Cue {}", cue_idx),
 
             data: CueDataMode::Default(data),
             selection,

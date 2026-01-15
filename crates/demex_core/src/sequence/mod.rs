@@ -166,9 +166,9 @@ impl Sequence {
 
     pub fn next_cue_idx(&self) -> CueIdx {
         if self.cues.is_empty() {
-            (1, 0)
+            (1, 0).into()
         } else {
-            (self.cues.last().unwrap().cue_idx().0 + 1, 0)
+            self.cues.last().unwrap().cue_idx().next_major()
         }
     }
 

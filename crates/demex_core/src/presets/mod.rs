@@ -699,7 +699,7 @@ impl PresetHandler {
 
                 event_list.push(DemexEvent::PoolItemAdded(
                     PoolType::SequenceCue(sequence_id),
-                    idx as u32,
+                    discrete_cue_idx.into(),
                 ));
                 return Ok(());
             }
@@ -709,7 +709,7 @@ impl PresetHandler {
         cues.push(cue);
         event_list.push(DemexEvent::PoolItemAdded(
             PoolType::SequenceCue(sequence_id),
-            (cues.len() - 1) as u32,
+            discrete_cue_idx.into(),
         ));
 
         Ok(())
@@ -794,18 +794,6 @@ impl PresetHandler {
             .get_mut(&sequence_id)
             .ok_or(PresetHandlerError::PresetNotFound(sequence_id))?;
 
-        let cue_from_idx = sequence
-            .cues()
-            .iter()
-            .position(|c| c.cue_idx() == cue_from)
-            .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_from))?;
-
-        let cue_to_idx = sequence
-            .cues()
-            .iter()
-            .position(|c| c.cue_idx() == cue_to)
-            .ok_or(PresetHandlerError::CueNotFound(sequence_id, cue_to))?;
-
         let initial_len = sequence.cues().len();
         sequence
             .cues_mut()
@@ -813,8 +801,8 @@ impl PresetHandler {
 
         event_list.push(DemexEvent::PoolItemsDeleted {
             pool_type: PoolType::SequenceCue(sequence_id),
-            from_id: cue_from_idx as u32,
-            to_id: cue_to_idx as u32,
+            from_id: cue_from.into(),
+            to_id: cue_to.into(),
         });
 
         Ok(initial_len - sequence.cues().len())

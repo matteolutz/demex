@@ -68,39 +68,25 @@ impl std::fmt::Display for PresetHandlerError {
             PresetHandlerError::FixtureError(err) => write!(f, "{}", err),
             PresetHandlerError::FixtureSelectorError(err) => write!(f, "{}", err),
             PresetHandlerError::MacroExecutionError(err) => write!(f, "{}", err),
-            PresetHandlerError::CueAlreadyExists(preset_id, (cue_idx_major, cue_idx_minor)) => {
+            PresetHandlerError::CueAlreadyExists(preset_id, cue_idx) => {
                 write!(
                     f,
-                    "Cue {}.{} already exists in sequence {}. Use \"update\" to modify it",
-                    cue_idx_major, cue_idx_minor, preset_id
+                    "Cue {} already exists in sequence {}. Use \"update\" to modify it",
+                    cue_idx, preset_id
                 )
             }
-            PresetHandlerError::CueNotFound(preset_id, (cue_idx_major, cue_idx_minor)) => {
+            PresetHandlerError::CueNotFound(preset_id, cue_idx) => {
+                write!(f, "Cue {} not found in sequence {}", cue_idx, preset_id)
+            }
+            PresetHandlerError::CantUpdateNonDefaultCue(sequence_id, cue_idx) => {
                 write!(
                     f,
-                    "Cue {}.{} not found in sequence {}",
-                    cue_idx_major, cue_idx_minor, preset_id
+                    "Cue {} in sequence {} is not a default cue and can't be updated",
+                    cue_idx, sequence_id
                 )
             }
-            PresetHandlerError::CantUpdateNonDefaultCue(
-                sequence_id,
-                (cue_idx_major, cue_idx_minor),
-            ) => {
-                write!(
-                    f,
-                    "Cue {}.{} in sequence {} is not a default cue and can't be updated",
-                    cue_idx_major, cue_idx_minor, sequence_id
-                )
-            }
-            PresetHandlerError::InvalidCueRange(
-                (cue_idx_from_major, cue_idx_from_minor),
-                (cue_idx_to_major, cue_idx_to_minor),
-            ) => {
-                write!(
-                    f,
-                    "Invalid cue range: {}.{} to {}.{}",
-                    cue_idx_from_major, cue_idx_from_minor, cue_idx_to_major, cue_idx_to_minor
-                )
+            PresetHandlerError::InvalidCueRange(cue_idx_from, cue_idx_to) => {
+                write!(f, "Invalid cue range: {} to {}", cue_idx_from, cue_idx_to)
             }
         }
     }
