@@ -86,6 +86,16 @@ pub enum CueTrigger {
     Time(f32),
 }
 
+impl CueTrigger {
+    pub fn to_pretty_string(&self) -> String {
+        match self {
+            Self::Manual => "Manual".to_string(),
+            Self::Follow => "Follow".to_string(),
+            Self::Time(time) => format!("{:.2}s", time),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CueFixtureChannelValue {
     value: FixtureChannelValue3,

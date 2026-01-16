@@ -334,7 +334,7 @@ impl TableDelegate for SequenceEditorTable {
                 .into_any_element(),
             "trigger" => Button::new("edit-trigger")
                 .ghost()
-                .label(format!("{:?}", cue.trigger))
+                .label(cue.trigger.to_pretty_string())
                 .on_click(move |_, _, cx| {
                     WindowManager::open_edit_window::<EditCueTriggerWindow>(
                         cx,

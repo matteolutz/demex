@@ -189,6 +189,14 @@ impl SequenceRuntimeState {
             Self::Stopped | Self::CueOut { .. } => vec![],
         }
     }
+
+    pub fn current_cue_index(&self) -> Option<usize> {
+        match self {
+            Self::Stopped => None,
+            Self::Cues { current_cue, .. } => Some(*current_cue),
+            Self::CueOut { .. } => None,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -601,6 +609,8 @@ impl SequenceRuntime {
             return (true, None);
         }
 
+        let mut events = vec![];
+
         let started_at = time::Instant::now() - time::Duration::from_secs_f32(time_offset);
 
         let (should_clear_tracked_values, new_state) = self.state.clone().next_cue(
@@ -613,9 +623,14 @@ impl SequenceRuntime {
             self.tracked_values.clear();
         }
 
+        if let Some(current_cue) = new_state.current_cue_index() {
+            let cue_idx = sequence.cue(current_cue).cue_idx();
+            events.push(DemexExecutorUpdateEvent::CueActivate(cue_idx, started_at));
+        }
+
         self.state = new_state;
 
-        (self.state == SequenceRuntimeState::Stopped, None)
+        (self.state == SequenceRuntimeState::Stopped, Some(events))
     }
 
     fn next_cue_idx(sequence: &Sequence, current_cue_idx: usize) -> Option<usize> {

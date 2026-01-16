@@ -16,11 +16,11 @@ impl DemexEventList {
         &self.events
     }
 
-    pub fn push(&mut self, event: DemexEvent) {
-        self.events.push(event);
+    pub fn push(&mut self, event: impl Into<DemexEvent>) {
+        self.events.push(event.into());
     }
 
-    pub fn push_optional(&mut self, event: Option<DemexEvent>) {
+    pub fn push_optional(&mut self, event: Option<impl Into<DemexEvent>>) {
         if let Some(event) = event {
             self.push(event);
         }

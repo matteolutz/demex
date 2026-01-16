@@ -10,6 +10,7 @@ use gpui::{
     Styled, Subscription, Window, WindowBounds, prelude::FluentBuilder, size,
 };
 use gpui_component::{
+    StyledExt,
     input::{InputState, NumberInput},
     select::{Select, SelectEvent, SelectItem, SelectState},
     v_flex,
@@ -148,6 +149,8 @@ impl EditCueTriggerWindow {
             Some(CueTrigger::Time(time)) => {
                 self.input_state.update(cx, |state, cx| {
                     state.set_value(time.to_string(), window, cx);
+                    state.select_all_content(cx);
+                    state.focus(window, cx);
                 });
                 cx.notify();
             }
@@ -169,7 +172,6 @@ impl EditCueTriggerWindow {
         match &mut trigger {
             &mut CueTrigger::Time(ref mut time) => {
                 let input_value = self.input_state.read(cx).value();
-                log::debug!("input value is: {:?}", input_value);
 
                 *time = input_value.parse().unwrap_or_default();
             }
@@ -196,7 +198,7 @@ impl EditWindowDelegate for EditCueTriggerWindow {
     }
 
     fn window_bounds(cx: &mut App) -> Option<gpui::WindowBounds> {
-        Some(WindowBounds::centered(size(500.0.into(), 200.0.into()), cx))
+        Some(WindowBounds::centered(size(500.0.into(), 180.0.into()), cx))
     }
 
     fn handle_save(&self, _window: &mut gpui::Window, _cx: &mut gpui::App) {}
@@ -211,6 +213,7 @@ impl Render for EditCueTriggerWindow {
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
         v_flex()
+            .size_full()
             .key_context(actions::CONTEXT)
             .on_action(cx.listener(|this, _: &actions::QuitEditCueTrigger, _, cx| {
                 this.close(cx);
@@ -222,7 +225,7 @@ impl Render for EditCueTriggerWindow {
             )
             .justify_center()
             .p_4()
-            .gap_2()
+            .gap_1()
             .child(Select::new(&self.select_state).w_full())
             .when(
                 self.select_state
