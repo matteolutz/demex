@@ -38,6 +38,9 @@ sudo usermod -a -G dialout $USER
 sudo usermod -a -G tty $USER
 ```
 
+#### macOS
+On macOS GPUI uses Metal as its rendering engine. Please refer to [GPUI's instructions](https://github.com/zed-industries/zed/tree/main/crates/gpui#macos), on how to install it.
+
 
 #### Windows
 > TODO
