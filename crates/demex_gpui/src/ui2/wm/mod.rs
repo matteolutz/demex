@@ -335,6 +335,11 @@ impl WindowManager {
         (handle, Self::read_dock_window(handle, cx))
     }
 
+    pub fn dock_window_for<'a>(window: &Window, cx: &'a App) -> Option<Entity<DockWindow>> {
+        let window_handle: WindowHandle<Root> = window.window_handle().downcast()?;
+        Some(Self::dock_window_entity(&window_handle, cx))
+    }
+
     pub fn main_dock_window_handle_mut(&mut self) -> &mut WindowHandle<Root> {
         &mut self.dock_windows[0]
     }

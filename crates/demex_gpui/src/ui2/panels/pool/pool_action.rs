@@ -22,7 +22,7 @@ use crate::{
     ui2::{
         panels::pool::pool_button::PoolButton,
         window::set_property::{SetPropertyWindow, SetPropertyWindowPropertyType},
-        wm::{WindowManager, edit_window::WindowManagerExtension},
+        wm::{WindowManager, app::WindowManagerAppExt, edit_window::WindowManagerExtension},
     },
 };
 
@@ -98,20 +98,26 @@ pub fn apply_pool_type_to_button(
                     });
                 })
         }
-        PoolType::Preset(feature_group) => button.action("Name", move |_, cx| {
-            WindowManager::open_edit_window::<SetPropertyWindow>(cx, move |window, cx| {
-                SetPropertyWindow::new(
-                    Object::Preset(FixturePresetId {
-                        feature_group,
-                        preset_id: pool_item_id,
-                    }),
-                    FixturePresetProperty::Name,
-                    SetPropertyWindowPropertyType::String,
-                    window,
-                    cx,
-                )
-            });
-        }),
+        PoolType::Preset(feature_group) => button
+            .action("Name", move |_, cx| {
+                WindowManager::open_edit_window::<SetPropertyWindow>(cx, move |window, cx| {
+                    SetPropertyWindow::new(
+                        Object::Preset(FixturePresetId {
+                            feature_group,
+                            preset_id: pool_item_id,
+                        }),
+                        FixturePresetProperty::Name,
+                        SetPropertyWindowPropertyType::String,
+                        window,
+                        cx,
+                    )
+                });
+            })
+            .action("Insert", move |window, cx| {
+                cx.defer(|cx| {
+                    cx.wm().main_dock_window(cx).1.command_input_state(cx);
+                });
+            }),
         PoolType::Group => button.action("Name", move |_, cx| {
             WindowManager::open_edit_window::<SetPropertyWindow>(cx, move |window, cx| {
                 SetPropertyWindow::new(

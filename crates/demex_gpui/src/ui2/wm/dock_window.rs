@@ -11,7 +11,9 @@ use gpui::{
 use gpui_component::{
     ActiveTheme, Root, Sizable,
     dock::{DockArea, DockAreaState, DockItem, DockPlacement, PanelStyle},
-    h_flex, v_flex,
+    h_flex,
+    input::InputState,
+    v_flex,
 };
 use serde::{Deserialize, Serialize};
 
@@ -246,6 +248,21 @@ impl DockWindow {
                 false
             }
         })
+    }
+
+    pub fn command_input_state(&self, cx: &App) -> Option<Entity<InputState>> {
+        let da = self.dock_area.read(cx);
+
+        let command_panel = da.bottom_dock().and_then(|dock| {
+            let panel = dock.read(cx).panel().view();
+            log::debug!("panel: {:?}", panel.view());
+
+            panel.view().downcast::<CommandPanel>().ok()
+        });
+
+        println!("command panel: {:?}", command_panel);
+
+        None
     }
 }
 
