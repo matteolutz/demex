@@ -51,7 +51,7 @@ pub fn init(cx: &mut App) {
 pub struct CommandPanel {
     focus_handle: FocusHandle,
 
-    command_input_state: Entity<InputState>,
+    pub(crate) command_input_state: Entity<InputState>,
 
     // Indexed from the back
     command_history_idx: Entity<Option<usize>>,
@@ -182,6 +182,10 @@ impl CommandPanel {
     ) {
         let command_history_len = DemexUiState::command_history(cx).read(cx).len();
 
+        if command_history_len == 0 {
+            return;
+        }
+
         let Some(idx) = *idx_entity.read(cx) else {
             // When idx was set to None, clear the command input state
             self.command_input_state
@@ -216,8 +220,6 @@ impl CommandPanel {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        log::debug!("prev commnand");
-
         let command_history_len = DemexUiState::command_history(cx).read(cx).len();
 
         self.command_history_idx.update(cx, |idx, cx| {

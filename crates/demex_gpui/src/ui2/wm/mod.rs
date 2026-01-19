@@ -349,11 +349,8 @@ impl WindowManager {
         cx: &'a mut App,
         update: impl FnOnce(&mut DockWindow, &mut Window, &mut Context<DockWindow>) -> R,
     ) -> gpui::Result<R> {
-        let handle = self.dock_windows[0];
-        let dock_window = Self::dock_window_entity(&handle, cx);
-        handle.update(cx, |_, window, cx| {
-            dock_window.update(cx, |dock_window, cx| update(dock_window, window, cx))
-        })
+        let handle = &self.dock_windows[0];
+        Self::update_dock_window(handle, update, cx)
     }
 
     pub fn dock_windows<'a>(

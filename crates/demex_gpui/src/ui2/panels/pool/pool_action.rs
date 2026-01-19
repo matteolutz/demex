@@ -1,11 +1,14 @@
 use demex_core::{
-    command::parser::nodes::{
-        action::{
-            Action,
-            functions::{go_function::ExecutorGoArgs, set_function::SetFixturePresetArgs},
+    command::{
+        lexer::token::Token,
+        parser::nodes::{
+            action::{
+                Action,
+                functions::{go_function::ExecutorGoArgs, set_function::SetFixturePresetArgs},
+            },
+            fixture_selector::FixtureSelector,
+            object::{HomeableObject, Object},
         },
-        fixture_selector::FixtureSelector,
-        object::{HomeableObject, Object},
     },
     engine::comm::ExecutorSequenceRequest,
     pool::PoolType,
@@ -84,6 +87,19 @@ pub fn apply_pool_type_to_button(
                         }
                     });
                 })
+                .action("Insert", move |_, cx| {
+                    cx.defer(move |cx| {
+                        cx.update_wm(|wm, cx| {
+                            let _ = wm.update_main_dock_window(cx, |dock_window, window, cx| {
+                                dock_window.append_to_command(
+                                    format!("{} {}", Token::KeywordExecutor, pool_item_id),
+                                    window,
+                                    cx,
+                                );
+                            });
+                        });
+                    });
+                })
                 .action("Edit Seq", move |_, cx| {
                     get_sequence(pool_item_id, cx, |seq, cx| {
                         if let Some(seq) = seq {
@@ -113,9 +129,22 @@ pub fn apply_pool_type_to_button(
                     )
                 });
             })
-            .action("Insert", move |window, cx| {
-                cx.defer(|cx| {
-                    cx.wm().main_dock_window(cx).1.command_input_state(cx);
+            .action("Insert", move |_, cx| {
+                cx.defer(move |cx| {
+                    cx.update_wm(|wm, cx| {
+                        let _ = wm.update_main_dock_window(cx, |dock_window, window, cx| {
+                            dock_window.append_to_command(
+                                format!(
+                                    "{} {}.{}",
+                                    Token::KeywordPreset,
+                                    feature_group as u32,
+                                    pool_item_id
+                                ),
+                                window,
+                                cx,
+                            );
+                        });
+                    });
                 });
             }),
         PoolType::Group => button.action("Name", move |_, cx| {

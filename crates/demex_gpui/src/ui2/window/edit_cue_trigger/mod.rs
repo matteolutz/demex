@@ -10,7 +10,6 @@ use gpui::{
     Styled, Subscription, Window, WindowBounds, prelude::FluentBuilder, size,
 };
 use gpui_component::{
-    StyledExt,
     input::{InputState, NumberInput},
     select::{Select, SelectEvent, SelectItem, SelectState},
     v_flex,
