@@ -57,8 +57,8 @@ This project is licensed under the GPL-3.0 License. See [LICENSE](LICENSE) for m
 
 This project incorporates code from:
 
-- [zeevonk](https://github.com/BaukeWestendorp/zeevonk) — Copyright (C) 2025 Bauke Westendorp  
-  Licensed under the GNU General Public License v3.0
+- [zeevonk](https://github.com/BaukeWestendorp/zeevonk) — Copyright (C) 2026 Bauke Westendorp  
+  Licensed under the Apache License, Version 2.0
 
 ---
 
