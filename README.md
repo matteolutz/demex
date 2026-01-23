@@ -51,7 +51,7 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ## License
 
-This project is licensed under the GPL-3.0 License. See [LICENSE](LICENSE) for more informations.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for more informations.
 
 ## Acknowledgements
 

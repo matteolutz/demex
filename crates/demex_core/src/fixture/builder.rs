@@ -8,7 +8,7 @@
  *   Copyright (C) 2025 Matteo Lutz
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the MIT License as published by
  * the Free Software Foundation, version 3.
  */
 
@@ -20,8 +20,8 @@ use gdtf::{dmx_mode::RelationType, geometry::AnyGeometry};
 use crate::{
     channel3::{attribute::FixtureChannel3Attribute, clamped_value::ClampedValue},
     fixture::{
-        Fixture, FixtureChannelFunction, FixtureChannelFunctionKind, FixtureId, FixturePath,
-        GdtfFixturePatch, Relation, RelationKind, error::FixtureError,
+        error::FixtureError, Fixture, FixtureChannelFunction, FixtureChannelFunctionKind,
+        FixtureId, FixturePath, GdtfFixturePatch, Relation, RelationKind,
     },
     patch::FixtureTypeList,
 };
