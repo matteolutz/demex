@@ -13,6 +13,7 @@ use gpui_component::{
     dock::{Panel, PanelEvent, register_panel},
     h_flex,
     slider::{Slider, SliderEvent, SliderState},
+    tab::TabBar,
     v_flex,
 };
 use itertools::Itertools;
@@ -24,7 +25,7 @@ use crate::{
         panels::{
             layout_view::{
                 layout_entry::{FixtureLayoutEntryDrawArgs, FixtureLayoutEntryExt},
-                layout_projection::{LayoutProjection, PosExt},
+                layout_projection::LayoutProjection,
             },
             toolbar_buttons,
         },
@@ -51,6 +52,8 @@ pub struct LayoutViewPanel {
 
     last_middle_button_mouse_pos: Entity<Option<Point<Pixels>>>,
     selection_start_mouse_pos: Entity<Option<Point<Pixels>>>,
+
+    selected_layout: Entity<usize>,
 
     zoom_slider_state: Entity<SliderState>,
 
@@ -102,6 +105,8 @@ impl LayoutViewPanel {
                 .step(0.01)
         });
 
+        let selected_layout = cx.new(|_| 0);
+
         let subs = vec![
             cx.observe_and_notify(&DemexUiState::patch(cx)),
             cx.observe_and_notify(&DemexUiState::fixture_selection(cx)),
@@ -111,6 +116,12 @@ impl LayoutViewPanel {
                     state.set_value(projection.read(cx).zoom(), window, cx);
                     cx.notify();
                 });
+            }),
+            cx.observe(&selected_layout, move |this, _, cx| {
+                this.projection.update(cx, |projection, _| {
+                    projection.reset_with_zoom(initial_zoom);
+                });
+                cx.notify();
             }),
             cx.subscribe_in(
                 &zoom_slider_state,
@@ -134,6 +145,7 @@ impl LayoutViewPanel {
             last_middle_button_mouse_pos: cx.new(|_| None),
             selection_start_mouse_pos: cx.new(|_| None),
             zoom_slider_state,
+            selected_layout,
             _subscriptions: subs,
         }
     }
@@ -208,21 +220,20 @@ impl LayoutViewPanel {
             .read(cx)
             .unproject_bounds(selection_bounds, cx);
 
-        let selected_fixtures = DemexUiState::patch(cx)
-            .read(cx)
-            .layout()
+        let selected_layout = *self.selected_layout.read(cx);
+        let selected_fixtures = DemexUiState::patch(cx).read(cx).layout_pool()[selected_layout]
             .fixtures()
             .iter()
-            .filter(|fixture| {
-                unprojected_selection_bounds.contains(&fixture.position().to_gpui_point())
-            })
+            .flat_map(|fixture| fixture.get_draw_entries())
+            .filter(|fixture| unprojected_selection_bounds.contains(&fixture.pos))
             .sorted_by(|a, b| {
-                a.position()
-                    .gpui_distance_to(&world_selection_origin)
-                    .partial_cmp(&b.position().gpui_distance_to(&world_selection_origin))
+                a.pos
+                    .relative_to(&world_selection_origin)
+                    .magnitude()
+                    .partial_cmp(&b.pos.relative_to(&world_selection_origin).magnitude())
                     .unwrap_or(Ordering::Equal)
             })
-            .map(|fixture| *fixture.fixture_path())
+            .map(|fixture| fixture.fixture_path)
             .collect::<Vec<_>>();
 
         DemexEngineHandler::engine(cx).exec_ui(Action::AddFixturesToSelection(selected_fixtures));
@@ -273,6 +284,13 @@ impl LayoutViewPanel {
         });
         cx.notify();
     }
+
+    fn handle_tab_clicked(&mut self, tab: &usize, _: &mut Window, cx: &mut Context<Self>) {
+        self.selected_layout.update(cx, |selected_layout, cx| {
+            *selected_layout = *tab;
+            cx.notify();
+        });
+    }
 }
 
 impl LayoutViewPanel {
@@ -283,19 +301,24 @@ impl LayoutViewPanel {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let layout = DemexUiState::patch(cx).read(cx).layout();
-        let fixture_selection = DemexUiState::fixture_selection(cx).read(cx);
+        let selected_layout = *self.selected_layout.read(cx);
+
+        // TODO: fix this
+        let layout = &DemexUiState::patch(cx).read(cx).layout_pool()[selected_layout].clone();
+
+        let fixture_selection = DemexUiState::fixture_selection(cx)
+            .read(cx)
+            .as_ref()
+            .map(|fs| fs.selection().clone());
 
         window.paint_quad(fill(bounds, black()));
 
-        for fixture in layout.fixtures() {
-            let args = FixtureLayoutEntryDrawArgs {
-                is_selected: fixture_selection
-                    .as_ref()
-                    .is_some_and(|fs| fs.selection().has_fixture(fixture.fixture_path())),
-            };
+        let args = FixtureLayoutEntryDrawArgs {
+            selection: fixture_selection.as_ref(),
+        };
 
-            fixture.draw(args, self.projection.read(cx), window, cx);
+        for fixture in layout.fixtures() {
+            fixture.draw(args.clone(), &self.projection, window, cx);
         }
 
         if let Some(selection_start_pos) = *self.selection_start_mouse_pos.read(cx) {
@@ -326,8 +349,17 @@ impl Render for LayoutViewPanel {
     ) -> impl IntoElement {
         let screen_bounds = self.screen_bounds.clone();
 
+        let layouts = DemexUiState::patch(cx).read(cx).layout_pool();
+        let selected_layout = *self.selected_layout.read(cx);
+
         v_flex()
             .size_full()
+            .child(
+                TabBar::new("layout-selector")
+                    .children(layouts.iter().map(|l| l.name().to_string()))
+                    .selected_index(selected_layout)
+                    .on_click(cx.listener(Self::handle_tab_clicked)),
+            )
             .child(
                 h_flex()
                     .w_full()

@@ -1,3 +1,5 @@
+use std::ops::Mul;
+
 use gpui::{App, Bounds, Entity, Pixels, Point, Size, point, px, size};
 
 #[derive(Debug, Clone)]
@@ -17,7 +19,11 @@ impl LayoutProjection {
     }
 
     pub fn reset(&mut self) {
-        self.zoom = 1.0;
+        self.reset_with_zoom(1.0);
+    }
+
+    pub fn reset_with_zoom(&mut self, zoom: f32) {
+        self.zoom = zoom;
         self.center = Point::default();
     }
 
@@ -86,8 +92,12 @@ impl LayoutProjection {
         self.unproject_bounds(*screen, cx)
     }
 
-    pub fn scale(&self, scale: f32) -> f32 {
+    pub fn scale<T: Mul<f32>>(&self, scale: T) -> T::Output {
         scale * self.zoom
+    }
+
+    pub fn unscale<T: Mul<f32>>(&self, scale: T) -> T::Output {
+        scale * (1.0 / self.zoom)
     }
 
     pub fn scale_point(&self, point: Point<Pixels>) -> Point<Pixels> {
@@ -111,6 +121,15 @@ pub trait PosExt {
     fn gpui_distance_to(self, other: &Point<Pixels>) -> f64;
 }
 impl PosExt for emath::Pos2 {
+    fn to_gpui_point(self) -> Point<Pixels> {
+        point(px(self.x), px(self.y))
+    }
+
+    fn gpui_distance_to(self, other: &Point<Pixels>) -> f64 {
+        self.to_gpui_point().relative_to(other).magnitude()
+    }
+}
+impl PosExt for emath::Vec2 {
     fn to_gpui_point(self) -> Point<Pixels> {
         point(px(self.x), px(self.y))
     }

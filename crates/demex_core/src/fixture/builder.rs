@@ -20,8 +20,8 @@ use gdtf::{dmx_mode::RelationType, geometry::AnyGeometry};
 use crate::{
     channel3::{attribute::FixtureChannel3Attribute, clamped_value::ClampedValue},
     fixture::{
-        error::FixtureError, Fixture, FixtureChannelFunction, FixtureChannelFunctionKind,
-        FixtureId, FixturePath, GdtfFixturePatch, Relation, RelationKind,
+        Fixture, FixtureChannelFunction, FixtureChannelFunctionKind, FixtureId, FixturePath,
+        GdtfFixturePatch, Relation, RelationKind, error::FixtureError,
     },
     patch::FixtureTypeList,
 };

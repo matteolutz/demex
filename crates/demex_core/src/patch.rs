@@ -10,16 +10,15 @@ use crate::{
     fixture::{
         Fixture, FixturePath, GdtfFixturePatch, builder::FixtureBuilder, error::FixtureError,
     },
+    layout::FixtureLayoutPool,
 };
-
-use super::layout::FixtureLayout;
 
 pub type FixtureTypeList = [gdtf::fixture_type::FixtureType];
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SerializablePatch {
     fixtures: Vec<GdtfFixturePatch>,
-    layout: FixtureLayout,
+    layout_pool: FixtureLayoutPool,
     outputs: Vec<DemexDmxOutputConfig>,
 }
 
@@ -76,51 +75,8 @@ impl Patch {
             .find(|ft| ft.fixture_type_id == id)
     }
 
-    /*
-    pub fn fixture_type_and_dmx_mode<'a>(
-        &'a self,
-        fixture: &GdtfFixturePatch,
-    ) -> Result<
-        (
-            &'a gdtf::fixture_type::FixtureType,
-            &'a gdtf::dmx_mode::DmxMode,
-        ),
-        FixtureError,
-    > {
-        let fixture_type = self
-            .fixture_types
-            .iter()
-            .find(|ft| ft.fixture_type_id == fixture.fixture_type_id)
-            .ok_or_else(|| FixtureError::GdtfFixtureTypeNotFound(fixture.fixture_type_id))?;
-
-        let dmx_mode = fixture_type
-            .dmx_mode(&fixture.fixture_type_dmx_mode)
-            .ok_or(FixtureError::GdtfFixtureDmxModeNotFound(
-                fixture.fixture_type_dmx_mode.clone(),
-            ))?;
-
-        Ok((fixture_type, dmx_mode))
-    }
-
-    pub fn fixture_type_and_dmx_mode_by_id<'a>(
-        &'a self,
-        fixture_id: u32,
-    ) -> Result<
-        (
-            &'a gdtf::fixture_type::FixtureType,
-            &'a gdtf::dmx_mode::DmxMode,
-            &'a GdtfFixturePatch,
-        ),
-        FixtureError,
-    > {
-        let fixture = self.fixture(fixture_id)?;
-        self.fixture_type_and_dmx_mode(fixture)
-            .map(|(t, m)| (t, m, fixture))
-    }
-    */
-
-    pub fn layout(&self) -> &FixtureLayout {
-        &self.patch.layout
+    pub fn layout_pool(&self) -> &FixtureLayoutPool {
+        &self.patch.layout_pool
     }
 
     pub fn output_configs(&self) -> &[DemexDmxOutputConfig] {
