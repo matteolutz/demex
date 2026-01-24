@@ -215,25 +215,25 @@ impl LayoutViewPanel {
         let selection_bounds =
             Bounds::from_corners(start_pos.min(&evt.position), start_pos.max(&evt.position));
 
-        let unprojected_selection_bounds = self
-            .projection
-            .read(cx)
-            .unproject_bounds(selection_bounds, cx);
-
         let selected_layout = *self.selected_layout.read(cx);
+
         let selected_fixtures = DemexUiState::patch(cx).read(cx).layout_pool()[selected_layout]
             .fixtures()
             .iter()
             .flat_map(|fixture| fixture.get_draw_entries())
-            .filter(|fixture| unprojected_selection_bounds.contains(&fixture.pos))
-            .sorted_by(|a, b| {
-                a.pos
+            .map(|entry| {
+                let projected_pos = self.projection.read(cx).project(entry.pos, cx);
+                (entry, projected_pos)
+            })
+            .filter(|(_, pos)| selection_bounds.contains(&pos))
+            .sorted_by(|(_, a_pos), (_, b_pos)| {
+                a_pos
                     .relative_to(&world_selection_origin)
                     .magnitude()
-                    .partial_cmp(&b.pos.relative_to(&world_selection_origin).magnitude())
+                    .partial_cmp(&b_pos.relative_to(&world_selection_origin).magnitude())
                     .unwrap_or(Ordering::Equal)
             })
-            .map(|fixture| fixture.fixture_path)
+            .map(|(entry, _)| entry.fixture_path)
             .collect::<Vec<_>>();
 
         DemexEngineHandler::engine(cx).exec_ui(Action::AddFixturesToSelection(selected_fixtures));

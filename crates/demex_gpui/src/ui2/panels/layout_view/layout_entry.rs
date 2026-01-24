@@ -15,6 +15,7 @@ use crate::{
     ui2::panels::layout_view::layout_projection::{LayoutProjection, PosExt},
 };
 
+#[derive(Debug)]
 pub(super) struct FixtureLayoutEntryDrawEntry {
     pub entry_type: FixtureLayoutEntryType,
     pub fixture_path: FixturePath,

@@ -81,9 +81,12 @@ impl LayoutProjection {
 
     /// Unproject a given screen bounsd onto world bounds.
     pub fn unproject_bounds(&self, screen_bounds: Bounds<Pixels>, cx: &App) -> Bounds<Pixels> {
-        let origin = self.unproject(screen_bounds.origin, cx);
+        /*let origin = self.unproject(screen_bounds.origin, cx);
         let size = self.unscale_size(screen_bounds.size);
-        Bounds { origin, size }
+        Bounds { origin, size }*/
+        let top_left = self.unproject(screen_bounds.origin, cx);
+        let bottom_right = self.unproject(screen_bounds.bottom_right(), cx);
+        Bounds::from_corners(top_left, bottom_right)
     }
 
     /// The visible world bounds of the screen
