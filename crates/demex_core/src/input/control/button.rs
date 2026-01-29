@@ -1,37 +1,30 @@
-use std::time;
-
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    command::{
-        lexer::token::Token,
-        parser::nodes::{
-            action::{
-                Action, ActionIssuer, ValueOrRange,
-                functions::{
-                    go_function::ExecutorGoArgs,
-                    set_function::{SelectionOrSelector, SetFixturePresetArgs},
-                    speedmaster_functions::SpeedMasterTapArgs,
-                    start_function::ExecutorStartArgs,
-                    stomp_function::ExecutorStompArgs,
-                    stop_function::ExecutorStopArgs,
-                },
-                queue::ActionQueue,
+    command::parser::nodes::{
+        action::{
+            Action, ActionIssuer,
+            functions::{
+                go_function::ExecutorGoArgs,
+                set_function::{SelectionOrSelector, SetFixturePresetArgs},
+                speedmaster_functions::SpeedMasterTapArgs,
+                start_function::ExecutorStartArgs,
+                stomp_function::ExecutorStompArgs,
+                stop_function::ExecutorStopArgs,
             },
-            fixture_selector::{FixtureSelector, FixtureSelectorContext, FixtureSelectorError},
+            queue::ActionQueue,
         },
+        fixture_selector::FixtureSelector,
     },
-    event::{DemexEvent, list::DemexEventList},
+    event::DemexEvent,
     input::{
-        DemexInputDeviceUpdateArgs, control::DemexInputDeviceControlTrait,
-        error::DemexInputDeviceError, event::DemexInputDeviceButtonUpdate,
+        DemexInputDeviceUpdateArgs,
+        control::{DemexInputDeviceControlAssignmentDelegate, DemexInputDeviceControlDelegate},
+        error::DemexInputDeviceError,
+        event::DemexInputDeviceButtonUpdate,
     },
-    patch::Patch,
-    presets::{PresetHandler, preset::FixturePresetId},
+    presets::preset::FixturePresetId,
     selection::FixtureSelection,
-    state::fixture_state_handler::FixtureStateHandler,
-    timing::TimingHandler,
-    updatables::UpdatableHandler,
 };
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
@@ -171,36 +164,14 @@ impl DemexInputButton {
     }
 }
 
-impl DemexInputDeviceControlTrait<DemexInputDeviceButtonUpdate> for DemexInputButton {
-    fn initial_state(
-        &self,
-        args: DemexInputDeviceUpdateArgs,
-    ) -> Result<DemexInputDeviceButtonUpdate, DemexInputDeviceError> {
-        todo!()
-        /*
-        match self {
-            Self::ExecutorFlash { id, .. } | Self::ExecutorGo(id) | Self::ExecutorStop(id) => {
-                let executor = args
-                    .updatable_handler
-                    .executor(*id)
-                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+impl DemexInputDeviceControlDelegate for DemexInputButton {
+    type Update = DemexInputDeviceButtonUpdate;
 
-                if executor.is_active() {
-                    Ok(DemexInputDeviceButtonUpdate::ButtonActive)
-                } else {
-                    Ok(DemexInputDeviceButtonUpdate::ButtonInactive)
-                }
-            }
-            _ => Ok(DemexInputDeviceButtonUpdate::default()),
-        }
-        */
-    }
-
-    fn should_update(
+    fn map_event(
         &self,
         _args: DemexInputDeviceUpdateArgs,
         event: &DemexEvent,
-    ) -> Result<Option<DemexInputDeviceButtonUpdate>, DemexInputDeviceError> {
+    ) -> Result<Option<Self::Update>, DemexInputDeviceError> {
         let update = match self {
             Self::ExecutorFlash { id, .. } | Self::ExecutorGo(id) | Self::ExecutorStop(id) => {
                 match event {
@@ -221,5 +192,118 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceButtonUpdate> for DemexInputBu
         };
 
         Ok(update)
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub enum DemexInputButtonAssignment {
+    ExecutorGo {
+        executor_id: u32,
+        is_running: bool,
+    },
+    ExecutorStop {
+        executor_id: u32,
+        is_running: bool,
+    },
+    ExecutorFlash {
+        executor_id: u32,
+        stomp: bool,
+
+        is_running: bool,
+    },
+
+    SelectivePreset {
+        selection: Option<FixtureSelection>,
+        preset_id: FixturePresetId,
+    },
+
+    #[warn(deprecated)]
+    FixtureSelector {
+        fixture_selector: FixtureSelector,
+    },
+
+    SpeedMasterTap {
+        speed_master_id: u32,
+    },
+
+    Macro {
+        action: Action,
+    },
+
+    #[default]
+    Unused,
+}
+
+impl DemexInputDeviceControlAssignmentDelegate for DemexInputButtonAssignment {
+    type Control = DemexInputButton;
+
+    fn assign(
+        self,
+    ) -> Result<
+        (
+            Self::Control,
+            Option<<Self::Control as DemexInputDeviceControlDelegate>::Update>,
+        ),
+        DemexInputDeviceError,
+    > {
+        match self {
+            DemexInputButtonAssignment::ExecutorGo {
+                executor_id,
+                is_running,
+            } => Ok((
+                DemexInputButton::ExecutorGo(executor_id),
+                Some(if is_running {
+                    DemexInputDeviceButtonUpdate::ButtonActive
+                } else {
+                    DemexInputDeviceButtonUpdate::ButtonInactive
+                }),
+            )),
+            DemexInputButtonAssignment::ExecutorStop {
+                executor_id,
+                is_running,
+            } => Ok((
+                DemexInputButton::ExecutorStop(executor_id),
+                Some(if is_running {
+                    DemexInputDeviceButtonUpdate::ButtonActive
+                } else {
+                    DemexInputDeviceButtonUpdate::ButtonInactive
+                }),
+            )),
+            DemexInputButtonAssignment::ExecutorFlash {
+                executor_id,
+                stomp,
+                is_running,
+            } => Ok((
+                DemexInputButton::ExecutorFlash {
+                    id: executor_id,
+                    stomp,
+                },
+                Some(if is_running {
+                    DemexInputDeviceButtonUpdate::ButtonActive
+                } else {
+                    DemexInputDeviceButtonUpdate::ButtonInactive
+                }),
+            )),
+            DemexInputButtonAssignment::SelectivePreset {
+                selection,
+                preset_id,
+            } => Ok((
+                DemexInputButton::SelectivePreset {
+                    selection,
+                    preset_id,
+                },
+                None,
+            )),
+            DemexInputButtonAssignment::FixtureSelector { fixture_selector } => {
+                Ok((DemexInputButton::FixtureSelector { fixture_selector }, None))
+            }
+            DemexInputButtonAssignment::SpeedMasterTap { speed_master_id } => {
+                Ok((DemexInputButton::SpeedMasterTap { speed_master_id }, None))
+            }
+            DemexInputButtonAssignment::Macro { action } => {
+                Ok((DemexInputButton::Macro { action }, None))
+            }
+            DemexInputButtonAssignment::Unused => Ok((DemexInputButton::Unused, None)),
+        }
     }
 }

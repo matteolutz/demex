@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     event::{DemexEvent, list::DemexEventList},
     input::{
-        DemexInputDeviceUpdateArgs, control::DemexInputDeviceControlTrait,
+        DemexInputDeviceUpdateArgs, control::DemexInputDeviceControlDelegate,
         error::DemexInputDeviceError, event::DemexInputDeviceFaderUpdate,
     },
     presets::PresetHandler,
@@ -134,27 +134,14 @@ impl DemexInputFader {
     }
 }
 
-impl DemexInputDeviceControlTrait<DemexInputDeviceFaderUpdate> for DemexInputFader {
-    fn initial_state(
-        &self,
-        args: DemexInputDeviceUpdateArgs,
-    ) -> Result<DemexInputDeviceFaderUpdate, DemexInputDeviceError> {
-        todo!()
-        /*
-        self.value(
-            args.fixture_handler,
-            args.updatable_handler,
-            args.timing_handler,
-        )
-        .map(DemexInputDeviceFaderUpdate::FaderValueChange)
-        */
-    }
+impl DemexInputDeviceControlDelegate for DemexInputFader {
+    type Update = DemexInputDeviceFaderUpdate;
 
-    fn should_update(
+    fn map_event(
         &self,
         args: DemexInputDeviceUpdateArgs,
         event: &DemexEvent,
-    ) -> Result<Option<DemexInputDeviceFaderUpdate>, DemexInputDeviceError> {
+    ) -> Result<Option<Self::Update>, DemexInputDeviceError> {
         todo!()
         /*
         let update = match self {

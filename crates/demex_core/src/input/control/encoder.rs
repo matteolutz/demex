@@ -6,7 +6,7 @@ use crate::{
     event::{DemexEvent, list::DemexEventList},
     input::{
         DemexInputDeviceUpdateArgs,
-        control::DemexInputDeviceControlTrait,
+        control::DemexInputDeviceControlDelegate,
         encoder::{get_global_encoder_value, handle_global_encoder_change},
         error::DemexInputDeviceError,
         event::DemexInputDeviceEncoderUpdate,
@@ -73,13 +73,14 @@ impl DemexInputEncoder {
     }
 }
 
-impl DemexInputDeviceControlTrait<DemexInputDeviceEncoderUpdate> for DemexInputEncoder {
-    fn should_update(
+impl DemexInputDeviceControlDelegate for DemexInputEncoder {
+    type Update = DemexInputDeviceEncoderUpdate;
+
+    fn map_event(
         &self,
         args: crate::input::DemexInputDeviceUpdateArgs,
         event: &DemexEvent,
-    ) -> Result<Option<DemexInputDeviceEncoderUpdate>, crate::input::error::DemexInputDeviceError>
-    {
+    ) -> Result<Option<Self::Update>, crate::input::error::DemexInputDeviceError> {
         let update = match self {
             Self::GlobalEncoder { encoder_idx } => {
                 if matches!(event, DemexEvent::GlobalEncoderValueChanged(event_encoder_idx) if event_encoder_idx == encoder_idx)
@@ -99,13 +100,5 @@ impl DemexInputDeviceControlTrait<DemexInputDeviceEncoderUpdate> for DemexInputE
         };
 
         Ok(update)
-    }
-
-    fn initial_state(
-        &self,
-        args: crate::input::DemexInputDeviceUpdateArgs,
-    ) -> Result<DemexInputDeviceEncoderUpdate, crate::input::error::DemexInputDeviceError> {
-        self.value(args)
-            .map(DemexInputDeviceEncoderUpdate::EncoderValueChange)
     }
 }

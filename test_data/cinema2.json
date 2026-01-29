@@ -3668,13 +3668,13 @@
           "data": {
             "Artnet": {
               "broadcast": false,
-              "broadcast_addresses": ["192.168.137.255"],
-              "bind_ip": "192.168.137.144",
+              "broadcast_addresses": ["192.168.2.255"],
+              "bind_ip": "192.168.2.210",
               "universes": [3]
             }
           },
           "device_id": "Controller",
-          "disabled": true
+          "disabled": false
         }
       ]
     }

@@ -15,7 +15,7 @@ use crate::{
     event::list::DemexEventList,
     input::{
         control::{
-            DemexInputDeviceControlTrait, button::DemexInputButton, encoder::DemexInputEncoder,
+            DemexInputDeviceControlDelegate, button::DemexInputButton, encoder::DemexInputEncoder,
             fader::DemexInputFader,
         },
         event::DemexInputDeviceControlUpdate,
