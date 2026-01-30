@@ -19,7 +19,7 @@ use crate::{
             pool_action::{apply_pool_type_to_button, handle_pool_item_click},
             pool_button::{PoolButton, PoolItemButtonIndicatorColor},
             pool_item::{PoolItemNameExt, PoolItemState},
-            pool_quick_actions::{PoolQuickActions, PoolQuickActionsState},
+            pool_quick_actions::PoolQuickActionsState,
         },
         utils::bounds,
     },
@@ -233,13 +233,13 @@ impl Render for Pool {
                 .size_full()
                 .relative()
                 .child(bounds(&self.bounds).absolute().top_0().left_0().size_full())
-                .child(self.render_grid(window, cx))
-                .when_some(
-                    self.bounds.read(cx).clone(),
-                    |this, bounds: Bounds<Pixels>| {
-                        this.child(PoolQuickActions::new(&self.quick_actions_state, bounds))
-                    },
-                ),
+                .child(self.render_grid(window, cx)), /*
+                                                      .when_some(
+                                                          self.bounds.read(cx).clone(),
+                                                          |this, bounds: Bounds<Pixels>| {
+                                                              this.child(PoolQuickActions::new(&self.quick_actions_state, bounds))
+                                                          },
+                                                      ),*/
         )
     }
 }

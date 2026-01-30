@@ -1,8 +1,8 @@
 use std::{any::TypeId, collections::HashMap};
 
 use gpui::{
-    App, AppContext, Context, Entity, Global, PromptButton, PromptLevel, SharedString, Window,
-    WindowHandle,
+    AnyWindowHandle, App, AppContext, Context, Entity, Global, PromptButton, PromptLevel,
+    SharedString, Window, WindowHandle,
 };
 use gpui_component::{Root, notification::Notification};
 
@@ -335,8 +335,8 @@ impl WindowManager {
         (handle, Self::read_dock_window(handle, cx))
     }
 
-    pub fn dock_window_for<'a>(window: &Window, cx: &'a App) -> Option<Entity<DockWindow>> {
-        let window_handle: WindowHandle<Root> = window.window_handle().downcast()?;
+    pub fn dock_window_for<'a>(window: AnyWindowHandle, cx: &'a App) -> Option<Entity<DockWindow>> {
+        let window_handle: WindowHandle<Root> = window.downcast()?;
         Some(Self::dock_window_entity(&window_handle, cx))
     }
 
@@ -351,6 +351,20 @@ impl WindowManager {
     ) -> gpui::Result<R> {
         let handle = &self.dock_windows[0];
         Self::update_dock_window(handle, update, cx)
+    }
+
+    pub fn read_dock_window_handle<'a>(handle: AnyWindowHandle, cx: &'a App) -> &'a DockWindow {
+        let handle = handle.downcast::<Root>().unwrap();
+        Self::dock_window_entity(&handle, cx).read(cx)
+    }
+
+    pub fn update_dock_window_handle<'a, R>(
+        window_handle: AnyWindowHandle,
+        cx: &'a mut App,
+        update: impl FnOnce(&mut DockWindow, &mut Window, &mut Context<DockWindow>) -> R,
+    ) -> gpui::Result<R> {
+        let handle = window_handle.downcast::<Root>().unwrap();
+        Self::update_dock_window(&handle, update, cx)
     }
 
     pub fn dock_windows<'a>(

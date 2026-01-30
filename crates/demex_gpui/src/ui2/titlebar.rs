@@ -1,6 +1,6 @@
 use gpui::{
     AnyElement, App, Context, InteractiveElement, IntoElement, ParentElement, Render, SharedString,
-    Styled, Subscription, TitlebarOptions, Window, div,
+    Styled, Subscription, TitlebarOptions, Window, div, prelude::FluentBuilder,
 };
 use gpui_component::{
     Sizable, TitleBar,
@@ -125,6 +125,27 @@ impl DemexTitleBarConfig {
                                     );
                                 }),
                         )
+                        .when(cfg!(debug_assertions), |this| {
+                            this.child(Button::new("debug").small().link().label("Debug").on_click(
+                                |_, window, cx| {
+                                    let window_handle = window.window_handle();
+
+                                    cx.defer(move |cx| {
+                                        let _ = WindowManager::update_dock_window_handle(
+                                            window_handle,
+                                            cx,
+                                            |dw, window, cx| {
+                                                let context_layer = dw.context_layer();
+
+                                                context_layer.update(cx, |layer, cx| {
+                                                    layer.test(window, cx);
+                                                });
+                                            },
+                                        );
+                                    });
+                                },
+                            ))
+                        })
                         .into_any_element(),
                     h_flex()
                         .px_8()

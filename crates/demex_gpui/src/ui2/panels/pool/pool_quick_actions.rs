@@ -1,11 +1,16 @@
 use std::{collections::HashMap, rc::Rc, time::Duration};
 
 use gpui::{
-    App, Bounds, BoxShadow, Context, ElementId, Entity, InteractiveElement, IntoElement,
+    AnyWindowHandle, App, Bounds, BoxShadow, ElementId, Entity, InteractiveElement, IntoElement,
     ParentElement, Pixels, Point, RenderOnce, SharedString, Styled, Task, Window, div, point,
     prelude::FluentBuilder, px,
 };
 use gpui_component::{ActiveTheme, StyledExt, v_flex};
+
+use crate::ui2::{
+    components::context::{DemexContextLayerContent, DemexContextLayerContentMode},
+    wm::WindowManager,
+};
 
 const QUICK_ACTIONS_TIMEOUT: f32 = 0.5;
 const QUICK_ACTIONS_MOUSE_MOVE_THRESHOLD: f64 = 5.0;
@@ -19,12 +24,14 @@ pub struct PoolQuickAction {
 struct CurrentPoolButton {
     id: ElementId,
 
-    should_display: bool,
+    // should_display: bool,
     timer: Option<Task<()>>,
 
     mouse_down_pos: Point<Pixels>,
     actions: Vec<PoolQuickAction>,
 }
+
+impl CurrentPoolButton {}
 
 #[derive(Default)]
 pub struct PoolQuickActionsState {
@@ -33,80 +40,148 @@ pub struct PoolQuickActionsState {
     pool_button_bounds: HashMap<ElementId, Bounds<Pixels>>,
 }
 
-impl PoolQuickActionsState {
-    pub(super) fn mouse_down(
-        &mut self,
+pub(super) trait PoolQuickActionsStateEntityExtension {
+    fn submit_context(&self, window_handle: AnyWindowHandle, cx: &mut App);
+    fn clear_context(&self, window_handle: AnyWindowHandle, cx: &mut App);
+
+    fn mouse_down(
+        &self,
         pos: Point<Pixels>,
         actions: Vec<PoolQuickAction>,
         id: ElementId,
-        cx: &mut Context<Self>,
+        window: &mut Window,
+        cx: &mut App,
+    );
+    fn mouse_move(&self, pos: Point<Pixels>, id: ElementId, window: &mut Window, cx: &mut App);
+    fn mouse_up(&self, _position: Point<Pixels>, id: ElementId, window: &mut Window, cx: &mut App);
+}
+
+impl PoolQuickActionsStateEntityExtension for Entity<PoolQuickActionsState> {
+    fn submit_context(&self, window_handle: AnyWindowHandle, cx: &mut App) {
+        let state = self.clone();
+
+        cx.defer(move |cx| {
+            let _ = WindowManager::update_dock_window_handle(window_handle, cx, |dw, _, cx| {
+                dw.context_layer().update(cx, |layer, cx| {
+                    layer.set_content(
+                        DemexContextLayerContent {
+                            content_mode: DemexContextLayerContentMode::QuickActions { state },
+                            pos: Point::default(),
+                        },
+                        cx,
+                    );
+                })
+            });
+        });
+    }
+
+    fn clear_context(&self, window_handle: AnyWindowHandle, cx: &mut App) {
+        cx.defer(move |cx| {
+            let _ = WindowManager::update_dock_window_handle(window_handle, cx, |dw, _, cx| {
+                dw.context_layer().update(cx, |layer, cx| {
+                    layer.clear(cx);
+                })
+            });
+        });
+    }
+
+    fn mouse_down(
+        &self,
+        pos: Point<Pixels>,
+        actions: Vec<PoolQuickAction>,
+        id: ElementId,
+        window: &mut Window,
+        cx: &mut App,
     ) {
-        if actions.is_empty() {
-            return;
-        }
+        let entity = self.clone();
 
-        let timer = cx.spawn({
-            let id = id.clone();
-            async move |this, cx| {
-                cx.background_executor()
-                    .timer(Duration::from_secs_f32(QUICK_ACTIONS_TIMEOUT))
-                    .await;
-
-                let _ = this.update(cx, |state, cx| {
-                    let Some(current_pool_button) = state.current_pool_button.as_mut() else {
-                        return;
-                    };
-
-                    if current_pool_button.id != id || current_pool_button.should_display {
-                        return;
-                    }
-
-                    current_pool_button.should_display = true;
-                    cx.notify();
-                });
+        self.update(cx, move |this, cx| {
+            if actions.is_empty() {
+                return;
             }
-        });
 
-        self.current_pool_button = Some(CurrentPoolButton {
-            id,
-            mouse_down_pos: pos,
-            actions,
-            should_display: false,
-            timer: Some(timer),
+            let timer = cx.spawn_in(window, {
+                let id = id.clone();
+                async move |this, cx| {
+                    let window_handle = cx.window_handle();
+
+                    cx.background_executor()
+                        .timer(Duration::from_secs_f32(QUICK_ACTIONS_TIMEOUT))
+                        .await;
+
+                    let _ = this.update(cx, |state, cx| {
+                        let Some(current_pool_button) = state.current_pool_button.as_mut() else {
+                            return;
+                        };
+
+                        if current_pool_button.id != id {
+                            return;
+                        }
+
+                        // current_pool_button.should_display = true;
+                        entity.submit_context(window_handle, cx);
+                        cx.notify();
+                    });
+                }
+            });
+
+            this.current_pool_button = Some(CurrentPoolButton {
+                id,
+                mouse_down_pos: pos,
+                actions,
+                timer: Some(timer),
+            });
         });
     }
 
-    pub(super) fn mouse_move(&mut self, pos: Point<Pixels>, id: ElementId) {
-        let Some(current_button) = self.current_pool_button.as_mut() else {
-            return;
-        };
+    fn mouse_move(&self, pos: Point<Pixels>, id: ElementId, window: &mut Window, cx: &mut App) {
+        self.update(cx, |this, cx| {
+            let Some(current_button) = this.current_pool_button.as_mut() else {
+                return;
+            };
 
-        if current_button.id != id {
-            return;
-        }
+            if current_button.id != id {
+                return;
+            }
 
-        if current_button.mouse_down_pos.relative_to(&pos).magnitude()
-            < QUICK_ACTIONS_MOUSE_MOVE_THRESHOLD
-        {
-            return;
-        }
+            if current_button.mouse_down_pos.relative_to(&pos).magnitude()
+                < QUICK_ACTIONS_MOUSE_MOVE_THRESHOLD
+            {
+                return;
+            }
 
-        // when the mouse is moved while already being held down,
-        // immediately display the quick actions and stop the timer
-        current_button.should_display = true;
-        let _ = current_button.timer.take();
+            // when the mouse is moved while already being held down,
+            // immediately display the quick actions and stop the timer
+            let _ = current_button.timer.take();
+            self.submit_context(window.window_handle(), cx);
+
+            cx.notify();
+        });
     }
 
-    pub(super) fn mouse_up(&mut self, _position: Point<Pixels>, id: ElementId) {
-        let Some(current_button) = self.current_pool_button.as_ref() else {
-            return;
-        };
+    fn mouse_up(&self, _position: Point<Pixels>, id: ElementId, window: &mut Window, cx: &mut App) {
+        self.update(cx, |this, cx| {
+            let Some(current_button) = this.current_pool_button.as_ref() else {
+                return;
+            };
 
-        if current_button.id != id {
-            return;
-        }
+            if current_button.id != id {
+                return;
+            }
 
-        self.current_pool_button = None;
+            this.current_pool_button = None;
+            self.clear_context(window.window_handle(), cx);
+
+            cx.notify();
+        });
+    }
+}
+
+impl PoolQuickActionsState {
+    fn current_pool_button_bounds(&self) -> Option<Bounds<Pixels>> {
+        self.current_pool_button
+            .as_ref()
+            .and_then(|button| self.pool_button_bounds.get(&button.id).cloned())
     }
 
     pub(super) fn update_bounds(&mut self, id: ElementId, bounds: Bounds<Pixels>) {
@@ -116,17 +191,8 @@ impl PoolQuickActionsState {
 
 #[derive(IntoElement)]
 pub struct PoolQuickActions {
-    state: Entity<PoolQuickActionsState>,
-    container_bounds: Bounds<Pixels>,
-}
-
-impl PoolQuickActions {
-    pub fn new(state: &Entity<PoolQuickActionsState>, container_bounds: Bounds<Pixels>) -> Self {
-        Self {
-            state: state.clone(),
-            container_bounds,
-        }
-    }
+    pub(crate) state: Entity<PoolQuickActionsState>,
+    // container_bounds: Bounds<Pixels>,
 }
 
 impl PoolQuickActions {
@@ -171,26 +237,14 @@ impl PoolQuickActions {
 
 impl RenderOnce for PoolQuickActions {
     fn render(self, _window: &mut gpui::Window, cx: &mut gpui::App) -> impl gpui::IntoElement {
-        let Some(current_pool_button) = self.state.read(cx).current_pool_button.as_ref() else {
+        let Some(button_bounds) = self.state.read(cx).current_pool_button_bounds() else {
             return div();
         };
 
-        if !current_pool_button.should_display {
-            return div();
-        }
+        let current_button = self.state.read(cx).current_pool_button.as_ref().unwrap();
 
-        let Some(current_pool_button_bounds) = self
-            .state
-            .read(cx)
-            .pool_button_bounds
-            .get(&current_pool_button.id)
-        else {
-            return div();
-        };
-
-        let button_center = current_pool_button_bounds.center() - self.container_bounds.origin;
-
-        let container_size = current_pool_button_bounds.size.width + px(80.0);
+        let button_center = button_bounds.center();
+        let container_size = button_bounds.size.width + px(80.0);
 
         div()
             .absolute()
@@ -215,12 +269,12 @@ impl RenderOnce for PoolQuickActions {
                         spread_radius: px(20.0),
                     }])
                     .children((0..4).map(|idx| {
-                        let action = current_pool_button.actions.get(idx);
+                        let action = current_button.actions.get(idx);
                         Self::render_action_button(idx, action, cx)
                     }))
                     .child(div())
                     .children((4..8).map(|idx| {
-                        let action = current_pool_button.actions.get(idx);
+                        let action = current_button.actions.get(idx);
                         Self::render_action_button(idx, action, cx)
                     })),
             )

@@ -24,7 +24,7 @@ use crate::{
                 pool_action::{apply_pool_type_to_button, handle_pool_item_click},
                 pool_button::{PoolButton, PoolItemButtonIndicatorColor},
                 pool_item::{PoolItemNameExt, PoolItemState},
-                pool_quick_actions::{PoolQuickActions, PoolQuickActionsState},
+                pool_quick_actions::PoolQuickActionsState,
                 pool_type::PoolTypeExt,
             },
             toolbar_buttons,
@@ -528,8 +528,9 @@ impl Render for MultiPoolPanel {
                     .child(self.render_dot_grid(window, cx))
                     .child(self.render_grid(window, cx)),
             )
-            .when_some(self.bounds.read(cx).clone(), |this, bounds| {
-                this.child(PoolQuickActions::new(&self.quick_actions_state, bounds))
-            })
+        /*
+        .when_some(self.bounds.read(cx).clone(), |this, bounds| {
+            this.child(PoolQuickActions::new(&self.quick_actions_state, bounds))
+        })*/
     }
 }

@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     engine::{showfile::DemexShowFileManager, state::DemexUiState},
     ui2::{
+        components::context::DemexContextLayer,
         config::AppConfigExt,
         ext::GpuiContextExtension,
         panels::{
@@ -56,6 +57,8 @@ impl DockWindowConfig {
 pub struct DockWindow {
     title_bar: Entity<DemexTitleBar>,
     dock_area: Entity<DockArea>,
+
+    context_layer: Entity<DemexContextLayer>,
 
     _subscriptions: Vec<Subscription>,
 }
@@ -209,6 +212,7 @@ impl DockWindow {
         Self {
             title_bar: cx.new(|cx| DemexTitleBar::dock_window(cx)),
             dock_area,
+            context_layer: cx.new(|_| DemexContextLayer::default()),
             _subscriptions,
         }
     }
@@ -231,6 +235,10 @@ impl DockWindow {
         DockWindowConfig {
             dock_area_state: self.dock_area.read(cx).dump(cx),
         }
+    }
+
+    pub fn context_layer(&self) -> Entity<DemexContextLayer> {
+        self.context_layer.clone()
     }
 
     fn _focus_panel(_dock_item: &mut DockItem, _panel_name: &str) -> bool {
@@ -332,10 +340,12 @@ impl Render for DockWindow {
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
         v_flex()
+            .relative()
             .size_full()
             .child(self.title_bar.clone())
             .child(self.dock_area.clone())
             .child(self.render_status_bar(window, cx))
+            .child(self.context_layer.clone())
             .children(Root::render_dialog_layer(window, cx))
             .children(Root::render_sheet_layer(window, cx))
             .children(Root::render_notification_layer(window, cx))

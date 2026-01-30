@@ -7,7 +7,9 @@ use gpui::{
 };
 use gpui_component::{ActiveTheme, Colorize, Disableable, StyledExt, v_flex};
 
-use crate::ui2::panels::pool::pool_quick_actions::{PoolQuickAction, PoolQuickActionsState};
+use crate::ui2::panels::pool::pool_quick_actions::{
+    PoolQuickAction, PoolQuickActionsState, PoolQuickActionsStateEntityExtension,
+};
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq, Hash)]
 pub enum PoolItemButtonIndicatorColor {
@@ -128,49 +130,38 @@ impl PoolButton {
             let state = state.clone();
             let id = id.clone();
 
-            move |evt, _, cx| {
+            move |evt, window, cx| {
                 let quick_actions = quick_actions.clone();
                 let id = id.clone();
 
-                state.update(cx, |state, cx| {
-                    state.mouse_down(evt.position, quick_actions, id, cx);
-                })
+                state.mouse_down(evt.position, quick_actions, id, window, cx);
             }
         })
         .on_mouse_up(MouseButton::Left, {
             let state = state.clone();
             let id = id.clone();
 
-            move |evt, _, cx| {
+            move |evt, window, cx| {
                 let id = id.clone();
-                state.update(cx, |state, cx| {
-                    state.mouse_up(evt.position, id);
-                    cx.notify();
-                })
+                state.mouse_up(evt.position, id, window, cx);
             }
         })
         .on_mouse_move({
             let state = state.clone();
             let id = id.clone();
 
-            move |evt, _, cx| {
+            move |evt, window, cx| {
                 let id = id.clone();
-                state.update(cx, |state, cx| {
-                    state.mouse_move(evt.position, id);
-                    cx.notify();
-                })
+                state.mouse_move(evt.position, id, window, cx);
             }
         })
         .on_mouse_up_out(MouseButton::Left, {
             let state = state.clone();
             let id = id.clone();
 
-            move |evt, _, cx| {
+            move |evt, window, cx| {
                 let id = id.clone();
-                state.update(cx, |state, cx| {
-                    state.mouse_up(evt.position, id);
-                    cx.notify();
-                })
+                state.mouse_up(evt.position, id, window, cx);
             }
         })
     }
