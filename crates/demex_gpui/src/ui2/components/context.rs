@@ -64,7 +64,6 @@ impl DemexContextLayer {
         cx.notify();
     }
 
-    #[cfg(debug_assertions)]
     pub fn test(&mut self, window: &Window, cx: &mut Context<Self>) {
         let center = window.bounds().center();
         self.set_content(
