@@ -142,7 +142,7 @@ impl PresetHandler {
         timing_handler: &TimingHandler,
         event_list: &mut DemexEventList,
     ) -> Result<(), PresetHandlerError> {
-        let data = FixturePreset::generate_preset_data(
+        let discrete_data = FixturePreset::generate_preset_data(
             patch,
             fixture_handler,
             self,
@@ -154,32 +154,12 @@ impl PresetHandler {
 
         if let Some(preset) = self.presets.get_mut(&id) {
             if should_next {
-                preset.record_next(data)?;
+                preset.record_next(discrete_data, patch)?;
                 return Ok(());
             } else {
                 return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));
             }
         }
-
-        let discrete_data = data
-            .into_iter()
-            .map(|(f_path, values)| {
-                let fixture = patch.fixture(&f_path).unwrap();
-
-                (
-                    f_path,
-                    values
-                        .into_iter()
-                        .map(|(channel, value)| {
-                            (
-                                channel.clone(),
-                                value.to_discrete(fixture, &channel, self, timing_handler),
-                            )
-                        })
-                        .collect::<HashMap<_, _>>(),
-                )
-            })
-            .collect::<HashMap<_, _>>();
 
         let preset = FixturePreset::new(
             id,
@@ -237,7 +217,7 @@ impl PresetHandler {
     ) -> Result<usize, PresetHandlerError> {
         let preset = self.get_preset(id)?;
 
-        let new_data = FixturePreset::generate_preset_data(
+        let discrete_data = FixturePreset::generate_preset_data(
             patch,
             fixture_handler,
             self,
@@ -246,26 +226,6 @@ impl PresetHandler {
             fixture_selector_context,
             preset.id().feature_group,
         )?;
-
-        let discrete_data = new_data
-            .into_iter()
-            .map(|(f_path, values)| {
-                let fixture = patch.fixture(&f_path).unwrap();
-
-                (
-                    f_path,
-                    values
-                        .into_iter()
-                        .map(|(channel, value)| {
-                            (
-                                channel.clone(),
-                                value.to_discrete(fixture, &channel, self, timing_handler),
-                            )
-                        })
-                        .collect::<HashMap<_, _>>(),
-                )
-            })
-            .collect::<HashMap<_, _>>();
 
         let preset = self.get_preset_mut(id)?;
 

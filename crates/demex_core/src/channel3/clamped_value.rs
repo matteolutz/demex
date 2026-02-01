@@ -12,7 +12,11 @@
  * the Free Software Foundation, version 3.
  */
 
-use std::{fmt, num, ops::Mul, str};
+use std::{
+    fmt, num,
+    ops::{Add, Mul},
+    str,
+};
 
 /// A clamped value.
 ///
@@ -142,6 +146,15 @@ impl Mul<f32> for ClampedValue {
 
     fn mul(self, rhs: f32) -> Self::Output {
         let val = self.as_f32() * rhs;
+        val.into()
+    }
+}
+
+impl Add<ClampedValue> for ClampedValue {
+    type Output = ClampedValue;
+
+    fn add(self, rhs: ClampedValue) -> Self::Output {
+        let val = self.as_f32() + rhs.as_f32();
         val.into()
     }
 }

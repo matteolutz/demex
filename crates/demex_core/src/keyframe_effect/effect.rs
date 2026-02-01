@@ -1,7 +1,4 @@
-use std::{
-    collections::{BTreeSet, HashMap},
-    f32,
-};
+use std::{collections::HashMap, f32};
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -16,6 +13,7 @@ use crate::{
         effect_keyframe::KeyframeEffectKeyframe,
         effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_layer::KeyframeEffectLayer,
     },
+    patch::Patch,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -26,23 +24,13 @@ pub struct KeyframeEffect {
 impl KeyframeEffect {
     pub fn from_data(
         data: HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>>,
+        patch: &Patch,
     ) -> Self {
-        let layer = KeyframeEffectLayer::new(vec![KeyframeEffectKeyframe::new(
+        let layer = KeyframeEffectLayer::new(vec![KeyframeEffectKeyframe::from_data(
             0.0,
-            data.into_iter()
-                .map(|(f_id, values)| {
-                    (
-                        f_id,
-                        values
-                            .into_iter()
-                            .map(|(channel, value)| {
-                                (channel, FixtureChannelValue3::Discrete(value))
-                            })
-                            .collect::<HashMap<_, _>>(),
-                    )
-                })
-                .collect::<HashMap<_, _>>(),
+            data,
             KeyframeEffectKeyframeCurve::default(),
+            patch,
         )]);
 
         Self {
@@ -54,11 +42,10 @@ impl KeyframeEffect {
         &mut self.layers
     }
 
-    pub fn affected_fixtures(&self) -> BTreeSet<FixturePath> {
+    pub fn is_affected(&self, fixture_path: &FixturePath) -> bool {
         self.layers
             .iter()
-            .flat_map(|layer| layer.affected_fixtures())
-            .collect()
+            .any(|layer| layer.is_affected(fixture_path))
     }
 
     pub fn affected_attributes_for_fixture(
@@ -86,9 +73,12 @@ impl KeyframeEffect {
         // convert time_adjusted to a value between 0.0 and 1.0 (from 0.0 to 2π)
         let t = (time_adjusted % (2.0 * f32::consts::PI)) / (2.0 * f32::consts::PI);
 
-        self.layers
+        let value = self
+            .layers
             .iter()
             .flat_map(|layer| layer.value(fixture_path, attribute, t))
-            .next()
+            .next()?;
+
+        Some(FixtureChannelValue3::discrete(value))
     }
 }

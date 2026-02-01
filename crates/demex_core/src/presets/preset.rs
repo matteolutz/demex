@@ -178,17 +178,17 @@ impl FixturePreset {
         patch: &Patch,
         fixture_handler: &FixtureStateHandler,
         preset_handler: &mut PresetHandler,
-        _timing_handler: &TimingHandler,
+        timing_handler: &TimingHandler,
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         feature_group: FixtureChannel3FeatureGroup,
     ) -> Result<
-        HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelValue3>>,
+        HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>>,
         PresetHandlerError,
     > {
         let mut data: HashMap<
             FixturePath,
-            HashMap<FixtureChannel3Attribute, FixtureChannelValue3>,
+            HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>,
         > = HashMap::new();
 
         for fixture_path in fixture_selector
@@ -235,7 +235,12 @@ impl FixturePreset {
                     continue;
                 }
 
-                new_values.insert(*attribute, value.clone());
+                new_values.insert(
+                    *attribute,
+                    value
+                        .clone()
+                        .to_discrete(fixture, attribute, preset_handler, timing_handler),
+                );
             }
 
             // if we have values for this fixture, insert them
@@ -379,11 +384,9 @@ impl FixturePreset {
             }
             FixturePresetData::FeatureEffect { .. } => FixturePresetTarget::AllSelected,
             FixturePresetData::KeyframeEffect { runtime } => {
-                let affected_fixtures = runtime
-                    .effect()
-                    .affected_fixtures()
+                let affected_fixtures = selected_fixtures
                     .iter()
-                    .filter(|fixture_path| selected_fixtures.contains(fixture_path))
+                    .filter(|f_path| runtime.effect().is_affected(f_path))
                     .count();
 
                 if affected_fixtures == 0 {
@@ -552,27 +555,40 @@ impl FixturePreset {
 
     pub fn record_next(
         &mut self,
-        data: HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelValue3>>,
+        data: HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>>,
+        patch: &Patch,
     ) -> Result<(), PresetHandlerError> {
         match &mut self.data {
             FixturePresetData::FeatureEffect { .. } => {
                 Err(PresetHandlerError::PresetCannotRecordNextKeyframe(self.id))
             }
             FixturePresetData::KeyframeEffect { runtime } => {
-                runtime.effect_mut().layers_mut()[0].add_keyframe(KeyframeEffectKeyframe::new(
-                    0.0,
-                    data,
-                    KeyframeEffectKeyframeCurve::default(),
-                ));
+                runtime.effect_mut().layers_mut()[0].add_keyframe(
+                    KeyframeEffectKeyframe::from_data(
+                        0.0,
+                        data,
+                        KeyframeEffectKeyframeCurve::default(),
+                        patch,
+                    ),
+                );
 
                 Ok(())
             }
-            FixturePresetData::Default { data } => {
+            FixturePresetData::Default { data: preset_data } => {
+                let mut effect = KeyframeEffect::from_data(preset_data.clone(), patch);
+                effect.layers_mut()[0].add_keyframe(KeyframeEffectKeyframe::from_data(
+                    0.0,
+                    data,
+                    KeyframeEffectKeyframeCurve::default(),
+                    patch,
+                ));
+
                 let effect_runtime = KeyframeEffectRuntime::new(
-                    KeyframeEffect::from_data(data.clone()),
+                    effect,
                     EffectSpeed::default(),
                     RuntimePhase::default(),
                 );
+
                 self.data = FixturePresetData::KeyframeEffect {
                     runtime: effect_runtime,
                 };

@@ -406,6 +406,11 @@ impl FixturePath {
         self.ids[0]
     }
 
+    pub fn with_root(mut self, root_id: FixtureId) -> Self {
+        self.ids[0] = root_id;
+        self
+    }
+
     /// Returns the last [FixtureId] in the path.
     pub fn last(&self) -> FixtureId {
         let l = self.len();
