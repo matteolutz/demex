@@ -25,7 +25,10 @@ use nodes::{
 
 use crate::{
     channel3::{
-        attribute::FixtureChannel3Attribute, feature::feature_type::FixtureChannel3FeatureType,
+        attribute::FixtureChannel3Attribute,
+        feature::{
+            feature_group::FixtureChannel3FeatureGroup, feature_type::FixtureChannel3FeatureType,
+        },
     },
     command::{
         lexer::token::Token,
@@ -698,6 +701,21 @@ impl<'a> Parser2<'a> {
 
     fn parse_preset_id(&mut self) -> Result<FixturePresetId, ParseError> {
         match self.current_token()? {
+            Token::String(feature_group_name) => {
+                let feature_group = FixtureChannel3FeatureGroup::from_str(feature_group_name)
+                    .map_err(|_| {
+                        ParseError::UnexpectedArgs("Expected feature group name".to_owned())
+                    })?;
+
+                self.advance();
+
+                let preset_id = self.parse_integer()?;
+
+                Ok(FixturePresetId {
+                    feature_group,
+                    preset_id,
+                })
+            }
             &Token::FloatingPoint(_, (feature_group_id, preset_id)) => {
                 self.advance();
                 Ok(FixturePresetId {
