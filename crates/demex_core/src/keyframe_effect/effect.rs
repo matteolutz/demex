@@ -38,6 +38,10 @@ impl KeyframeEffect {
         }
     }
 
+    pub fn layers(&self) -> &[KeyframeEffectLayer] {
+        &self.layers
+    }
+
     pub fn layers_mut(&mut self) -> &mut Vec<KeyframeEffectLayer> {
         &mut self.layers
     }

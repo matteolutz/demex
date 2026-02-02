@@ -5,7 +5,7 @@ use gpui::{
     ParentElement, RenderOnce, SharedString, Stateful, StatefulInteractiveElement, StyleRefinement,
     Styled, Window, canvas, div, prelude::FluentBuilder,
 };
-use gpui_component::{ActiveTheme, Colorize, Disableable, StyledExt, v_flex};
+use gpui_component::{ActiveTheme, Colorize, Disableable, StyledExt, h_flex, v_flex};
 
 use crate::ui2::panels::pool::pool_quick_actions::{
     PoolQuickAction, PoolQuickActionsState, PoolQuickActionsStateEntityExtension,
@@ -43,6 +43,8 @@ pub struct PoolButton {
     quick_actions_state: Option<Entity<PoolQuickActionsState>>,
     quick_actions: Vec<PoolQuickAction>,
 
+    top_right: Option<SharedString>,
+
     disabled: bool,
 
     on_click: Option<Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>>,
@@ -60,6 +62,7 @@ impl PoolButton {
             indicator_color: None,
             quick_actions_state: None,
             quick_actions: Vec::new(),
+            top_right: None,
             disabled: false,
             on_click: None,
         }
@@ -94,6 +97,11 @@ impl PoolButton {
             name: name.into(),
             action: Rc::new(action),
         });
+        self
+    }
+
+    pub fn top_right(mut self, annotation: impl Into<SharedString>) -> Self {
+        self.top_right = Some(annotation.into());
         self
     }
 
@@ -232,6 +240,19 @@ impl RenderOnce for PoolButton {
                     .h_2()
                     .bg(self.indicator_color.unwrap_or_default().color(cx)),
             )
+            .when_some(self.top_right, |this, top_right| {
+                this.child(
+                    h_flex()
+                        .justify_end()
+                        .py_2()
+                        .px_1()
+                        .h_4()
+                        .gap_1()
+                        .text_color(cx.theme().muted_foreground)
+                        .text_xs()
+                        .child(top_right),
+                )
+            })
             .when_some(self.item_id, |this, item_id| {
                 this.child(
                     div()

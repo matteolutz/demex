@@ -19,6 +19,7 @@ pub enum DemexEvent {
     },
 
     PoolItemAdded(PoolType, u32),
+    PoolItemFlagsUpdated(PoolType, u32),
     PoolItemsDeleted {
         pool_type: PoolType,
         from_id: u32,

@@ -234,8 +234,8 @@ impl DemexUiState {
             loop {
                 let _ = cx.update_global(|ui_state: &mut Self, cx| {
                     DemexEngineHandler::send_with(
-                        cx,
                         ui_state.performance.clone(),
+                        cx,
                         ThreadStatsRequest {},
                         |res, this, cx| {
                             res.into_iter().for_each(|(thread, stat)| {
@@ -318,6 +318,23 @@ impl DemexUiState {
         }
     }
 
+    fn update_pool_item(pool_type: PoolType, id: u32, cx: &mut App) {
+        DemexEngineHandler::send(cx, PoolItemRequest { pool_type, id }, move |res, cx| {
+            let Some(item) = res else {
+                return;
+            };
+
+            cx.update_global(|this: &mut Self, cx| {
+                let pool = this.get_or_insert_pool(pool_type, cx);
+                pool.update(cx, |pool_items, cx| {
+                    pool_items.retain(|item| item.id != id);
+                    pool_items.push(item);
+                    cx.notify();
+                });
+            })
+        });
+    }
+
     pub fn update_from_event(&mut self, event: DemexEvent, cx: &mut App) {
         match event {
             DemexEvent::FixtureSelectionChanged(new_selection) => {
@@ -332,25 +349,11 @@ impl DemexUiState {
             }),
             DemexEvent::ObjectPropertyChanged(object, _) => {
                 if let Some((pool_type, id)) = object.get_pool_type_and_id() {
-                    DemexEngineHandler::send(
-                        cx,
-                        PoolItemRequest { pool_type, id },
-                        move |res, cx| {
-                            let Some(item) = res else {
-                                return;
-                            };
-
-                            cx.update_global(|this: &mut Self, cx| {
-                                let pool = this.get_or_insert_pool(pool_type, cx);
-                                pool.update(cx, |pool_items, cx| {
-                                    pool_items.retain(|item| item.id != id);
-                                    pool_items.push(item);
-                                    cx.notify();
-                                });
-                            })
-                        },
-                    );
+                    Self::update_pool_item(pool_type, id, cx);
                 }
+            }
+            DemexEvent::PoolItemFlagsUpdated(pool_type, id) => {
+                Self::update_pool_item(pool_type, id, cx)
             }
             DemexEvent::PoolItemAdded(pool_type, id) => {
                 DemexEngineHandler::send(cx, PoolItemRequest { pool_type, id }, move |res, cx| {

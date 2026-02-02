@@ -168,8 +168,8 @@ impl SequenceEditorPanel {
         };
 
         DemexEngineHandler::send_with(
-            cx,
             self.sequence.clone(),
+            cx,
             SequenceRequest { sequence_id },
             |engine_seq, seq, cx| {
                 *seq = engine_seq;

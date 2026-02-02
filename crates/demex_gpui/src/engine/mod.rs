@@ -136,7 +136,7 @@ impl DemexEngineHandler {
             .detach();
     }
 
-    pub fn send_with<R, T, CB>(cx: &mut App, entity: Entity<T>, req: R, cb: CB)
+    pub fn send_with<R, T, CB>(entity: Entity<T>, cx: &mut App, req: R, cb: CB)
     where
         R: DemexEngineCommRequest,
         T: 'static,

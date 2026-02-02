@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -34,6 +36,13 @@ impl KeyframeEffectLayer {
         self.keyframes.iter().any(|kf| kf.is_affected(fixture_path))
     }
 
+    pub fn attributes(&self) -> HashSet<FixtureChannel3Attribute> {
+        self.keyframes
+            .iter()
+            .flat_map(|keyframe| keyframe.attributes())
+            .collect()
+    }
+
     pub fn affected_attributes_for_fixture(
         &self,
         fixture_path: &FixturePath,
@@ -43,6 +52,10 @@ impl KeyframeEffectLayer {
             .flat_map(|kf| kf.affected_attributes_for_fixture(fixture_path))
             .flatten()
             .collect()
+    }
+
+    pub fn keyframes(&self) -> &[KeyframeEffectKeyframe] {
+        &self.keyframes
     }
 
     pub fn value(

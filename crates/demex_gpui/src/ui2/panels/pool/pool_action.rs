@@ -11,20 +11,24 @@ use demex_core::{
         },
     },
     engine::comm::ExecutorSequenceRequest,
-    pool::PoolType,
+    has_flag,
+    pool::{PoolItem, PoolType},
     presets::{
         group::FixtureGroupProperty,
-        preset::{FixturePresetId, FixturePresetProperty},
+        preset::{FixturePresetFlags, FixturePresetId, FixturePresetProperty},
     },
     sequence::{SequenceProperty, frontend::FrontendSequence},
 };
-use gpui::App;
+use gpui::{App, prelude::FluentBuilder};
 
 use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},
     ui2::{
         panels::pool::pool_button::PoolButton,
-        window::set_property::{SetPropertyWindow, SetPropertyWindowPropertyType},
+        window::{
+            edit_keyframe_effect::EditKeyframeEffectWindow,
+            set_property::{SetPropertyWindow, SetPropertyWindowPropertyType},
+        },
         wm::{WindowManager, app::WindowManagerAppExt, edit_window::WindowManagerExtension},
     },
 };
@@ -56,6 +60,7 @@ pub fn handle_pool_item_click(pool_type: PoolType, pool_item_id: u32, cx: &mut A
 pub fn apply_pool_type_to_button(
     pool_type: PoolType,
     button: PoolButton,
+    pool_item: Option<&PoolItem>,
     pool_item_id: u32,
 ) -> PoolButton {
     match pool_type {
@@ -115,6 +120,10 @@ pub fn apply_pool_type_to_button(
                 })
         }
         PoolType::Preset(feature_group) => button
+            .when(
+                pool_item.is_some_and(|item| has_flag!(item, FixturePresetFlags::FeatureEffect)),
+                |this| this.top_right("FeFx"),
+            )
             .action("Name", move |_, cx| {
                 WindowManager::open_edit_window::<SetPropertyWindow>(cx, move |window, cx| {
                     SetPropertyWindow::new(
@@ -146,7 +155,20 @@ pub fn apply_pool_type_to_button(
                         });
                     });
                 });
-            }),
+            })
+            .when(
+                pool_item.is_some_and(|item| has_flag!(item, FixturePresetFlags::KeyframeEffect)),
+                |this| {
+                    this.top_right("KFx").action("Edit FX", move |_, cx| {
+                        WindowManager::open_edit_window::<EditKeyframeEffectWindow>(
+                            cx,
+                            move |_, cx| {
+                                EditKeyframeEffectWindow::new((feature_group, pool_item_id), cx)
+                            },
+                        );
+                    })
+                },
+            ),
         PoolType::Group => button.action("Name", move |_, cx| {
             WindowManager::open_edit_window::<SetPropertyWindow>(cx, move |window, cx| {
                 SetPropertyWindow::new(

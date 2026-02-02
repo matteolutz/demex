@@ -2,7 +2,7 @@ use gpui::{
     App, Context, Div, Entity, IntoElement, ParentElement, Pixels, Point, Render, Styled, Window,
     div,
 };
-use gpui_component::{ActiveTheme, StyledExt};
+use gpui_component::ActiveTheme;
 
 use crate::ui2::panels::pool::pool_quick_actions::{PoolQuickActions, PoolQuickActionsState};
 
@@ -32,8 +32,6 @@ impl DemexContextLayerContent {
     }
 
     pub fn render(&self, cx: &App) -> impl IntoElement {
-        log::debug!("rendering context layer content");
-
         match &self.content_mode {
             DemexContextLayerContentMode::QuickActions { state } => (PoolQuickActions {
                 state: state.clone(),

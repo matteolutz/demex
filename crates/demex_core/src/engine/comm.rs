@@ -15,8 +15,10 @@ use crate::{
     },
     event::DemexEvent,
     fixture::FixturePath,
+    keyframe_effect::effect::KeyframeEffect,
     patch::Patch,
     pool::{PoolItem, PoolType},
+    presets::preset::FixturePresetId,
     sequence::{
         cue::CueIdx,
         frontend::{FrontendCue, FrontendSequence},
@@ -113,6 +115,14 @@ pub struct ExecutorSequenceRequest {
 }
 impl DemexEngineCommRequest for ExecutorSequenceRequest {
     type Response = Option<FrontendSequence>;
+}
+
+#[derive(Debug)]
+pub struct KeyframeEffectRequest {
+    pub preset_id: FixturePresetId,
+}
+impl DemexEngineCommRequest for KeyframeEffectRequest {
+    type Response = Option<KeyframeEffect>;
 }
 
 #[derive(Debug)]

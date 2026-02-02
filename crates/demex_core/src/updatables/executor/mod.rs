@@ -300,6 +300,7 @@ impl From<&DemexExecutor> for PoolItem {
         PoolItem {
             id: value.id,
             name: PoolItemName::reference(PoolType::Sequence, value.runtime.sequence_id()),
+            flags: 0,
         }
     }
 }

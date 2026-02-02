@@ -35,10 +35,24 @@ impl std::fmt::Display for PoolItemName {
     }
 }
 
+#[macro_export]
+macro_rules! has_flag {
+    ($pool_item:ident, $flag:expr) => {
+        $pool_item.has_flag($flag as u32)
+    };
+}
+
 #[derive(Debug)]
 pub struct PoolItem {
     pub id: u32,
     pub name: PoolItemName,
+    pub(crate) flags: u32,
+}
+
+impl PoolItem {
+    pub fn has_flag(&self, flag: u32) -> bool {
+        self.flags & flag != 0
+    }
 }
 
 impl PartialOrd for PoolItem {

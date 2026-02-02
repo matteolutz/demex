@@ -53,6 +53,7 @@ impl From<&MMacro> for PoolItem {
         PoolItem {
             id: value.id,
             name: value.name.clone().into(),
+            flags: 0,
         }
     }
 }

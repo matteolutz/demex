@@ -14,6 +14,7 @@ use crate::{
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
     effect::{feature::runtime::FeatureEffectRuntime, speed::EffectSpeed},
+    event::{DemexEvent, list::DemexEventList},
     fixture::{Fixture, FixturePath},
     implement_set_property,
     keyframe_effect::{
@@ -21,7 +22,7 @@ use crate::{
         effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_runtime::KeyframeEffectRuntime,
     },
     patch::Patch,
-    pool::PoolItem,
+    pool::{PoolItem, PoolType},
     selection::FixtureSelection,
     state::{fixture_state::FixtureState, fixture_state_handler::FixtureStateHandler},
     timing::TimingHandler,
@@ -42,6 +43,12 @@ impl FixturePresetId {
             feature_group,
             preset_id,
         }
+    }
+}
+
+impl From<(FixtureChannel3FeatureGroup, u32)> for FixturePresetId {
+    fn from((feature_group, preset_id): (FixtureChannel3FeatureGroup, u32)) -> Self {
+        Self::new(feature_group, preset_id)
     }
 }
 
@@ -557,6 +564,7 @@ impl FixturePreset {
         &mut self,
         data: HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>>,
         patch: &Patch,
+        event_list: &mut DemexEventList,
     ) -> Result<(), PresetHandlerError> {
         match &mut self.data {
             FixturePresetData::FeatureEffect { .. } => {
@@ -571,6 +579,11 @@ impl FixturePreset {
                         patch,
                     ),
                 );
+
+                event_list.push(DemexEvent::PoolItemFlagsUpdated(
+                    PoolType::Preset(self.id.feature_group),
+                    self.id.preset_id,
+                ));
 
                 Ok(())
             }
@@ -592,6 +605,11 @@ impl FixturePreset {
                 self.data = FixturePresetData::KeyframeEffect {
                     runtime: effect_runtime,
                 };
+
+                event_list.push(DemexEvent::PoolItemFlagsUpdated(
+                    PoolType::Preset(self.id.feature_group),
+                    self.id.preset_id,
+                ));
 
                 Ok(())
             }
@@ -641,11 +659,30 @@ implement_set_property! {
     Name => name as String
 }
 
+#[repr(u32)]
+pub enum FixturePresetFlags {
+    KeyframeEffect = 0x1 << 1,
+    FeatureEffect = 0x1 << 2,
+}
+
 impl From<&FixturePreset> for PoolItem {
     fn from(value: &FixturePreset) -> Self {
+        let mut flags = 0;
+
+        match value.data {
+            FixturePresetData::FeatureEffect { .. } => {
+                flags |= FixturePresetFlags::FeatureEffect as u32
+            }
+            FixturePresetData::KeyframeEffect { .. } => {
+                flags |= FixturePresetFlags::KeyframeEffect as u32
+            }
+            _ => {}
+        };
+
         PoolItem {
             id: value.id.preset_id,
             name: value.name.clone().into(),
+            flags: flags,
         }
     }
 }

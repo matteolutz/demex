@@ -154,7 +154,7 @@ impl PresetHandler {
 
         if let Some(preset) = self.presets.get_mut(&id) {
             if should_next {
-                preset.record_next(discrete_data, patch)?;
+                preset.record_next(discrete_data, patch, event_list)?;
                 return Ok(());
             } else {
                 return Err(PresetHandlerError::FeaturePresetAlreadyExists(id));

@@ -78,8 +78,8 @@ impl SetPropertyWindow {
             .new(|cx| InputState::new(window, cx).validate(property_type.clone().get_validator()));
 
         DemexEngineHandler::send_with(
-            cx,
             value.clone(),
+            cx,
             ObjectPropertyRequest {
                 object: object.clone(),
                 property: property.clone(),

@@ -24,14 +24,15 @@ use crate::{
         comm::{
             DemexEngineCommEvent, DemexEngineCommRequestDispatcher, DemexEngineCommRequestHandler,
             ExecutorSequenceRequest, FixtureNameRequest, FrontendStateRequest,
-            ObjectPropertyRequest, PoolItemRequest, SequenceCueRequest, SequenceRequest,
-            ShowRequest, ThreadStatsRequest,
+            KeyframeEffectRequest, ObjectPropertyRequest, PoolItemRequest, SequenceCueRequest,
+            SequenceRequest, ShowRequest, ThreadStatsRequest,
         },
         component::ComponentHandle,
         state::{DemexEngineState, DemexFrontendInitState},
     },
     fixture::FixtureChannelFunctionKind,
     patch::{Patch, SerializablePatch},
+    presets::preset::FixturePresetData,
     show::DemexShow,
     thread::{
         DemexThread, DemexThreadHandle, debug::DebugThread, output::OutputThread,
@@ -274,6 +275,16 @@ impl DemexEngine {
                     })
                 } else {
                     None
+                }
+            },
+        );
+        handler.register(
+            |KeyframeEffectRequest { preset_id }: KeyframeEffectRequest, payload| {
+                let preset = payload.show.preset_handler.get_preset(preset_id).ok()?;
+
+                match preset.data() {
+                    FixturePresetData::KeyframeEffect { runtime } => Some(runtime.effect().clone()), // cloning is not ideal, but let's keep it for now
+                    _ => None,
                 }
             },
         );

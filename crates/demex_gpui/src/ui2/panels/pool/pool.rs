@@ -204,7 +204,7 @@ impl Pool {
                     .size(px(element_size))
                     .quick_actions_state(&self.quick_actions_state)
                     .when(true, |this| {
-                        apply_pool_type_to_button(self.pool_type, this, item.id)
+                        apply_pool_type_to_button(self.pool_type, this, Some(item), item.id)
                     })
                     .item_name(item.name.clone().to_name(cx))
                     .on_click({

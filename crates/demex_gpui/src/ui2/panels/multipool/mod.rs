@@ -433,7 +433,12 @@ impl MultiPoolPanel {
                                             .row_end(row as i16 + 2)
                                             .quick_actions_state(&self.quick_actions_state)
                                             .when(true, |this| {
-                                                apply_pool_type_to_button(p.pool_type, this, id)
+                                                apply_pool_type_to_button(
+                                                    p.pool_type,
+                                                    this,
+                                                    pool_item,
+                                                    id,
+                                                )
                                             })
                                             .item_id(id)
                                             .when_some(pool_item, |this, pool_item| {

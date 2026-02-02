@@ -1,4 +1,7 @@
-use gpui::{App, Bounds, Context, Entity, EventEmitter, Pixels, Subscription, Window};
+use gpui::{
+    App, Bounds, Context, Entity, EventEmitter, Pixels, Point, Subscription, Window, point, px,
+};
+use gpui_component::PixelsExt;
 
 pub trait GpuiContextExtension<T> {
     /// Arranges so that [`Context::notify`] will be called for the current context
@@ -68,6 +71,56 @@ impl<'a, T: 'static> GpuiContextExtension<T> for Context<'a, T> {
         move |bounds: Bounds<Pixels>, c: C, window: &mut Window, cx: &mut App| {
             view.update(cx, |view, cx| f(view, bounds, c, window, cx))
                 .ok();
+        }
+    }
+}
+
+pub trait BoundsExt {
+    /// Map a point in the range 0.0..=1.0 to the bounds' dimensions.
+    fn map_point(&self, point: &Point<Pixels>) -> Option<Point<Pixels>>;
+
+    fn map_x(&self, x: Pixels) -> Option<Pixels>;
+    fn map_y(&self, y: Pixels) -> Option<Pixels>;
+
+    fn unmap_x(&self, x: Pixels) -> Option<Pixels>;
+}
+
+impl BoundsExt for Bounds<Pixels> {
+    fn map_x(&self, x: Pixels) -> Option<Pixels> {
+        let x = x.as_f32();
+
+        if x < 0.0 || x > 1.0 {
+            None
+        } else {
+            Some(self.origin.x + (x * self.size.width))
+        }
+    }
+
+    fn map_y(&self, y: Pixels) -> Option<Pixels> {
+        let y = y.as_f32();
+
+        if y < 0.0 || y > 1.0 {
+            None
+        } else {
+            Some(self.origin.y + (y * self.size.height))
+        }
+    }
+
+    fn map_point(&self, relative_point: &Point<Pixels>) -> Option<Point<Pixels>> {
+        let x = self.map_x(relative_point.x);
+        let y = self.map_y(relative_point.y);
+
+        match (x, y) {
+            (Some(x), Some(y)) => Some(point(x, y)),
+            _ => None,
+        }
+    }
+
+    fn unmap_x(&self, x: Pixels) -> Option<Pixels> {
+        if x < self.origin.x || x > self.right() {
+            None
+        } else {
+            Some(px((x - self.origin.x) / self.size.width))
         }
     }
 }
