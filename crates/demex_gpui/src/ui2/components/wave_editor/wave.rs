@@ -5,6 +5,10 @@ use gpui::{Pixels, Point};
 #[derive(Default, Debug)]
 pub struct Wave {
     pub segments: Vec<WaveSegment>,
+    /// Phase offset in rad
+    pub phase_offset: f32,
+    /// Phase length in rad
+    pub phase_length: f32,
 }
 
 impl Wave {

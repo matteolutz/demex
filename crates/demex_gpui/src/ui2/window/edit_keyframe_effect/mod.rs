@@ -135,6 +135,8 @@ impl EditKeyframeEffectWindow {
 
                                 let wave = Wave {
                                     segments: wave_segments,
+                                    phase_offset: 0.0,
+                                    phase_length: 2.0 * std::f32::consts::PI,
                                 };
 
                                 let wave_state = cx.new(|_| WaveEditorState::new(wave));
