@@ -8,11 +8,14 @@ pub use executor::*;
 
 pub mod list;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DemexEvent {
     ExecutorGo(u32),
     ExecutorStop(u32),
-    ExecutorFaderValueChanged(u32),
+    ExecutorFaderValueChanged {
+        executor_id: u32,
+        value: f32,
+    },
     ExecutorUpdateEvent {
         id: u32,
         event: DemexExecutorUpdateEvent,
@@ -31,11 +34,17 @@ pub enum DemexEvent {
         to_id: u32,
     },
 
-    GrandmasterFaderValueChanged,
+    GrandmasterFaderValueChanged(f32),
 
-    GroupmasterValueChanged(u32),
+    GroupmasterValueChanged {
+        group_master_id: u32,
+        value: f32,
+    },
 
-    SpeedmasterFaderValueChanged(u32),
+    SpeedmasterFaderValueChanged {
+        speed_master_id: u32,
+        bpm: f32,
+    },
 
     GlobalEncoderValueChanged(u32),
 

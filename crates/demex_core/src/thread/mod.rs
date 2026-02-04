@@ -18,6 +18,9 @@ pub trait DemexThreadDelegate: Send + Sized + 'static {
     /// Iterations per second.
     fn its() -> f64;
 
+    /// Initialize the thread. This is already executed on the thread.
+    fn init(&mut self) {}
+
     /// Update the thread. Returns true if the thread should stop.
     fn update(&mut self, thread: &mut DemexThread<Self>) -> bool;
 }
@@ -110,6 +113,8 @@ impl<D: DemexThreadDelegate> DemexThread<D> {
         };
 
         let join_handle = thread::spawn(move || {
+            delegate.init();
+
             let mut last_update = std::time::Instant::now();
 
             loop {

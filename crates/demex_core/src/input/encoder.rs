@@ -1,7 +1,6 @@
 use crate::{
     EncoderChannels, command::parser::nodes::fixture_selector::FixtureSelectorContext,
-    patch::Patch, presets::PresetHandler, state::fixture_state_handler::FixtureStateHandler,
-    timing::TimingHandler,
+    patch::Patch, state::fixture_state_handler::FixtureStateHandler,
 };
 
 pub(crate) fn get_global_encoder_value(

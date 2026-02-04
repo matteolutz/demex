@@ -259,7 +259,6 @@ impl DemexInputDeviceProfile for ApcMiniMk2InputDeviceProfile {
 
     fn handle_events(
         &mut self,
-        _args: DemexInputDeviceUpdateArgs,
         events: &[crate::input::event::DemexInputDeviceControlUpdate],
     ) -> Result<(), DemexInputDeviceError> {
         for update in events {

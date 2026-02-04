@@ -21,7 +21,6 @@ impl DebugDeviceProfile {
 impl DemexInputDeviceProfile for DebugDeviceProfile {
     fn handle_events(
         &mut self,
-        _args: DemexInputDeviceUpdateArgs,
         _events: &[crate::input::event::DemexInputDeviceControlUpdate],
     ) -> Result<(), crate::input::error::DemexInputDeviceError> {
         Ok(())

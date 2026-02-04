@@ -3,7 +3,14 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::input::{
-    control::{button::DemexInputButton, encoder::DemexInputEncoder, fader::DemexInputFader},
+    control::{
+        DemexInputDeviceControlAssignmentDelegate,
+        button::{DemexInputButton, DemexInputButtonAssignment},
+        encoder::DemexInputEncoder,
+        fader::{DemexInputFader, DemexInputFaderAssignment},
+    },
+    error::DemexInputDeviceError,
+    event::DemexInputDeviceControlUpdate,
     profile::{behringer::BehringerXTouchCompactDeviceProfile, debug::DebugDeviceProfile},
 };
 
@@ -22,6 +29,7 @@ pub struct DemexInputDeviceConfig {
 
     #[serde(default)]
     encoders: HashMap<u32, DemexInputEncoder>,
+
     profile_type: DemexInputDeviceProfileType,
 }
 
@@ -86,6 +94,80 @@ impl DemexInputDevice {
 
     pub fn config(&self) -> &DemexInputDeviceConfig {
         &self.config
+    }
+
+    pub fn assign_button(
+        &mut self,
+        button_id: u32,
+        assignment: DemexInputButtonAssignment,
+    ) -> Result<(), DemexInputDeviceError> {
+        if self.config.buttons.contains_key(&button_id) {
+            Err(DemexInputDeviceError::ButtonAlreadyAssigned(button_id))
+        } else {
+            let assignment_result = assignment.assign()?;
+            let button = self
+                .config
+                .buttons
+                .entry(button_id)
+                .or_insert(assignment_result.control);
+
+            if let Some(init_event) = assignment_result.init_event {
+                self.profile
+                    .handle_events(&[DemexInputDeviceControlUpdate::Button {
+                        id: button_id,
+                        button,
+                        update: init_event,
+                    }])?;
+            }
+
+            Ok(())
+        }
+    }
+
+    pub fn unassign_button(&mut self, button_id: u32) -> Result<(), DemexInputDeviceError> {
+        if !self.config.buttons.contains_key(&button_id) {
+            Err(DemexInputDeviceError::ButtonNotAssigned(button_id))
+        } else {
+            self.config.buttons.remove(&button_id);
+            Ok(())
+        }
+    }
+
+    pub fn assign_fader(
+        &mut self,
+        fader_id: u32,
+        assignment: DemexInputFaderAssignment,
+    ) -> Result<(), DemexInputDeviceError> {
+        if self.config.faders.contains_key(&fader_id) {
+            Err(DemexInputDeviceError::FaderAlreadyAssigned(fader_id))
+        } else {
+            let assignment_result = assignment.assign()?;
+            let fader = self
+                .config
+                .faders
+                .entry(fader_id)
+                .or_insert(assignment_result.control);
+
+            if let Some(init_event) = assignment_result.init_event {
+                self.profile
+                    .handle_events(&[DemexInputDeviceControlUpdate::Fader {
+                        id: fader_id,
+                        fader,
+                        update: init_event,
+                    }])?;
+            }
+
+            Ok(())
+        }
+    }
+
+    pub fn unassign_fader(&mut self, fader_id: u32) -> Result<(), DemexInputDeviceError> {
+        if !self.config.faders.contains_key(&fader_id) {
+            Err(DemexInputDeviceError::FaderNotAssigned(fader_id))
+        } else {
+            self.config.faders.remove(&fader_id);
+            Ok(())
+        }
     }
 }
 

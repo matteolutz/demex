@@ -108,6 +108,7 @@ impl DemexEngine {
             show.preset_handler,
             show.updatable_handler,
             show.timing_handler,
+            show.input_device_configs,
             self.patch.clone(),
         );
         let update_thread = DemexThread::start(update_thread_delegate, self.stats());

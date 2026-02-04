@@ -77,7 +77,6 @@ impl MidiTimecodeProfile {
 impl DemexInputDeviceProfile for MidiTimecodeProfile {
     fn handle_events(
         &mut self,
-        _args: DemexInputDeviceUpdateArgs,
         _events: &[crate::input::event::DemexInputDeviceControlUpdate],
     ) -> Result<(), DemexInputDeviceError> {
         Ok(())

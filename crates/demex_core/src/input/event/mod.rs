@@ -1,5 +1,13 @@
-use crate::input::control::{
-    button::DemexInputButton, encoder::DemexInputEncoder, fader::DemexInputFader,
+use crate::{
+    event::DemexEvent,
+    input::{
+        DemexInputDeviceUpdateArgs,
+        control::{
+            DemexInputDeviceControlDelegate, button::DemexInputButton, encoder::DemexInputEncoder,
+            fader::DemexInputFader,
+        },
+        device::DemexInputDeviceConfig,
+    },
 };
 
 pub mod handler;
@@ -59,4 +67,54 @@ pub enum DemexInputDeviceControlUpdate<'a> {
         button: &'a DemexInputButton,
         update: DemexInputDeviceButtonUpdate,
     },
+}
+
+pub trait DemexInputDeviceConfigExt {
+    fn map_events<'a>(
+        &'a self,
+        args: DemexInputDeviceUpdateArgs<'a>,
+        events: impl IntoIterator<Item = &'a DemexEvent>,
+    ) -> Vec<DemexInputDeviceControlUpdate<'a>>;
+}
+
+impl DemexInputDeviceConfigExt for DemexInputDeviceConfig {
+    fn map_events<'a>(
+        &'a self,
+        args: DemexInputDeviceUpdateArgs<'a>,
+        events: impl IntoIterator<Item = &'a DemexEvent>,
+    ) -> Vec<DemexInputDeviceControlUpdate<'a>> {
+        events
+            .into_iter()
+            .flat_map(|event| {
+                let mut device_events = vec![];
+
+                // buttons
+                for (id, button) in self.buttons() {
+                    if let Some(update) = button.map_event(args.clone(), event).ok().flatten() {
+                        device_events.push(DemexInputDeviceControlUpdate::Button {
+                            button,
+                            update,
+                            id: *id,
+                        });
+                    }
+                }
+
+                // faders
+                for (id, fader) in self.faders() {
+                    if let Some(update) = fader.map_event(args.clone(), event).ok().flatten() {
+                        device_events.push(DemexInputDeviceControlUpdate::Fader {
+                            fader,
+                            update,
+                            id: *id,
+                        });
+                    }
+                }
+
+                // TODO: encoders
+                // TODO: also clean this up
+
+                device_events
+            })
+            .collect()
+    }
 }

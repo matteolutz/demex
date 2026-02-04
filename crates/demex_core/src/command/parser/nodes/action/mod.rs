@@ -31,16 +31,13 @@ use crate::{
     },
     event::{FixtureSelectionWithGroup, list::DemexEventList},
     fixture::FixturePath,
+    input::control::DemexInputDeviceControlUnassignment,
     state::fixture_state_handler::FixtureStateHandler,
     utils::serde::approx_instant,
 };
 
 use crate::{
-    input::{DemexInputDeviceHandler, error::DemexInputDeviceError},
-    patch::Patch,
-    presets::PresetHandler,
-    selection::FixtureSelection,
-    timing::TimingHandler,
+    patch::Patch, presets::PresetHandler, selection::FixtureSelection, timing::TimingHandler,
     updatables::UpdatableHandler,
 };
 
@@ -62,7 +59,6 @@ pub struct DeferredActionRunArgs<'a> {
     pub fixture_handler: &'a mut FixtureStateHandler,
     pub preset_handler: &'a mut PresetHandler,
     pub updatable_handler: &'a mut UpdatableHandler,
-    pub input_device_handler: &'a mut DemexInputDeviceHandler,
     pub timing_handler: &'a mut TimingHandler,
 
     pub fixture_selector_context: FixtureSelectorContext<'a>,
@@ -78,7 +74,6 @@ impl<'a> DeferredActionRunArgs<'a> {
             fixture_handler: self.fixture_handler,
             preset_handler: self.preset_handler,
             updatable_handler: self.updatable_handler,
-            input_device_handler: self.input_device_handler,
             timing_handler: self.timing_handler,
             fixture_selector_context: self.fixture_selector_context,
             event_list: self.event_list,
@@ -94,7 +89,6 @@ pub struct ActionRunArgs<'a> {
     pub fixture_handler: &'a mut FixtureStateHandler,
     pub preset_handler: &'a mut PresetHandler,
     pub updatable_handler: &'a mut UpdatableHandler,
-    pub input_device_handler: &'a mut DemexInputDeviceHandler,
     pub timing_handler: &'a mut TimingHandler,
 
     pub fixture_selector_context: FixtureSelectorContext<'a>,
@@ -251,7 +245,12 @@ pub enum Action {
 
     CueSetTrigger(CueSetTriggerArgs),
 
+    SpeedMasterSetBpm(u32, f32),
     SpeedMasterTap(SpeedMasterTapArgs),
+
+    GroupmasterSetFaderValue(u32, f32),
+
+    GrandmasterSetValue(u8),
 
     RunMacro(u32),
 
@@ -331,11 +330,11 @@ impl Action {
             Self::UnassignInputButton {
                 device_idx,
                 button_id,
-            } => self.run_unassign_input_button(args.input_device_handler, *device_idx, *button_id),
+            } => self.run_unassign_input_button(*device_idx, *button_id),
             Self::UnassignInputFader {
                 device_idx,
                 fader_id,
-            } => self.run_unassign_input_fader(args.input_device_handler, *device_idx, *fader_id),
+            } => self.run_unassign_input_fader(*device_idx, *fader_id),
 
             Self::SetFixtureSelection(selection) => Ok(ActionRunResult::UpdateFixtureSelection(
                 selection.clone().map(|sel| sel.into()),
@@ -484,39 +483,27 @@ impl Action {
 
     fn run_unassign_input_button(
         &self,
-        input_device_handler: &mut DemexInputDeviceHandler,
         device_idx: usize,
         button_id: u32,
     ) -> Result<ActionRunResult, ActionRunError> {
-        let device = input_device_handler
-            .device_mut(device_idx)
-            .map_err(ActionRunError::InputDeviceError)?;
-
-        if device.config.buttons_mut().remove(&button_id).is_none() {
-            return Err(ActionRunError::InputDeviceError(
-                DemexInputDeviceError::ButtonNotAssigned(button_id),
-            ));
-        }
-
-        Ok(ActionRunResult::new())
+        Ok(ActionRunResult::Unassign(
+            DemexInputDeviceControlUnassignment::Button {
+                device_idx,
+                button_id,
+            },
+        ))
     }
 
     fn run_unassign_input_fader(
         &self,
-        input_device_handler: &mut DemexInputDeviceHandler,
         device_idx: usize,
         fader_id: u32,
     ) -> Result<ActionRunResult, ActionRunError> {
-        let device = input_device_handler
-            .device_mut(device_idx)
-            .map_err(ActionRunError::InputDeviceError)?;
-
-        if device.config.faders_mut().remove(&fader_id).is_none() {
-            return Err(ActionRunError::InputDeviceError(
-                DemexInputDeviceError::FaderNotAssigned(fader_id),
-            ));
-        }
-
-        Ok(ActionRunResult::new())
+        Ok(ActionRunResult::Unassign(
+            DemexInputDeviceControlUnassignment::Fader {
+                device_idx,
+                fader_id,
+            },
+        ))
     }
 }

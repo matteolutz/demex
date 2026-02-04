@@ -19,7 +19,10 @@ use crate::{
     event::DemexEvent,
     input::{
         DemexInputDeviceUpdateArgs,
-        control::{DemexInputDeviceControlAssignmentDelegate, DemexInputDeviceControlDelegate},
+        control::{
+            DemexInputControlAssignmentResult, DemexInputDeviceControlAssignmentDelegate,
+            DemexInputDeviceControlDelegate,
+        },
         error::DemexInputDeviceError,
         event::DemexInputDeviceButtonUpdate,
     },
@@ -239,71 +242,75 @@ impl DemexInputDeviceControlAssignmentDelegate for DemexInputButtonAssignment {
 
     fn assign(
         self,
-    ) -> Result<
-        (
-            Self::Control,
-            Option<<Self::Control as DemexInputDeviceControlDelegate>::Update>,
-        ),
-        DemexInputDeviceError,
-    > {
+    ) -> Result<DemexInputControlAssignmentResult<Self::Control>, DemexInputDeviceError> {
         match self {
             DemexInputButtonAssignment::ExecutorGo {
                 executor_id,
                 is_running,
-            } => Ok((
-                DemexInputButton::ExecutorGo(executor_id),
-                Some(if is_running {
+            } => Ok(DemexInputControlAssignmentResult {
+                control: DemexInputButton::ExecutorGo(executor_id),
+                init_event: Some(if is_running {
                     DemexInputDeviceButtonUpdate::ButtonActive
                 } else {
                     DemexInputDeviceButtonUpdate::ButtonInactive
                 }),
-            )),
+            }),
             DemexInputButtonAssignment::ExecutorStop {
                 executor_id,
                 is_running,
-            } => Ok((
-                DemexInputButton::ExecutorStop(executor_id),
-                Some(if is_running {
+            } => Ok(DemexInputControlAssignmentResult {
+                control: DemexInputButton::ExecutorStop(executor_id),
+                init_event: Some(if is_running {
                     DemexInputDeviceButtonUpdate::ButtonActive
                 } else {
                     DemexInputDeviceButtonUpdate::ButtonInactive
                 }),
-            )),
+            }),
             DemexInputButtonAssignment::ExecutorFlash {
                 executor_id,
                 stomp,
                 is_running,
-            } => Ok((
-                DemexInputButton::ExecutorFlash {
+            } => Ok(DemexInputControlAssignmentResult {
+                control: DemexInputButton::ExecutorFlash {
                     id: executor_id,
                     stomp,
                 },
-                Some(if is_running {
+                init_event: Some(if is_running {
                     DemexInputDeviceButtonUpdate::ButtonActive
                 } else {
                     DemexInputDeviceButtonUpdate::ButtonInactive
                 }),
-            )),
+            }),
             DemexInputButtonAssignment::SelectivePreset {
                 selection,
                 preset_id,
-            } => Ok((
-                DemexInputButton::SelectivePreset {
+            } => Ok(DemexInputControlAssignmentResult {
+                control: DemexInputButton::SelectivePreset {
                     selection,
                     preset_id,
                 },
-                None,
-            )),
+                init_event: None,
+            }),
             DemexInputButtonAssignment::FixtureSelector { fixture_selector } => {
-                Ok((DemexInputButton::FixtureSelector { fixture_selector }, None))
+                Ok(DemexInputControlAssignmentResult {
+                    control: DemexInputButton::FixtureSelector { fixture_selector },
+                    init_event: None,
+                })
             }
             DemexInputButtonAssignment::SpeedMasterTap { speed_master_id } => {
-                Ok((DemexInputButton::SpeedMasterTap { speed_master_id }, None))
+                Ok(DemexInputControlAssignmentResult {
+                    control: DemexInputButton::SpeedMasterTap { speed_master_id },
+                    init_event: None,
+                })
             }
-            DemexInputButtonAssignment::Macro { action } => {
-                Ok((DemexInputButton::Macro { action }, None))
-            }
-            DemexInputButtonAssignment::Unused => Ok((DemexInputButton::Unused, None)),
+            DemexInputButtonAssignment::Macro { action } => Ok(DemexInputControlAssignmentResult {
+                control: DemexInputButton::Macro { action },
+                init_event: None,
+            }),
+            DemexInputButtonAssignment::Unused => Ok(DemexInputControlAssignmentResult {
+                control: DemexInputButton::Unused,
+                init_event: None,
+            }),
         }
     }
 }

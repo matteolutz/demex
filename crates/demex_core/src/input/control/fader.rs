@@ -1,15 +1,20 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    event::{DemexEvent, list::DemexEventList},
+    command::parser::nodes::action::{Action, ActionIssuer, queue::ActionQueue},
+    event::DemexEvent,
     input::{
-        DemexInputDeviceUpdateArgs, control::DemexInputDeviceControlDelegate,
-        error::DemexInputDeviceError, event::DemexInputDeviceFaderUpdate,
+        DemexInputDeviceUpdateArgs,
+        control::{
+            DemexInputControlAssignmentResult, DemexInputDeviceControlAssignmentDelegate,
+            DemexInputDeviceControlDelegate,
+        },
+        error::DemexInputDeviceError,
+        event::DemexInputDeviceFaderUpdate,
     },
-    presets::PresetHandler,
     state::fixture_state_handler::FixtureStateHandler,
-    timing::TimingHandler,
-    updatables::UpdatableHandler,
+    timing::{TimingHandler, speed_master::SpeedMasterValue},
+    updatables::{UpdatableHandler, executor::DemexExecutor},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -42,50 +47,40 @@ impl DemexInputFader {
     pub fn handle_change(
         &self,
         value: f32,
-        fixture_handler: &mut FixtureStateHandler,
-        preset_handler: &PresetHandler,
-        updatable_handler: &mut UpdatableHandler,
-        timing_handler: &mut TimingHandler,
-        event_list: &mut DemexEventList,
+        action_queue: &mut ActionQueue,
     ) -> Result<(), DemexInputDeviceError> {
         match self {
             Self::Fader {
                 executor_id: fader_id,
             } => {
-                let fader = updatable_handler
-                    .executor_mut(*fader_id)
-                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
-
-                fader.set_value(value, fixture_handler, preset_handler, 0.0, event_list);
+                action_queue.enqueue_now(
+                    Action::ExecutorSetFaderValue(*fader_id, value),
+                    ActionIssuer::InputDevice,
+                );
             }
             Self::Groupmaster(id) => {
-                let master = updatable_handler
-                    .group_master_mut(*id)
-                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
-
-                *master.value_mut() = value;
-                event_list.push(DemexEvent::GroupmasterValueChanged(*id));
+                action_queue.enqueue_now(
+                    Action::GroupmasterSetFaderValue(*id, value),
+                    ActionIssuer::InputDevice,
+                );
             }
             Self::SpeedMaster {
                 speed_master_id,
                 bpm_min: min_bpm,
                 bpm_max: max_bpm,
             } => {
-                let speed_master = timing_handler
-                    .get_speed_master_value_mut(*speed_master_id)
-                    .map_err(DemexInputDeviceError::TimingHandlerError)?;
-
-                let value = min_bpm + (max_bpm - min_bpm) * value;
-
-                speed_master.set_bpm(value);
-
-                event_list.push(DemexEvent::SpeedmasterFaderValueChanged(*speed_master_id));
+                let bpm = min_bpm + (max_bpm - min_bpm) * value;
+                action_queue.enqueue_now(
+                    Action::SpeedMasterSetBpm(*speed_master_id, bpm),
+                    ActionIssuer::InputDevice,
+                );
             }
             Self::Grandmaster => {
                 let byte_value = (value * 255.0) as u8;
-                *fixture_handler.grand_master_mut() = byte_value;
-
-                event_list.push(DemexEvent::GrandmasterFaderValueChanged);
+                action_queue.enqueue_now(
+                    Action::GrandmasterSetValue(byte_value),
+                    ActionIssuer::InputDevice,
+                );
             }
         };
 
@@ -139,76 +134,117 @@ impl DemexInputDeviceControlDelegate for DemexInputFader {
 
     fn map_event(
         &self,
-        args: DemexInputDeviceUpdateArgs,
+        _args: DemexInputDeviceUpdateArgs,
         event: &DemexEvent,
     ) -> Result<Option<Self::Update>, DemexInputDeviceError> {
-        todo!()
-        /*
         let update = match self {
-            Self::Fader { executor_id } => {
-                if matches!(event,
-                    DemexEvent::ExecutorFaderValueChanged(event_executor_id)
-                    | DemexEvent::ExecutorGo(event_executor_id)
-                    | DemexEvent::ExecutorStop(event_executor_id) if event_executor_id == executor_id
-                ) {
-                    let value = args
-                        .updatable_handler
-                        .executor(*executor_id)
-                        .map_err(DemexInputDeviceError::UpdatableHandlerError)?
-                        .value();
-
-                    Some(DemexInputDeviceFaderUpdate::FaderValueChange(value))
-                } else {
-                    None
+            Self::Fader { executor_id } => match event {
+                DemexEvent::ExecutorFaderValueChanged {
+                    executor_id: event_executor_id,
+                    value,
+                } if event_executor_id == executor_id => {
+                    Some(DemexInputDeviceFaderUpdate::FaderValueChange(*value))
                 }
-            }
-            Self::Groupmaster(id) => {
-                if matches!(event, DemexEvent::GroupmasterValueChanged(event_id) if event_id == id)
-                {
-                    let value = args
-                        .updatable_handler
-                        .group_master(*id)
-                        .map_err(DemexInputDeviceError::UpdatableHandlerError)?
-                        .value();
-
-                    Some(DemexInputDeviceFaderUpdate::FaderValueChange(value))
-                } else {
-                    None
+                _ => None,
+            },
+            Self::Groupmaster(id) => match event {
+                DemexEvent::GroupmasterValueChanged {
+                    group_master_id,
+                    value,
+                } if group_master_id == id => {
+                    Some(DemexInputDeviceFaderUpdate::FaderValueChange(*value))
                 }
-            }
-            Self::Grandmaster => {
-                if matches!(event, DemexEvent::GrandmasterFaderValueChanged) {
-                    Some(DemexInputDeviceFaderUpdate::FaderValueChange(
-                        args.fixture_handler.grand_master() as f32 / 255.0,
-                    ))
-                } else {
-                    None
+                _ => None,
+            },
+            Self::Grandmaster => match event {
+                DemexEvent::GrandmasterFaderValueChanged(value) => {
+                    Some(DemexInputDeviceFaderUpdate::FaderValueChange(*value))
                 }
-            }
+                _ => None,
+            },
             Self::SpeedMaster {
                 speed_master_id,
                 bpm_min,
                 bpm_max,
-            } => {
-                if matches!(event, DemexEvent::SpeedmasterFaderValueChanged(event_speed_master_id) if event_speed_master_id == speed_master_id)
-                {
-                    let speed_master_value = args
-                        .timing_handler
-                        .get_speed_master_value(*speed_master_id)
-                        .map_err(DemexInputDeviceError::TimingHandlerError)?
-                        .bpm();
-
-                    let fader_value = (speed_master_value - bpm_min) / (bpm_max - bpm_min);
+            } => match event {
+                DemexEvent::SpeedmasterFaderValueChanged {
+                    speed_master_id: event_speed_master_id,
+                    bpm,
+                } if event_speed_master_id == speed_master_id => {
+                    let fader_value = (bpm - bpm_min) / (bpm_max - bpm_min);
                     Some(DemexInputDeviceFaderUpdate::FaderValueChange(
                         fader_value.clamp(0.0, 1.0),
                     ))
-                } else {
-                    None
                 }
-            }
+                _ => None,
+            },
         };
 
         Ok(update)
-        */
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DemexInputFaderAssignment {
+    pub mode: DemexInputFader,
+    pub initial_value: Option<f32>,
+}
+
+impl DemexInputFaderAssignment {
+    pub fn executor(executor: &DemexExecutor) -> Self {
+        Self {
+            mode: DemexInputFader::Fader {
+                executor_id: executor.id(),
+            },
+            initial_value: Some(executor.value()),
+        }
+    }
+
+    pub fn grandmaster(value: u8) -> Self {
+        Self {
+            mode: DemexInputFader::Grandmaster,
+            initial_value: Some(value as f32 / 255.0),
+        }
+    }
+
+    pub fn speedmaster(
+        speedmaster_id: u32,
+        speedmaster: &SpeedMasterValue,
+        bpm_min: f32,
+        bpm_max: f32,
+    ) -> Self {
+        Self {
+            mode: DemexInputFader::SpeedMaster {
+                speed_master_id: speedmaster_id,
+                bpm_min,
+                bpm_max,
+            },
+            initial_value: Some(speedmaster.bpm()),
+        }
+    }
+}
+
+impl DemexInputDeviceControlAssignmentDelegate for DemexInputFaderAssignment {
+    type Control = DemexInputFader;
+
+    fn assign(
+        self,
+    ) -> Result<super::DemexInputControlAssignmentResult<Self::Control>, DemexInputDeviceError>
+    {
+        let fader_value = match self.mode {
+            DemexInputFader::Groupmaster(_)
+            | DemexInputFader::Fader { .. }
+            | DemexInputFader::Grandmaster => self.initial_value,
+            DemexInputFader::SpeedMaster {
+                bpm_min, bpm_max, ..
+            } => self
+                .initial_value
+                .map(|bpm| (bpm - bpm_min) / (bpm_max - bpm_min)),
+        };
+
+        Ok(DemexInputControlAssignmentResult {
+            control: self.mode,
+            init_event: fader_value.map(DemexInputDeviceFaderUpdate::FaderValueChange),
+        })
     }
 }

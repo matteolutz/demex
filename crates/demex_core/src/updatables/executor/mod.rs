@@ -113,7 +113,10 @@ impl DemexExecutor {
 
     fn set_fader_value(&mut self, value: f32, event_list: &mut DemexEventList) {
         self.value = value;
-        event_list.push(DemexEvent::ExecutorFaderValueChanged(self.id));
+        event_list.push(DemexEvent::ExecutorFaderValueChanged {
+            executor_id: self.id,
+            value,
+        });
     }
 
     pub fn set_value(

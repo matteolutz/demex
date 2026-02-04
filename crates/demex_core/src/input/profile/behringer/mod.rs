@@ -213,7 +213,6 @@ impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
 
     fn handle_events(
         &mut self,
-        _args: DemexInputDeviceUpdateArgs,
         events: &[DemexInputDeviceControlUpdate],
     ) -> Result<(), DemexInputDeviceError> {
         for event in events {

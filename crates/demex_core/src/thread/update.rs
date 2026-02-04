@@ -4,6 +4,7 @@ use std::{
 };
 
 use arc_swap::ArcSwap;
+use itertools::Itertools;
 
 use crate::{
     channel3::channel_value_queue::ChannelValueQueueEntry,
@@ -23,7 +24,7 @@ use crate::{
     },
     event::{DemexEvent, list::DemexEventList},
     fixture::FixturePath,
-    input::DemexInputDeviceHandler,
+    input::{DemexInputDeviceHandler, device::DemexInputDeviceConfig},
     patch::Patch,
     pool::{PoolItem, PoolType},
     presets::PresetHandler,
@@ -46,6 +47,8 @@ pub struct UpdateThread {
 
     event_list: DemexEventList,
 
+    input_device_handler: DemexInputDeviceHandler,
+
     fixture_state_handler: FixtureStateHandler,
     state: DemexEngineState,
 }
@@ -59,6 +62,7 @@ impl UpdateThread {
         preset_handler: PresetHandler,
         updatable_handler: UpdatableHandler,
         timing_handler: TimingHandler,
+        input_device_configs: Vec<DemexInputDeviceConfig>,
         patch: Arc<ArcSwap<Patch>>,
     ) -> (
         Self,
@@ -87,6 +91,10 @@ impl UpdateThread {
 
         let state = DemexEngineState::default();
 
+        // TODO: input device init state
+        let input_devices = input_device_configs.into_iter().map_into().collect();
+        let input_device_handler = DemexInputDeviceHandler::new(input_devices);
+
         let s = Self {
             event_bus_tx,
             request_handler,
@@ -98,6 +106,8 @@ impl UpdateThread {
             patch,
 
             event_list: DemexEventList::default(),
+
+            input_device_handler,
 
             fixture_state_handler,
             state,
@@ -125,11 +135,10 @@ impl DemexThreadDelegate for UpdateThread {
         }
 
         let patch = self.patch.load();
-        let mut action_queue = self.action_queue.lock_write();
 
         // Handle queued actions
         // TODO: maybe limit amount of actions per frame
-        for action in action_queue.inner_mut().drain(..) {
+        for action in self.action_queue.lock_write().inner_mut().drain(..) {
             let args = DeferredActionRunArgs {
                 fixture_handler: &mut self.fixture_state_handler,
                 preset_handler: &mut self.preset_handler,
@@ -137,7 +146,6 @@ impl DemexThreadDelegate for UpdateThread {
                     &self.state.fixture_selection,
                 ),
                 updatable_handler: &mut self.updatable_handler,
-                input_device_handler: &mut DemexInputDeviceHandler::new(vec![]),
                 timing_handler: &mut self.timing_handler,
                 patch: &patch,
                 event_list: &mut self.event_list,
@@ -169,6 +177,29 @@ impl DemexThreadDelegate for UpdateThread {
                         }
                         ActionRunResult::UpdatePatch(patch) => {
                             self.patch.store(Arc::new(patch));
+                        }
+                        ActionRunResult::Assign(assignment) => {
+                            if let Err(err) = self.input_device_handler.assign(assignment) {
+                                let _ = self
+                                    .event_bus_tx
+                                    .send(DemexEngineCommEvent::Error(err.to_string()));
+                            }
+                        }
+                        ActionRunResult::AssignMultiple(assignments) => {
+                            for assignment in assignments {
+                                if let Err(err) = self.input_device_handler.assign(assignment) {
+                                    let _ = self
+                                        .event_bus_tx
+                                        .send(DemexEngineCommEvent::Error(err.to_string()));
+                                }
+                            }
+                        }
+                        ActionRunResult::Unassign(unassignment) => {
+                            if let Err(err) = self.input_device_handler.unassign(unassignment) {
+                                let _ = self
+                                    .event_bus_tx
+                                    .send(DemexEngineCommEvent::Error(err.to_string()));
+                            }
                         }
                         _ => {}
                     }
@@ -219,11 +250,19 @@ impl DemexThreadDelegate for UpdateThread {
             &self.timing_handler,
             &mut self.event_list,
         );
-        // TODO: move the input device handler to the frontend
-        /*
-        input_device_event_handler.write(|handler| {
-            handler.push_events(uh_events.into_iter().map(DemexEvent::ExecutorStop))
-        });*/
+
+        let _ = self
+            .input_device_handler
+            .update(
+                &patch,
+                FixtureSelectorContext::new(&mut self.state.fixture_selection),
+                &mut self.action_queue.lock_write(),
+                |_| {},
+                || None,
+                None,
+                &mut self.event_list,
+            )
+            .inspect_err(|err| log::error!("Failed to update input device handler: {}", err));
 
         let _ = self.event_list.send(&self.event_bus_tx);
         if !updated_output_values.is_empty() {
