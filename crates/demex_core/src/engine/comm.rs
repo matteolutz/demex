@@ -15,7 +15,7 @@ use crate::{
     },
     event::DemexEvent,
     fixture::FixturePath,
-    keyframe_effect::effect::KeyframeEffect,
+    keyframe_effect::effect_runtime::KeyframeEffectRuntime,
     patch::Patch,
     pool::{PoolItem, PoolType},
     presets::preset::FixturePresetId,
@@ -122,7 +122,7 @@ pub struct KeyframeEffectRequest {
     pub preset_id: FixturePresetId,
 }
 impl DemexEngineCommRequest for KeyframeEffectRequest {
-    type Response = Option<KeyframeEffect>;
+    type Response = Option<KeyframeEffectRuntime>;
 }
 
 #[derive(Debug)]

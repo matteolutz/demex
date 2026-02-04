@@ -284,7 +284,7 @@ impl DemexEngine {
                 let preset = payload.show.preset_handler.get_preset(preset_id).ok()?;
 
                 match preset.data() {
-                    FixturePresetData::KeyframeEffect { runtime } => Some(runtime.effect().clone()), // cloning is not ideal, but let's keep it for now
+                    FixturePresetData::KeyframeEffect { runtime } => Some(runtime.clone()), // cloning is not ideal, but let's keep it for now
                     _ => None,
                 }
             },

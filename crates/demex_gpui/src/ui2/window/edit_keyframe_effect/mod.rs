@@ -4,8 +4,11 @@ use demex_core::{
     channel3::attribute::FixtureChannel3Attribute,
     command::parser::nodes::action::Action,
     engine::comm::KeyframeEffectRequest,
-    keyframe_effect::{effect::KeyframeEffect, effect_keyframe_curve::KeyframeEffectKeyframeCurve},
+    keyframe_effect::{
+        effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_runtime::KeyframeEffectRuntime,
+    },
     presets::preset::FixturePresetId,
+    updatables::runtime::RuntimePhase,
 };
 use gpui::{
     App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Subscription,
@@ -16,9 +19,12 @@ use gpui_component::v_flex;
 use crate::{
     engine::DemexEngineHandler,
     ui2::{
-        components::wave_editor::{
-            Wave, WaveEasingFunction, WaveEasingMode, WaveEditor, WaveEditorEvent, WaveEditorState,
-            WaveSegment,
+        components::{
+            runtime_phase_editor::RuntimePhaseEditor,
+            wave_editor::{
+                Wave, WaveEasingFunction, WaveEasingMode, WaveEditor, WaveEditorEvent,
+                WaveEditorState, WaveSegment,
+            },
         },
         wm::edit_window::EditWindowDelegate,
     },
@@ -81,23 +87,32 @@ impl WaveEasingFunction for KeyframeEffectKeyframeCurve {
 pub struct EditKeyframeEffectWindow {
     preset_id: FixturePresetId,
 
-    effect: Entity<Option<KeyframeEffect>>,
+    effect: Entity<Option<KeyframeEffectRuntime>>,
     waves: Vec<HashMap<FixtureChannel3Attribute, Entity<WaveEditorState>>>,
+
+    runtime_phase_editor: Entity<RuntimePhaseEditor>,
 
     _subscriptions: Vec<Subscription>,
 }
 
 impl EditKeyframeEffectWindow {
-    pub fn new(preset_id: impl Into<FixturePresetId>, cx: &mut Context<Self>) -> Self {
+    pub fn new(
+        preset_id: impl Into<FixturePresetId>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Self {
         let preset_id = preset_id.into();
 
-        let effect: Entity<Option<KeyframeEffect>> = cx.new(|_| None);
+        let effect: Entity<Option<KeyframeEffectRuntime>> = cx.new(|_| None);
 
-        DemexEngineHandler::send_with(
-            cx.entity(),
+        let runtime_phase_editor =
+            cx.new(|cx| RuntimePhaseEditor::new(RuntimePhase::default(), window, cx));
+
+        DemexEngineHandler::send_in_visual(
+            window,
             cx,
             KeyframeEffectRequest { preset_id },
-            |effect_res, this, cx| {
+            |this, effect_res, window, cx| {
                 let Some(effect_res) = effect_res else {
                     return;
                 };
@@ -106,7 +121,12 @@ impl EditKeyframeEffectWindow {
                     *effect = Some(effect_res.clone());
                 });
 
+                this.runtime_phase_editor.update(cx, |editor, cx| {
+                    editor.set_runtime_phase(*effect_res.phase(), window, cx)
+                });
+
                 let waves = effect_res
+                    .effect()
                     .layers()
                     .iter()
                     .enumerate()
@@ -152,9 +172,11 @@ impl EditKeyframeEffectWindow {
                                                 starting_point,
                                             } => {
                                                 this.effect.update(cx, |effect, _| {
-                                                    let layer =
-                                                        &mut effect.as_mut().unwrap().layers_mut()
-                                                            [layer_idx];
+                                                    let layer = &mut effect
+                                                        .as_mut()
+                                                        .unwrap()
+                                                        .effect_mut()
+                                                        .layers_mut()[layer_idx];
                                                     layer.keyframes_mut()[*segment_idx]
                                                         .set_starting_point(*starting_point);
                                                 });
@@ -178,12 +200,23 @@ impl EditKeyframeEffectWindow {
             },
         );
 
-        let _subscriptions = vec![];
+        let _subscriptions =
+            vec![
+                cx.observe(&runtime_phase_editor, |this, runtime_phase_editor, cx| {
+                    this.set_edited(true, cx);
+                    this.effect.update(cx, |effect, cx| {
+                        if let Some(effect) = effect {
+                            *effect.phase_mut() = runtime_phase_editor.read(cx).runtime_phase();
+                        }
+                    });
+                }),
+            ];
 
         Self {
             preset_id,
             effect,
             waves: Vec::new(),
+            runtime_phase_editor,
             _subscriptions,
         }
     }
@@ -219,6 +252,13 @@ impl Render for EditKeyframeEffectWindow {
             .size_full()
             .p_4()
             .gap_4()
+            .child(
+                v_flex()
+                    .w_full()
+                    .gap_2()
+                    .child(div().text_xl().child("Phase"))
+                    .child(self.runtime_phase_editor.clone()),
+            )
             .children(self.waves.iter().enumerate().map(|(idx, wave)| {
                 v_flex()
                     .gap_2()

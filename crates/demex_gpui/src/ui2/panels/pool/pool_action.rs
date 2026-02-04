@@ -162,8 +162,12 @@ pub fn apply_pool_type_to_button(
                     this.top_right("KFx").action("Edit FX", move |_, cx| {
                         WindowManager::open_edit_window::<EditKeyframeEffectWindow>(
                             cx,
-                            move |_, cx| {
-                                EditKeyframeEffectWindow::new((feature_group, pool_item_id), cx)
+                            move |window, cx| {
+                                EditKeyframeEffectWindow::new(
+                                    (feature_group, pool_item_id),
+                                    window,
+                                    cx,
+                                )
                             },
                         );
                     })

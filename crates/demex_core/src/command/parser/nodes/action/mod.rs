@@ -32,7 +32,7 @@ use crate::{
     event::{FixtureSelectionWithGroup, list::DemexEventList},
     fixture::FixturePath,
     input::control::DemexInputDeviceControlUnassignment,
-    keyframe_effect::effect::KeyframeEffect,
+    keyframe_effect::effect_runtime::KeyframeEffectRuntime,
     presets::{
         error::PresetHandlerError,
         preset::{FixturePresetData, FixturePresetId},
@@ -253,7 +253,7 @@ pub enum Action {
     SpeedMasterSetBpm(u32, f32),
     SpeedMasterTap(SpeedMasterTapArgs),
 
-    PresetUpdateKeyframeEffect(FixturePresetId, KeyframeEffect),
+    PresetUpdateKeyframeEffect(FixturePresetId, KeyframeEffectRuntime),
 
     GroupmasterSetFaderValue(u32, f32),
 
@@ -391,7 +391,7 @@ impl Action {
 
                 match preset.data_mut() {
                     FixturePresetData::KeyframeEffect { runtime } => {
-                        *runtime.effect_mut() = effect.clone();
+                        *runtime = effect.clone();
                         Ok(ActionRunResult::Default)
                     }
                     _ => Err(ActionRunError::PresetHandlerError(
