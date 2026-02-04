@@ -91,6 +91,10 @@ impl KeyframeEffectKeyframe {
         self.starting_point
     }
 
+    pub fn set_starting_point(&mut self, starting_point: f32) {
+        self.starting_point = starting_point;
+    }
+
     pub fn is_affected(&self, fixture_path: &FixturePath) -> bool {
         match &self.data {
             KeyframeEffectKeyframeData::Global(_) => true,

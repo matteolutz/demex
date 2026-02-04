@@ -58,6 +58,10 @@ impl KeyframeEffectLayer {
         &self.keyframes
     }
 
+    pub fn keyframes_mut(&mut self) -> &mut Vec<KeyframeEffectKeyframe> {
+        &mut self.keyframes
+    }
+
     pub fn value(
         &self,
         fixture_path: &FixturePath,

@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use demex_core::{
-    channel3::attribute::FixtureChannel3Attribute, engine::comm::KeyframeEffectRequest,
+    channel3::attribute::FixtureChannel3Attribute, command::parser::nodes::action::Action,
+    engine::comm::KeyframeEffectRequest, keyframe_effect::effect::KeyframeEffect,
     presets::preset::FixturePresetId,
 };
 use gpui::{
@@ -13,7 +14,9 @@ use gpui_component::v_flex;
 use crate::{
     engine::DemexEngineHandler,
     ui2::{
-        components::wave_editor::{Wave, WaveEditor, WaveEditorState, WaveSegment},
+        components::wave_editor::{
+            Wave, WaveEditor, WaveEditorEvent, WaveEditorState, WaveSegment,
+        },
         wm::edit_window::EditWindowDelegate,
     },
 };
@@ -39,8 +42,9 @@ pub(super) fn init(cx: &mut App) {
 }
 
 pub struct EditKeyframeEffectWindow {
-    _preset_id: FixturePresetId,
+    preset_id: FixturePresetId,
 
+    effect: Entity<Option<KeyframeEffect>>,
     waves: Vec<HashMap<FixtureChannel3Attribute, Entity<WaveEditorState>>>,
 
     _subscriptions: Vec<Subscription>,
@@ -49,6 +53,8 @@ pub struct EditKeyframeEffectWindow {
 impl EditKeyframeEffectWindow {
     pub fn new(preset_id: impl Into<FixturePresetId>, cx: &mut Context<Self>) -> Self {
         let preset_id = preset_id.into();
+
+        let effect: Entity<Option<KeyframeEffect>> = cx.new(|_| None);
 
         DemexEngineHandler::send_with(
             cx.entity(),
@@ -59,10 +65,15 @@ impl EditKeyframeEffectWindow {
                     return;
                 };
 
+                this.effect.update(cx, |effect, _| {
+                    *effect = Some(effect_res.clone());
+                });
+
                 let waves = effect_res
                     .layers()
                     .iter()
-                    .map(|layer| {
+                    .enumerate()
+                    .map(|(layer_idx, layer)| {
                         let all_attributes = layer.attributes();
                         all_attributes
                             .into_iter()
@@ -92,8 +103,24 @@ impl EditKeyframeEffectWindow {
 
                                 this._subscriptions.push(cx.subscribe(
                                     &wave_state,
-                                    |this, _, _, cx| {
+                                    move |this, _, evt, cx| {
                                         this.set_edited(true, cx);
+
+                                        match evt {
+                                            WaveEditorEvent::WaveSegmentStartingPointChanged {
+                                                segment_idx,
+                                                starting_point,
+                                            } => {
+                                                this.effect.update(cx, |effect, _| {
+                                                    let layer =
+                                                        &mut effect.as_mut().unwrap().layers_mut()
+                                                            [layer_idx];
+                                                    layer.keyframes_mut()[*segment_idx]
+                                                        .set_starting_point(*starting_point);
+                                                });
+                                            }
+                                            _ => {}
+                                        }
 
                                         // TODO: setup subscription
                                         cx.notify();
@@ -114,7 +141,8 @@ impl EditKeyframeEffectWindow {
         let _subscriptions = vec![];
 
         Self {
-            _preset_id: preset_id.into(),
+            preset_id,
+            effect,
             waves: Vec::new(),
             _subscriptions,
         }
@@ -166,8 +194,13 @@ impl EditWindowDelegate for EditKeyframeEffectWindow {
         "Edit Keyframe Effect"
     }
 
-    fn handle_save(&self, _window: &mut gpui::Window, _cx: &mut App) {
-        // TODO: convert data from wave back and update effect
+    fn handle_save(&self, _window: &mut gpui::Window, cx: &mut App) {
+        if let Some(effect) = self.effect.read(cx).as_ref() {
+            DemexEngineHandler::engine(cx).exec_ui(Action::PresetUpdateKeyframeEffect(
+                self.preset_id,
+                effect.clone(),
+            ));
+        }
     }
 
     fn handle_discard(&self, _window: &mut gpui::Window, _cx: &mut App) {}

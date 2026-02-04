@@ -32,6 +32,11 @@ use crate::{
     event::{FixtureSelectionWithGroup, list::DemexEventList},
     fixture::FixturePath,
     input::control::DemexInputDeviceControlUnassignment,
+    keyframe_effect::effect::KeyframeEffect,
+    presets::{
+        error::PresetHandlerError,
+        preset::{FixturePresetData, FixturePresetId},
+    },
     state::fixture_state_handler::FixtureStateHandler,
     utils::serde::approx_instant,
 };
@@ -248,6 +253,8 @@ pub enum Action {
     SpeedMasterSetBpm(u32, f32),
     SpeedMasterTap(SpeedMasterTapArgs),
 
+    PresetUpdateKeyframeEffect(FixturePresetId, KeyframeEffect),
+
     GroupmasterSetFaderValue(u32, f32),
 
     GrandmasterSetValue(u8),
@@ -375,6 +382,23 @@ impl Action {
             Self::CueSetTrigger(fun) => fun.run(args),
 
             Self::SpeedMasterTap(fun) => fun.run(args),
+
+            Self::PresetUpdateKeyframeEffect(preset_id, effect) => {
+                let preset = args
+                    .preset_handler
+                    .get_preset_mut(*preset_id)
+                    .map_err(ActionRunError::PresetHandlerError)?;
+
+                match preset.data_mut() {
+                    FixturePresetData::KeyframeEffect { runtime } => {
+                        *runtime.effect_mut() = effect.clone();
+                        Ok(ActionRunResult::Default)
+                    }
+                    _ => Err(ActionRunError::PresetHandlerError(
+                        PresetHandlerError::FeaturePresetNotFound(*preset_id),
+                    )),
+                }
+            }
 
             Self::RunMacro(macro_id) => {
                 let mmacro = args
