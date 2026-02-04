@@ -1,7 +1,7 @@
 use gpui::{
     App, Bounds, Context, Entity, EventEmitter, InteractiveElement, IntoElement, MouseDownEvent,
-    MouseMoveEvent, MouseUpEvent, ParentElement, Path, PathBuilder, Pixels, RenderOnce, Size,
-    Styled, Window, canvas, div, fill, outline, point, px,
+    MouseMoveEvent, MouseUpEvent, ParentElement, Path, PathBuilder, Pixels, RenderOnce,
+    ScrollWheelEvent, Size, Styled, Window, canvas, div, fill, outline, point, px,
 };
 
 mod wave;
@@ -87,6 +87,43 @@ impl WaveEditorState {
         if self.current_dragging_keyframe_handle.is_some() {
             self.current_dragging_keyframe_handle = None;
             cx.notify();
+        }
+    }
+
+    fn handle_scroll_wheel(&mut self, evt: &ScrollWheelEvent, cx: &mut Context<Self>) {
+        for (idx, bounds) in self
+            .keyframe_handle_bounds
+            .iter()
+            .filter_map(|b| b.as_ref())
+            .enumerate()
+        {
+            if bounds.contains(&evt.position) {
+                let delta = evt.delta.pixel_delta(px(1.0)).y.as_f32() / 1000.0;
+
+                let unmapped_x = (self.wave.segments[idx].starting_point + delta).clamp(0.0, 1.0);
+
+                if idx > 0 {
+                    let segment_below = &self.wave.segments[idx - 1];
+                    if unmapped_x <= segment_below.starting_point {
+                        return;
+                    }
+                }
+
+                if idx < self.wave.segments.len() - 1 {
+                    let segment_above = &self.wave.segments[idx + 1];
+                    if unmapped_x >= segment_above.starting_point {
+                        return;
+                    }
+                }
+
+                self.wave.segments[idx].starting_point = unmapped_x;
+                cx.emit(WaveEditorEvent::WaveSegmentStartingPointChanged {
+                    segment_idx: idx,
+                    starting_point: unmapped_x,
+                });
+                cx.notify();
+                return;
+            }
         }
     }
 
@@ -210,8 +247,24 @@ impl WaveEditor {
                 let value_mapped = graph_bounds.map_y(px(*value)).unwrap();
 
                 let mut path_builder = PathBuilder::stroke(Self::PATH_STROKE_WIDTH);
-                path_builder.move_to(point(previous_segment_start, value_mapped));
-                path_builder.line_to(point(current_segment_start, current_segment_value));
+
+                let from = point(previous_segment_start, value_mapped);
+                let to = point(current_segment_start, current_segment_value);
+
+                path_builder.move_to(from);
+
+                let easing_mode = previous_segment.easing_functions.get_easing_mode(from, to);
+
+                match easing_mode {
+                    WaveEasingMode::Cubic(a, b) => path_builder.cubic_bezier_to(to, a, b),
+                    WaveEasingMode::Linear => {
+                        path_builder.line_to(point(current_segment_start, current_segment_value))
+                    }
+                    WaveEasingMode::Snap => {
+                        path_builder.line_to(point(current_segment_start, value_mapped));
+                        path_builder.line_to(point(current_segment_start, current_segment_value));
+                    }
+                };
 
                 if is_last {
                     path_builder.line_to(point(graph_bounds.right(), current_segment_value))
@@ -250,6 +303,10 @@ impl RenderOnce for WaveEditor {
             .on_mouse_up(gpui::MouseButton::Left, {
                 let state = self.state.clone();
                 move |evt, _, cx| state.update(cx, |state, cx| state.handle_mouse_up(evt, cx))
+            })
+            .on_scroll_wheel({
+                let state = self.state.clone();
+                move |evt, _, cx| state.update(cx, |state, cx| state.handle_scroll_wheel(evt, cx))
             })
             .w_full()
             .child(

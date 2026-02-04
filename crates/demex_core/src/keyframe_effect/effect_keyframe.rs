@@ -95,6 +95,10 @@ impl KeyframeEffectKeyframe {
         self.starting_point = starting_point;
     }
 
+    pub fn curve(&self) -> KeyframeEffectKeyframeCurve {
+        self.curve
+    }
+
     pub fn is_affected(&self, fixture_path: &FixturePath) -> bool {
         match &self.data {
             KeyframeEffectKeyframeData::Global(_) => true,

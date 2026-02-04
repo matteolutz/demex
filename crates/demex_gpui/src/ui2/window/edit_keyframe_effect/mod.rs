@@ -1,13 +1,15 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 use demex_core::{
-    channel3::attribute::FixtureChannel3Attribute, command::parser::nodes::action::Action,
-    engine::comm::KeyframeEffectRequest, keyframe_effect::effect::KeyframeEffect,
+    channel3::attribute::FixtureChannel3Attribute,
+    command::parser::nodes::action::Action,
+    engine::comm::KeyframeEffectRequest,
+    keyframe_effect::{effect::KeyframeEffect, effect_keyframe_curve::KeyframeEffectKeyframeCurve},
     presets::preset::FixturePresetId,
 };
 use gpui::{
     App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Subscription,
-    Window, WindowBounds, div, size,
+    Window, WindowBounds, div, point, size,
 };
 use gpui_component::v_flex;
 
@@ -15,7 +17,8 @@ use crate::{
     engine::DemexEngineHandler,
     ui2::{
         components::wave_editor::{
-            Wave, WaveEditor, WaveEditorEvent, WaveEditorState, WaveSegment,
+            Wave, WaveEasingFunction, WaveEasingMode, WaveEditor, WaveEditorEvent, WaveEditorState,
+            WaveSegment,
         },
         wm::edit_window::EditWindowDelegate,
     },
@@ -39,6 +42,40 @@ mod actions {
 
 pub(super) fn init(cx: &mut App) {
     actions::init(cx);
+}
+
+impl WaveEasingFunction for KeyframeEffectKeyframeCurve {
+    fn get_easing_mode(
+        &self,
+        from: gpui::Point<gpui::Pixels>,
+        to: gpui::Point<gpui::Pixels>,
+    ) -> WaveEasingMode {
+        match self {
+            Self::EaseIn => {
+                let x_diff = to.x - from.x;
+
+                let a = point(from.x + (0.11 * x_diff), from.y);
+                let b = point(from.x + (0.5 * x_diff), from.y);
+                (a, b).into()
+            }
+            Self::EaseOut => {
+                let x_diff = to.x - from.x;
+
+                let a = point(from.x + (0.5 * x_diff), to.y);
+                let b = point(from.x + (0.89 * x_diff), to.y);
+                (a, b).into()
+            }
+            Self::EaseInOut => {
+                let x_diff = to.x - from.x;
+
+                let a = point(from.x + (0.45 * x_diff), from.y);
+                let b = point(from.x + (0.55 * x_diff), to.y);
+                (a, b).into()
+            }
+            Self::Snap => WaveEasingMode::Snap,
+            Self::Linear => WaveEasingMode::Linear,
+        }
+    }
 }
 
 pub struct EditKeyframeEffectWindow {
@@ -91,6 +128,7 @@ impl EditKeyframeEffectWindow {
                                         WaveSegment {
                                             starting_point: keyframe.starting_point(),
                                             values: attribute_values,
+                                            easing_functions: Rc::new(keyframe.curve()),
                                         }
                                     })
                                     .collect::<Vec<_>>();
