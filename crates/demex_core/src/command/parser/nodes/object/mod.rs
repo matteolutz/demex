@@ -488,6 +488,7 @@ pub enum Object {
     HomeableObject(HomeableObject),
     Sequence(u32),
     SequenceCue(u32, CueIdx),
+    SequenceCueOut(u32),
     ExecutorCue(u32, CueIdx),
     Preset(FixturePresetId),
     Macro(u32),
@@ -496,6 +497,10 @@ pub enum Object {
 impl Object {
     pub fn cue(seq: u32, cue_idx: CueIdx) -> Self {
         Self::SequenceCue(seq, cue_idx)
+    }
+
+    pub fn cue_out(seq: u32) -> Self {
+        Self::SequenceCueOut(seq)
     }
 }
 
@@ -508,6 +513,9 @@ impl Display for Object {
             Self::Sequence(id) => write!(f, "Sequence {}", id),
             Self::SequenceCue(id, cue_idx) => {
                 write!(f, "Sequence {} Cue {}", id, cue_idx)
+            }
+            Self::SequenceCueOut(id) => {
+                write!(f, "Sequence {} Cue Out", id)
             }
             Self::ExecutorCue(id, cue_idx) => {
                 write!(f, "Executor {} Cue {}", id, cue_idx)
@@ -532,6 +540,7 @@ impl ObjectDelegate for Object {
             Self::SequenceCue(seq_id, cue_id) => {
                 Some((PoolType::SequenceCue(seq_id), cue_id.into()))
             }
+            Self::SequenceCueOut(_) => None,
             Self::ExecutorCue(_, _) => None,
             Self::Preset(id) => Some((PoolType::Preset(id.feature_group), id.preset_id)),
         }
@@ -571,6 +580,11 @@ impl ObjectDelegate for Object {
                 })
                 .map_err(ActionRunError::PresetHandlerError)
                 .and_then(|cue| cue.get_property_string(key)),
+            Self::SequenceCueOut(sequence_id) => preset_handler
+                .get_sequence(sequence_id)
+                .map(|s| s.cue_out())
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|cue_out| cue_out.get_property_string(key)),
             Self::ExecutorCue(executor_id, cue_idx) => updatable_handler
                 .executor(executor_id)
                 .map_err(ActionRunError::UpdatableHandlerError)
@@ -629,6 +643,11 @@ impl ObjectDelegate for Object {
                 })
                 .map_err(ActionRunError::PresetHandlerError)
                 .and_then(|cue| cue.set_property_string(key, value)),
+            Self::SequenceCueOut(sequence_id) => preset_handler
+                .get_sequence_mut(sequence_id)
+                .map(|s| s.cue_out_mut())
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|cue_out| cue_out.set_property_string(key, value)),
             Self::ExecutorCue(executor_id, cue_idx) => updatable_handler
                 .executor(executor_id)
                 .map_err(ActionRunError::UpdatableHandlerError)
@@ -690,6 +709,11 @@ impl ObjectDelegate for Object {
                 })
                 .map_err(ActionRunError::PresetHandlerError)
                 .and_then(|cue| cue.set_property_string_any(key, value)),
+            Self::SequenceCueOut(sequence_id) => preset_handler
+                .get_sequence_mut(sequence_id)
+                .map(|s| s.cue_out_mut())
+                .map_err(ActionRunError::PresetHandlerError)
+                .and_then(|cue_out| cue_out.set_property_string_any(key, value)),
             Self::ExecutorCue(executor_id, cue_idx) => updatable_handler
                 .executor(executor_id)
                 .map_err(ActionRunError::UpdatableHandlerError)

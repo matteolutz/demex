@@ -23,11 +23,8 @@ use crate::{
     utils::ease::{ease_in_out_quad, ease_in_quad, ease_out_quad},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct CueOut {
-    pub fade: f32,
-    pub fading_function: CueFadingFunction,
-}
+mod cue_out;
+pub use cue_out::CueOut;
 
 #[derive(
     Debug,

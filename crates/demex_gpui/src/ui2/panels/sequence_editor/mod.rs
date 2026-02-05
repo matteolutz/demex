@@ -23,7 +23,10 @@ use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},
     ui2::{
         config::AppConfigExt,
-        panels::{sequence_editor::table::SequenceEditorTable, toolbar_buttons},
+        panels::{
+            sequence_editor::table::{SequenceEditorTable, SequenceEditorTableData},
+            toolbar_buttons,
+        },
         window::set_property::{SetPropertyWindow, SetPropertyWindowPropertyType},
         wm::{WindowManager, edit_window::WindowManagerExtension},
     },
@@ -64,7 +67,12 @@ impl SequenceEditorPanel {
                 let data = sequence
                     .read(cx)
                     .as_ref()
-                    .map(|seq| (seq.sequence.id, seq.sequence.cues.clone()));
+                    .map(|seq|
+                        SequenceEditorTableData {
+                            sequence_id: seq.sequence.id,
+                            cues: seq.sequence.cues.clone(),
+                            cue_out: seq.sequence.cue_out.clone()
+                        });
 
                 let active_cues = sequence
                     .read(cx)
@@ -92,7 +100,8 @@ impl SequenceEditorPanel {
                         DemexEvent::ObjectPropertyChanged(obj, _)
                             if matches!(obj,
                                 &Object::SequenceCue(cue_seq_id, _) if cue_seq_id == sequence_id
-                            ) || matches!(obj, &Object::Sequence(id) if id == sequence_id) =>
+                            )   || matches!(obj, &Object::Sequence(id) if id == sequence_id)
+                                || matches!(obj, &Object::SequenceCueOut(id) if id == sequence_id) =>
                         {
                             this.request_sequence(cx);
                         }
