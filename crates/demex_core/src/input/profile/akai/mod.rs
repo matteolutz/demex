@@ -41,7 +41,10 @@ impl ApcMiniMk2InputDeviceProfile {
             apc_midi_name,
             midi: MidiInOutDevice::new(
                 "APC Mini Mk2".to_owned(),
-                |name| name.contains("APC mini mk2") && name.contains("Contr"),
+                |name| {
+                    name.contains("APC mini mk2")
+                        && (cfg!(target_os = "windows") || name.contains("Contr"))
+                },
                 MidiInOutDeviceMode::Both,
             ),
         };
