@@ -20,6 +20,7 @@ use std::{cmp, fmt, str};
 
 use demex_dmx::address::DmxAddress;
 use gdtf::dmx_mode::LogicalChannelMaster;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -179,6 +180,21 @@ impl FixtureChannelFunction {
     /// The highlight value (projected in the channel function) for this attribute
     pub fn highlight(&self) -> Option<ClampedValue> {
         self.highlight
+    }
+
+    pub fn channel_set_names(&self) -> impl Iterator<Item = &String> {
+        self.sets.keys()
+    }
+
+    pub fn channel_set_names_sorted(&self) -> impl Iterator<Item = &String> {
+        self.sets
+            .iter()
+            .sorted_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(cmp::Ordering::Equal))
+            .map(|(name, _)| name)
+    }
+
+    pub fn has_channel_set(&self, set: &str) -> bool {
+        self.sets.contains_key(set)
     }
 
     /// Whether this channel function should snap instead of fade

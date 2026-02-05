@@ -10,6 +10,7 @@ use gpui_component::{
     ActiveTheme, Disableable, IconName, Sizable,
     button::{Button, ButtonVariant, ButtonVariants},
     dock::{Panel, PanelEvent, register_panel},
+    h_flex,
     slider::Slider,
     tab::TabBar,
 };
@@ -26,6 +27,8 @@ use crate::{
             },
             toolbar_buttons,
         },
+        window::set_attribute::SetAttributeWindow,
+        wm::{WindowManager, edit_window::WindowManagerExtension},
     },
 };
 
@@ -256,15 +259,37 @@ impl AttributeEditorPanel {
                                     }),
                             )
                             .child(
-                                Button::new(SharedString::from(format!("home-{}", attr.attribute)))
-                                    .with_variant(ButtonVariant::Primary)
-                                    .label("Home")
-                                    .on_click({
-                                        let attr = attr.attribute;
-                                        move |_, _, cx| {
-                                            AttributeEditorAttributeState::set_value(attr, None, cx)
-                                        }
-                                    }),
+                                h_flex()
+                                    .child(
+                                        Button::new(SharedString::from(format!(
+                                            "home-{}",
+                                            attr.attribute
+                                        )))
+                                        .with_variant(ButtonVariant::Primary)
+                                        .label("Home")
+                                        .on_click({
+                                            let attr = attr.attribute;
+                                            move |_, _, cx| {
+                                                AttributeEditorAttributeState::set_value(
+                                                    attr, None, cx,
+                                                )
+                                            }
+                                        }),
+                                    )
+                                    .child(
+                                        Button::new(SharedString::from(format!(
+                                            "edit-{}",
+                                            attr.attribute
+                                        )))
+                                        .with_variant(ButtonVariant::Secondary)
+                                        .label("Edit")
+                                        .on_click({
+                                            let attr = attr.attribute;
+                                            move |_, _, cx| {
+                                                WindowManager::open_edit_window::<SetAttributeWindow>(cx, move |_, cx| SetAttributeWindow::new(attr, cx));
+                                            }
+                                        }),
+                                    ),
                             )
                             .child(div().flex_1())
                             .child(

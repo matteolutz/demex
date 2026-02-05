@@ -71,6 +71,54 @@ impl FunctionDelegate for SetAttributeValueArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SetAttributeChannelSetArgs {
+    pub fixture_selector: FixtureSelector,
+    pub attribute: FixtureChannel3Attribute,
+    pub channel_set: String,
+}
+
+impl FunctionDelegate for SetAttributeChannelSetArgs {
+    fn run(
+        &self,
+        args: ActionRunArgs,
+    ) -> Result<
+        crate::command::parser::nodes::action::result::ActionRunResult,
+        crate::command::parser::nodes::action::error::ActionRunError,
+    > {
+        let selection = self
+            .fixture_selector
+            .get_selection(args.preset_handler, args.fixture_selector_context)
+            .map_err(ActionRunError::FixtureSelectorError)?;
+
+        for fixture in selection
+            .fixtures()
+            .iter()
+            .filter_map(|f_path| args.patch.fixture(f_path).ok())
+            .filter(|fixture| {
+                fixture
+                    .channel_function(&self.attribute)
+                    .is_some_and(|cf| cf.has_channel_set(&self.channel_set))
+            })
+        {
+            if let Ok(fixture_state) = args.fixture_handler.fixture_mut(&fixture.path()) {
+                fixture_state
+                    .set_programmer_value(
+                        fixture,
+                        &self.attribute,
+                        FixtureChannelValue3::discrete_set(self.channel_set.clone()),
+                    )
+                    .map_err(ActionRunError::FixtureError)?;
+            }
+        }
+
+        args.event_list.push(DemexEvent::FixtureValuesChanged(
+            selection.fixtures().to_vec(),
+        ));
+        Ok(ActionRunResult::Default)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SelectionOrSelector {
     Selection(FixtureSelection),
     Selector(FixtureSelector),
