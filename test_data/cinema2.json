@@ -1512,7 +1512,13 @@
       },
       "timecodes": {}
     },
-    "input_device_configs": [],
+    "input_device_configs": [
+      {
+        "buttons": {},
+        "faders": {},
+        "profile_type": { "ApcMiniMk2": { "apc_midi": "" } }
+      }
+    ],
     "patch": {
       "fixtures": [
         {
