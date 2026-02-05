@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     command::parser::nodes::{
         action::{
-            Action, ActionIssuer,
+            Action, ActionIssuer, ActionRunArgs,
             functions::{
                 go_function::ExecutorGoArgs,
                 set_function::{SelectionOrSelector, SetFixturePresetArgs},
@@ -312,5 +312,76 @@ impl DemexInputDeviceControlAssignmentDelegate for DemexInputButtonAssignment {
                 init_event: None,
             }),
         }
+    }
+
+    fn from_control(
+        control: Self::Control,
+        args: &ActionRunArgs,
+    ) -> Result<Self, DemexInputDeviceError> {
+        let assignment = match control {
+            DemexInputButton::ExecutorGo(executor_id) => {
+                let is_running = args
+                    .updatable_handler
+                    .executor(executor_id)
+                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?
+                    .is_active();
+
+                DemexInputButtonAssignment::ExecutorGo {
+                    executor_id,
+                    is_running,
+                }
+            }
+            DemexInputButton::ExecutorStop(executor_id) => {
+                let is_running = args
+                    .updatable_handler
+                    .executor(executor_id)
+                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?
+                    .is_active();
+
+                DemexInputButtonAssignment::ExecutorStop {
+                    executor_id,
+                    is_running,
+                }
+            }
+            DemexInputButton::ExecutorFlash { id, stomp } => {
+                let is_running = args
+                    .updatable_handler
+                    .executor(id)
+                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?
+                    .is_active();
+
+                DemexInputButtonAssignment::ExecutorFlash {
+                    executor_id: id,
+                    stomp: stomp,
+                    is_running,
+                }
+            }
+            DemexInputButton::FixtureSelector { fixture_selector } => {
+                DemexInputButtonAssignment::FixtureSelector {
+                    fixture_selector: fixture_selector.clone(),
+                }
+            }
+            DemexInputButton::SelectivePreset {
+                selection,
+                preset_id,
+            } => DemexInputButtonAssignment::SelectivePreset {
+                preset_id,
+                selection: selection.clone(),
+            },
+            DemexInputButton::Macro { action } => DemexInputButtonAssignment::Macro {
+                action: action.clone(),
+            },
+            DemexInputButton::SpeedMasterTap { speed_master_id } => {
+                // make sure the speed master exists
+                args.timing_handler
+                    .get_speed_master_value(speed_master_id)
+                    .map_err(DemexInputDeviceError::TimingHandlerError)?;
+
+                DemexInputButtonAssignment::SpeedMasterTap { speed_master_id }
+            }
+            DemexInputButton::Unused => Err(DemexInputDeviceError::UnusedButton)?,
+        };
+
+        Ok(assignment)
     }
 }

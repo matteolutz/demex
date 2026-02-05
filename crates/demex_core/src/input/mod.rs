@@ -90,15 +90,11 @@ pub trait DemexInputDeviceProfile: 'static + Send + std::fmt::Debug {
 #[derive(Default, Debug)]
 pub struct DemexInputDeviceHandler {
     devices: Vec<DemexInputDevice>,
-    has_initialized: bool,
 }
 
 impl DemexInputDeviceHandler {
     pub fn new(devices: Vec<DemexInputDevice>) -> Self {
-        Self {
-            devices,
-            has_initialized: false,
-        }
+        Self { devices }
     }
 
     pub fn device_mut(
@@ -112,6 +108,10 @@ impl DemexInputDeviceHandler {
 
     pub fn devices(&self) -> &Vec<DemexInputDevice> {
         &self.devices
+    }
+
+    pub fn device_configs(&self) -> impl Iterator<Item = &DemexInputDeviceConfig> {
+        self.devices.iter().map(|dev| &dev.config)
     }
 
     pub fn assign(

@@ -29,6 +29,8 @@ pub enum DemexInputDeviceError {
     ButtonNotAssigned(u32),
     FaderNotAssigned(u32),
 
+    UnusedButton,
+
     NotImplemented,
 
     MpscSendError,
@@ -70,6 +72,8 @@ impl std::fmt::Display for DemexInputDeviceError {
             Self::FaderNotAssigned(id) => write!(f, "Fader with id {} not assigned", id),
 
             Self::NotImplemented => write!(f, "Not implemented"),
+
+            Self::UnusedButton => write!(f, "Unused button"),
 
             Self::MpscSendError => write!(f, "Mpsc send error"),
             Self::MidirError(err) => write!(f, "Midir error: {}", err),

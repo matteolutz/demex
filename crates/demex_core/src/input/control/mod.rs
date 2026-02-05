@@ -1,4 +1,5 @@
 use crate::{
+    command::parser::nodes::action::ActionRunArgs,
     event::DemexEvent,
     input::{
         DemexInputDeviceUpdateArgs,
@@ -27,12 +28,17 @@ pub struct DemexInputControlAssignmentResult<T: DemexInputDeviceControlDelegate>
     pub init_event: Option<T::Update>,
 }
 
-pub trait DemexInputDeviceControlAssignmentDelegate {
+pub trait DemexInputDeviceControlAssignmentDelegate: Sized {
     type Control: DemexInputDeviceControlDelegate;
 
     fn assign(
         self,
     ) -> Result<DemexInputControlAssignmentResult<Self::Control>, DemexInputDeviceError>;
+
+    fn from_control(
+        control: Self::Control,
+        args: &ActionRunArgs,
+    ) -> Result<Self, DemexInputDeviceError>;
 }
 
 #[derive(Debug, Clone)]

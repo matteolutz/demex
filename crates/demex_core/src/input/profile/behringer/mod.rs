@@ -15,6 +15,7 @@ use crate::input::{
     },
 };
 
+#[allow(unused)]
 mod encoder;
 
 // We receive MIDI messages from the Behringer on this channel,
