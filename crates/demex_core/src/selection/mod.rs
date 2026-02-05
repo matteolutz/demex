@@ -131,6 +131,16 @@ impl FixtureSelection {
         &self.fixtures
     }
 
+    pub fn fixtures_with_offset_idx<'a>(
+        &'a self,
+        offset: usize,
+    ) -> impl Iterator<Item = &'a FixturePath> {
+        self.fixtures.iter().filter(move |fixture| {
+            self.offset_idx(fixture)
+                .is_some_and(|fixture_offset| fixture_offset == offset)
+        })
+    }
+
     pub fn group(&self) -> usize {
         self.group.max(1)
     }
