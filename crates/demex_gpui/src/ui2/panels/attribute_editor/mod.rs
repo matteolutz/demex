@@ -20,6 +20,7 @@ use crate::{
     engine::state::DemexUiState,
     ui2::{
         config::AppConfigExt,
+        icon::DemexIconName,
         panels::{
             attribute_editor::{
                 attribute_state::AttributeEditorAttributeState,
@@ -240,7 +241,39 @@ impl AttributeEditorPanel {
                             .flex()
                             .flex_col()
                             .justify_between()
-                            .child(attr.attribute.to_string())
+                            .child(
+                                h_flex().w_full()
+                                    .child(div().flex_grow().w_full().child(attr.attribute.to_string()))
+                                    .child(
+                                        Button::new(SharedString::from(format!(
+                                            "home-{}",
+                                            attr.attribute
+                                        )))
+                                        .icon(DemexIconName::Home)
+                                        .with_variant(ButtonVariant::Primary)
+                                        .on_click({
+                                            let attr = attr.attribute;
+                                            move |_, _, cx| {
+                                                AttributeEditorAttributeState::set_value(
+                                                    attr, None, cx,
+                                                )
+                                            }
+                                        }),
+                                    )
+                                .child(Button::new(SharedString::from(format!(
+                                    "edit-{}",
+                                    attr.attribute
+                                )))
+                                .icon(DemexIconName::CallMade)
+                                .with_variant(ButtonVariant::Secondary)
+                                .on_click({
+                                    let attr = attr.attribute;
+                                    move |_, _, cx| {
+                                        WindowManager::open_edit_window::<SetAttributeWindow>(cx, move |_, cx| SetAttributeWindow::new(attr, cx));
+                                    }
+                                })
+                                )
+                            )
                             .child(
                                 div()
                                     .when(
@@ -258,39 +291,7 @@ impl AttributeEditorPanel {
                                         "-".to_string()
                                     }),
                             )
-                            .child(
-                                h_flex()
-                                    .child(
-                                        Button::new(SharedString::from(format!(
-                                            "home-{}",
-                                            attr.attribute
-                                        )))
-                                        .with_variant(ButtonVariant::Primary)
-                                        .label("Home")
-                                        .on_click({
-                                            let attr = attr.attribute;
-                                            move |_, _, cx| {
-                                                AttributeEditorAttributeState::set_value(
-                                                    attr, None, cx,
-                                                )
-                                            }
-                                        }),
-                                    )
-                                    .child(
-                                        Button::new(SharedString::from(format!(
-                                            "edit-{}",
-                                            attr.attribute
-                                        )))
-                                        .with_variant(ButtonVariant::Secondary)
-                                        .label("Edit")
-                                        .on_click({
-                                            let attr = attr.attribute;
-                                            move |_, _, cx| {
-                                                WindowManager::open_edit_window::<SetAttributeWindow>(cx, move |_, cx| SetAttributeWindow::new(attr, cx));
-                                            }
-                                        }),
-                                    ),
-                            )
+
                             .child(div().flex_1())
                             .child(
                                 Slider::new(&attr.slider_state)
