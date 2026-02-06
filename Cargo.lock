@@ -1132,7 +1132,7 @@ dependencies = [
 [[package]]
 name = "collections"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "indexmap",
  "rustc-hash 2.1.1",
@@ -1386,21 +1386,22 @@ dependencies = [
 
 [[package]]
 name = "cosmic-text"
-version = "0.14.2"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da46a9d5a8905cc538a4a5bceb6a4510de7a51049c5588c0114efce102bcbbe8"
+checksum = "8c5c9868e64aa6c5410629a83450e142c80e721c727a5bc0fb18107af6c2d66b"
 dependencies = [
  "bitflags 2.10.0",
- "fontdb 0.16.2",
+ "fontdb",
+ "harfrust",
+ "linebender_resource_handle",
  "log",
  "rangemap",
- "rustc-hash 1.1.0",
- "rustybuzz 0.14.1",
+ "rustc-hash 2.1.1",
  "self_cell",
+ "skrifa 0.40.0",
  "smol_str",
  "swash",
  "sys-locale",
- "ttf-parser 0.21.1",
  "unicode-bidi",
  "unicode-linebreak",
  "unicode-script",
@@ -1656,7 +1657,7 @@ dependencies = [
 [[package]]
 name = "derive_refineable"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2189,26 +2190,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "font-types"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1e4d2d0cf79d38430cc9dc9aadec84774bff2e1ba30ae2bf6c16cfce9385a23"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
 name = "fontconfig-parser"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbc773e24e02d4ddd8395fd30dc147524273a83e54e0f312d986ea30de5f5646"
 dependencies = [
  "roxmltree",
-]
-
-[[package]]
-name = "fontdb"
-version = "0.16.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0299020c3ef3f60f526a4f64ab4a3d4ce116b1acbf24cdd22da0068e5d81dc3"
-dependencies = [
- "fontconfig-parser",
- "log",
- "memmap2",
- "slotmap",
- "tinyvec",
- "ttf-parser 0.20.0",
 ]
 
 [[package]]
@@ -2222,7 +2218,7 @@ dependencies = [
  "memmap2",
  "slotmap",
  "tinyvec",
- "ttf-parser 0.25.1",
+ "ttf-parser",
 ]
 
 [[package]]
@@ -2572,7 +2568,7 @@ dependencies = [
 [[package]]
 name = "gpui"
 version = "0.2.2"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "anyhow",
  "as-raw-xcb-connection",
@@ -2674,7 +2670,7 @@ dependencies = [
 [[package]]
 name = "gpui-component"
 version = "0.5.1"
-source = "git+https://github.com/matteolutz/gpui-component?branch=main#564f0d0d6b758f02e9bb773e2578b34501932a99"
+source = "git+https://github.com/matteolutz/gpui-component?branch=main#0793f091103320c3c70548faaa2cf10fb01e2175"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -2713,7 +2709,7 @@ dependencies = [
 [[package]]
 name = "gpui-component-macros"
 version = "0.5.1"
-source = "git+https://github.com/matteolutz/gpui-component?branch=main#564f0d0d6b758f02e9bb773e2578b34501932a99"
+source = "git+https://github.com/matteolutz/gpui-component?branch=main#0793f091103320c3c70548faaa2cf10fb01e2175"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2735,7 +2731,7 @@ dependencies = [
 [[package]]
 name = "gpui_macros"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -2759,6 +2755,19 @@ dependencies = [
  "crunchy",
  "num-traits",
  "zerocopy",
+]
+
+[[package]]
+name = "harfrust"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f9f40651a03bc0f7316bd75267ff5767e93017ef3cfffe76c6aa7252cc5a31c"
+dependencies = [
+ "bitflags 2.10.0",
+ "bytemuck",
+ "core_maths",
+ "read-fonts 0.37.0",
+ "smallvec",
 ]
 
 [[package]]
@@ -2887,7 +2896,7 @@ dependencies = [
 [[package]]
 name = "http_client"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -3442,6 +3451,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "linebender_resource_handle"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4a5ff6bcca6c4867b1c4fd4ef63e4db7436ef363e0ad7531d1558856bae64f4"
+
+[[package]]
 name = "linux-raw-sys"
 version = "0.4.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3675,7 +3690,7 @@ dependencies = [
 [[package]]
 name = "media"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "anyhow",
  "bindgen",
@@ -4404,7 +4419,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 [[package]]
 name = "perf"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "collections",
  "serde",
@@ -4940,7 +4955,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6717cf23b488adf64b9d711329542ba34de147df262370221940dfabc2c91358"
 dependencies = [
  "bytemuck",
- "font-types",
+ "font-types 0.10.1",
+]
+
+[[package]]
+name = "read-fonts"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b634fabf032fab15307ffd272149b622260f55974d9fad689292a5d33df02e5"
+dependencies = [
+ "bytemuck",
+ "core_maths",
+ "font-types 0.11.0",
 ]
 
 [[package]]
@@ -5015,7 +5041,7 @@ dependencies = [
 [[package]]
 name = "refineable"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "derive_refineable",
 ]
@@ -5264,23 +5290,6 @@ checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 
 [[package]]
 name = "rustybuzz"
-version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfb9cf8877777222e4a3bc7eb247e398b56baba500c38c1c46842431adc8b55c"
-dependencies = [
- "bitflags 2.10.0",
- "bytemuck",
- "libm",
- "smallvec",
- "ttf-parser 0.21.1",
- "unicode-bidi-mirroring 0.2.0",
- "unicode-ccc 0.2.0",
- "unicode-properties",
- "unicode-script",
-]
-
-[[package]]
-name = "rustybuzz"
 version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd3c7c96f8a08ee34eff8857b11b49b07d71d1c3f4e88f8a88d4c9e9f90b1702"
@@ -5290,9 +5299,9 @@ dependencies = [
  "core_maths",
  "log",
  "smallvec",
- "ttf-parser 0.25.1",
- "unicode-bidi-mirroring 0.4.0",
- "unicode-ccc 0.4.0",
+ "ttf-parser",
+ "unicode-bidi-mirroring",
+ "unicode-ccc",
  "unicode-properties",
  "unicode-script",
 ]
@@ -5324,7 +5333,7 @@ dependencies = [
 [[package]]
 name = "scheduler"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "async-task",
  "backtrace",
@@ -5684,7 +5693,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c31071dedf532758ecf3fed987cdb4bd9509f900e026ab684b4ecb81ea49841"
 dependencies = [
  "bytemuck",
- "read-fonts",
+ "read-fonts 0.35.0",
+]
+
+[[package]]
+name = "skrifa"
+version = "0.40.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7fbdfe3d2475fbd7ddd1f3e5cf8288a30eb3e5f95832829570cd88115a7434ac"
+dependencies = [
+ "bytemuck",
+ "read-fonts 0.37.0",
 ]
 
 [[package]]
@@ -5727,9 +5746,9 @@ dependencies = [
 
 [[package]]
 name = "smol_str"
-version = "0.2.2"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd538fb6910ac1099850255cf94a94df6551fbdd602454387d0adb2d1ca6dead"
+checksum = "0f7a918bd2a9951d18ee6e48f076843e8e73a9a5d22cf05bcd4b7a81bdd04e17"
 
 [[package]]
 name = "spin"
@@ -5908,7 +5927,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 [[package]]
 name = "sum_tree"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "arrayvec",
  "log",
@@ -6017,7 +6036,7 @@ version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47846491253e976bdd07d0f9cc24b7daf24720d11309302ccbbc6e6b6e53550a"
 dependencies = [
- "skrifa",
+ "skrifa 0.37.0",
  "yazi",
  "zeno",
 ]
@@ -6499,18 +6518,6 @@ dependencies = [
 
 [[package]]
 name = "ttf-parser"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17f77d76d837a7830fe1d4f12b7b4ba4192c1888001c7164257e4bc6d21d96b4"
-
-[[package]]
-name = "ttf-parser"
-version = "0.21.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c591d83f69777866b9126b24c6dd9a18351f177e49d625920d19f989fd31cf8"
-
-[[package]]
-name = "ttf-parser"
 version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31"
@@ -6564,21 +6571,9 @@ checksum = "5c1cb5db39152898a79168971543b1cb5020dff7fe43c8dc468b0885f5e29df5"
 
 [[package]]
 name = "unicode-bidi-mirroring"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23cb788ffebc92c5948d0e997106233eeb1d8b9512f93f41651f52b6c5f5af86"
-
-[[package]]
-name = "unicode-bidi-mirroring"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5dfa6e8c60bb66d49db113e0125ee8711b7647b5579dc7f5f19c42357ed039fe"
-
-[[package]]
-name = "unicode-ccc"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1df77b101bcc4ea3d78dafc5ad7e4f58ceffe0b2b16bf446aeb50b6cb4157656"
 
 [[package]]
 name = "unicode-ccc"
@@ -6662,13 +6657,13 @@ dependencies = [
  "base64",
  "data-url",
  "flate2",
- "fontdb 0.23.0",
+ "fontdb",
  "imagesize",
  "kurbo",
  "log",
  "pico-args",
  "roxmltree",
- "rustybuzz 0.20.1",
+ "rustybuzz",
  "simplecss",
  "siphasher",
  "strict-num",
@@ -6701,7 +6696,7 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 [[package]]
 name = "util"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "anyhow",
  "async-fs",
@@ -6739,7 +6734,7 @@ dependencies = [
 [[package]]
 name = "util_macros"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "perf",
  "quote",
@@ -8009,7 +8004,7 @@ dependencies = [
 [[package]]
 name = "zlog"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "anyhow",
  "chrono",
@@ -8066,7 +8061,7 @@ dependencies = [
 [[package]]
 name = "ztracing"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 dependencies = [
  "tracing",
  "tracing-subscriber",
@@ -8077,7 +8072,7 @@ dependencies = [
 [[package]]
 name = "ztracing_macro"
 version = "0.1.0"
-source = "git+https://github.com/zed-industries/zed#7dcff21dc91cb78faedb562a177133b51349f6de"
+source = "git+https://github.com/zed-industries/zed#c4306812117d9a5047b5b7194275e9644d920c23"
 
 [[package]]
 name = "zune-core"
