@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    command::parser::nodes::action::{Action, ActionIssuer, queue::ActionQueue},
+    command::parser::nodes::action::{Action, ActionIssuer, ActionRunArgs, queue::ActionQueue},
     event::DemexEvent,
     input::{
         DemexInputDeviceUpdateArgs,
@@ -246,5 +246,40 @@ impl DemexInputDeviceControlAssignmentDelegate for DemexInputFaderAssignment {
             control: self.mode,
             init_event: fader_value.map(DemexInputDeviceFaderUpdate::FaderValueChange),
         })
+    }
+
+    fn from_control(
+        control: Self::Control,
+        args: &ActionRunArgs,
+    ) -> Result<Self, DemexInputDeviceError> {
+        let assignment = match control {
+            DemexInputFader::Fader { executor_id } => {
+                // Verify, taht the executor exists
+                let executor = args
+                    .updatable_handler
+                    .executor(executor_id)
+                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
+                Self::executor(executor)
+            }
+            DemexInputFader::Grandmaster => {
+                let gm_value = args.fixture_handler.grand_master();
+                Self::grandmaster(gm_value)
+            }
+            DemexInputFader::SpeedMaster {
+                speed_master_id,
+                bpm_min,
+                bpm_max,
+            } => {
+                let speedmaster = args
+                    .timing_handler
+                    .get_speed_master_value(speed_master_id)
+                    .map_err(DemexInputDeviceError::TimingHandlerError)?;
+                Self::speedmaster(speed_master_id, speedmaster, bpm_min, bpm_max)
+            }
+            DemexInputFader::Groupmaster(_) => {
+                todo!("get groupmaster value");
+            }
+        };
+        Ok(assignment)
     }
 }

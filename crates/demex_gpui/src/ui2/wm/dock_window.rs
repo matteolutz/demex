@@ -58,13 +58,20 @@ pub struct DockWindow {
     title_bar: Entity<DemexTitleBar>,
     dock_area: Entity<DockArea>,
 
+    is_main: bool,
+
     context_layer: Entity<DemexContextLayer>,
 
     _subscriptions: Vec<Subscription>,
 }
 
 impl DockWindow {
-    fn apply_default_dock_area(da: &mut DockArea, window: &mut Window, cx: &mut Context<DockArea>) {
+    fn apply_default_dock_area(
+        da: &mut DockArea,
+        is_main: bool,
+        window: &mut Window,
+        cx: &mut Context<DockArea>,
+    ) {
         da.add_panel(
             Arc::new(cx.new(|cx| FixtureSelectionPanel::new(cx))),
             DockPlacement::Center,
@@ -156,27 +163,32 @@ impl DockWindow {
             cx,
         );
 
-        let command_panel = cx.new(|cx| CommandPanel::new(window, cx));
-        da.set_bottom_dock(
-            DockItem::panel(Arc::new(command_panel)),
-            Some(130.0.into()),
-            true,
-            window,
-            cx,
-        );
+        if is_main {
+            let command_panel = cx.new(|cx| CommandPanel::new(window, cx));
+            da.set_bottom_dock(
+                DockItem::panel(Arc::new(command_panel)),
+                Some(130.0.into()),
+                true,
+                window,
+                cx,
+            );
+        }
 
-        let performance_panel = cx.new(|cx| PerformancePanel::new(window, cx));
-        da.set_right_dock(
-            DockItem::panel(Arc::new(performance_panel)),
-            Some(300.0.into()),
-            true,
-            window,
-            cx,
-        );
+        if cfg!(debug_assertions) {
+            let performance_panel = cx.new(|cx| PerformancePanel::new(window, cx));
+            da.set_right_dock(
+                DockItem::panel(Arc::new(performance_panel)),
+                Some(300.0.into()),
+                true,
+                window,
+                cx,
+            );
+        }
     }
 
     fn init_dockarea(
         config: Option<DockWindowConfig>,
+        is_main: bool,
         window: &mut Window,
         cx: &mut Context<DockArea>,
     ) -> DockArea {
@@ -189,7 +201,7 @@ impl DockWindow {
             .is_none();
 
         if should_load_default {
-            Self::apply_default_dock_area(&mut da, window, cx);
+            Self::apply_default_dock_area(&mut da, is_main, window, cx);
         }
 
         da
@@ -199,10 +211,11 @@ impl DockWindow {
 impl DockWindow {
     pub fn new(
         config: Option<DockWindowConfig>,
+        is_main: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {
-        let dock_area = cx.new(|cx| Self::init_dockarea(config, window, cx));
+        let dock_area = cx.new(|cx| Self::init_dockarea(config, is_main, window, cx));
 
         let _subscriptions = vec![
             cx.observe_and_notify(&DemexShowFileManager::last_autosave(cx)),
@@ -213,6 +226,7 @@ impl DockWindow {
             title_bar: cx.new(|cx| DemexTitleBar::dock_window(cx)),
             dock_area,
             context_layer: cx.new(|_| DemexContextLayer::default()),
+            is_main,
             _subscriptions,
         }
     }
@@ -226,7 +240,7 @@ impl DockWindow {
 
     pub fn reset_config(&self, window: &mut Window, cx: &mut App) {
         self.dock_area.update(cx, |dock_area, cx| {
-            *dock_area = Self::init_dockarea(None, window, cx);
+            *dock_area = Self::init_dockarea(None, self.is_main, window, cx);
             cx.notify();
         });
     }

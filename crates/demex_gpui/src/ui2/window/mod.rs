@@ -3,6 +3,7 @@ use gpui::App;
 pub mod edit_cue_trigger;
 pub mod edit_keyframe_effect;
 pub mod outputs;
+pub mod set_attribute;
 pub mod set_property;
 pub mod settings;
 
@@ -12,4 +13,5 @@ pub(super) fn init(cx: &mut App) {
     set_property::init(cx);
     edit_cue_trigger::init(cx);
     edit_keyframe_effect::init(cx);
+    set_attribute::init(cx);
 }

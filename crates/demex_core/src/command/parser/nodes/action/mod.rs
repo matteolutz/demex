@@ -24,7 +24,7 @@ use strum::EnumIter;
 use crate::{
     command::parser::nodes::action::functions::{
         move_function::MoveArgs,
-        set_function::{CueSetTriggerArgs, ObjectSetPropertyArgs},
+        set_function::{CueSetTriggerArgs, ObjectSetPropertyArgs, SetAttributeChannelSetArgs},
         speedmaster_functions::SpeedMasterTapArgs,
         start_function::ExecutorStartArgs,
         stomp_function::ExecutorStompArgs,
@@ -172,6 +172,7 @@ impl DeferredAction {
 pub enum Action {
     // Set
     SetAttributeValue(SetAttributeValueArgs),
+    SetAttributeChannlSet(SetAttributeChannelSetArgs),
     SetFixturePreset(SetFixturePresetArgs),
     ObjectSetProperty(ObjectSetPropertyArgs),
 
@@ -274,6 +275,7 @@ impl Action {
         match self {
             // Set
             Self::SetAttributeValue(fun) => fun.run(args),
+            Self::SetAttributeChannlSet(fun) => fun.run(args),
             Self::SetFixturePreset(fun) => fun.run(args),
             Self::ObjectSetProperty(fun) => fun.run(args),
 

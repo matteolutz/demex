@@ -8,8 +8,9 @@ use crate::{
         fixture_selector::FixtureSelector,
     },
     input::control::{
-        DemexInputDeviceControlAssignment, button::DemexInputButtonAssignment,
-        fader::DemexInputFaderAssignment,
+        DemexInputDeviceControlAssignment, DemexInputDeviceControlAssignmentDelegate,
+        button::{DemexInputButton, DemexInputButtonAssignment},
+        fader::{DemexInputFader, DemexInputFaderAssignment},
     },
     presets::preset::FixturePresetId,
 };
@@ -34,50 +35,25 @@ pub enum AssignButtonArgsMode {
 }
 
 impl AssignButtonArgsMode {
-    pub fn into_assignments(
+    pub fn into_buttons(
         &self,
-        args: ActionRunArgs,
-    ) -> Result<Vec<DemexInputButtonAssignment>, ActionRunError> {
+        args: &ActionRunArgs,
+    ) -> Result<Vec<DemexInputButton>, ActionRunError> {
         match &self {
             AssignButtonArgsMode::ExecutorGo(executor_id) => {
-                let is_running = args
-                    .updatable_handler
-                    .executor(*executor_id)
-                    .map_err(ActionRunError::UpdatableHandlerError)?
-                    .is_active();
-
-                Ok(vec![DemexInputButtonAssignment::ExecutorGo {
-                    executor_id: *executor_id,
-                    is_running,
-                }])
+                Ok(vec![DemexInputButton::ExecutorGo(*executor_id)])
             }
             AssignButtonArgsMode::ExecutorStop(executor_id) => {
-                let is_running = args
-                    .updatable_handler
-                    .executor(*executor_id)
-                    .map_err(ActionRunError::UpdatableHandlerError)?
-                    .is_active();
-
-                Ok(vec![DemexInputButtonAssignment::ExecutorStop {
-                    executor_id: *executor_id,
-                    is_running,
-                }])
+                Ok(vec![DemexInputButton::ExecutorStop(*executor_id)])
             }
             AssignButtonArgsMode::ExecutorFlash { id, stomp } => {
-                let is_running = args
-                    .updatable_handler
-                    .executor(*id)
-                    .map_err(ActionRunError::UpdatableHandlerError)?
-                    .is_active();
-
-                Ok(vec![DemexInputButtonAssignment::ExecutorFlash {
-                    executor_id: *id,
+                Ok(vec![DemexInputButton::ExecutorFlash {
+                    id: *id,
                     stomp: *stomp,
-                    is_running,
                 }])
             }
             AssignButtonArgsMode::FixtureSelector(fixture_selector) => {
-                Ok(vec![DemexInputButtonAssignment::FixtureSelector {
+                Ok(vec![DemexInputButton::FixtureSelector {
                     fixture_selector: fixture_selector.clone(),
                 }])
             }
@@ -98,22 +74,17 @@ impl AssignButtonArgsMode {
                     .try_into_id_list()
                     .map_err(ActionRunError::PresetHandlerError)?
                     .into_iter()
-                    .map(|preset_id| DemexInputButtonAssignment::SelectivePreset {
+                    .map(|preset_id| DemexInputButton::SelectivePreset {
                         preset_id,
                         selection: selection.clone(),
                     })
                     .collect::<Vec<_>>())
             }
-            AssignButtonArgsMode::Macro(action) => Ok(vec![DemexInputButtonAssignment::Macro {
+            AssignButtonArgsMode::Macro(action) => Ok(vec![DemexInputButton::Macro {
                 action: *action.clone(),
             }]),
             AssignButtonArgsMode::SpeedmasterTap(speed_master_id) => {
-                // make sure the speed master exists
-                args.timing_handler
-                    .get_speed_master_value(*speed_master_id)
-                    .map_err(ActionRunError::TimingHandlerError)?;
-
-                Ok(vec![DemexInputButtonAssignment::SpeedMasterTap {
+                Ok(vec![DemexInputButton::SpeedMasterTap {
                     speed_master_id: *speed_master_id,
                 }])
             }
@@ -138,8 +109,9 @@ impl FunctionDelegate for AssignButtonArgs {
     > {
         Ok(ActionRunResult::AssignMultiple(
             self.mode
-                .into_assignments(args)?
+                .into_buttons(&args)?
                 .into_iter()
+                .filter_map(|button| DemexInputButtonAssignment::from_control(button, &args).ok())
                 .map(|assignment| DemexInputDeviceControlAssignment::Button {
                     device_idx: self.device_idx,
                     button_id: self.button_id,
@@ -157,6 +129,20 @@ pub enum AssignFaderArgsMode {
     Speedmaster(u32),
 }
 
+impl From<AssignFaderArgsMode> for DemexInputFader {
+    fn from(value: AssignFaderArgsMode) -> Self {
+        match value {
+            AssignFaderArgsMode::Executor(executor_id) => DemexInputFader::Fader { executor_id },
+            AssignFaderArgsMode::Grandmaster => DemexInputFader::Grandmaster,
+            AssignFaderArgsMode::Speedmaster(speedmaster_id) => DemexInputFader::SpeedMaster {
+                speed_master_id: speedmaster_id,
+                bpm_min: 50.0,
+                bpm_max: 300.0,
+            },
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssignFaderArgs {
     pub mode: AssignFaderArgsMode,
@@ -166,27 +152,9 @@ pub struct AssignFaderArgs {
 
 impl FunctionDelegate for AssignFaderArgs {
     fn run(&self, args: ActionRunArgs) -> Result<ActionRunResult, ActionRunError> {
-        let assignment = match self.mode {
-            AssignFaderArgsMode::Executor(executor_id) => {
-                // Verify, taht the executor exists
-                let executor = args
-                    .updatable_handler
-                    .executor(executor_id)
-                    .map_err(ActionRunError::UpdatableHandlerError)?;
-                DemexInputFaderAssignment::executor(executor)
-            }
-            AssignFaderArgsMode::Grandmaster => {
-                let gm_value = args.fixture_handler.grand_master();
-                DemexInputFaderAssignment::grandmaster(gm_value)
-            }
-            AssignFaderArgsMode::Speedmaster(speed_master_id) => {
-                let speedmaster = args
-                    .timing_handler
-                    .get_speed_master_value(speed_master_id)
-                    .map_err(ActionRunError::TimingHandlerError)?;
-                DemexInputFaderAssignment::speedmaster(speed_master_id, speedmaster, 50.0, 300.0)
-            }
-        };
+        let fader = self.mode.into();
+        let assignment = DemexInputFaderAssignment::from_control(fader, &args)
+            .map_err(ActionRunError::InputDeviceError)?;
 
         Ok(ActionRunResult::Assign(
             DemexInputDeviceControlAssignment::Fader {

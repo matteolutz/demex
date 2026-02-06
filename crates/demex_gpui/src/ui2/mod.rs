@@ -5,6 +5,7 @@ pub mod assets;
 pub mod components;
 pub mod config;
 pub mod ext;
+pub mod icon;
 pub mod panels;
 pub mod titlebar;
 pub mod utils;

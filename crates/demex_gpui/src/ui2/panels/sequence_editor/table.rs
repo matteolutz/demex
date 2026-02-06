@@ -10,12 +10,13 @@ use demex_core::{
         object::Object,
     },
     sequence::{
-        cue::{CueFadingFunction, CueIdx, CueProperty},
+        cue::{CueFadingFunction, CueIdx, CueOut, CueProperty},
         frontend::FrontendCue,
     },
 };
 use gpui::{
-    App, Context, DefiniteLength, InteractiveElement, IntoElement, ParentElement, Styled, Task, div,
+    App, Context, DefiniteLength, InteractiveElement, IntoElement, ParentElement, Styled, Task,
+    Window, div,
 };
 use gpui_component::{
     ActiveTheme, Sizable,
@@ -38,8 +39,25 @@ use crate::{
     },
 };
 
+pub(super) struct SequenceEditorTableData {
+    pub sequence_id: u32,
+    pub cues: Vec<FrontendCue>,
+    pub cue_out: CueOut,
+}
+
+impl SequenceEditorTableData {
+    pub fn num_cues(&self) -> usize {
+        self.cues.len() + 1
+    }
+
+    pub fn is_cue_out(&self, cue_idx: usize) -> bool {
+        cue_idx == self.cues.len()
+    }
+}
+
 pub struct SequenceEditorTable {
-    data: Option<(u32, Vec<FrontendCue>)>,
+    data: Option<SequenceEditorTableData>,
+
     active_cues: HashMap<CueIdx, time::Instant>,
 
     next_render: Option<Task<()>>,
@@ -48,7 +66,7 @@ pub struct SequenceEditorTable {
 }
 
 impl SequenceEditorTable {
-    pub fn new(data: Option<(u32, Vec<FrontendCue>)>) -> Self {
+    pub fn new(data: Option<SequenceEditorTableData>) -> Self {
         Self {
             data,
             active_cues: HashMap::new(),
@@ -67,7 +85,7 @@ impl SequenceEditorTable {
         }
     }
 
-    pub fn update_data(&mut self, data: Option<(u32, Vec<FrontendCue>)>) {
+    pub fn update_data(&mut self, data: Option<SequenceEditorTableData>) {
         self.data = data;
         self.active_cues.clear();
     }
@@ -93,13 +111,16 @@ impl SequenceEditorTable {
     }
 
     fn set_property(
-        (seq_id, cue_idx): (u32, CueIdx),
+        (seq_id, cue_idx): (u32, Option<CueIdx>),
         key: CueProperty,
         value: impl ToString,
         cx: &mut App,
     ) {
         DemexEngineHandler::engine(cx).exec_ui(Action::ObjectSetProperty(ObjectSetPropertyArgs {
-            object: Object::cue(seq_id, cue_idx),
+            object: match cue_idx {
+                Some(cue_idx) => Object::cue(seq_id, cue_idx),
+                None => Object::cue_out(seq_id),
+            },
             key: key.to_string(),
             value: value.to_string(),
         }));
@@ -116,7 +137,7 @@ impl TableDelegate for SequenceEditorTable {
     }
 
     fn rows_count(&self, _cx: &gpui::App) -> usize {
-        self.data.as_ref().map(|data| data.1.len()).unwrap_or(0)
+        self.data.as_ref().map(|data| data.num_cues()).unwrap_or(0)
     }
 
     fn column(&self, col_ix: usize, _cx: &gpui::App) -> gpui_component::table::Column {
@@ -159,15 +180,23 @@ impl TableDelegate for SequenceEditorTable {
         &mut self,
         row_ix: usize,
         col_ix: usize,
-        _window: &mut gpui::Window,
+        window: &mut gpui::Window,
         cx: &mut Context<TableState<Self>>,
     ) -> impl gpui::IntoElement {
-        let Some((sequence_id, data)) = self.data.as_ref() else {
+        let Some(data) = self.data.as_ref() else {
             return div().into_any_element();
         };
 
         let column = &self.columns[col_ix];
-        let cue = &data[row_ix];
+
+        if data.is_cue_out(row_ix) {
+            // this is the "CueOut"
+            return self
+                .render_cue_out(&data, column, window, cx)
+                .into_any_element();
+        }
+
+        let cue = &data.cues[row_ix];
 
         let activated_at = self.active_cues.get(&cue.cue_idx);
         let current_fade = activated_at
@@ -175,7 +204,7 @@ impl TableDelegate for SequenceEditorTable {
             .map(|fade| fade.clamp(0.0, 1.0))
             .unwrap_or(0.0);
 
-        let sequence_id = *sequence_id;
+        let sequence_id = data.sequence_id;
         let cue_idx = cue.cue_idx;
 
         match column.key.as_ref() {
@@ -305,7 +334,7 @@ impl TableDelegate for SequenceEditorTable {
                         .checked(cue.block)
                         .on_click(move |value, _, cx| {
                             Self::set_property(
-                                (sequence_id, cue_idx),
+                                (sequence_id, Some(cue_idx)),
                                 CueProperty::Block,
                                 value,
                                 cx,
@@ -324,7 +353,7 @@ impl TableDelegate for SequenceEditorTable {
                         .checked(cue.move_in_black)
                         .on_click(move |value, _, cx| {
                             Self::set_property(
-                                (sequence_id, cue_idx),
+                                (sequence_id, Some(cue_idx)),
                                 CueProperty::MoveInBlack,
                                 value,
                                 cx,
@@ -359,7 +388,7 @@ impl TableDelegate for SequenceEditorTable {
                                 is_link: false,
                                 handler: Some(Rc::new(move |_, _, cx| {
                                     Self::set_property(
-                                        (sequence_id, cue_idx),
+                                        (sequence_id, Some(cue_idx)),
                                         CueProperty::FadingFunction,
                                         ff,
                                         cx,
@@ -372,6 +401,86 @@ impl TableDelegate for SequenceEditorTable {
                 })
                 .into_any_element(),
             _ => unreachable!(),
+        }
+    }
+}
+
+impl SequenceEditorTable {
+    fn render_cue_out(
+        &self,
+        data: &SequenceEditorTableData,
+        column: &Column,
+        _window: &mut Window,
+        _cx: &mut Context<TableState<Self>>,
+    ) -> impl IntoElement {
+        let cue_out = &data.cue_out;
+        let sequence_id = data.sequence_id;
+
+        match column.key.as_ref() {
+            "name" => div()
+                .flex()
+                .items_center()
+                .size_full()
+                .child("CueOut")
+                .into_any_element(),
+            "in-fade" => div()
+                .size_full()
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(
+                    Button::new("edit-in-fade")
+                        .on_click(move |_, _, cx| {
+                            WindowManager::open_edit_window::<SetPropertyWindow>(
+                                cx,
+                                move |window, cx| {
+                                    SetPropertyWindow::new(
+                                        Object::SequenceCueOut(sequence_id),
+                                        CueProperty::InFade,
+                                        SetPropertyWindowPropertyType::relative_positive_seconds(),
+                                        window,
+                                        cx,
+                                    )
+                                },
+                            );
+                        })
+                        .text()
+                        .label(format!("{:.2}s", cue_out.fade)),
+                )
+                .into_any_element(),
+            "fading" => Button::new("edit-fading")
+                .ghost()
+                .label(format!("{}", cue_out.fading_function))
+                .dropdown_menu({
+                    move |mut menu, _, _| {
+                        for ff in CueFadingFunction::iter() {
+                            menu = menu.item(PopupMenuItem::Item {
+                                icon: None,
+                                label: ff.to_string().into(),
+                                disabled: false,
+                                checked: false,
+                                action: None,
+                                is_link: false,
+                                handler: Some(Rc::new(move |_, _, cx| {
+                                    Self::set_property(
+                                        (sequence_id, None),
+                                        CueProperty::FadingFunction,
+                                        ff,
+                                        cx,
+                                    );
+                                })),
+                            })
+                        }
+                        menu
+                    }
+                })
+                .into_any_element(),
+            _ => div()
+                .flex()
+                .items_center()
+                .size_full()
+                .child("-")
+                .into_any_element(),
         }
     }
 }

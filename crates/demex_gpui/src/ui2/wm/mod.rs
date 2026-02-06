@@ -249,11 +249,19 @@ impl WindowManager {
 
     // Dock windows
     pub fn add_dock_window(config: Option<DockWindowConfig>, cx: &mut App) {
+        let is_main = cx.wm().dock_windows.is_empty();
+
         let window_handle = cx
             .open_window(DockWindowConfig::gpui_window_options(), |window, cx| {
                 window.set_window_title("demex");
 
-                cx.new(|cx| Root::new(cx.new(|cx| DockWindow::new(config, window, cx)), window, cx))
+                cx.new(|cx| {
+                    Root::new(
+                        cx.new(|cx| DockWindow::new(config, is_main, window, cx)),
+                        window,
+                        cx,
+                    )
+                })
             })
             .expect("Dock window should be opened");
 

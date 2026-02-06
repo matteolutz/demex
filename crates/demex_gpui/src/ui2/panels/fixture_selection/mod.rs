@@ -8,8 +8,8 @@ use demex_core::{
 };
 use gpui::{
     App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, InteractiveElement,
-    IntoElement, ParentElement, Render, SharedString, Styled, Subscription,
-    UniformListScrollHandle, Window, div, prelude::FluentBuilder,
+    IntoElement, ParentElement, Render, SharedString, Styled, Subscription, Window, div,
+    prelude::FluentBuilder,
 };
 use gpui_component::{
     ActiveTheme,
@@ -50,8 +50,6 @@ pub struct FixtureSelectionPanel {
 
     fixture_selection: Entity<Option<FixtureSelectionWithGroup>>,
 
-    fixture_selection_scroll_handle: UniformListScrollHandle,
-
     _subscriptions: Vec<Subscription>,
 }
 
@@ -64,7 +62,6 @@ impl FixtureSelectionPanel {
         Self {
             focus_handle: cx.focus_handle(),
             fixture_selection,
-            fixture_selection_scroll_handle: UniformListScrollHandle::new(),
             _subscriptions,
         }
     }

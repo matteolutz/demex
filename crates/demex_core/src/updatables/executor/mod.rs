@@ -129,11 +129,12 @@ impl DemexExecutor {
     ) {
         if value == 0.0 {
             self.stop(fixture_handler, preset_handler, event_list);
+            return; // this will set the fader value to 0.0
         }
 
         if !self.is_active() {
             self.start(fixture_handler, preset_handler, time_offset, event_list);
-            return;
+            return; // this will set the fader value to 1.0
         }
 
         self.set_fader_value(value, event_list);

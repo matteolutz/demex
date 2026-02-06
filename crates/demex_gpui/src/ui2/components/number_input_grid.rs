@@ -37,6 +37,12 @@ impl NumberInputGridButtonRender {
     }
 }
 
+impl From<SharedString> for NumberInputGridButton {
+    fn from(value: SharedString) -> Self {
+        Self::Insert(value)
+    }
+}
+
 impl<T: Into<SharedString>> From<T> for NumberInputGridButtonRender {
     fn from(value: T) -> Self {
         Self::Text(value.into())

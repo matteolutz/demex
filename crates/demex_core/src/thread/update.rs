@@ -1,16 +1,17 @@
 use std::{
     collections::HashMap,
     sync::{Arc, mpsc},
+    time::Instant,
 };
 
 use arc_swap::ArcSwap;
-use itertools::Itertools;
 
 use crate::{
     channel3::channel_value_queue::ChannelValueQueueEntry,
     command::parser::nodes::{
         action::{
-            ActionIssuer, DeferredActionRunArgs, queue::ActionQueue, result::ActionRunResult,
+            ActionIssuer, ActionRunArgs, DeferredActionRunArgs, queue::ActionQueue,
+            result::ActionRunResult,
         },
         fixture_selector::FixtureSelectorContext,
     },
@@ -59,9 +60,9 @@ impl UpdateThread {
         request_handler: DemexEngineCommRequestHandler,
         action_queue: ComponentHandle<ActionQueue>,
         value_queue_tx: mpsc::Sender<ChannelValueQueueEntry>,
-        preset_handler: PresetHandler,
-        updatable_handler: UpdatableHandler,
-        timing_handler: TimingHandler,
+        mut preset_handler: PresetHandler,
+        mut updatable_handler: UpdatableHandler,
+        mut timing_handler: TimingHandler,
         input_device_configs: Vec<DemexInputDeviceConfig>,
         patch: Arc<ArcSwap<Patch>>,
     ) -> (
@@ -69,7 +70,7 @@ impl UpdateThread {
         HashMap<FixturePath, FixtureState>,
         HashMap<PoolType, Vec<PoolItem>>,
     ) {
-        let fixture_state_handler = FixtureStateHandler::new(patch.load().fixtures()).unwrap();
+        let mut fixture_state_handler = FixtureStateHandler::new(patch.load().fixtures()).unwrap();
         let fixture_states = fixture_state_handler.fixtures().clone();
 
         let show = DemexShowRef {
@@ -92,7 +93,25 @@ impl UpdateThread {
         let state = DemexEngineState::default();
 
         // TODO: input device init state
-        let input_devices = input_device_configs.into_iter().map_into().collect();
+        let args = ActionRunArgs {
+            issued_at: Instant::now(),
+            patch: &patch.load(),
+            fixture_handler: &mut fixture_state_handler,
+            preset_handler: &mut preset_handler,
+            updatable_handler: &mut updatable_handler,
+            timing_handler: &mut timing_handler,
+            fixture_selector_context: FixtureSelectorContext::new(&None),
+            event_list: &mut DemexEventList::new(),
+        };
+        let input_devices = input_device_configs
+            .into_iter()
+            .filter_map(|config| {
+                config
+                    .into_device(&args)
+                    .inspect_err(|err| log::error!("Failed to init device: {}", err))
+                    .ok()
+            })
+            .collect();
         let input_device_handler = DemexInputDeviceHandler::new(input_devices);
 
         let s = Self {
@@ -281,7 +300,11 @@ impl DemexThreadDelegate for UpdateThread {
                 preset_handler: &self.preset_handler,
                 updatable_handler: &self.updatable_handler,
                 timing_handler: &self.timing_handler,
-                input_device_configs: &vec![],
+                input_device_configs: &self
+                    .input_device_handler
+                    .device_configs()
+                    .cloned()
+                    .collect(),
                 patch: &patch,
             },
             state: &self.state,
