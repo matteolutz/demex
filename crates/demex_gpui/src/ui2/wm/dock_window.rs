@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     engine::{showfile::DemexShowFileManager, state::DemexUiState},
+    settings::DemexWindowSettings,
     ui2::{
         components::context::DemexContextLayer,
         config::AppConfigExt,
@@ -42,8 +43,13 @@ pub struct DockWindowConfig {
 }
 
 impl DockWindowConfig {
-    pub(super) fn gpui_window_options() -> WindowOptions {
+    pub(super) fn gpui_window_options(settings: Option<DemexWindowSettings>) -> WindowOptions {
         WindowOptions {
+            window_bounds: settings
+                .as_ref()
+                .and_then(|settings| settings.bounds)
+                .map(|bounds| bounds.into()),
+            display_id: None,
             titlebar: Some(titlebar_options()),
             app_id: Some(DEMEX_APP_ID.to_string()),
             ..Default::default()
@@ -181,9 +187,9 @@ impl DockWindow {
         }
     }
 
-    pub fn update_config(&self, state: DockAreaState, window: &mut Window, cx: &mut App) {
+    pub fn update_config(&self, config: DockWindowConfig, window: &mut Window, cx: &mut App) {
         self.dock_area.update(cx, |dock_area, cx| {
-            let _ = dock_area.load(state, window, cx);
+            let _ = dock_area.load(config.dock_area_state, window, cx);
             cx.notify();
         });
     }

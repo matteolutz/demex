@@ -2,6 +2,7 @@
 
 pub mod app;
 pub mod engine;
+pub mod settings;
 pub mod storage;
 pub mod ui2;
 pub mod utils;
@@ -72,6 +73,10 @@ struct Args {
     #[cfg(debug_assertions)]
     #[arg(long, default_value = "false")]
     backtrace: bool,
+
+    /// Hide the titlebar in the UI (Linux only).
+    #[arg(long, default_value = "false")]
+    hide_titlebar: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -168,6 +173,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             theme: args.ui_theme,
             additional_viewports: args.additional_viewports.unwrap_or(0),
             disable_autosave: args.no_autosave,
+            hide_titlebar: args.hide_titlebar,
         });
     }
 

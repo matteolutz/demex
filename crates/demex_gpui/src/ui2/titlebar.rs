@@ -202,23 +202,16 @@ impl Render for DemexTitleBar {
         window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
-        #[cfg(target_os = "linux")]
-        {
+        TitleBar::new().child(
             div()
-        }
-        #[cfg(not(target_os = "linux"))]
-        {
-            TitleBar::new().child(
-                div()
-                    .w_full()
-                    .on_action(Self::handle_new)
-                    .on_action(Self::handle_reset_view)
-                    .flex()
-                    .justify_start()
-                    .items_center()
-                    .gap_2()
-                    .children(self.config.into_children(window, cx)),
-            )
-        }
+                .w_full()
+                .on_action(Self::handle_new)
+                .on_action(Self::handle_reset_view)
+                .flex()
+                .justify_start()
+                .items_center()
+                .gap_2()
+                .children(self.config.into_children(window, cx)),
+        )
     }
 }

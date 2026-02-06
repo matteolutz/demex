@@ -1,15 +1,18 @@
 use std::{any::TypeId, collections::HashMap};
 
 use gpui::{
-    AnyWindowHandle, App, AppContext, Context, Entity, Global, PromptButton, PromptLevel,
-    SharedString, Window, WindowHandle,
+    AnyWindowHandle, App, AppContext, BorrowAppContext, Context, Entity, Global, PromptButton,
+    PromptLevel, SharedString, Window, WindowHandle,
 };
 use gpui_component::{Root, notification::Notification};
 
-use crate::ui2::wm::{
-    app::WindowManagerAppExt,
-    dock_window::{DockWindow, DockWindowConfig},
-    window::{WindowDelegate, WindowWrapper},
+use crate::{
+    settings::{DemexSettings, DemexWindowSettings},
+    ui2::wm::{
+        app::WindowManagerAppExt,
+        dock_window::{DockWindow, DockWindowConfig},
+        window::{WindowDelegate, WindowWrapper},
+    },
 };
 
 const DEMEX_APP_ID: &str = "demex";
@@ -63,6 +66,26 @@ impl WindowManager {
             });
 
             if dock_window_closed && cx.wm().auto_quit {
+                cx.update_wm(|wm, cx| {
+                    for (idx, window) in wm
+                        .dock_windows
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, h)| h.is_active(cx).is_some())
+                        .collect::<Vec<_>>()
+                    {
+                        let _ = window.update(cx, |_, window, cx| {
+                            cx.update_global(|settings: &mut DemexSettings, cx| {
+                                settings.update_window_bounds(idx, window.window_bounds());
+
+                                if let Some(display_id) = window.display(cx).map(|d| d.id()) {
+                                    settings.update_window_display_id(idx, display_id);
+                                }
+                            });
+                        });
+                    }
+                });
+
                 cx.quit();
             }
         })
@@ -248,28 +271,50 @@ impl WindowManager {
     }
 
     // Dock windows
-    pub fn add_dock_window(config: Option<DockWindowConfig>, cx: &mut App) {
+    pub fn add_dock_window(
+        config: (Option<DockWindowConfig>, Option<DemexWindowSettings>),
+        cx: &mut App,
+    ) {
         let is_main = cx.wm().dock_windows.is_empty();
+        let window_idx = cx.wm().dock_windows.len();
+
+        let (config, settings) = config;
 
         let window_handle = cx
-            .open_window(DockWindowConfig::gpui_window_options(), |window, cx| {
-                window.set_window_title("demex");
+            .open_window(
+                DockWindowConfig::gpui_window_options(settings),
+                move |window, cx| {
+                    window.set_window_title("demex");
+                    window.on_window_should_close(cx, move |window, cx| {
+                        let bounds = window.window_bounds();
+                        cx.update_global(|settings: &mut DemexSettings, cx| {
+                            settings.update_window_bounds(window_idx, bounds);
 
-                cx.new(|cx| {
-                    Root::new(
-                        cx.new(|cx| DockWindow::new(config, is_main, window, cx)),
-                        window,
-                        cx,
-                    )
-                })
-            })
+                            if let Some(display_id) = window.display(cx).map(|d| d.id()) {
+                                settings.update_window_display_id(window_idx, display_id);
+                            }
+                        });
+                        true
+                    });
+
+                    cx.new(|cx| {
+                        Root::new(
+                            cx.new(|cx| DockWindow::new(config, is_main, window, cx)),
+                            window,
+                            cx,
+                        )
+                    })
+                },
+            )
             .expect("Dock window should be opened");
 
-        cx.update_wm(|wm, _| wm.dock_windows.push(window_handle))
+        cx.update_wm(|wm, _| {
+            wm.dock_windows.push(window_handle);
+        })
     }
 
     pub fn add_dock_windows(
-        configs: impl IntoIterator<Item = Option<DockWindowConfig>>,
+        configs: impl IntoIterator<Item = (Option<DockWindowConfig>, Option<DemexWindowSettings>)>,
         cx: &mut App,
     ) {
         configs
@@ -303,7 +348,7 @@ impl WindowManager {
                 handle,
                 |dock_window, window, cx| {
                     if let Some(config) = config {
-                        dock_window.update_config(config.dock_area_state, window, cx);
+                        dock_window.update_config(config, window, cx);
                     } else {
                         dock_window.reset_config(window, cx);
                     }
@@ -388,8 +433,7 @@ impl WindowManager {
         &'a self,
         cx: &'a App,
     ) -> impl Iterator<Item = DockWindowConfig> {
-        self.dock_windows(cx)
-            .map(|(_, window)| window.dump_config(cx))
+        self.dock_windows(cx).map(|(_, dw)| dw.dump_config(cx))
     }
 
     pub fn focus_panel(&mut self, panel_name: &str, cx: &mut App) -> bool {

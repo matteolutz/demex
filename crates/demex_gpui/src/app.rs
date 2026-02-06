@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 
 use gdtf::fixture_type::FixtureType;
-use gpui::UpdateGlobal;
+use gpui::{Task, UpdateGlobal};
 use itertools::Itertools;
 
 use crate::{
     engine::{showfile::DemexShowFileManager, state::DemexUiState},
+    settings::DemexSettings,
     storage::themes_dir,
     ui2::{self, assets::Assets, config::DemexUiConfig, wm::WindowManager},
 };
@@ -22,6 +23,9 @@ pub struct DemexAppArgs {
     pub disable_autosave: bool,
 
     pub theme: Option<String>,
+
+    /// Hide the titlebar in the UI (Linux only).
+    pub hide_titlebar: bool,
 }
 
 pub mod actions {
@@ -148,6 +152,13 @@ impl DemexApp {
         gpui::Application::new()
             .with_assets(Assets)
             .run(move |cx: &mut gpui::App| {
+                cx.set_global(DemexSettings::load());
+                cx.on_app_quit(|cx| {
+                    cx.global::<DemexSettings>().save();
+                    Task::ready(())
+                })
+                .detach();
+
                 gpui_component::init(cx);
                 ui2::init(cx).unwrap();
 
@@ -208,7 +219,16 @@ impl DemexApp {
                     .expect("Failed to initialize show file manager");
 
                 WindowManager::add_dock_windows(
-                    (0..(args.additional_viewports + 1)).map(|_| None),
+                    (0..(args.additional_viewports + 1))
+                        .map(|idx| {
+                            (
+                                None,
+                                cx.global::<DemexSettings>()
+                                    .window_settings(idx)
+                                    .map(|bounds| bounds.into()),
+                            )
+                        })
+                        .collect::<Vec<_>>(),
                     cx,
                 );
 

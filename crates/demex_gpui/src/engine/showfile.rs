@@ -212,6 +212,7 @@ impl DemexShowFileManager {
 
         DemexEngineHandler::send(cx, ShowRequest {}, move |show: DemexShow, cx: &mut App| {
             let dock_windows = cx.wm().dock_window_configs(cx).collect::<Vec<_>>();
+
             let ui_config = DemexUiShowConfig { dock_windows };
 
             let res = cx.update_global(|this: &mut Self, cx| {
