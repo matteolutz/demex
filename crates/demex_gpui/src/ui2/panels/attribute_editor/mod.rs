@@ -269,7 +269,7 @@ impl AttributeEditorPanel {
                                 .on_click({
                                     let attr = attr.attribute;
                                     move |_, _, cx| {
-                                        WindowManager::open_edit_window::<SetAttributeWindow>(cx, move |_, cx| SetAttributeWindow::new(attr, cx));
+                                        WindowManager::open_edit_window::<SetAttributeWindow>(cx, move |window, cx| SetAttributeWindow::new(attr, window, cx));
                                     }
                                 })
                                 )

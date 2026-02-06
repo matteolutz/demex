@@ -1,27 +1,36 @@
 use std::collections::HashMap;
 
 use demex_core::{
-    channel3::attribute::FixtureChannel3Attribute,
+    channel3::{attribute::FixtureChannel3Attribute, clamped_value::ClampedValue},
     command::parser::nodes::{
-        action::{Action, functions::set_function::SetAttributeChannelSetArgs},
+        action::{
+            Action,
+            functions::set_function::{SetAttributeChannelSetArgs, SetAttributeValueArgs},
+        },
         fixture_selector::FixtureSelector,
     },
     fixture::FixturePath,
 };
 use gpui::{
-    App, AppContext, Context, Entity, InteractiveElement, ParentElement, Render, SharedString,
-    Styled, Subscription, WindowBounds, prelude::FluentBuilder, size,
+    App, AppContext, Context, Entity, InteractiveElement, IntoElement, ParentElement, Render,
+    SharedString, Styled, Subscription, Window, WindowBounds, div, prelude::FluentBuilder, size,
 };
 use gpui_component::{
+    ActiveTheme,
     button::{Button, ButtonVariant, ButtonVariants},
     h_flex,
+    input::{Input, InputEvent, InputState},
     scroll::ScrollableElement,
     v_flex,
 };
 
 use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},
-    ui2::{ext::GpuiContextExtension, wm::edit_window::EditWindowDelegate},
+    ui2::{
+        components::number_input_grid::{NumberInputGrid, NumberInputGridEvent},
+        ext::GpuiContextExtension,
+        wm::edit_window::EditWindowDelegate,
+    },
 };
 
 mod actions {
@@ -40,19 +49,66 @@ pub(super) fn init(cx: &mut App) {
     actions::init(cx);
 }
 
+#[derive(Debug, Copy, Clone)]
+enum SetAttributeInputValue {
+    Decimal(f32),
+    Percent(f32),
+    Byte(u8),
+}
+
+impl SetAttributeInputValue {
+    pub fn parse(input_state: &Entity<InputState>, cx: &App) -> Option<Self> {
+        let value = input_state.read(cx).value();
+
+        // this means we have a byte value
+        if let Some(byte_value_str) = value.strip_suffix("b") {
+            return byte_value_str.parse::<u8>().ok().map(Self::Byte);
+        }
+
+        let value = value.parse::<f32>().ok()?.max(0.0);
+
+        if value <= 1.0 {
+            Some(Self::Decimal(value))
+        } else {
+            Some(Self::Percent(value.min(100.0)))
+        }
+    }
+
+    pub fn to_clamped(self) -> ClampedValue {
+        match self {
+            Self::Decimal(val) => val.try_into().unwrap(),
+            Self::Percent(val) => (val / 100.0).try_into().unwrap(),
+            Self::Byte(val) => (val as f32 / 255.0).try_into().unwrap(),
+        }
+    }
+}
+
 pub struct SetAttributeWindow {
     attribute: FixtureChannel3Attribute,
 
+    value_input_state: Entity<InputState>,
     channel_sets: Entity<HashMap<SharedString, Vec<FixturePath>>>,
 
     _subscriptions: Vec<Subscription>,
 }
 
 impl SetAttributeWindow {
-    pub fn new(attribute: FixtureChannel3Attribute, cx: &mut Context<Self>) -> Self {
+    pub fn new(
+        attribute: FixtureChannel3Attribute,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Self {
         let channel_sets = cx.new(|_| HashMap::new());
+        let value_input_state = cx.new(|cx| InputState::new(window, cx));
 
         let _subscriptions = vec![
+            cx.subscribe(
+                &value_input_state,
+                |this, _, evt: &InputEvent, cx| match evt {
+                    InputEvent::PressEnter { .. } => this.handle_input_state_submit(cx),
+                    _ => {}
+                },
+            ),
             cx.observe(&DemexUiState::fixture_selection(cx), |this, _, cx| {
                 this.update_channel_sets(cx);
             }),
@@ -62,12 +118,28 @@ impl SetAttributeWindow {
         let s = Self {
             attribute,
             channel_sets,
+            value_input_state,
             _subscriptions,
         };
 
         s.update_channel_sets(cx);
 
         s
+    }
+
+    fn handle_input_state_submit(&mut self, cx: &mut Context<Self>) {
+        if let Some(value) = SetAttributeInputValue::parse(&self.value_input_state, cx) {
+            let clamped_value = value.to_clamped();
+
+            DemexEngineHandler::engine(cx).exec_ui(Action::SetAttributeValue(
+                SetAttributeValueArgs {
+                    fixture_selector: FixtureSelector::current_fixtures_selected(),
+                    attribute: self.attribute,
+                    attribute_value: Some(clamped_value.as_f32().into()),
+                },
+            ));
+            self.close(cx);
+        }
     }
 
     fn update_channel_sets(&self, cx: &mut Context<Self>) {
@@ -115,17 +187,67 @@ impl SetAttributeWindow {
     }
 }
 
+impl SetAttributeWindow {
+    fn render_number_input_grid(
+        &mut self,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        NumberInputGrid::new(3, 4)
+            // buttons 1-9 and 0
+            .buttons((1..=9).map(|number| SharedString::new(number.to_string())))
+            .button(SharedString::new_static("."))
+            .button(SharedString::new_static("0"))
+            .button(SharedString::new_static("b"))
+            .on_click(cx.listener(|this, evt, window, cx| match evt {
+                NumberInputGridEvent::Insert(val) => {
+                    this.value_input_state.update(cx, |state, cx| {
+                        state.insert(val, window, cx);
+                    });
+                    cx.notify();
+                }
+                _ => {}
+            }))
+    }
+}
+
 impl Render for SetAttributeWindow {
     fn render(
         &mut self,
-        _window: &mut gpui::Window,
+        window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
         h_flex()
+            .key_context(actions::CONTEXT)
+            .on_action(cx.listener(|this, _: &actions::QuitSetAttribute, _, cx| {
+                this.close(cx);
+            }))
             .size_full()
             .p_4()
-            .gap_4()
-            .child(v_flex().size_full().flex_grow())
+            .gap_6()
+            .child(
+                v_flex()
+                    .size_full()
+                    .flex_grow()
+                    .gap_2()
+                    .child(
+                        h_flex()
+                            .w_full()
+                            .gap_1()
+                            .child(Input::new(&self.value_input_state).w_full())
+                            .child(h_flex().justify_center().w_6().child(
+                                match SetAttributeInputValue::parse(&self.value_input_state, cx) {
+                                    Some(value) => match value {
+                                        SetAttributeInputValue::Byte(_) => div().child("8b"),
+                                        SetAttributeInputValue::Decimal(_) => div().child(".2"),
+                                        SetAttributeInputValue::Percent(_) => div().child("%"),
+                                    },
+                                    None => div().child("?").text_color(cx.theme().red),
+                                },
+                            )),
+                    )
+                    .child(self.render_number_input_grid(window, cx)),
+            )
             .child(
                 v_flex()
                     .id("set-attribute-channel-sets")
