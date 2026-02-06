@@ -3,15 +3,15 @@ use std::collections::HashMap;
 use demex_core::{event::DemexEvent, pool::PoolType};
 use gpui::{
     App, AppContext, BorderStyle, Bounds, Context, Entity, EventEmitter, FocusHandle, Focusable,
-    Hsla, InteractiveElement, IntoElement, MouseButton, MouseMoveEvent, PaintQuad, ParentElement,
-    Pixels, Point, Render, Styled, Subscription, Window, canvas, div, point,
-    prelude::FluentBuilder, px, size,
+    Hsla, InteractiveElement, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent,
+    MouseUpEvent, PaintQuad, ParentElement, Pixels, Point, Render, Styled, Subscription, Window,
+    canvas, div, point, prelude::FluentBuilder, px, size,
 };
 use gpui_component::{
     ActiveTheme, Colorize, Disableable, IconName, PixelsExt, StyledExt,
     button::Button,
     dock::{Panel, PanelEvent, PanelInfo, PanelState, register_panel},
-    v_flex,
+    v_flex, white,
 };
 
 use crate::{
@@ -19,7 +19,7 @@ use crate::{
     ui2::{
         ext::GpuiContextExtension,
         panels::{
-            multipool::config::MultiPoolConfig,
+            multipool::config::{MultiPoolConfig, MultiPoolEntry},
             pool::{
                 pool_action::{apply_pool_type_to_button, handle_pool_item_click},
                 pool_button::{PoolButton, PoolItemButtonIndicatorColor},
@@ -30,6 +30,8 @@ use crate::{
             toolbar_buttons,
         },
         utils::bounds,
+        window::add_pool_window::AddPoolWindow,
+        wm::{WindowManager, edit_window::WindowManagerExtension},
     },
 };
 
@@ -71,6 +73,48 @@ pub(super) fn init(cx: &mut App) {
     actions::init(cx);
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+enum MultiPoolDraggingState {
+    Pool {
+        pool_idx: usize,
+    },
+    New {
+        start_cell: (u16, u16),
+        current_cell: (u16, u16),
+    },
+    None,
+}
+
+impl MultiPoolDraggingState {
+    pub fn is_dragging_pool(&self, pool_idx: usize) -> bool {
+        match self {
+            MultiPoolDraggingState::Pool { pool_idx: idx } => *idx == pool_idx,
+            _ => false,
+        }
+    }
+
+    pub fn is_new(&self) -> Option<((u16, u16), (u16, u16))> {
+        match self {
+            MultiPoolDraggingState::New {
+                start_cell,
+                current_cell,
+            } => {
+                let start_cell = (
+                    start_cell.0.min(current_cell.0),
+                    start_cell.1.min(current_cell.1),
+                );
+                let end_cell = (
+                    start_cell.0.max(current_cell.0),
+                    start_cell.1.max(current_cell.1),
+                );
+
+                Some((start_cell, end_cell))
+            }
+            _ => None,
+        }
+    }
+}
+
 pub struct MultiPoolPanel {
     focus_handle: FocusHandle,
 
@@ -84,7 +128,7 @@ pub struct MultiPoolPanel {
 
     bounds: Entity<Option<Bounds<Pixels>>>,
 
-    current_dragging_pool: Entity<Option<usize>>,
+    current_dragging: Entity<MultiPoolDraggingState>,
 
     _subscriptions: Vec<Subscription>,
 }
@@ -119,10 +163,32 @@ impl MultiPoolPanel {
 
             bounds,
 
-            current_dragging_pool: cx.new(|_| None),
+            current_dragging: cx.new(|_| MultiPoolDraggingState::None),
 
             _subscriptions,
         }
+    }
+
+    pub fn add_pool(
+        &mut self,
+        pool_type: PoolType,
+        start_cell: (u16, u16),
+        end_cell: (u16, u16),
+        start_id: u32,
+        cx: &mut Context<Self>,
+    ) {
+        self.config.pools.push(MultiPoolEntry {
+            pool_type,
+            start_cell,
+            size: (end_cell.0 - start_cell.0, end_cell.1 - start_cell.1),
+            start_id,
+        });
+        cx.notify();
+    }
+
+    pub fn remove_pool(&mut self, pool_idx: usize, cx: &mut Context<Self>) {
+        self.config.pools.remove(pool_idx);
+        cx.notify();
     }
 
     fn clear_states(&self, pool_type: &PoolType, cx: &mut Context<Self>) {
@@ -348,7 +414,68 @@ impl MultiPoolPanel {
         Some(mouse_grid_pos)
     }
 
-    fn render_grid(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn show_new_pool_context_menu(
+        &self,
+        start_cell: (u16, u16),
+        end_cell: (u16, u16),
+        mouse_pos: Point<Pixels>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let window = window.window_handle();
+        let this_pool = cx.entity();
+
+        cx.defer(move |cx| {
+            let _ = WindowManager::update_dock_window_handle(window, cx, |dw, _, cx| {
+                dw.context_layer().update(cx, |context_layer, cx| {
+                    context_layer.context_menu(
+                        mouse_pos,
+                        [("Add Pool", move |_: &mut Window, cx: &mut App| {
+                            let this_pool = this_pool.clone();
+                            WindowManager::open_edit_window::<AddPoolWindow>(
+                                cx,
+                                move |window, cx| {
+                                    let this_pool = this_pool.clone();
+                                    AddPoolWindow::new(this_pool, start_cell, end_cell, window, cx)
+                                },
+                            );
+                        })],
+                        cx,
+                    );
+                })
+            });
+        });
+    }
+
+    fn show_pool_context_menu(
+        &self,
+        pool_idx: usize,
+        mouse_pos: Point<Pixels>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let window = window.window_handle();
+        let this_pool = cx.entity();
+
+        cx.defer(move |cx| {
+            let _ = WindowManager::update_dock_window_handle(window, cx, |dw, _, cx| {
+                dw.context_layer().update(cx, |context_layer, cx| {
+                    context_layer.context_menu(
+                        mouse_pos,
+                        [("Delete", move |_: &mut Window, cx: &mut App| {
+                            let this_pool = this_pool.clone();
+                            this_pool.update(cx, |pool, cx| {
+                                pool.remove_pool(pool_idx, cx);
+                            });
+                        })],
+                        cx,
+                    );
+                })
+            });
+        });
+    }
+
+    fn render_grid(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let element_size = *self.element_size.read(cx);
         let (n_cols, n_rows) = self.config.size;
 
@@ -364,19 +491,63 @@ impl MultiPoolPanel {
             .gap(px(ELEMENT_PADDING))
             .on_mouse_up(
                 MouseButton::Left,
-                cx.listener(|this, _, _, cx| {
-                    this.current_dragging_pool.update(cx, |pool, _| {
-                        *pool = None;
+                cx.listener(|this, evt: &MouseUpEvent, window, cx| {
+                    match this.current_dragging.read(cx) {
+                        &MultiPoolDraggingState::New {
+                            start_cell,
+                            current_cell,
+                        } if start_cell != current_cell => {
+                            this.show_new_pool_context_menu(
+                                start_cell,
+                                current_cell,
+                                evt.position,
+                                window,
+                                cx,
+                            );
+                        }
+                        _ => {}
+                    }
+
+                    this.current_dragging.update(cx, |pool, _| {
+                        *pool = MultiPoolDraggingState::None;
                     });
                     cx.notify();
                 }),
             )
-            .on_mouse_move(cx.listener(|this, evt: &MouseMoveEvent, _, cx| {
-                if let Some(current_draging_pool) = *this.current_dragging_pool.read(cx) {
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|this, evt: &MouseDownEvent, _, cx| {
                     if let Some(mouse_grid_pos) = this.get_mouse_grid_pos(&evt.position, cx) {
-                        this.config.pools[current_draging_pool].resize(mouse_grid_pos);
-
+                        this.current_dragging.update(cx, |curent_dragging, _| {
+                            *curent_dragging = MultiPoolDraggingState::New {
+                                start_cell: mouse_grid_pos,
+                                current_cell: mouse_grid_pos,
+                            };
+                        });
                         cx.notify();
+                    }
+                }),
+            )
+            .on_mouse_move(cx.listener(|this, evt: &MouseMoveEvent, _, cx| {
+                if let Some(mouse_grid_pos) = this.get_mouse_grid_pos(&evt.position, cx) {
+                    match *this.current_dragging.read(cx) {
+                        MultiPoolDraggingState::Pool { pool_idx } => {
+                            this.config.pools[pool_idx].resize(mouse_grid_pos);
+
+                            cx.notify();
+                        }
+                        MultiPoolDraggingState::New { start_cell, .. } => {
+                            if let Some(mouse_cell) = this.get_mouse_grid_pos(&evt.position, cx) {
+                                this.current_dragging.update(cx, |current_dragging, _| {
+                                    *current_dragging = MultiPoolDraggingState::New {
+                                        start_cell,
+                                        current_cell: mouse_cell,
+                                    };
+                                });
+                                cx.notify();
+                            }
+                        }
+                        _ => {}
                     }
                 }
             }))
@@ -392,10 +563,11 @@ impl MultiPoolPanel {
                     .row_start(p.start_cell.1 as i16 + 1)
                     .row_end(p.start_cell.1 as i16 + 1 + pool_size.1 as i16)
                     .relative()
+                    .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                        cx.stop_propagation();
+                    })
                     .when(
-                        self.current_dragging_pool
-                            .read(cx)
-                            .is_some_and(|dragging_pool| dragging_pool == pool_idx),
+                        self.current_dragging.read(cx).is_dragging_pool(pool_idx),
                         |this| this.border_1().border_color(cx.theme().drag_border),
                     )
                     .child(
@@ -416,6 +588,19 @@ impl MultiPoolPanel {
                                     .items_center()
                                     .text_sm()
                                     .font_bold()
+                                    .on_mouse_down(
+                                        MouseButton::Right,
+                                        cx.listener(
+                                            move |this, evt: &MouseDownEvent, window, cx| {
+                                                this.show_pool_context_menu(
+                                                    pool_idx,
+                                                    evt.position,
+                                                    window,
+                                                    cx,
+                                                );
+                                            },
+                                        ),
+                                    )
                                     .bg(p.pool_type.color(cx))
                                     .child(p.pool_type.to_short_string()),
                             )
@@ -485,8 +670,8 @@ impl MultiPoolPanel {
                                 MouseButton::Left,
                                 cx.listener(move |this, _, _, cx| {
                                     cx.stop_propagation();
-                                    this.current_dragging_pool.update(cx, |pool, _| {
-                                        *pool = Some(pool_idx);
+                                    this.current_dragging.update(cx, |pool, _| {
+                                        *pool = MultiPoolDraggingState::Pool { pool_idx };
                                     });
                                     cx.notify();
                                 }),
@@ -494,6 +679,21 @@ impl MultiPoolPanel {
                             .child(IconName::ResizeCorner),
                     )
             }))
+            .when_some(
+                self.current_dragging.read(cx).is_new(),
+                |this, (start_cell, end_cell)| {
+                    this.child(
+                        div()
+                            .col_start(start_cell.0 as i16 + 1)
+                            .col_end(end_cell.0 as i16 + 1)
+                            .row_start(start_cell.1 as i16 + 1)
+                            .row_end(end_cell.1 as i16 + 1)
+                            .bg(white().alpha(0.5))
+                            .border_1()
+                            .border_color(cx.theme().drag_border),
+                    )
+                },
+            )
     }
 }
 
