@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use demex_core::{
-    channel3::feature::feature_group::FixtureChannel3FeatureGroup, pool::PoolType,
-    utils::version::VERSION_STR,
-};
+use demex_core::utils::version::VERSION_STR;
 use gpui::{
     App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Subscription,
     Window, WindowOptions, div, prelude::FluentBuilder,
@@ -24,6 +21,7 @@ use crate::{
         config::AppConfigExt,
         ext::GpuiContextExtension,
         panels::{
+            DockWindowPanelType,
             attribute_editor::AttributeEditorPanel,
             command::CommandPanel,
             fixture_list::FixtureListPanel,
@@ -31,7 +29,6 @@ use crate::{
             layout_view::LayoutViewPanel,
             multipool::{MultiPoolPanel, config::MultiPoolConfig},
             performance::PerformancePanel,
-            pool::PoolPanel,
             sequence_editor::SequenceEditorPanel,
         },
         titlebar::{DemexTitleBar, titlebar_options},
@@ -86,54 +83,7 @@ impl DockWindow {
             window,
             cx,
         );
-        da.add_panel(
-            Arc::new(cx.new(|cx| PoolPanel::new(PoolType::Group, cx))),
-            DockPlacement::Center,
-            None,
-            window,
-            cx,
-        );
-        da.add_panel(
-            Arc::new(cx.new(|cx| {
-                PoolPanel::new(PoolType::Preset(FixtureChannel3FeatureGroup::Dimmer), cx)
-            })),
-            DockPlacement::Center,
-            None,
-            window,
-            cx,
-        );
-        da.add_panel(
-            Arc::new(cx.new(|cx| {
-                PoolPanel::new(PoolType::Preset(FixtureChannel3FeatureGroup::Color), cx)
-            })),
-            DockPlacement::Center,
-            None,
-            window,
-            cx,
-        );
-        da.add_panel(
-            Arc::new(cx.new(|cx| {
-                PoolPanel::new(PoolType::Preset(FixtureChannel3FeatureGroup::Position), cx)
-            })),
-            DockPlacement::Center,
-            None,
-            window,
-            cx,
-        );
-        da.add_panel(
-            Arc::new(cx.new(|cx| PoolPanel::new(PoolType::Sequence, cx))),
-            DockPlacement::Center,
-            None,
-            window,
-            cx,
-        );
-        da.add_panel(
-            Arc::new(cx.new(|cx| PoolPanel::new(PoolType::Executor, cx))),
-            DockPlacement::Center,
-            None,
-            window,
-            cx,
-        );
+
         da.add_panel(
             Arc::new(cx.new(|cx| MultiPoolPanel::new(MultiPoolConfig::example(), cx))),
             DockPlacement::Center,
@@ -305,6 +255,43 @@ impl DockWindow {
 
             state.set_value(new_value, window, cx);
         });
+    }
+
+    pub fn add_panel(
+        &self,
+        panel_type: DockWindowPanelType,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.dock_area.update(cx, |da, cx| {
+            da.add_panel(
+                match panel_type {
+                    DockWindowPanelType::AttributeEditor => {
+                        Arc::new(cx.new(|cx| AttributeEditorPanel::new(window, cx)))
+                    }
+                    DockWindowPanelType::FixtureList => {
+                        Arc::new(cx.new(|cx| FixtureListPanel::new(window, cx)))
+                    }
+                    DockWindowPanelType::FixtureSelection => {
+                        Arc::new(cx.new(|cx| FixtureSelectionPanel::new(cx)))
+                    }
+                    DockWindowPanelType::Multipool => {
+                        Arc::new(cx.new(|cx| MultiPoolPanel::new(MultiPoolConfig::default(), cx)))
+                    }
+                    DockWindowPanelType::LayoutView => {
+                        Arc::new(cx.new(|cx| LayoutViewPanel::new(window, cx)))
+                    }
+                    DockWindowPanelType::SequenceEditor => {
+                        Arc::new(cx.new(|cx| SequenceEditorPanel::new(window, cx)))
+                    }
+                },
+                DockPlacement::Center,
+                None,
+                window,
+                cx,
+            );
+        });
+        cx.notify();
     }
 }
 

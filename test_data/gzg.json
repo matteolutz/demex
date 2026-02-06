@@ -1,1 +1,62 @@
-{"engine":{"preset_handler":{"groups":{},"macros":{},"command_slices":{},"sequences":{},"presets":{}},"updatable_handler":{"executors":{},"group_masters":{}},"timing_handler":{"speed_master_values":{"6":{"bpm":120.0},"2":{"bpm":120.0},"5":{"bpm":120.0},"8":{"bpm":120.0},"7":{"bpm":120.0},"3":{"bpm":120.0},"9":{"bpm":120.0},"4":{"bpm":120.0},"0":{"bpm":120.0},"1":{"bpm":120.0}},"timecodes":{}},"input_device_configs":[],"patch":{"fixtures":[{"id":1,"name":"MAC 1","fixture_type_id":"734e7429-ed94-47db-9ad4-8eb85072df95","fixture_type_dmx_mode":"14 CH","universe":1,"start_address":1},{"id":2,"name":"MAC 2","fixture_type_id":"734e7429-ed94-47db-9ad4-8eb85072df95","fixture_type_dmx_mode":"14 CH","universe":1,"start_address":21},{"id":3,"name":"MAC 3","fixture_type_id":"734e7429-ed94-47db-9ad4-8eb85072df95","fixture_type_dmx_mode":"14 CH","universe":1,"start_address":41}],"layout_pool":{"layouts":[]},"outputs":[]}},"ui":{"dock_windows":[{"dock_area_state":{"version":5,"center":{"panel_name":"StackPanel","children":[{"panel_name":"TabPanel","children":[{"panel_name":"demex-fixture-selection","children":[],"info":{"panel":null}},{"panel_name":"demex-fixture-list","children":[],"info":{"panel":null}},{"panel_name":"demex-pool","children":[],"info":{"panel":"Group"}},{"panel_name":"demex-pool","children":[],"info":{"panel":{"Preset":"Dimmer"}}},{"panel_name":"demex-pool","children":[],"info":{"panel":{"Preset":"Color"}}},{"panel_name":"demex-pool","children":[],"info":{"panel":{"Preset":"Position"}}},{"panel_name":"demex-pool","children":[],"info":{"panel":"Sequence"}},{"panel_name":"demex-pool","children":[],"info":{"panel":"Executor"}},{"panel_name":"demex-multipool","children":[],"info":{"panel":{"pools":[{"pool_type":"Group","start_cell":[0,0],"size":[5,2],"start_id":0},{"pool_type":{"Preset":"Dimmer"},"start_cell":[5,0],"size":[5,2],"start_id":0},{"pool_type":"Executor","start_cell":[0,2],"size":[5,2],"start_id":0}],"size":[20,10]}}},{"panel_name":"layout-view","children":[],"info":{"panel":null}},{"panel_name":"demex-sequence-editor","children":[],"info":{"panel":null}}],"info":{"tabs":{"active_index":1}}},{"panel_name":"TabPanel","children":[{"panel_name":"demex-attribute-editor","children":[],"info":{"panel":null}}],"info":{"tabs":{"active_index":0}}}],"info":{"stack":{"sizes":[455.0586,221.4414],"axis":1}}},"right_dock":{"panel":{"panel_name":"TabPanel","children":[{"panel_name":"demex-performance","children":[],"info":{"panel":null}}],"info":{"tabs":{"active_index":0}}},"placement":"right","size":300.0,"open":true},"bottom_dock":{"panel":{"panel_name":"TabPanel","children":[{"panel_name":"demex-command","children":[],"info":{"panel":null}}],"info":{"tabs":{"active_index":0}}},"placement":"bottom","size":130.0,"open":true}}}]},"version":"0.2.0"}
+{
+  "engine": {
+    "preset_handler": {
+      "groups": {},
+      "macros": {},
+      "command_slices": {},
+      "sequences": {},
+      "presets": {}
+    },
+    "updatable_handler": { "executors": {}, "group_masters": {} },
+    "timing_handler": {
+      "speed_master_values": {
+        "6": { "bpm": 120.0 },
+        "2": { "bpm": 120.0 },
+        "5": { "bpm": 120.0 },
+        "8": { "bpm": 120.0 },
+        "7": { "bpm": 120.0 },
+        "3": { "bpm": 120.0 },
+        "9": { "bpm": 120.0 },
+        "4": { "bpm": 120.0 },
+        "0": { "bpm": 120.0 },
+        "1": { "bpm": 120.0 }
+      },
+      "timecodes": {}
+    },
+    "input_device_configs": [],
+    "patch": {
+      "fixtures": [
+        {
+          "id": 1,
+          "name": "MAC 1",
+          "fixture_type_id": "734e7429-ed94-47db-9ad4-8eb85072df95",
+          "fixture_type_dmx_mode": "14 CH",
+          "universe": 1,
+          "start_address": 1
+        },
+        {
+          "id": 2,
+          "name": "MAC 2",
+          "fixture_type_id": "734e7429-ed94-47db-9ad4-8eb85072df95",
+          "fixture_type_dmx_mode": "14 CH",
+          "universe": 1,
+          "start_address": 21
+        },
+        {
+          "id": 3,
+          "name": "MAC 3",
+          "fixture_type_id": "734e7429-ed94-47db-9ad4-8eb85072df95",
+          "fixture_type_dmx_mode": "14 CH",
+          "universe": 1,
+          "start_address": 41
+        }
+      ],
+      "layout_pool": { "layouts": [] },
+      "outputs": []
+    }
+  },
+  "ui": {
+    "dock_windows": []
+  },
+  "version": "0.2.0"
+}

@@ -103,7 +103,7 @@ impl DemexContextLayerContent {
                             .w_full()
                             .h(button_height)
                             .with_variant(ButtonVariant::Secondary)
-                            .label(action.label.clone())
+                            .child(div().size_full().text_sm().child(action.label.clone()))
                             .on_click(move |_, window, cx| {
                                 let window_handle = window.window_handle();
 

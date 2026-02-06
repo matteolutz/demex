@@ -1,18 +1,3 @@
-use demex_core::pool::PoolType;
-use gpui::{
-    App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, IntoElement,
-    ParentElement, Render, Styled, Subscription, Window, div,
-};
-use gpui_component::{
-    button::Button,
-    dock::{Panel, PanelEvent, PanelInfo, PanelState, register_panel},
-};
-
-use crate::ui2::panels::{
-    pool::{pool::Pool, pool_type::PoolTypeExt},
-    toolbar_buttons,
-};
-
 pub mod pool;
 pub mod pool_action;
 pub mod pool_button;
@@ -20,6 +5,7 @@ pub mod pool_item;
 pub mod pool_quick_actions;
 pub mod pool_type;
 
+/*
 const POOL_PANEL_NAME: &str = "demex-pool";
 
 pub(super) fn register(cx: &mut App) {
@@ -100,3 +86,4 @@ impl Render for PoolPanel {
         div().size_full().child(self.pool.clone())
     }
 }
+*/
