@@ -22,6 +22,7 @@ use crate::{
     fixture::Fixture,
     patch::Patch,
     pool::{Pool, PoolError, PoolType},
+    presets::preset::MAX_DISPLAY_COLORS,
     state::fixture_state_handler::FixtureStateHandler,
 };
 
@@ -163,7 +164,7 @@ impl PresetHandler {
         }
 
         let display_colors = if id.feature_group == FixtureChannel3FeatureGroup::Color {
-            discrete_data
+            let colors = discrete_data
                 .iter()
                 .filter_map(|(f_path, value)| {
                     patch
@@ -172,7 +173,18 @@ impl PresetHandler {
                         .and_then(|fixture| value.get_color(fixture))
                 })
                 .dedup()
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>();
+
+            if colors.len() > MAX_DISPLAY_COLORS {
+                let step_by = (colors.len() / MAX_DISPLAY_COLORS) + 1;
+                colors
+                    .into_iter()
+                    .step_by(step_by)
+                    .take(MAX_DISPLAY_COLORS)
+                    .collect()
+            } else {
+                colors
+            }
         } else {
             vec![]
         };

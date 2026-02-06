@@ -32,6 +32,8 @@ use crate::{
 
 use super::{PresetHandler, error::PresetHandlerError};
 
+pub(super) const MAX_DISPLAY_COLORS: usize = 5;
+
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Default)]
 pub struct FixturePresetId {
     pub feature_group: FixtureChannel3FeatureGroup,
