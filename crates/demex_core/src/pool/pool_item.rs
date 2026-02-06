@@ -46,6 +46,7 @@ macro_rules! has_flag {
 pub struct PoolItem {
     pub id: u32,
     pub name: PoolItemName,
+    pub colors: Option<Vec<[f32; 3]>>,
     pub(crate) flags: u32,
 }
 

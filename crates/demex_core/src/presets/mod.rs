@@ -3,12 +3,13 @@ use std::{collections::HashMap, fmt::Debug};
 use command_slice::CommandSlice;
 use error::PresetHandlerError;
 use group::FixtureGroup;
+use itertools::Itertools;
 use mmacro::MMacro;
 use preset::{FixturePreset, FixturePresetData, FixturePresetId};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    channel3::attribute::FixtureChannel3Attribute,
+    channel3::{attribute::FixtureChannel3Attribute, utils::HashMapExt},
     command::parser::nodes::{
         action::{
             Action,
@@ -161,12 +162,28 @@ impl PresetHandler {
             }
         }
 
+        let display_colors = if id.feature_group == FixtureChannel3FeatureGroup::Color {
+            discrete_data
+                .iter()
+                .filter_map(|(f_path, value)| {
+                    patch
+                        .fixture(f_path)
+                        .ok()
+                        .and_then(|fixture| value.get_color(fixture))
+                })
+                .dedup()
+                .collect::<Vec<_>>()
+        } else {
+            vec![]
+        };
+
         let preset = FixturePreset::new(
             id,
             name,
             FixturePresetData::Default {
                 data: discrete_data,
             },
+            display_colors,
         )?;
 
         self.presets.insert(id, preset);
@@ -194,6 +211,7 @@ impl PresetHandler {
             FixturePresetData::FeatureEffect {
                 runtime: FeatureEffectRuntime::new(Effect2::default()),
             },
+            vec![],
         )?;
 
         self.presets.insert(id, preset);

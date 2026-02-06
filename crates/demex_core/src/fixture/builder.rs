@@ -20,8 +20,9 @@ use gdtf::{dmx_mode::RelationType, geometry::AnyGeometry};
 use crate::{
     channel3::{attribute::FixtureChannel3Attribute, clamped_value::ClampedValue},
     fixture::{
-        Fixture, FixtureChannelFunction, FixtureChannelFunctionKind, FixtureId, FixturePath,
-        GdtfFixturePatch, Relation, RelationKind, error::FixtureError,
+        Fixture, FixtureChannelFunction, FixtureChannelFunctionKind, FixtureChannelFunctionSet,
+        FixtureChannelFunctionWheelSlot, FixtureId, FixturePath, GdtfFixturePatch, Relation,
+        RelationKind, error::FixtureError,
     },
     patch::FixtureTypeList,
 };
@@ -540,10 +541,31 @@ impl<'a> FixtureBuilder<'a> {
                             if name.is_empty() {
                                 None
                             } else {
-                                Some((name, ClampedValue::from(set.dmx_from)))
+                                Some((
+                                    name,
+                                    FixtureChannelFunctionSet {
+                                        value: ClampedValue::from(set.dmx_from),
+                                        wheel_slot_idx: set
+                                            .wheel_slot_index
+                                            .map(|idx| idx as usize),
+                                    },
+                                ))
                             }
                         })
                         .collect();
+
+                    let wheel = channel_function.wheel(self.gdtf_fixture_type).map(|wheel| {
+                        wheel
+                            .slots
+                            .iter()
+                            .map(|slot| FixtureChannelFunctionWheelSlot {
+                                color: match slot.optic {
+                                    gdtf::wheel::WheelSlotOptic::Color(color) => Some(color),
+                                    _ => None,
+                                },
+                            })
+                            .collect::<Vec<_>>()
+                    });
 
                     // Some fixtures define multiple channel functions with the same attribute
                     // (i.e. Cameo EVOS W3 Control1)
@@ -568,6 +590,7 @@ impl<'a> FixtureBuilder<'a> {
                             default,
                             highlight,
                             sets,
+                            wheel,
                             activation_group,
                             master: logical_channel.master,
                             snap: logical_channel.snap,

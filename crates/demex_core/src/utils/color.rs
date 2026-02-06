@@ -38,6 +38,19 @@ pub fn hue_to_rgb(p: f32, q: f32, mut t: f32) -> f32 {
     p
 }
 
+pub fn ecolor_to_rgbw(color: ecolor::Color32) -> [f32; 4] {
+    byte_rgb_to_rgbw(color.to_array())
+}
+
+pub fn byte_rgb_to_rgbw([r, g, b, w]: [u8; 4]) -> [f32; 4] {
+    [
+        r as f32 / 255.0,
+        g as f32 / 255.0,
+        b as f32 / 255.0,
+        w as f32 / 255.0,
+    ]
+}
+
 /// Percentages of RGB values in the white leds.
 const RGB_RATIOS: [f32; 3] = [1.0, 1.0, 1.0];
 

@@ -217,6 +217,9 @@ impl Pool {
                         self.pool_item_states.read(cx).get(&item.id),
                         |this, state| this.indicator_color(state.indicator_color),
                     )
+                    .when_some(item.colors.as_ref(), |this, colors| {
+                        this.colors_rgb(colors.iter().copied())
+                    })
                     .item_id(item.id)
             }))
     }

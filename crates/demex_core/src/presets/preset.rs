@@ -27,6 +27,7 @@ use crate::{
     state::{fixture_state::FixtureState, fixture_state_handler::FixtureStateHandler},
     timing::TimingHandler,
     updatables::runtime::RuntimePhase,
+    utils::color::{ecolor_to_rgbw, rgbw_to_rgb},
 };
 
 use super::{PresetHandler, error::PresetHandlerError};
@@ -172,7 +173,7 @@ pub struct FixturePreset {
     name: String,
 
     #[serde(default)]
-    display_color: Option<ecolor::Color32>,
+    display_colors: Vec<ecolor::Color32>,
 
     #[serde(default)]
     fade_up: f32,
@@ -265,6 +266,7 @@ impl FixturePreset {
         id: FixturePresetId,
         name: Option<String>,
         data: FixturePresetData,
+        display_colors: Vec<ecolor::Color32>,
     ) -> Result<Self, PresetHandlerError> {
         let name = name.unwrap_or(format!("Preset {}", id));
 
@@ -272,7 +274,7 @@ impl FixturePreset {
             id,
             name,
             data,
-            display_color: None,
+            display_colors,
             fade_up: 0.0,
         })
     }
@@ -423,12 +425,8 @@ impl FixturePreset {
         &mut self.name
     }
 
-    pub fn display_color(&self) -> Option<ecolor::Color32> {
-        self.display_color
-    }
-
-    pub fn display_color_mut(&mut self) -> &mut Option<ecolor::Color32> {
-        &mut self.display_color
+    pub fn display_colors(&self) -> &[ecolor::Color32] {
+        &self.display_colors
     }
 
     pub fn values(
@@ -682,6 +680,16 @@ impl From<&FixturePreset> for PoolItem {
         PoolItem {
             id: value.id.preset_id,
             name: value.name.clone().into(),
+            colors: (!value.display_colors.is_empty()).then(|| {
+                value
+                    .display_colors
+                    .iter()
+                    .map(|color| {
+                        let rgbw = ecolor_to_rgbw(*color);
+                        rgbw_to_rgb(rgbw)
+                    })
+                    .collect()
+            }),
             flags: flags,
         }
     }

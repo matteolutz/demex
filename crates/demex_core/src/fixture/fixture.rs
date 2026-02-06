@@ -20,6 +20,7 @@ use std::{cmp, fmt, str};
 
 use demex_dmx::address::DmxAddress;
 use gdtf::dmx_mode::LogicalChannelMaster;
+use gdtf::values::ColorCie;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -135,6 +136,23 @@ impl Fixture {
     }
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+pub struct FixtureChannelFunctionSet {
+    pub(crate) value: ClampedValue,
+    pub(crate) wheel_slot_idx: Option<usize>,
+}
+
+impl PartialOrd for FixtureChannelFunctionSet {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        self.value.partial_cmp(&other.value)
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct FixtureChannelFunctionWheelSlot {
+    pub(crate) color: Option<ColorCie>,
+}
+
 /// Describes how a fixture attribute maps to DMX channel values.
 ///
 /// A channel function defines whether the attribute is controlled by
@@ -148,7 +166,8 @@ pub struct FixtureChannelFunction {
     pub(crate) default: ClampedValue,
     pub(crate) highlight: Option<ClampedValue>,
 
-    pub(crate) sets: HashMap<String, ClampedValue>,
+    pub(crate) sets: HashMap<String, FixtureChannelFunctionSet>,
+    pub(crate) wheel: Option<Vec<FixtureChannelFunctionWheelSlot>>,
 
     pub(crate) activation_group: Option<String>,
     pub(crate) master: LogicalChannelMaster,
@@ -240,7 +259,7 @@ impl FixtureChannelFunction {
 
     /// Get a channel set by name for this channel function.
     pub fn set(&self, name: &str) -> Option<ClampedValue> {
-        self.sets.get(name).copied()
+        self.sets.get(name).map(|set| set.value)
     }
 }
 

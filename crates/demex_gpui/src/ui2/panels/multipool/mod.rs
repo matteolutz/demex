@@ -450,6 +450,12 @@ impl MultiPoolPanel {
                                                             )
                                                         }
                                                     })
+                                                    .when_some(
+                                                        pool_item.colors.as_ref(),
+                                                        |this, colors| {
+                                                            this.colors_rgb(colors.iter().copied())
+                                                        },
+                                                    )
                                             })
                                             .when_some(
                                                 self.pool_item_states

@@ -56,6 +56,7 @@ impl From<&FixtureGroup> for PoolItem {
         PoolItem {
             id: value.id,
             name: value.name.clone().into(),
+            colors: None,
             flags: 0,
         }
     }

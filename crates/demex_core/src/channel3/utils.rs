@@ -1,4 +1,12 @@
-use std::num::NonZero;
+use std::{collections::HashMap, num::NonZero};
+
+use crate::{
+    channel3::{
+        attribute::FixtureChannel3Attribute, channel_value_discrete::FixtureChannelDiscreteValue,
+        clamped_value::ClampedValue,
+    },
+    fixture::Fixture,
+};
 
 pub fn max_value(bytes: NonZero<u8>) -> u64 {
     match bytes.get() {
@@ -41,4 +49,43 @@ pub fn mix_dmx_value(
     let b = dmx_b.value() as f32 / max_value(dmx_b.bytes()) as f32;
     let value = (b * mix + a * (1.0 - mix)) * max_value(dmx_a.bytes()) as f32;
     gdtf::values::DmxValue::new(value as u64, dmx_a.bytes(), dmx_a.shifting()).unwrap()
+}
+
+pub trait HashMapExt {
+    fn get_color(&self, fixture: &Fixture) -> Option<ecolor::Color32>;
+}
+
+impl HashMapExt for HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue> {
+    fn get_color(&self, fixture: &Fixture) -> Option<ecolor::Color32> {
+        fn get_cf_and_value(
+            this: &HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>,
+            attribute: &FixtureChannel3Attribute,
+            fixture: &Fixture,
+        ) -> Option<ClampedValue> {
+            this.get(attribute)
+                .and_then(|value| fixture.channel_function(attribute).map(|cf| (cf, value)))
+                .map(|(cf, value)| value.to_clamped(cf))
+        }
+
+        // check if we have r, g, b
+        if let (Some(r), Some(g), Some(b)) = (
+            get_cf_and_value(self, &FixtureChannel3Attribute::ColorAddR, fixture),
+            get_cf_and_value(self, &FixtureChannel3Attribute::ColorAddG, fixture),
+            get_cf_and_value(self, &FixtureChannel3Attribute::ColorAddB, fixture),
+        ) {
+            let w = get_cf_and_value(self, &FixtureChannel3Attribute::ColorAddW, fixture);
+
+            return Some(ecolor::Color32::from_rgba_premultiplied(
+                r.to_u8(),
+                g.to_u8(),
+                b.to_u8(),
+                w.map_or(0, |w| w.to_u8()),
+            ));
+        }
+
+        // TODO: color wheels??
+        // TODO: subtractive colors
+
+        None
+    }
 }

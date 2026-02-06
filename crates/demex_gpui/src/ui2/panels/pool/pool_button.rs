@@ -1,11 +1,13 @@
 use std::rc::Rc;
 
 use gpui::{
-    App, ClickEvent, Div, ElementId, Entity, Hsla, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, RenderOnce, SharedString, Stateful, StatefulInteractiveElement, StyleRefinement,
-    Styled, Window, canvas, div, prelude::FluentBuilder,
+    App, Bounds, ClickEvent, Div, ElementId, Entity, Hsla, InteractiveElement, IntoElement,
+    MouseButton, ParentElement, PathBuilder, RenderOnce, Rgba, SharedString, Stateful,
+    StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div, fill, point,
+    prelude::FluentBuilder, px, size,
 };
 use gpui_component::{ActiveTheme, Colorize, Disableable, StyledExt, h_flex, v_flex};
+use itertools::Itertools;
 
 use crate::ui2::panels::pool::pool_quick_actions::{
     PoolQuickAction, PoolQuickActionsState, PoolQuickActionsStateEntityExtension,
@@ -43,6 +45,8 @@ pub struct PoolButton {
     quick_actions_state: Option<Entity<PoolQuickActionsState>>,
     quick_actions: Vec<PoolQuickAction>,
 
+    colors: Option<Vec<Hsla>>,
+
     top_right: Option<SharedString>,
 
     disabled: bool,
@@ -62,6 +66,7 @@ impl PoolButton {
             indicator_color: None,
             quick_actions_state: None,
             quick_actions: Vec::new(),
+            colors: None,
             top_right: None,
             disabled: false,
             on_click: None,
@@ -111,6 +116,19 @@ impl PoolButton {
     ) -> Self {
         self.on_click = Some(Rc::new(on_click));
         self
+    }
+
+    pub fn colors<I, C>(mut self, colors: I) -> Self
+    where
+        I: IntoIterator<Item = C>,
+        C: Into<Hsla>,
+    {
+        self.colors = Some(colors.into_iter().map_into().collect());
+        self
+    }
+
+    pub fn colors_rgb(self, colors: impl IntoIterator<Item = [f32; 3]>) -> Self {
+        self.colors(colors.into_iter().map(|[r, g, b]| Rgba { r, g, b, a: 1.0 }))
     }
 }
 
@@ -179,6 +197,8 @@ impl RenderOnce for PoolButton {
     fn render(self, _window: &mut gpui::Window, cx: &mut gpui::App) -> impl gpui::IntoElement {
         let lighten_factor = 0.5;
 
+        // let colors = self.colors;
+
         self.base
             .relative()
             .child(
@@ -195,7 +215,61 @@ impl RenderOnce for PoolButton {
                             }
                         }
                     },
-                    |_, _, _, _| {},
+                    |bounds, _, window, _| {
+                        if let Some(colors) = self.colors {
+                            let center = bounds.center();
+                            let radius = bounds.size.width / 4.0;
+
+                            if colors.len() > 1 {
+                                let deg_per_color = 360.0 / colors.len() as f32;
+
+                                for (idx, color) in colors.into_iter().enumerate() {
+                                    let mut path_builder = PathBuilder::fill();
+
+                                    let from = center
+                                        + point(
+                                            radius
+                                                * (idx as f32 * deg_per_color).to_radians().cos(),
+                                            radius
+                                                * (idx as f32 * deg_per_color).to_radians().sin(),
+                                        );
+
+                                    let to = center
+                                        + point(
+                                            radius
+                                                * ((idx + 1) as f32 * deg_per_color)
+                                                    .to_radians()
+                                                    .cos(),
+                                            radius
+                                                * ((idx + 1) as f32 * deg_per_color)
+                                                    .to_radians()
+                                                    .sin(),
+                                        );
+
+                                    path_builder.move_to(center);
+                                    path_builder.line_to(from);
+                                    path_builder.arc_to(
+                                        point(radius, radius),
+                                        px(deg_per_color),
+                                        false,
+                                        true,
+                                        to,
+                                    );
+
+                                    window.paint_path(path_builder.build().unwrap(), color);
+                                }
+                            } else {
+                                let circle_bounds =
+                                    Bounds::centered_at(center, size(radius * 2, radius * 2));
+                                window.paint_quad(
+                                    fill(circle_bounds, colors[0]).corner_radii(radius),
+                                );
+                            }
+
+                            // TODO: just for testing
+                            // let circle_color = colors[0];
+                        }
+                    },
                 )
                 .absolute()
                 .top_0()
