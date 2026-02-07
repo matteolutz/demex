@@ -3,7 +3,7 @@ use gpui::{
     Styled, Subscription, TitlebarOptions, Window, div, prelude::FluentBuilder,
 };
 use gpui_component::{
-    Sizable, TitleBar,
+    Sizable, StyledExt, TitleBar,
     button::{Button, ButtonVariants},
     h_flex,
     menu::DropdownMenu,
@@ -150,6 +150,8 @@ impl DemexTitleBarConfig {
                     h_flex()
                         .px_8()
                         .justify_center()
+                        .text_sm()
+                        .font_medium()
                         .child(showfile_name)
                         .into_any_element(),
                 ]
