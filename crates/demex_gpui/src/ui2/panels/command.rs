@@ -5,8 +5,7 @@ use gpui::{
 };
 use gpui_component::{
     ActiveTheme, Icon, IconName, Sizable,
-    button::Button,
-    dock::{Panel, PanelEvent, register_panel},
+    dock::PanelEvent,
     h_flex,
     input::{Input, InputEvent, InputState, Position},
     notification::Notification,
@@ -19,16 +18,8 @@ use crate::{
         DemexEngineHandler,
         state::{DemexCommandHistoryEntry, DemexUiState},
     },
-    ui2::{config::AppConfigExt, panels::toolbar_buttons, wm::app::WindowManagerAppExt},
+    ui2::{config::AppConfigExt, panels::DemexPanel, wm::app::WindowManagerAppExt},
 };
-
-const COMMAND_PANEL_NAME: &str = "demex-command";
-
-pub(super) fn register(cx: &mut App) {
-    register_panel(cx, COMMAND_PANEL_NAME, |_, _, _, window, cx| {
-        Box::new(cx.new(|cx| CommandPanel::new(window, cx)))
-    });
-}
 
 mod actions {
     use gpui::{App, KeyBinding, actions};
@@ -68,21 +59,19 @@ impl Focusable for CommandPanel {
     }
 }
 
-impl Panel for CommandPanel {
-    fn panel_name(&self) -> &'static str {
-        COMMAND_PANEL_NAME
+impl DemexPanel for CommandPanel {
+    fn panel_type() -> super::DockWindowPanelType {
+        super::DockWindowPanelType::CommandPanel
     }
 
-    fn title(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        "Command"
-    }
-
-    fn toolbar_buttons(
-        &mut self,
+    fn deserialize(
+        _dock_area: gpui::WeakEntity<gpui_component::dock::DockArea>,
+        _panel_state: &gpui_component::dock::PanelState,
+        _panel_info: &gpui_component::dock::PanelInfo,
         window: &mut Window,
         cx: &mut Context<Self>,
-    ) -> Option<Vec<Button>> {
-        Some(toolbar_buttons(self, window, cx))
+    ) -> Self {
+        CommandPanel::new(window, cx)
     }
 }
 

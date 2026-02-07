@@ -7,18 +7,12 @@ use demex_core::{
     selection::FixtureSelectionProperty,
 };
 use gpui::{
-    App, AppContext, Context, Entity, EventEmitter, FocusHandle, Focusable, InteractiveElement,
-    IntoElement, ParentElement, Render, SharedString, Styled, Subscription, Window, div,
-    prelude::FluentBuilder,
+    App, Context, Entity, EventEmitter, FocusHandle, Focusable, InteractiveElement, IntoElement,
+    ParentElement, Render, SharedString, Styled, Subscription, Window, div, prelude::FluentBuilder,
 };
 use gpui_component::{
-    ActiveTheme,
-    button::Button,
-    checkbox::Checkbox,
-    dock::{Panel, PanelEvent, register_panel},
-    h_flex,
-    scroll::ScrollableElement,
-    v_flex,
+    ActiveTheme, button::Button, checkbox::Checkbox, dock::PanelEvent, h_flex,
+    scroll::ScrollableElement, v_flex,
 };
 use strum::IntoEnumIterator;
 
@@ -27,23 +21,15 @@ use crate::{
     ui2::{
         ext::GpuiContextExtension,
         panels::{
+            DemexPanel,
             fixture_selection::property::{
                 FixtureSelectionPropertyExt, FixtureSelectionPropertyType,
             },
-            toolbar_buttons,
         },
     },
 };
 
 mod property;
-
-const FIXTURE_SELECTION_PANEL_NAME: &str = "demex-fixture-selection";
-
-pub(super) fn register(cx: &mut App) {
-    register_panel(cx, FIXTURE_SELECTION_PANEL_NAME, |_, _, _, _, cx| {
-        Box::new(cx.new(|cx| FixtureSelectionPanel::new(cx)))
-    });
-}
 
 pub struct FixtureSelectionPanel {
     focus_handle: FocusHandle,
@@ -74,21 +60,19 @@ impl Focusable for FixtureSelectionPanel {
     }
 }
 
-impl Panel for FixtureSelectionPanel {
-    fn panel_name(&self) -> &'static str {
-        FIXTURE_SELECTION_PANEL_NAME
+impl DemexPanel for FixtureSelectionPanel {
+    fn panel_type() -> super::DockWindowPanelType {
+        super::DockWindowPanelType::FixtureSelection
     }
 
-    fn title(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        "Fixture Selection"
-    }
-
-    fn toolbar_buttons(
-        &mut self,
-        window: &mut Window,
+    fn deserialize(
+        _dock_area: gpui::WeakEntity<gpui_component::dock::DockArea>,
+        _panel_state: &gpui_component::dock::PanelState,
+        _panel_info: &gpui_component::dock::PanelInfo,
+        _window: &mut Window,
         cx: &mut Context<Self>,
-    ) -> Option<Vec<Button>> {
-        Some(toolbar_buttons(self, window, cx))
+    ) -> Self {
+        FixtureSelectionPanel::new(cx)
     }
 }
 

@@ -1,27 +1,15 @@
 use gpui::{
-    App, AppContext, Context, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement,
-    Render, Styled, Subscription, Window, div, prelude::FluentBuilder,
+    App, Context, EventEmitter, FocusHandle, Focusable, IntoElement, ParentElement, Render, Styled,
+    Subscription, Window, div, prelude::FluentBuilder,
 };
 use gpui_component::{
-    ActiveTheme, StyledExt,
-    chart::AreaChart,
-    dock::{Panel, PanelEvent, register_panel},
-    scroll::ScrollableElement,
-    v_flex,
+    ActiveTheme, StyledExt, chart::AreaChart, dock::PanelEvent, scroll::ScrollableElement, v_flex,
 };
 
 use crate::{
     engine::state::DemexUiState,
-    ui2::{ext::GpuiContextExtension, panels::toolbar_buttons},
+    ui2::{ext::GpuiContextExtension, panels::DemexPanel},
 };
-
-const PERFORMANCE_PANEL_NAME: &str = "demex-performance";
-
-pub(super) fn register(cx: &mut App) {
-    register_panel(cx, PERFORMANCE_PANEL_NAME, |_, _, _, window, cx| {
-        Box::new(cx.new(|cx| PerformancePanel::new(window, cx)))
-    });
-}
 
 pub struct PerformancePanel {
     focus_handle: FocusHandle,
@@ -36,21 +24,19 @@ impl Focusable for PerformancePanel {
     }
 }
 
-impl Panel for PerformancePanel {
-    fn panel_name(&self) -> &'static str {
-        PERFORMANCE_PANEL_NAME
+impl DemexPanel for PerformancePanel {
+    fn panel_type() -> super::DockWindowPanelType {
+        super::DockWindowPanelType::PerformancePanel
     }
 
-    fn title(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        "Performance"
-    }
-
-    fn toolbar_buttons(
-        &mut self,
+    fn deserialize(
+        _dock_area: gpui::WeakEntity<gpui_component::dock::DockArea>,
+        _panel_state: &gpui_component::dock::PanelState,
+        _panel_info: &gpui_component::dock::PanelInfo,
         window: &mut Window,
         cx: &mut Context<Self>,
-    ) -> Option<Vec<gpui_component::button::Button>> {
-        Some(toolbar_buttons(self, window, cx))
+    ) -> Self {
+        PerformancePanel::new(window, cx)
     }
 }
 

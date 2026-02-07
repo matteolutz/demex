@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use demex_core::command::parser::nodes::action::Action;
 use gpui::{
-    App, AppContext, BorderStyle, Bounds, Context, Entity, EventEmitter, FocusHandle, Focusable,
+    AppContext, BorderStyle, Bounds, Context, Entity, EventEmitter, FocusHandle, Focusable,
     InteractiveElement, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
     PaintQuad, ParentElement, Pixels, Point, Render, ScrollWheelEvent, Styled, Subscription,
     Window, black, canvas, div, fill, prelude::FluentBuilder, px, white,
@@ -10,7 +10,7 @@ use gpui::{
 use gpui_component::{
     PixelsExt,
     button::Button,
-    dock::{Panel, PanelEvent, register_panel},
+    dock::PanelEvent,
     h_flex,
     slider::{Slider, SliderEvent, SliderState},
     tab::TabBar,
@@ -23,25 +23,17 @@ use crate::{
     ui2::{
         ext::GpuiContextExtension,
         panels::{
+            DemexPanel,
             layout_view::{
                 layout_entry::{FixtureLayoutEntryDrawArgs, FixtureLayoutEntryExt},
                 layout_projection::LayoutProjection,
             },
-            toolbar_buttons,
         },
     },
 };
 
 pub mod layout_entry;
 pub mod layout_projection;
-
-const LAYOUT_VIEW_PANEL_NAME: &str = "layout-view";
-
-pub(super) fn register(cx: &mut App) {
-    register_panel(cx, LAYOUT_VIEW_PANEL_NAME, |_, _, _, window, cx| {
-        Box::new(cx.new(|cx| LayoutViewPanel::new(window, cx)))
-    });
-}
 
 pub struct LayoutViewPanel {
     focus_handle: FocusHandle,
@@ -67,25 +59,19 @@ impl Focusable for LayoutViewPanel {
     }
 }
 
-impl Panel for LayoutViewPanel {
-    fn panel_name(&self) -> &'static str {
-        LAYOUT_VIEW_PANEL_NAME
+impl DemexPanel for LayoutViewPanel {
+    fn panel_type() -> super::DockWindowPanelType {
+        super::DockWindowPanelType::LayoutView
     }
 
-    fn title(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        "Layout View"
-    }
-
-    fn inner_padding(&self, _cx: &App) -> bool {
-        false
-    }
-
-    fn toolbar_buttons(
-        &mut self,
+    fn deserialize(
+        _dock_area: gpui::WeakEntity<gpui_component::dock::DockArea>,
+        _panel_state: &gpui_component::dock::PanelState,
+        _panel_info: &gpui_component::dock::PanelInfo,
         window: &mut Window,
         cx: &mut Context<Self>,
-    ) -> Option<Vec<Button>> {
-        Some(toolbar_buttons(self, window, cx))
+    ) -> Self {
+        LayoutViewPanel::new(window, cx)
     }
 }
 

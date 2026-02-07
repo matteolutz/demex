@@ -12,7 +12,7 @@ use gpui::{
 use gpui_component::{
     ActiveTheme, Sizable, StyledExt,
     button::{Button, ButtonVariants},
-    dock::{Panel, PanelEvent, register_panel},
+    dock::PanelEvent,
     h_flex,
     scroll::ScrollableElement,
     table::{Table, TableState},
@@ -24,8 +24,8 @@ use crate::{
     ui2::{
         config::AppConfigExt,
         panels::{
+            DemexPanel,
             sequence_editor::table::{SequenceEditorTable, SequenceEditorTableData},
-            toolbar_buttons,
         },
         window::set_property::{SetPropertyWindow, SetPropertyWindowPropertyType},
         wm::{WindowManager, edit_window::WindowManagerExtension},
@@ -33,14 +33,6 @@ use crate::{
 };
 
 mod table;
-
-const SEQUENCE_EDITOR_PANEL_NAME: &str = "demex-sequence-editor";
-
-pub(super) fn register(cx: &mut App) {
-    register_panel(cx, SEQUENCE_EDITOR_PANEL_NAME, |_, _, _, window, cx| {
-        Box::new(cx.new(|cx| SequenceEditorPanel::new(window, cx)))
-    });
-}
 
 pub struct SequenceEditorPanel {
     focus_handle: FocusHandle,
@@ -195,21 +187,19 @@ impl Focusable for SequenceEditorPanel {
     }
 }
 
-impl Panel for SequenceEditorPanel {
-    fn panel_name(&self) -> &'static str {
-        SEQUENCE_EDITOR_PANEL_NAME
+impl DemexPanel for SequenceEditorPanel {
+    fn panel_type() -> super::DockWindowPanelType {
+        super::DockWindowPanelType::SequenceEditor
     }
 
-    fn title(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        "Sequence Editor"
-    }
-
-    fn toolbar_buttons(
-        &mut self,
+    fn deserialize(
+        _dock_area: gpui::WeakEntity<gpui_component::dock::DockArea>,
+        _panel_state: &gpui_component::dock::PanelState,
+        _panel_info: &gpui_component::dock::PanelInfo,
         window: &mut Window,
         cx: &mut Context<Self>,
-    ) -> Option<Vec<Button>> {
-        Some(toolbar_buttons(self, window, cx))
+    ) -> Self {
+        SequenceEditorPanel::new(window, cx)
     }
 }
 

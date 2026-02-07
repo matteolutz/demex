@@ -9,7 +9,7 @@ use gpui::{
 use gpui_component::{
     ActiveTheme, Disableable, IconName, Sizable,
     button::{Button, ButtonVariant, ButtonVariants},
-    dock::{Panel, PanelEvent, register_panel},
+    dock::PanelEvent,
     h_flex,
     slider::Slider,
     tab::TabBar,
@@ -22,11 +22,11 @@ use crate::{
         config::AppConfigExt,
         icon::DemexIconName,
         panels::{
+            DemexPanel,
             attribute_editor::{
                 attribute_state::AttributeEditorAttributeState,
                 value_display::AttributeValueDisplayMode,
             },
-            toolbar_buttons,
         },
         window::set_attribute::SetAttributeWindow,
         wm::{WindowManager, edit_window::WindowManagerExtension},
@@ -35,14 +35,6 @@ use crate::{
 
 mod attribute_state;
 mod value_display;
-
-const ATTRIBUTE_EDTIOR_PANEL_NAME: &str = "demex-attribute-editor";
-
-pub(super) fn register(cx: &mut App) {
-    register_panel(cx, ATTRIBUTE_EDTIOR_PANEL_NAME, |_, _, _, window, cx| {
-        Box::new(cx.new(|cx| AttributeEditorPanel::new(window, cx)))
-    });
-}
 
 const ATTRIBUTE_PAGE_SIZE: usize = 5;
 
@@ -147,25 +139,19 @@ impl Focusable for AttributeEditorPanel {
     }
 }
 
-impl Panel for AttributeEditorPanel {
-    fn panel_name(&self) -> &'static str {
-        ATTRIBUTE_EDTIOR_PANEL_NAME
+impl DemexPanel for AttributeEditorPanel {
+    fn panel_type() -> super::DockWindowPanelType {
+        super::DockWindowPanelType::AttributeEditor
     }
 
-    fn title(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        "Attribute Editor"
-    }
-
-    fn inner_padding(&self, _cx: &App) -> bool {
-        false
-    }
-
-    fn toolbar_buttons(
-        &mut self,
+    fn deserialize(
+        _dock_area: gpui::WeakEntity<gpui_component::dock::DockArea>,
+        _panel_state: &gpui_component::dock::PanelState,
+        _panel_info: &gpui_component::dock::PanelInfo,
         window: &mut Window,
         cx: &mut Context<Self>,
-    ) -> Option<Vec<Button>> {
-        Some(toolbar_buttons(self, window, cx))
+    ) -> Self {
+        AttributeEditorPanel::new(window, cx)
     }
 }
 

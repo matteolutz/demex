@@ -22,7 +22,7 @@ use crate::{
         config::AppConfigExt,
         ext::GpuiContextExtension,
         panels::{
-            DockWindowPanelType,
+            DemexPanelContextExt, DockWindowPanelType,
             attribute_editor::AttributeEditorPanel,
             command::CommandPanel,
             fixture_list::FixtureListPanel,
@@ -76,14 +76,14 @@ impl DockWindow {
         cx: &mut Context<DockArea>,
     ) {
         da.add_panel(
-            Arc::new(cx.new(|cx| FixtureSelectionPanel::new(cx))),
+            Arc::new(cx.new_panel(|cx| FixtureSelectionPanel::new(cx))),
             DockPlacement::Center,
             None,
             window,
             cx,
         );
         da.add_panel(
-            Arc::new(cx.new(|cx| FixtureListPanel::new(window, cx))),
+            Arc::new(cx.new_panel(|cx| FixtureListPanel::new(window, cx))),
             DockPlacement::Center,
             None,
             window,
@@ -91,28 +91,28 @@ impl DockWindow {
         );
 
         da.add_panel(
-            Arc::new(cx.new(|cx| MultiPoolPanel::new(MultiPoolConfig::example(), cx))),
+            Arc::new(cx.new_panel(|cx| MultiPoolPanel::new(MultiPoolConfig::example(), cx))),
             DockPlacement::Center,
             None,
             window,
             cx,
         );
         da.add_panel(
-            Arc::new(cx.new(|cx| LayoutViewPanel::new(window, cx))),
+            Arc::new(cx.new_panel(|cx| LayoutViewPanel::new(window, cx))),
             DockPlacement::Center,
             None,
             window,
             cx,
         );
         da.add_panel(
-            Arc::new(cx.new(|cx| SequenceEditorPanel::new(window, cx))),
+            Arc::new(cx.new_panel(|cx| SequenceEditorPanel::new(window, cx))),
             DockPlacement::Center,
             None,
             window,
             cx,
         );
         da.add_panel(
-            Arc::new(cx.new(|cx| AttributeEditorPanel::new(window, cx))),
+            Arc::new(cx.new_panel(|cx| AttributeEditorPanel::new(window, cx))),
             DockPlacement::Center,
             None,
             window,
@@ -120,7 +120,7 @@ impl DockWindow {
         );
 
         if is_main {
-            let command_panel = cx.new(|cx| CommandPanel::new(window, cx));
+            let command_panel = cx.new_panel(|cx| CommandPanel::new(window, cx));
             da.set_bottom_dock(
                 DockItem::panel(Arc::new(command_panel)),
                 Some(130.0.into()),
@@ -131,7 +131,7 @@ impl DockWindow {
         }
 
         if cfg!(debug_assertions) {
-            let performance_panel = cx.new(|cx| PerformancePanel::new(window, cx));
+            let performance_panel = cx.new_panel(|cx| PerformancePanel::new(window, cx));
             da.set_right_dock(
                 DockItem::panel(Arc::new(performance_panel)),
                 Some(300.0.into()),
@@ -273,22 +273,28 @@ impl DockWindow {
             da.add_panel(
                 match panel_type {
                     DockWindowPanelType::AttributeEditor => {
-                        Arc::new(cx.new(|cx| AttributeEditorPanel::new(window, cx)))
+                        Arc::new(cx.new_panel(|cx| AttributeEditorPanel::new(window, cx)))
                     }
                     DockWindowPanelType::FixtureList => {
-                        Arc::new(cx.new(|cx| FixtureListPanel::new(window, cx)))
+                        Arc::new(cx.new_panel(|cx| FixtureListPanel::new(window, cx)))
                     }
                     DockWindowPanelType::FixtureSelection => {
-                        Arc::new(cx.new(|cx| FixtureSelectionPanel::new(cx)))
+                        Arc::new(cx.new_panel(|cx| FixtureSelectionPanel::new(cx)))
                     }
-                    DockWindowPanelType::Multipool => {
-                        Arc::new(cx.new(|cx| MultiPoolPanel::new(MultiPoolConfig::default(), cx)))
-                    }
+                    DockWindowPanelType::Multipool => Arc::new(
+                        cx.new_panel(|cx| MultiPoolPanel::new(MultiPoolConfig::default(), cx)),
+                    ),
                     DockWindowPanelType::LayoutView => {
-                        Arc::new(cx.new(|cx| LayoutViewPanel::new(window, cx)))
+                        Arc::new(cx.new_panel(|cx| LayoutViewPanel::new(window, cx)))
                     }
                     DockWindowPanelType::SequenceEditor => {
-                        Arc::new(cx.new(|cx| SequenceEditorPanel::new(window, cx)))
+                        Arc::new(cx.new_panel(|cx| SequenceEditorPanel::new(window, cx)))
+                    }
+                    DockWindowPanelType::CommandPanel => {
+                        Arc::new(cx.new_panel(|cx| CommandPanel::new(window, cx)))
+                    }
+                    DockWindowPanelType::PerformancePanel => {
+                        Arc::new(cx.new_panel(|cx| PerformancePanel::new(window, cx)))
                     }
                 },
                 DockPlacement::Center,

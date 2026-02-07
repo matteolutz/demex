@@ -5,8 +5,7 @@ use gpui::{
 };
 use gpui_component::{
     Sizable,
-    button::Button,
-    dock::{Panel, PanelEvent, register_panel},
+    dock::PanelEvent,
     table::{Table, TableEvent, TableState},
 };
 
@@ -15,21 +14,13 @@ use crate::{
     ui2::{
         config::AppConfigExt,
         panels::{
+            DemexPanel,
             fixture_list::table::{FixtureListTable, FixtureListTableEntry},
-            toolbar_buttons,
         },
     },
 };
 
 mod table;
-
-const FIXTURE_LIST_PANEL_NAME: &str = "demex-fixture-list";
-
-pub(super) fn register(cx: &mut App) {
-    register_panel(cx, FIXTURE_LIST_PANEL_NAME, |_, _, _, window, cx| {
-        Box::new(cx.new(|cx| FixtureListPanel::new(window, cx)))
-    });
-}
 
 pub struct FixtureListPanel {
     focus_handle: FocusHandle,
@@ -104,21 +95,19 @@ impl Focusable for FixtureListPanel {
     }
 }
 
-impl Panel for FixtureListPanel {
-    fn panel_name(&self) -> &'static str {
-        FIXTURE_LIST_PANEL_NAME
+impl DemexPanel for FixtureListPanel {
+    fn panel_type() -> super::DockWindowPanelType {
+        super::DockWindowPanelType::FixtureList
     }
 
-    fn title(&mut self, _window: &mut gpui::Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        "Fixture List"
-    }
-
-    fn toolbar_buttons(
-        &mut self,
+    fn deserialize(
+        _dock_area: gpui::WeakEntity<gpui_component::dock::DockArea>,
+        _panel_state: &gpui_component::dock::PanelState,
+        _panel_info: &gpui_component::dock::PanelInfo,
         window: &mut Window,
         cx: &mut Context<Self>,
-    ) -> Option<Vec<Button>> {
-        Some(toolbar_buttons(self, window, cx))
+    ) -> Self {
+        FixtureListPanel::new(window, cx)
     }
 }
 

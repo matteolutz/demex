@@ -10,7 +10,7 @@ use gpui::{
 use gpui_component::{
     ActiveTheme, Colorize, Disableable, IconName, PixelsExt, StyledExt,
     button::Button,
-    dock::{Panel, PanelEvent, PanelInfo, PanelState, register_panel},
+    dock::{PanelEvent, PanelInfo, PanelState},
     v_flex, white,
 };
 
@@ -19,6 +19,7 @@ use crate::{
     ui2::{
         ext::GpuiContextExtension,
         panels::{
+            DemexPanel,
             multipool::config::{MultiPoolConfig, MultiPoolEntry},
             pool::{
                 pool_action::{apply_pool_type_to_button, handle_pool_item_click},
@@ -27,7 +28,6 @@ use crate::{
                 pool_quick_actions::PoolQuickActionsState,
                 pool_type::PoolTypeExt,
             },
-            toolbar_buttons,
         },
         utils::bounds,
         window::add_pool_window::AddPoolWindow,
@@ -37,22 +37,8 @@ use crate::{
 
 pub mod config;
 
-const MULTIPOOL_PANEL_NAME: &str = "demex-multipool";
-
 const ELEMENT_PADDING: f32 = 5.0;
 const ELEMENT_SIZE: f32 = 80.0;
-
-pub(super) fn register(cx: &mut App) {
-    register_panel(cx, MULTIPOOL_PANEL_NAME, |_, _, panel_info, _, cx| {
-        let pool_config = if let PanelInfo::Panel(panel) = panel_info {
-            serde_json::from_value(panel.clone()).ok()
-        } else {
-            None
-        };
-
-        Box::new(cx.new(|cx| MultiPoolPanel::new(pool_config.unwrap_or_default(), cx)))
-    });
-}
 
 mod actions {
     use gpui::{App, KeyBinding};
@@ -319,33 +305,31 @@ impl Focusable for MultiPoolPanel {
     }
 }
 
-impl Panel for MultiPoolPanel {
-    fn panel_name(&self) -> &'static str {
-        MULTIPOOL_PANEL_NAME
+impl DemexPanel for MultiPoolPanel {
+    fn panel_type() -> super::DockWindowPanelType {
+        super::DockWindowPanelType::Multipool
     }
 
-    fn title(&mut self, _: &mut gpui::Window, _: &mut Context<Self>) -> impl gpui::IntoElement {
-        "Multipool"
-    }
-
-    fn toolbar_buttons(
-        &mut self,
-        window: &mut gpui::Window,
-        cx: &mut Context<Self>,
-    ) -> Option<Vec<gpui_component::button::Button>> {
-        Some(toolbar_buttons(self, window, cx))
-    }
-
-    fn dump(&self, _: &App) -> gpui_component::dock::PanelState {
-        let mut state = PanelState::new(self);
+    fn dump(&self, state: &mut PanelState, _: &App) {
         state.info = PanelInfo::Panel(
             serde_json::to_value(self.config.clone()).unwrap_or(serde_json::Value::Null),
         );
-        state
     }
 
-    fn inner_padding(&self, _: &App) -> bool {
-        false
+    fn deserialize(
+        _dock_area: gpui::WeakEntity<gpui_component::dock::DockArea>,
+        _panel_state: &PanelState,
+        panel_info: &PanelInfo,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        let pool_config = if let PanelInfo::Panel(panel) = panel_info {
+            serde_json::from_value(panel.clone()).ok()
+        } else {
+            None
+        };
+
+        MultiPoolPanel::new(pool_config.unwrap_or_default(), cx)
     }
 }
 
