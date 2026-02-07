@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use gpui::{
     App, AppContext, Context, Entity, EventEmitter, Focusable, IntoElement, Render, WeakEntity,
     Window,
@@ -5,15 +7,23 @@ use gpui::{
 use gpui_component::{
     IconName,
     button::Button,
-    dock::{DockArea, Panel, PanelEvent, PanelInfo, PanelState, TabPanel, register_panel},
+    dock::{
+        DockArea, Panel, PanelEvent, PanelInfo, PanelState, PanelView, TabPanel, register_panel,
+    },
 };
+use itertools::Itertools;
 use strum::IntoEnumIterator;
 
 use crate::ui2::{
+    components::context::DemexContextMenuAction,
     panels::{
-        attribute_editor::AttributeEditorPanel, command::CommandPanel,
-        fixture_list::FixtureListPanel, fixture_selection::FixtureSelectionPanel,
-        layout_view::LayoutViewPanel, multipool::MultiPoolPanel, performance::PerformancePanel,
+        attribute_editor::AttributeEditorPanel,
+        command::CommandPanel,
+        fixture_list::FixtureListPanel,
+        fixture_selection::FixtureSelectionPanel,
+        layout_view::LayoutViewPanel,
+        multipool::{MultiPoolPanel, config::MultiPoolConfig},
+        performance::PerformancePanel,
         sequence_editor::SequenceEditorPanel,
     },
     wm::WindowManager,
@@ -76,6 +86,35 @@ impl DockWindowPanelType {
 
     pub fn iter_creatable() -> impl Iterator<Item = Self> {
         Self::iter().filter(|panel_type| panel_type.allow_creating())
+    }
+
+    pub fn build_panel_view(self, window: &mut Window, cx: &mut App) -> Arc<dyn PanelView> {
+        match self {
+            DockWindowPanelType::AttributeEditor => {
+                Arc::new(cx.new_panel(|cx| AttributeEditorPanel::new(window, cx)))
+            }
+            DockWindowPanelType::FixtureList => {
+                Arc::new(cx.new_panel(|cx| FixtureListPanel::new(window, cx)))
+            }
+            DockWindowPanelType::FixtureSelection => {
+                Arc::new(cx.new_panel(|cx| FixtureSelectionPanel::new(cx)))
+            }
+            DockWindowPanelType::Multipool => {
+                Arc::new(cx.new_panel(|cx| MultiPoolPanel::new(MultiPoolConfig::default(), cx)))
+            }
+            DockWindowPanelType::LayoutView => {
+                Arc::new(cx.new_panel(|cx| LayoutViewPanel::new(window, cx)))
+            }
+            DockWindowPanelType::SequenceEditor => {
+                Arc::new(cx.new_panel(|cx| SequenceEditorPanel::new(window, cx)))
+            }
+            DockWindowPanelType::CommandPanel => {
+                Arc::new(cx.new_panel(|cx| CommandPanel::new(window, cx)))
+            }
+            DockWindowPanelType::PerformancePanel => {
+                Arc::new(cx.new_panel(|cx| PerformancePanel::new(window, cx)))
+            }
+        }
     }
 }
 
@@ -174,41 +213,67 @@ impl<T: DemexPanel> Panel for DemexPanelView<T> {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<Vec<Button>> {
-        Some(    vec![
+        let current_parent = self.parent.clone();
+
+        Some(vec![
             Button::new("add-panel")
                 .icon(IconName::Plus)
-                .on_click(|evt, window, cx| {
+                .on_click(move |evt, window, cx| {
+                    let current_parent = current_parent.clone();
                     let window_handle = window.window_handle();
                     let pos = evt.position();
 
+                    let context_menu_actions: Vec<DemexContextMenuAction> =
+                        DockWindowPanelType::iter_creatable()
+                            .map(|panel_type| {
+                                let current_parent = current_parent.clone();
+
+                                (
+                                    panel_type.to_string(),
+                                    move |window: &mut Window, cx: &mut App| {
+                                        let current_parent = current_parent.clone();
+
+                                        let window_handle = window.window_handle();
+                                        window.defer(cx, move |window, cx| {
+                                            if let Some(current_parent) = current_parent {
+                                                let _ = current_parent.update(cx, |parent, cx| {
+                                                    parent.add_panel(
+                                                        panel_type.build_panel_view(window, cx),
+                                                        window,
+                                                        cx,
+                                                    );
+                                                });
+                                            } else {
+                                                let _ = WindowManager::update_dock_window_handle(
+                                                    window_handle,
+                                                    cx,
+                                                    |dw, window, cx| {
+                                                        dw.add_panel(panel_type, window, cx)
+                                                    },
+                                                );
+                                            }
+                                        });
+                                    },
+                                )
+                            })
+                            .map_into()
+                            .collect::<Vec<_>>();
+
                     cx.defer(move |cx| {
-                        let _ =
-                            WindowManager::update_dock_window_handle(window_handle, cx, |dw, _, cx| {
-                                dw.context_layer().update(cx, |context, cx| {
-                                    context.context_menu(
-                                        pos,
-                                        DockWindowPanelType::iter_creatable().map(|panel_type| {
-                                            (
-                                                panel_type.to_string(),
-                                                move |window: &mut Window, cx: &mut App| {
-                                                    let window_handle = window.window_handle();
-                                                    cx.defer(move |cx| {
-                                                        let _ =
-                                                            WindowManager::update_dock_window_handle(
-                                                                window_handle,
-                                                                cx,
-                                                                |dw, window, cx| {
-                                                                    dw.add_panel(panel_type, window, cx)
-                                                                },
-                                                            );
-                                                    });
-                                                },
-                                            )
-                                        }),
-                                        cx,
-                                    );
+                        let current_parent = current_parent.clone();
+
+                        let _ = WindowManager::update_dock_window_handle(
+                            window_handle,
+                            cx,
+                            move |dw, _, cx| {
+                                let current_parent = current_parent.clone();
+
+                                dw.context_layer().update(cx, move |context, cx| {
+                                    let current_parent = current_parent.clone();
+                                    context.context_menu(pos, context_menu_actions, cx);
                                 });
-                            });
+                            },
+                        );
                     });
                 }),
         ])

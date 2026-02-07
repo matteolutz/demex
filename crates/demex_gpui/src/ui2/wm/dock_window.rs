@@ -271,32 +271,7 @@ impl DockWindow {
     ) {
         self.dock_area.update(cx, |da, cx| {
             da.add_panel(
-                match panel_type {
-                    DockWindowPanelType::AttributeEditor => {
-                        Arc::new(cx.new_panel(|cx| AttributeEditorPanel::new(window, cx)))
-                    }
-                    DockWindowPanelType::FixtureList => {
-                        Arc::new(cx.new_panel(|cx| FixtureListPanel::new(window, cx)))
-                    }
-                    DockWindowPanelType::FixtureSelection => {
-                        Arc::new(cx.new_panel(|cx| FixtureSelectionPanel::new(cx)))
-                    }
-                    DockWindowPanelType::Multipool => Arc::new(
-                        cx.new_panel(|cx| MultiPoolPanel::new(MultiPoolConfig::default(), cx)),
-                    ),
-                    DockWindowPanelType::LayoutView => {
-                        Arc::new(cx.new_panel(|cx| LayoutViewPanel::new(window, cx)))
-                    }
-                    DockWindowPanelType::SequenceEditor => {
-                        Arc::new(cx.new_panel(|cx| SequenceEditorPanel::new(window, cx)))
-                    }
-                    DockWindowPanelType::CommandPanel => {
-                        Arc::new(cx.new_panel(|cx| CommandPanel::new(window, cx)))
-                    }
-                    DockWindowPanelType::PerformancePanel => {
-                        Arc::new(cx.new_panel(|cx| PerformancePanel::new(window, cx)))
-                    }
-                },
+                panel_type.build_panel_view(window, cx),
                 DockPlacement::Center,
                 None,
                 window,
