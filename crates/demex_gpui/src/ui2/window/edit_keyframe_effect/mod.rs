@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use demex_core::{
     command::parser::nodes::action::Action,
     engine::comm::KeyframeEffectRequest,
@@ -11,7 +13,13 @@ use gpui::{
     App, AppContext, Context, Entity, InteractiveElement, ParentElement, Render, Styled,
     Subscription, Window, WindowBounds, div, point, size,
 };
-use gpui_component::{scroll::ScrollableElement, v_flex};
+use gpui_component::{
+    button::Button,
+    menu::{DropdownMenu, PopupMenuItem},
+    scroll::ScrollableElement,
+    v_flex,
+};
+use strum::IntoEnumIterator;
 
 use crate::{
     engine::DemexEngineHandler,
@@ -26,6 +34,19 @@ use crate::{
         wm::edit_window::EditWindowDelegate,
     },
 };
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, strum::EnumIter)]
+enum KeyframeEffectPresetTypes {
+    PanTiltSingleOrigin,
+}
+
+impl std::fmt::Display for KeyframeEffectPresetTypes {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::PanTiltSingleOrigin => write!(f, "Pan/Tilt Single Origin"),
+        }
+    }
+}
 
 mod layer;
 
@@ -209,6 +230,24 @@ impl Render for EditKeyframeEffectWindow {
             .id("edit-keyframe-container")
             .overflow_y_scrollbar()
             .child(
+                Button::new("use-preset")
+                    .label("Use preset")
+                    .dropdown_menu(|mut menu, _, _| {
+                        for preset in KeyframeEffectPresetTypes::iter() {
+                            menu = menu.item(PopupMenuItem::Item {
+                                icon: None,
+                                label: preset.to_string().into(),
+                                disabled: false,
+                                checked: false,
+                                is_link: false,
+                                action: None,
+                                handler: Some(Rc::new(|_, _, _| {})),
+                            });
+                        }
+                        menu
+                    }),
+            )
+            .child(
                 v_flex()
                     .w_full()
                     .gap_2()
@@ -243,7 +282,7 @@ impl EditWindowDelegate for EditKeyframeEffectWindow {
 
     fn window_bounds(cx: &mut App) -> Option<gpui::WindowBounds> {
         Some(WindowBounds::centered(
-            size(1000.0.into(), 600.0.into()),
+            size(1200.0.into(), 800.0.into()),
             cx,
         ))
     }
