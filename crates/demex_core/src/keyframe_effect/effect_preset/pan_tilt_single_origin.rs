@@ -9,11 +9,24 @@ use crate::{
     },
 };
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Default,
+    Copy,
+    Clone,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    strum::EnumIter,
+    strum::Display,
+)]
 pub enum PanTiltSingleOriginEffectPresetType {
-    Circle,
+    #[default]
+    Ellipse,
+
     Figure8,
-    Square,
+    Rect,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,10 +44,21 @@ pub struct PanTiltSingleOriginEffectPreset {
     pub move_type: PanTiltSingleOriginEffectPresetType,
 }
 
+impl Default for PanTiltSingleOriginEffectPreset {
+    fn default() -> Self {
+        Self {
+            origin: [0.5.into(), 0.5.into()],
+            size: [0.5.into(), 0.5.into()],
+            rotation: Default::default(),
+            move_type: Default::default(),
+        }
+    }
+}
+
 impl PanTiltSingleOriginEffectPreset {
     pub fn build_layers(&self) -> Vec<KeyframeEffectLayer> {
         match self.move_type {
-            PanTiltSingleOriginEffectPresetType::Circle => {
+            PanTiltSingleOriginEffectPresetType::Ellipse => {
                 let pan_min: ClampedValue = self.origin[0] - (self.size[0] / 2.0);
                 let pan_max: ClampedValue = self.origin[0] + (self.size[0] / 2.0);
 

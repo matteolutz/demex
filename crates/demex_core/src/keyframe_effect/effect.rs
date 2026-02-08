@@ -49,6 +49,15 @@ impl KeyframeEffect {
         }
     }
 
+    pub fn preset(&self) -> Option<&KeyframeEffectPreset> {
+        self.preset.as_ref()
+    }
+
+    pub fn apply_preset(&mut self, preset: KeyframeEffectPreset) {
+        self.layers = preset.build_layers();
+        self.preset = Some(preset);
+    }
+
     pub fn layers(&self) -> &[KeyframeEffectLayer] {
         &self.layers
     }

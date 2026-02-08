@@ -4,7 +4,8 @@ use demex_core::{
     command::parser::nodes::action::Action,
     engine::comm::KeyframeEffectRequest,
     keyframe_effect::{
-        effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_runtime::KeyframeEffectRuntime,
+        effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_preset::KeyframeEffectPreset,
+        effect_runtime::KeyframeEffectRuntime,
     },
     presets::preset::FixturePresetId,
     updatables::runtime::RuntimePhase,
@@ -28,27 +29,19 @@ use crate::{
             runtime_phase_editor::RuntimePhaseEditor,
             wave_editor::{WaveEasingFunction, WaveEasingMode},
         },
-        window::edit_keyframe_effect::layer::{
-            EditKeyframeEffectLayer, EditKeyframeEffectLayerEvent,
+        window::edit_keyframe_effect::{
+            layer::{EditKeyframeEffectLayer, EditKeyframeEffectLayerEvent},
+            preset::PresetPanTiltSingleOriginWindow,
         },
-        wm::edit_window::EditWindowDelegate,
+        wm::{
+            WindowManager,
+            edit_window::{EditWindowDelegate, WindowManagerExtension},
+        },
     },
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, strum::EnumIter)]
-enum KeyframeEffectPresetTypes {
-    PanTiltSingleOrigin,
-}
-
-impl std::fmt::Display for KeyframeEffectPresetTypes {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::PanTiltSingleOrigin => write!(f, "Pan/Tilt Single Origin"),
-        }
-    }
-}
-
 mod layer;
+mod preset;
 
 mod actions {
     use gpui::{App, KeyBinding};
@@ -217,6 +210,22 @@ impl EditKeyframeEffectWindow {
     }
 }
 
+impl EditKeyframeEffectWindow {
+    fn open_preset_window(
+        preset_id: FixturePresetId,
+        preset_type: KeyframeEffectPreset,
+        cx: &mut App,
+    ) {
+        match preset_type {
+            KeyframeEffectPreset::PanTiltSingleOrigin(_) => WindowManager::open_edit_window::<
+                PresetPanTiltSingleOriginWindow,
+            >(cx, move |window, cx| {
+                PresetPanTiltSingleOriginWindow::new(preset_id, window, cx)
+            }),
+        }
+    }
+}
+
 impl Render for EditKeyframeEffectWindow {
     fn render(
         &mut self,
@@ -232,19 +241,27 @@ impl Render for EditKeyframeEffectWindow {
             .child(
                 Button::new("use-preset")
                     .label("Use preset")
-                    .dropdown_menu(|mut menu, _, _| {
-                        for preset in KeyframeEffectPresetTypes::iter() {
-                            menu = menu.item(PopupMenuItem::Item {
-                                icon: None,
-                                label: preset.to_string().into(),
-                                disabled: false,
-                                checked: false,
-                                is_link: false,
-                                action: None,
-                                handler: Some(Rc::new(|_, _, _| {})),
-                            });
+                    .dropdown_menu({
+                        let preset_id = self.preset_id;
+                        move |mut menu, _, _| {
+                            for preset in KeyframeEffectPreset::iter()
+                                .clone()
+                                .filter(|p| p.feature_group() == preset_id.feature_group)
+                            {
+                                menu = menu.item(PopupMenuItem::Item {
+                                    icon: None,
+                                    label: preset.variant_name().into(),
+                                    disabled: false,
+                                    checked: false,
+                                    is_link: false,
+                                    action: None,
+                                    handler: Some(Rc::new(move |_, _, cx| {
+                                        Self::open_preset_window(preset_id, preset.clone(), cx)
+                                    })),
+                                });
+                            }
+                            menu
                         }
-                        menu
                     }),
             )
             .child(

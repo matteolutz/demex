@@ -101,8 +101,15 @@ impl<V: EditWindowDelegate> WindowDelegate for EditWindow<V> {
     where
         Self: Sized,
     {
-        self.entity
-            .read_with(cx, |d, cx| d.window_title(window, cx).into())
+        self.entity.read_with(cx, |d, cx| {
+            let mut title = d.window_title(window, cx).into().to_string();
+
+            if d.is_edited(cx) {
+                title += " *";
+            }
+
+            SharedString::from(title)
+        })
     }
 
     fn should_have_save_button(cx: &App) -> bool

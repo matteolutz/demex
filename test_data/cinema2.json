@@ -2,6 +2,80 @@
   "engine": {
     "preset_handler": {
       "groups": {
+        "1": {
+          "id": 1,
+          "name": "Pixels 1",
+          "fixture_selection": {
+            "fixtures": [
+              "5001.1",
+              "5001.2",
+              "5001.3",
+              "5001.4",
+              "5001.5",
+              "5001.6",
+              "5001.7",
+              "5001.8",
+              "5001.9",
+              "5001.10",
+              "5001.11",
+              "5001.12",
+              "5001.13",
+              "5001.14",
+              "5001.15",
+              "5001.16",
+              "5001.17",
+              "5001.18",
+              "5001.19",
+              "5001.20",
+              "5001.21",
+              "5001.22",
+              "5001.23",
+              "5001.24",
+              "5001.25"
+            ],
+            "group": 1,
+            "block": 1,
+            "wings": 1,
+            "reverse": false
+          }
+        },
+        "7": {
+          "id": 7,
+          "name": "Group 7",
+          "fixture_selection": {
+            "fixtures": [
+              "5007.1",
+              "5007.2",
+              "5007.3",
+              "5007.4",
+              "5007.5",
+              "5007.6",
+              "5007.7",
+              "5007.8",
+              "5007.9",
+              "5007.10",
+              "5007.11",
+              "5007.12",
+              "5007.13",
+              "5007.14",
+              "5007.15",
+              "5007.16",
+              "5007.17",
+              "5007.18",
+              "5007.19",
+              "5007.20",
+              "5007.21",
+              "5007.22",
+              "5007.23",
+              "5007.24",
+              "5007.25"
+            ],
+            "group": 1,
+            "block": 1,
+            "wings": 1,
+            "reverse": false
+          }
+        },
         "4": {
           "id": 4,
           "name": "Group 4",
@@ -32,255 +106,6 @@
               "5004.23",
               "5004.24",
               "5004.25"
-            ],
-            "group": 1,
-            "block": 1,
-            "wings": 1,
-            "reverse": false
-          }
-        },
-        "9": {
-          "id": 9,
-          "name": "All Pixels",
-          "fixture_selection": {
-            "fixtures": [
-              "5001.1",
-              "5001.2",
-              "5001.3",
-              "5001.4",
-              "5001.5",
-              "5001.6",
-              "5001.7",
-              "5001.8",
-              "5001.9",
-              "5001.10",
-              "5001.11",
-              "5001.12",
-              "5001.13",
-              "5001.14",
-              "5001.15",
-              "5001.16",
-              "5001.17",
-              "5001.18",
-              "5001.19",
-              "5001.20",
-              "5001.21",
-              "5001.22",
-              "5001.23",
-              "5001.24",
-              "5001.25",
-              "5002.1",
-              "5002.2",
-              "5002.3",
-              "5002.4",
-              "5002.5",
-              "5002.6",
-              "5002.7",
-              "5002.8",
-              "5002.9",
-              "5002.10",
-              "5002.11",
-              "5002.12",
-              "5002.13",
-              "5002.14",
-              "5002.15",
-              "5002.16",
-              "5002.17",
-              "5002.18",
-              "5002.19",
-              "5002.20",
-              "5002.21",
-              "5002.22",
-              "5002.23",
-              "5002.24",
-              "5002.25",
-              "5003.1",
-              "5003.2",
-              "5003.3",
-              "5003.4",
-              "5003.5",
-              "5003.6",
-              "5003.7",
-              "5003.8",
-              "5003.9",
-              "5003.10",
-              "5003.11",
-              "5003.12",
-              "5003.13",
-              "5003.14",
-              "5003.15",
-              "5003.16",
-              "5003.17",
-              "5003.18",
-              "5003.19",
-              "5003.20",
-              "5003.21",
-              "5003.22",
-              "5003.23",
-              "5003.24",
-              "5003.25",
-              "5004.1",
-              "5004.2",
-              "5004.3",
-              "5004.4",
-              "5004.5",
-              "5004.6",
-              "5004.7",
-              "5004.8",
-              "5004.9",
-              "5004.10",
-              "5004.11",
-              "5004.12",
-              "5004.13",
-              "5004.14",
-              "5004.15",
-              "5004.16",
-              "5004.17",
-              "5004.18",
-              "5004.19",
-              "5004.20",
-              "5004.21",
-              "5004.22",
-              "5004.23",
-              "5004.24",
-              "5004.25",
-              "5005.1",
-              "5005.2",
-              "5005.3",
-              "5005.4",
-              "5005.5",
-              "5005.6",
-              "5005.7",
-              "5005.8",
-              "5005.9",
-              "5005.10",
-              "5005.11",
-              "5005.12",
-              "5005.13",
-              "5005.14",
-              "5005.15",
-              "5005.16",
-              "5005.17",
-              "5005.18",
-              "5005.19",
-              "5005.20",
-              "5005.21",
-              "5005.22",
-              "5005.23",
-              "5005.24",
-              "5005.25",
-              "5006.1",
-              "5006.2",
-              "5006.3",
-              "5006.4",
-              "5006.5",
-              "5006.6",
-              "5006.7",
-              "5006.8",
-              "5006.9",
-              "5006.10",
-              "5006.11",
-              "5006.12",
-              "5006.13",
-              "5006.14",
-              "5006.15",
-              "5006.16",
-              "5006.17",
-              "5006.18",
-              "5006.19",
-              "5006.20",
-              "5006.21",
-              "5006.22",
-              "5006.23",
-              "5006.24",
-              "5006.25",
-              "5007.1",
-              "5007.2",
-              "5007.3",
-              "5007.4",
-              "5007.5",
-              "5007.6",
-              "5007.7",
-              "5007.8",
-              "5007.9",
-              "5007.10",
-              "5007.11",
-              "5007.12",
-              "5007.13",
-              "5007.14",
-              "5007.15",
-              "5007.16",
-              "5007.17",
-              "5007.18",
-              "5007.19",
-              "5007.20",
-              "5007.21",
-              "5007.22",
-              "5007.23",
-              "5007.24",
-              "5007.25",
-              "5008.1",
-              "5008.2",
-              "5008.3",
-              "5008.4",
-              "5008.5",
-              "5008.6",
-              "5008.7",
-              "5008.8",
-              "5008.9",
-              "5008.10",
-              "5008.11",
-              "5008.12",
-              "5008.13",
-              "5008.14",
-              "5008.15",
-              "5008.16",
-              "5008.17",
-              "5008.18",
-              "5008.19",
-              "5008.20",
-              "5008.21",
-              "5008.22",
-              "5008.23",
-              "5008.24",
-              "5008.25"
-            ],
-            "group": 1,
-            "block": 1,
-            "wings": 1,
-            "reverse": false
-          }
-        },
-        "5": {
-          "id": 5,
-          "name": "Group 5",
-          "fixture_selection": {
-            "fixtures": [
-              "5005.1",
-              "5005.2",
-              "5005.3",
-              "5005.4",
-              "5005.5",
-              "5005.6",
-              "5005.7",
-              "5005.8",
-              "5005.9",
-              "5005.10",
-              "5005.11",
-              "5005.12",
-              "5005.13",
-              "5005.14",
-              "5005.15",
-              "5005.16",
-              "5005.17",
-              "5005.18",
-              "5005.19",
-              "5005.20",
-              "5005.21",
-              "5005.22",
-              "5005.23",
-              "5005.24",
-              "5005.25"
             ],
             "group": 1,
             "block": 1,
@@ -362,36 +187,36 @@
             "reverse": false
           }
         },
-        "2": {
-          "id": 2,
-          "name": "Group 2",
+        "8": {
+          "id": 8,
+          "name": "Group 8",
           "fixture_selection": {
             "fixtures": [
-              "5002.1",
-              "5002.2",
-              "5002.3",
-              "5002.4",
-              "5002.5",
-              "5002.6",
-              "5002.7",
-              "5002.8",
-              "5002.9",
-              "5002.10",
-              "5002.11",
-              "5002.12",
-              "5002.13",
-              "5002.14",
-              "5002.15",
-              "5002.16",
-              "5002.17",
-              "5002.18",
-              "5002.19",
-              "5002.20",
-              "5002.21",
-              "5002.22",
-              "5002.23",
-              "5002.24",
-              "5002.25"
+              "5008.1",
+              "5008.2",
+              "5008.3",
+              "5008.4",
+              "5008.5",
+              "5008.6",
+              "5008.7",
+              "5008.8",
+              "5008.9",
+              "5008.10",
+              "5008.11",
+              "5008.12",
+              "5008.13",
+              "5008.14",
+              "5008.15",
+              "5008.16",
+              "5008.17",
+              "5008.18",
+              "5008.19",
+              "5008.20",
+              "5008.21",
+              "5008.22",
+              "5008.23",
+              "5008.24",
+              "5008.25"
             ],
             "group": 1,
             "block": 1,
@@ -399,73 +224,36 @@
             "reverse": false
           }
         },
-        "7": {
-          "id": 7,
-          "name": "Group 7",
+        "5": {
+          "id": 5,
+          "name": "Group 5",
           "fixture_selection": {
             "fixtures": [
-              "5007.1",
-              "5007.2",
-              "5007.3",
-              "5007.4",
-              "5007.5",
-              "5007.6",
-              "5007.7",
-              "5007.8",
-              "5007.9",
-              "5007.10",
-              "5007.11",
-              "5007.12",
-              "5007.13",
-              "5007.14",
-              "5007.15",
-              "5007.16",
-              "5007.17",
-              "5007.18",
-              "5007.19",
-              "5007.20",
-              "5007.21",
-              "5007.22",
-              "5007.23",
-              "5007.24",
-              "5007.25"
-            ],
-            "group": 1,
-            "block": 1,
-            "wings": 1,
-            "reverse": false
-          }
-        },
-        "1": {
-          "id": 1,
-          "name": "Pixels 1",
-          "fixture_selection": {
-            "fixtures": [
-              "5001.1",
-              "5001.2",
-              "5001.3",
-              "5001.4",
-              "5001.5",
-              "5001.6",
-              "5001.7",
-              "5001.8",
-              "5001.9",
-              "5001.10",
-              "5001.11",
-              "5001.12",
-              "5001.13",
-              "5001.14",
-              "5001.15",
-              "5001.16",
-              "5001.17",
-              "5001.18",
-              "5001.19",
-              "5001.20",
-              "5001.21",
-              "5001.22",
-              "5001.23",
-              "5001.24",
-              "5001.25"
+              "5005.1",
+              "5005.2",
+              "5005.3",
+              "5005.4",
+              "5005.5",
+              "5005.6",
+              "5005.7",
+              "5005.8",
+              "5005.9",
+              "5005.10",
+              "5005.11",
+              "5005.12",
+              "5005.13",
+              "5005.14",
+              "5005.15",
+              "5005.16",
+              "5005.17",
+              "5005.18",
+              "5005.19",
+              "5005.20",
+              "5005.21",
+              "5005.22",
+              "5005.23",
+              "5005.24",
+              "5005.25"
             ],
             "group": 1,
             "block": 1,
@@ -685,11 +473,186 @@
             "reverse": false
           }
         },
-        "8": {
-          "id": 8,
-          "name": "Group 8",
+        "9": {
+          "id": 9,
+          "name": "All Pixels",
           "fixture_selection": {
             "fixtures": [
+              "5001.1",
+              "5001.2",
+              "5001.3",
+              "5001.4",
+              "5001.5",
+              "5001.6",
+              "5001.7",
+              "5001.8",
+              "5001.9",
+              "5001.10",
+              "5001.11",
+              "5001.12",
+              "5001.13",
+              "5001.14",
+              "5001.15",
+              "5001.16",
+              "5001.17",
+              "5001.18",
+              "5001.19",
+              "5001.20",
+              "5001.21",
+              "5001.22",
+              "5001.23",
+              "5001.24",
+              "5001.25",
+              "5002.1",
+              "5002.2",
+              "5002.3",
+              "5002.4",
+              "5002.5",
+              "5002.6",
+              "5002.7",
+              "5002.8",
+              "5002.9",
+              "5002.10",
+              "5002.11",
+              "5002.12",
+              "5002.13",
+              "5002.14",
+              "5002.15",
+              "5002.16",
+              "5002.17",
+              "5002.18",
+              "5002.19",
+              "5002.20",
+              "5002.21",
+              "5002.22",
+              "5002.23",
+              "5002.24",
+              "5002.25",
+              "5003.1",
+              "5003.2",
+              "5003.3",
+              "5003.4",
+              "5003.5",
+              "5003.6",
+              "5003.7",
+              "5003.8",
+              "5003.9",
+              "5003.10",
+              "5003.11",
+              "5003.12",
+              "5003.13",
+              "5003.14",
+              "5003.15",
+              "5003.16",
+              "5003.17",
+              "5003.18",
+              "5003.19",
+              "5003.20",
+              "5003.21",
+              "5003.22",
+              "5003.23",
+              "5003.24",
+              "5003.25",
+              "5004.1",
+              "5004.2",
+              "5004.3",
+              "5004.4",
+              "5004.5",
+              "5004.6",
+              "5004.7",
+              "5004.8",
+              "5004.9",
+              "5004.10",
+              "5004.11",
+              "5004.12",
+              "5004.13",
+              "5004.14",
+              "5004.15",
+              "5004.16",
+              "5004.17",
+              "5004.18",
+              "5004.19",
+              "5004.20",
+              "5004.21",
+              "5004.22",
+              "5004.23",
+              "5004.24",
+              "5004.25",
+              "5005.1",
+              "5005.2",
+              "5005.3",
+              "5005.4",
+              "5005.5",
+              "5005.6",
+              "5005.7",
+              "5005.8",
+              "5005.9",
+              "5005.10",
+              "5005.11",
+              "5005.12",
+              "5005.13",
+              "5005.14",
+              "5005.15",
+              "5005.16",
+              "5005.17",
+              "5005.18",
+              "5005.19",
+              "5005.20",
+              "5005.21",
+              "5005.22",
+              "5005.23",
+              "5005.24",
+              "5005.25",
+              "5006.1",
+              "5006.2",
+              "5006.3",
+              "5006.4",
+              "5006.5",
+              "5006.6",
+              "5006.7",
+              "5006.8",
+              "5006.9",
+              "5006.10",
+              "5006.11",
+              "5006.12",
+              "5006.13",
+              "5006.14",
+              "5006.15",
+              "5006.16",
+              "5006.17",
+              "5006.18",
+              "5006.19",
+              "5006.20",
+              "5006.21",
+              "5006.22",
+              "5006.23",
+              "5006.24",
+              "5006.25",
+              "5007.1",
+              "5007.2",
+              "5007.3",
+              "5007.4",
+              "5007.5",
+              "5007.6",
+              "5007.7",
+              "5007.8",
+              "5007.9",
+              "5007.10",
+              "5007.11",
+              "5007.12",
+              "5007.13",
+              "5007.14",
+              "5007.15",
+              "5007.16",
+              "5007.17",
+              "5007.18",
+              "5007.19",
+              "5007.20",
+              "5007.21",
+              "5007.22",
+              "5007.23",
+              "5007.24",
+              "5007.25",
               "5008.1",
               "5008.2",
               "5008.3",
@@ -721,6 +684,43 @@
             "wings": 1,
             "reverse": false
           }
+        },
+        "2": {
+          "id": 2,
+          "name": "Group 2",
+          "fixture_selection": {
+            "fixtures": [
+              "5002.1",
+              "5002.2",
+              "5002.3",
+              "5002.4",
+              "5002.5",
+              "5002.6",
+              "5002.7",
+              "5002.8",
+              "5002.9",
+              "5002.10",
+              "5002.11",
+              "5002.12",
+              "5002.13",
+              "5002.14",
+              "5002.15",
+              "5002.16",
+              "5002.17",
+              "5002.18",
+              "5002.19",
+              "5002.20",
+              "5002.21",
+              "5002.22",
+              "5002.23",
+              "5002.24",
+              "5002.25"
+            ],
+            "group": 1,
+            "block": 1,
+            "wings": 1,
+            "reverse": false
+          }
         }
       },
       "macros": {
@@ -746,54 +746,6 @@
         "2": { "id": 2, "name": "for", "command": ["KeywordFor"] }
       },
       "sequences": {
-        "1": {
-          "id": 1,
-          "name": "hallowelt",
-          "stop_behavior": "ManualStop",
-          "cues": [
-            {
-              "cue_idx": [1, 0],
-              "name": "Cue 1.0",
-              "data": { "Default": {} },
-              "selection": {
-                "fixtures": [],
-                "group": 1,
-                "block": 1,
-                "wings": 1,
-                "reverse": false
-              },
-              "in_fade": 10.0,
-              "in_delay": 0.0,
-              "snap_percent": 0.0,
-              "block": false,
-              "timing": { "offset": 0.0, "direction": "LowToHigh" },
-              "trigger": "Manual",
-              "fading_function": "Linear",
-              "move_in_black": false
-            },
-            {
-              "cue_idx": [2, 0],
-              "name": "Cue 2.0",
-              "data": { "Default": {} },
-              "selection": {
-                "fixtures": [],
-                "group": 1,
-                "block": 1,
-                "wings": 1,
-                "reverse": false
-              },
-              "in_fade": 2.0,
-              "in_delay": 0.0,
-              "snap_percent": 0.0,
-              "block": false,
-              "timing": { "offset": 0.0, "direction": "LowToHigh" },
-              "trigger": "Manual",
-              "fading_function": "Linear",
-              "move_in_black": false
-            }
-          ],
-          "cue_out": { "fade": 0.0, "fading_function": "Linear" }
-        },
         "2": {
           "id": 2,
           "name": "LED Strobe",
@@ -804,10 +756,10 @@
               "name": "Cue 1.0",
               "data": {
                 "Default": {
-                  "5001.4": [
+                  "5001.18": [
                     {
                       "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_B",
+                      "attribute": "ColorAdd_R",
                       "snap": false
                     },
                     {
@@ -822,14 +774,41 @@
                     },
                     {
                       "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_R",
+                      "attribute": "ColorAdd_B",
                       "snap": false
                     }
                   ],
-                  "5001.1": [
+                  "5001.10": [
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_R",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_G",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_B",
+                      "snap": false
+                    },
                     {
                       "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_G",
+                      "attribute": "ColorAdd_W",
+                      "snap": false
+                    }
+                  ],
+                  "5001.17": [
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_R",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_W",
                       "snap": false
                     },
                     {
@@ -838,8 +817,47 @@
                       "snap": false
                     },
                     {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_G",
+                      "snap": false
+                    }
+                  ],
+                  "5001.14": [
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_G",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_W",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_B",
+                      "snap": false
+                    },
+                    {
                       "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
                       "attribute": "ColorAdd_R",
+                      "snap": false
+                    }
+                  ],
+                  "5001.9": [
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_R",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_B",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_G",
                       "snap": false
                     },
                     {
@@ -867,6 +885,72 @@
                     {
                       "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
                       "attribute": "ColorAdd_B",
+                      "snap": false
+                    }
+                  ],
+                  "5001.1": [
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_G",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_B",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_R",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_W",
+                      "snap": false
+                    }
+                  ],
+                  "5001.13": [
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_G",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_W",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_R",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_B",
+                      "snap": false
+                    }
+                  ],
+                  "5001.6": [
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_G",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_B",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_W",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_R",
                       "snap": false
                     }
                   ],
@@ -914,12 +998,51 @@
                       "snap": false
                     }
                   ],
-                  "5001.20": [
+                  "5001.19": [
                     {
                       "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_R",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
                       "attribute": "ColorAdd_B",
                       "snap": false
                     },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_G",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_W",
+                      "snap": false
+                    }
+                  ],
+                  "5001.5": [
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_W",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_B",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_R",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_G",
+                      "snap": false
+                    }
+                  ],
+                  "5001.16": [
                     {
                       "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
                       "attribute": "ColorAdd_W",
@@ -934,9 +1057,80 @@
                       "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
                       "attribute": "ColorAdd_G",
                       "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_B",
+                      "snap": false
                     }
                   ],
-                  "5001.6": [
+                  "5001.4": [
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_B",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_W",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_G",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_R",
+                      "snap": false
+                    }
+                  ],
+                  "5001.11": [
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_G",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_W",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_R",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_B",
+                      "snap": false
+                    }
+                  ],
+                  "5001.12": [
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_R",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_B",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
+                      "attribute": "ColorAdd_W",
+                      "snap": false
+                    },
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "ColorAdd_G",
+                      "snap": false
+                    }
+                  ],
+                  "5001.8": [
                     {
                       "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
                       "attribute": "ColorAdd_G",
@@ -1001,210 +1195,7 @@
                       "snap": false
                     }
                   ],
-                  "5001.12": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_R",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_B",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_W",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_G",
-                      "snap": false
-                    }
-                  ],
-                  "5001.19": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_R",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_B",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_G",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_W",
-                      "snap": false
-                    }
-                  ],
-                  "5001.9": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_R",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_B",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_G",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_W",
-                      "snap": false
-                    }
-                  ],
-                  "5001.13": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_G",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_W",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_R",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_B",
-                      "snap": false
-                    }
-                  ],
-                  "5001.5": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_W",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_B",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_R",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_G",
-                      "snap": false
-                    }
-                  ],
-                  "5001.18": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_R",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_W",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_G",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_B",
-                      "snap": false
-                    }
-                  ],
-                  "5001.11": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_G",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_W",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_R",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_B",
-                      "snap": false
-                    }
-                  ],
-                  "5001.17": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_R",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_W",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_B",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_G",
-                      "snap": false
-                    }
-                  ],
-                  "5001.16": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_W",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_R",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_G",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_B",
-                      "snap": false
-                    }
-                  ],
-                  "5001.8": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_G",
-                      "snap": false
-                    },
+                  "5001.20": [
                     {
                       "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
                       "attribute": "ColorAdd_B",
@@ -1219,49 +1210,10 @@
                       "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
                       "attribute": "ColorAdd_R",
                       "snap": false
-                    }
-                  ],
-                  "5001.10": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_R",
-                      "snap": false
                     },
                     {
                       "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
                       "attribute": "ColorAdd_G",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_B",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_W",
-                      "snap": false
-                    }
-                  ],
-                  "5001.14": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_G",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "ColorAdd_W",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_B",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "ColorAdd_R",
                       "snap": false
                     }
                   ]
@@ -1307,32 +1259,126 @@
             }
           ],
           "cue_out": { "fade": 0.0, "fading_function": "Linear" }
+        },
+        "1": {
+          "id": 1,
+          "name": "hallowelt",
+          "stop_behavior": "ManualStop",
+          "cues": [
+            {
+              "cue_idx": [1, 0],
+              "name": "Cue 1.0",
+              "data": { "Default": {} },
+              "selection": {
+                "fixtures": [],
+                "group": 1,
+                "block": 1,
+                "wings": 1,
+                "reverse": false
+              },
+              "in_fade": 10.0,
+              "in_delay": 0.0,
+              "snap_percent": 0.0,
+              "block": false,
+              "timing": { "offset": 0.0, "direction": "LowToHigh" },
+              "trigger": "Manual",
+              "fading_function": "Linear",
+              "move_in_black": false
+            },
+            {
+              "cue_idx": [2, 0],
+              "name": "Cue 2.0",
+              "data": { "Default": {} },
+              "selection": {
+                "fixtures": [],
+                "group": 1,
+                "block": 1,
+                "wings": 1,
+                "reverse": false
+              },
+              "in_fade": 2.0,
+              "in_delay": 0.0,
+              "snap_percent": 0.0,
+              "block": false,
+              "timing": { "offset": 0.0, "direction": "LowToHigh" },
+              "trigger": "Manual",
+              "fading_function": "Linear",
+              "move_in_black": false
+            }
+          ],
+          "cue_out": { "fade": 0.0, "fading_function": "Linear" }
         }
       },
       "presets": {
-        "Color.2": {
-          "id": "Color.2",
-          "name": "Red",
-          "display_colors": [[255, 0, 0, 0]],
+        "Dimmer.2": {
+          "id": "Dimmer.2",
+          "name": "test",
+          "display_colors": [],
+          "fade_up": 0.0,
+          "data": {
+            "FeatureEffect": {
+              "runtime": {
+                "effect": { "parts": [] },
+                "speed": { "Bpm": 120.0 },
+                "phase": { "Single": 0.0 }
+              }
+            }
+          }
+        },
+        "Color.3": {
+          "id": "Color.3",
+          "name": "Green",
+          "display_colors": [[0, 255, 0, 0]],
           "fade_up": 0.0,
           "data": {
             "Default": {
               "data": {
                 "1": {
-                  "ColorAdd_R": { "Discrete": { "value": 1.0 } },
-                  "ColorAdd_G": { "Discrete": { "value": 0.0 } },
-                  "Color1": { "Discrete": { "value": 0.0 } },
-                  "ColorWheel1Spin": { "Discrete": { "value": 1.0 } },
-                  "ColorAdd_B": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_WW": { "Discrete": { "value": 0.0 } }
-                },
-                "2": {
-                  "ColorAdd_G": { "Discrete": { "value": 0.0 } },
-                  "Color1": { "Discrete": { "value": 0.0 } },
                   "ColorAdd_WW": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_R": { "Discrete": { "value": 1.0 } },
+                  "ColorAdd_R": { "Discrete": { "value": 0.0 } },
+                  "Color1": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_G": { "Discrete": { "value": 1.0 } },
                   "ColorWheel1Spin": { "Discrete": { "value": 1.0 } },
                   "ColorAdd_B": { "Discrete": { "value": 0.0 } }
+                },
+                "2": {
+                  "ColorAdd_G": { "Discrete": { "value": 1.0 } },
+                  "Color1": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_B": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_R": { "Discrete": { "value": 0.0 } },
+                  "ColorWheel1Spin": { "Discrete": { "value": 1.0 } },
+                  "ColorAdd_WW": { "Discrete": { "value": 0.0 } }
+                }
+              }
+            }
+          }
+        },
+        "Color.4": {
+          "id": "Color.4",
+          "name": "RedBlue",
+          "display_colors": [
+            [0, 0, 255, 0],
+            [255, 0, 0, 0]
+          ],
+          "fade_up": 0.0,
+          "data": {
+            "Default": {
+              "data": {
+                "1": {
+                  "ColorWheel1Spin": { "Discrete": { "value": 1.0 } },
+                  "ColorAdd_WW": { "Discrete": { "value": 0.0 } },
+                  "Color1": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_G": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_B": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_R": { "Discrete": { "value": 1.0 } }
+                },
+                "2": {
+                  "Color1": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_G": { "Discrete": { "value": 0.0 } },
+                  "ColorWheel1Spin": { "Discrete": { "value": 1.0 } },
+                  "ColorAdd_WW": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_B": { "Discrete": { "value": 1.0 } },
+                  "ColorAdd_R": { "Discrete": { "value": 0.0 } }
                 }
               }
             }
@@ -1387,6 +1433,27 @@
             }
           }
         },
+        "Dimmer.3": {
+          "id": "Dimmer.3",
+          "name": "Full",
+          "display_colors": [],
+          "fade_up": 0.0,
+          "data": {
+            "Default": {
+              "data": {
+                "7": { "Dimmer": { "Discrete": { "value": 1.0 } } },
+                "8": { "Dimmer": { "Discrete": { "value": 1.0 } } },
+                "5": { "Dimmer": { "Discrete": { "value": 1.0 } } },
+                "4": { "Dimmer": { "Discrete": { "value": 1.0 } } },
+                "2": { "Dimmer": { "Discrete": { "value": 1.0 } } },
+                "9": { "Dimmer": { "Discrete": { "value": 1.0 } } },
+                "6": { "Dimmer": { "Discrete": { "value": 1.0 } } },
+                "10": { "Dimmer": { "Discrete": { "value": 1.0 } } },
+                "1": { "Dimmer": { "Discrete": { "value": 1.0 } } }
+              }
+            }
+          }
+        },
         "Color.5": {
           "id": "Color.5",
           "name": "Test",
@@ -1400,59 +1467,51 @@
             "Default": {
               "data": {
                 "5001.1": {
+                  "ColorAdd_R": { "Discrete": { "value": 1.0 } },
                   "ColorAdd_B": { "Discrete": { "value": 0.0 } },
                   "ColorAdd_G": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_W": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_R": { "Discrete": { "value": 1.0 } }
-                },
-                "5001.3": {
-                  "ColorAdd_G": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_W": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_R": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_B": { "Discrete": { "value": 1.0 } }
+                  "ColorAdd_W": { "Discrete": { "value": 0.0 } }
                 },
                 "5001.2": {
                   "ColorAdd_W": { "Discrete": { "value": 0.0 } },
                   "ColorAdd_G": { "Discrete": { "value": 1.0 } },
+                  "ColorAdd_B": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_R": { "Discrete": { "value": 0.0 } }
+                },
+                "5001.3": {
                   "ColorAdd_R": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_B": { "Discrete": { "value": 0.0 } }
+                  "ColorAdd_B": { "Discrete": { "value": 1.0 } },
+                  "ColorAdd_W": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_G": { "Discrete": { "value": 0.0 } }
                 }
               }
             }
           }
         },
-        "Dimmer.2": {
-          "id": "Dimmer.2",
-          "name": "test",
-          "display_colors": [],
-          "fade_up": 0.0,
-          "data": {
-            "FeatureEffect": {
-              "runtime": {
-                "effect": { "parts": [] },
-                "speed": { "Bpm": 120.0 },
-                "phase": { "Single": 0.0 }
-              }
-            }
-          }
-        },
-        "Dimmer.3": {
-          "id": "Dimmer.3",
-          "name": "Full",
-          "display_colors": [],
+        "Color.2": {
+          "id": "Color.2",
+          "name": "Red",
+          "display_colors": [[255, 0, 0, 0]],
           "fade_up": 0.0,
           "data": {
             "Default": {
               "data": {
-                "1": { "Dimmer": { "Discrete": { "value": 1.0 } } },
-                "4": { "Dimmer": { "Discrete": { "value": 1.0 } } },
-                "7": { "Dimmer": { "Discrete": { "value": 1.0 } } },
-                "10": { "Dimmer": { "Discrete": { "value": 1.0 } } },
-                "6": { "Dimmer": { "Discrete": { "value": 1.0 } } },
-                "5": { "Dimmer": { "Discrete": { "value": 1.0 } } },
-                "8": { "Dimmer": { "Discrete": { "value": 1.0 } } },
-                "2": { "Dimmer": { "Discrete": { "value": 1.0 } } },
-                "9": { "Dimmer": { "Discrete": { "value": 1.0 } } }
+                "2": {
+                  "ColorAdd_R": { "Discrete": { "value": 1.0 } },
+                  "ColorWheel1Spin": { "Discrete": { "value": 1.0 } },
+                  "ColorAdd_B": { "Discrete": { "value": 0.0 } },
+                  "Color1": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_WW": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_G": { "Discrete": { "value": 0.0 } }
+                },
+                "1": {
+                  "ColorAdd_B": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_WW": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_R": { "Discrete": { "value": 1.0 } },
+                  "Color1": { "Discrete": { "value": 0.0 } },
+                  "ColorAdd_G": { "Discrete": { "value": 0.0 } },
+                  "ColorWheel1Spin": { "Discrete": { "value": 1.0 } }
+                }
               }
             }
           }
@@ -1479,9 +1538,12 @@
                           "data": { "Selective": { "1": { "Dimmer": 1.0 } } },
                           "curve": "Linear"
                         }
-                      ]
+                      ],
+                      "phase_offset": 0.0,
+                      "phase_multiplier": 1.0
                     }
-                  ]
+                  ],
+                  "preset": null
                 },
                 "speed": { "Bpm": 120.0 },
                 "phase": { "Single": 0.0 }
@@ -1489,33 +1551,20 @@
             }
           }
         },
-        "Color.4": {
-          "id": "Color.4",
-          "name": "RedBlue",
-          "display_colors": [
-            [0, 0, 255, 0],
-            [255, 0, 0, 0]
-          ],
+        "Position.1": {
+          "id": "Position.1",
+          "name": "Test",
+          "display_colors": [],
           "fade_up": 0.0,
           "data": {
-            "Default": {
-              "data": {
-                "1": {
-                  "ColorWheel1Spin": { "Discrete": { "value": 1.0 } },
-                  "Color1": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_B": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_G": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_R": { "Discrete": { "value": 1.0 } },
-                  "ColorAdd_WW": { "Discrete": { "value": 0.0 } }
+            "KeyframeEffect": {
+              "runtime": {
+                "effect": {
+                  "layers": [],
+                  "preset": null
                 },
-                "2": {
-                  "ColorAdd_B": { "Discrete": { "value": 1.0 } },
-                  "ColorAdd_R": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_WW": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_G": { "Discrete": { "value": 0.0 } },
-                  "Color1": { "Discrete": { "value": 0.0 } },
-                  "ColorWheel1Spin": { "Discrete": { "value": 1.0 } }
-                }
+                "speed": { "Bpm": 120.0 },
+                "phase": { "Single": 0.0 }
               }
             }
           }
@@ -1568,51 +1617,23 @@
               }
             }
           }
-        },
-        "Color.3": {
-          "id": "Color.3",
-          "name": "Green",
-          "display_colors": [[0, 255, 0, 0]],
-          "fade_up": 0.0,
-          "data": {
-            "Default": {
-              "data": {
-                "1": {
-                  "ColorAdd_G": { "Discrete": { "value": 1.0 } },
-                  "Color1": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_WW": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_B": { "Discrete": { "value": 0.0 } },
-                  "ColorWheel1Spin": { "Discrete": { "value": 1.0 } },
-                  "ColorAdd_R": { "Discrete": { "value": 0.0 } }
-                },
-                "2": {
-                  "ColorAdd_WW": { "Discrete": { "value": 0.0 } },
-                  "ColorWheel1Spin": { "Discrete": { "value": 1.0 } },
-                  "Color1": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_G": { "Discrete": { "value": 1.0 } },
-                  "ColorAdd_R": { "Discrete": { "value": 0.0 } },
-                  "ColorAdd_B": { "Discrete": { "value": 0.0 } }
-                }
-              }
-            }
-          }
         }
       }
     },
     "updatable_handler": {
       "executors": {
-        "1": {
-          "id": 1,
-          "priority": "Ltp",
-          "stomp_protected": false,
-          "runtime": { "sequence_id": 1 },
-          "fader_function": "Intensity"
-        },
         "2": {
           "id": 2,
           "priority": "Ltp",
           "stomp_protected": false,
           "runtime": { "sequence_id": 2 },
+          "fader_function": "Intensity"
+        },
+        "1": {
+          "id": 1,
+          "priority": "Ltp",
+          "stomp_protected": false,
+          "runtime": { "sequence_id": 1 },
           "fader_function": "Intensity"
         }
       },
@@ -1620,16 +1641,16 @@
     },
     "timing_handler": {
       "speed_master_values": {
-        "9": { "bpm": 120.0 },
-        "3": { "bpm": 120.0 },
-        "5": { "bpm": 120.0 },
         "6": { "bpm": 120.0 },
-        "4": { "bpm": 120.0 },
-        "8": { "bpm": 120.0 },
-        "7": { "bpm": 120.0 },
-        "2": { "bpm": 120.0 },
+        "1": { "bpm": 10.0 },
         "0": { "bpm": 85.433075 },
-        "1": { "bpm": 10.0 }
+        "5": { "bpm": 120.0 },
+        "9": { "bpm": 120.0 },
+        "4": { "bpm": 120.0 },
+        "2": { "bpm": 120.0 },
+        "3": { "bpm": 120.0 },
+        "7": { "bpm": 120.0 },
+        "8": { "bpm": 120.0 }
       },
       "timecodes": {}
     },
@@ -2346,7 +2367,7 @@
                       }
                     ],
                     "info": {
-                      "stack": { "sizes": [390.48932, 389.51068], "axis": 0 }
+                      "stack": { "sizes": [618.7754, 617.2246], "axis": 0 }
                     }
                   },
                   {
@@ -2361,10 +2382,12 @@
                     "info": { "tabs": { "active_index": 0 } }
                   }
                 ],
-                "info": { "stack": { "sizes": [1285.42, 398.5799], "axis": 1 } }
+                "info": {
+                  "stack": { "sizes": [516.38165, 160.11835], "axis": 1 }
+                }
               }
             ],
-            "info": { "stack": { "sizes": [780.0], "axis": 0 } }
+            "info": { "stack": { "sizes": [1236.0], "axis": 0 } }
           },
           "right_dock": {
             "panel": {
@@ -2398,10 +2421,6 @@
             "size": 130.0,
             "open": true
           }
-        },
-        "bounds": {
-          "origin": { "x": 1920.0, "y": -319.0 },
-          "size": { "width": 1080.0, "height": 1872.0 }
         }
       },
       {
@@ -2446,6 +2465,12 @@
                             "start_cell": [0, 2],
                             "size": [5, 2],
                             "start_id": 0
+                          },
+                          {
+                            "pool_type": { "Preset": "Position" },
+                            "start_cell": [0, 4],
+                            "size": [5, 2],
+                            "start_id": 0
                           }
                         ],
                         "size": [20, 10]
@@ -2456,7 +2481,7 @@
                 "info": { "tabs": { "active_index": 2 } }
               }
             ],
-            "info": { "stack": { "sizes": [1620.0], "axis": 0 } }
+            "info": { "stack": { "sizes": [1236.0], "axis": 0 } }
           },
           "right_dock": {
             "panel": {
@@ -2474,10 +2499,6 @@
             "size": 300.0,
             "open": true
           }
-        },
-        "bounds": {
-          "origin": { "x": 0.0, "y": 0.0 },
-          "size": { "width": 1920.0, "height": 1032.0 }
         }
       }
     ]

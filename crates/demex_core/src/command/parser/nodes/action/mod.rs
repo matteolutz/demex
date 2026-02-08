@@ -32,7 +32,7 @@ use crate::{
     event::{FixtureSelectionWithGroup, list::DemexEventList},
     fixture::FixturePath,
     input::control::DemexInputDeviceControlUnassignment,
-    keyframe_effect::effect_runtime::KeyframeEffectRuntime,
+    keyframe_effect::{effect_preset::KeyframeEffectPreset, effect_runtime::KeyframeEffectRuntime},
     presets::{
         error::PresetHandlerError,
         preset::{FixturePresetData, FixturePresetId},
@@ -255,6 +255,7 @@ pub enum Action {
     SpeedMasterTap(SpeedMasterTapArgs),
 
     PresetUpdateKeyframeEffect(FixturePresetId, KeyframeEffectRuntime),
+    PresetApplyKeyframeEffectPreset(FixturePresetId, KeyframeEffectPreset),
 
     GroupmasterSetFaderValue(u32, f32),
 
@@ -394,6 +395,31 @@ impl Action {
                 match preset.data_mut() {
                     FixturePresetData::KeyframeEffect { runtime } => {
                         *runtime = effect.clone();
+                        Ok(ActionRunResult::Default)
+                    }
+                    _ => Err(ActionRunError::PresetHandlerError(
+                        PresetHandlerError::FeaturePresetNotFound(*preset_id),
+                    )),
+                }
+            }
+            Self::PresetApplyKeyframeEffectPreset(preset_id, effect_preset) => {
+                if effect_preset.feature_group() != preset_id.feature_group {
+                    return Err(ActionRunError::PresetHandlerError(
+                        PresetHandlerError::FeatureGroupMismatch(
+                            effect_preset.feature_group(),
+                            preset_id.feature_group,
+                        ),
+                    ));
+                }
+
+                let preset = args
+                    .preset_handler
+                    .get_preset_mut(*preset_id)
+                    .map_err(ActionRunError::PresetHandlerError)?;
+
+                match preset.data_mut() {
+                    FixturePresetData::KeyframeEffect { runtime } => {
+                        runtime.effect_mut().apply_preset(effect_preset.clone());
                         Ok(ActionRunResult::Default)
                     }
                     _ => Err(ActionRunError::PresetHandlerError(

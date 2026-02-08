@@ -1,5 +1,7 @@
+use demex_core::channel3::clamped_value::ClampedValue;
 use gpui::{
-    App, Bounds, Context, Entity, EventEmitter, Pixels, Point, Subscription, Window, point, px,
+    App, Bounds, Context, Entity, EventEmitter, Pixels, Point, Size, Subscription, Window, point,
+    px, size,
 };
 use gpui_component::PixelsExt;
 
@@ -78,6 +80,9 @@ impl<'a, T: 'static> GpuiContextExtension<T> for Context<'a, T> {
 pub trait BoundsExt {
     /// Map a point in the range 0.0..=1.0 to the bounds' dimensions.
     fn map_point(&self, point: &Point<Pixels>) -> Option<Point<Pixels>>;
+    fn map_clamped_point(&self, point: &Point<ClampedValue>) -> Point<Pixels>;
+
+    fn map_clamped_size(&self, size: &Size<ClampedValue>) -> Size<Pixels>;
 
     fn map_x(&self, x: Pixels) -> Option<Pixels>;
     fn map_y(&self, y: Pixels) -> Option<Pixels>;
@@ -114,6 +119,19 @@ impl BoundsExt for Bounds<Pixels> {
             (Some(x), Some(y)) => Some(point(x, y)),
             _ => None,
         }
+    }
+
+    fn map_clamped_point(&self, relative_point: &Point<ClampedValue>) -> Point<Pixels> {
+        let x = self.map_x(px(relative_point.x.as_f32())).unwrap();
+        let y = self.map_y(px(relative_point.y.as_f32())).unwrap();
+        point(x, y)
+    }
+
+    fn map_clamped_size(&self, relative_size: &Size<ClampedValue>) -> Size<Pixels> {
+        size(
+            px(relative_size.width.as_f32()) * self.size.width.as_f32(),
+            px(relative_size.height.as_f32()) * self.size.height.as_f32(),
+        )
     }
 
     fn unmap_x(&self, x: Pixels) -> Option<Pixels> {
