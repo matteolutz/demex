@@ -1,7 +1,7 @@
 use demex_core::pool::PoolType;
 use gpui::{
-    App, AppContext, Context, Entity, ParentElement, Render, SharedString, Styled, Subscription,
-    Window, WindowBounds, size,
+    App, AppContext, Context, Entity, InteractiveElement, ParentElement, Render, SharedString,
+    Styled, Subscription, Window, WindowBounds, size,
 };
 use gpui_component::{
     button::Button,
@@ -125,6 +125,10 @@ impl Render for AddPoolWindow {
         cx: &mut Context<Self>,
     ) -> impl gpui::IntoElement {
         v_flex()
+            .key_context(actions::CONTEXT)
+            .on_action(cx.listener(|this, _: &actions::QuitAddPoolWindow, _, cx| {
+                this.close(cx);
+            }))
             .size_full()
             .p_4()
             .gap_2()

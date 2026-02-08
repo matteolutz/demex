@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Default, PartialEq, Eq, strum::EnumIter)]
 pub enum EffectSpeedScale {
     Div128,
     Div64,

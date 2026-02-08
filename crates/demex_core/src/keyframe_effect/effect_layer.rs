@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use std::f32;
 
 use crate::{
     channel3::{attribute::FixtureChannel3Attribute, clamped_value::ClampedValue},
@@ -9,14 +10,38 @@ use crate::{
     keyframe_effect::effect_keyframe::KeyframeEffectKeyframe,
 };
 
+fn f32_one() -> f32 {
+    1.0
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeyframeEffectLayer {
-    keyframes: Vec<KeyframeEffectKeyframe>,
+    pub(crate) keyframes: Vec<KeyframeEffectKeyframe>,
+
+    /// Phase offset for this layer (in deg)
+    #[serde(default)]
+    pub(crate) phase_offset: f32,
+
+    /// Phase multiplier for this layer (has to >= 1.0)
+    #[serde(default = "f32_one")]
+    pub(crate) phase_multiplier: f32,
 }
 
 impl KeyframeEffectLayer {
     pub fn new(keyframes: Vec<KeyframeEffectKeyframe>) -> Self {
-        Self { keyframes }
+        Self {
+            keyframes,
+            phase_offset: 0.0,
+            phase_multiplier: 1.0,
+        }
+    }
+
+    pub fn phase_multiplier(&self) -> f32 {
+        self.phase_multiplier
+    }
+
+    pub fn phase_multiplier_mut(&mut self) -> &mut f32 {
+        &mut self.phase_multiplier
     }
 
     pub fn add_keyframe(&mut self, mut keyframe: KeyframeEffectKeyframe) {
@@ -66,8 +91,12 @@ impl KeyframeEffectLayer {
         &self,
         fixture_path: &FixturePath,
         attribute: &FixtureChannel3Attribute,
-        t: f32,
+        time_adjusted: f32,
     ) -> Option<ClampedValue> {
+        let t = (time_adjusted - self.phase_offset.to_radians()) * self.phase_multiplier;
+
+        let t = (t % (2.0 * f32::consts::PI)) / (2.0 * f32::consts::PI);
+
         let (keyframe_idx, keyframe) = self
             .keyframes
             .iter()
@@ -157,20 +186,18 @@ mod tests {
 
     #[test]
     fn test_keyframe_effect_layer_basic_a() {
-        let mut layer = KeyframeEffectLayer {
-            keyframes: vec![
-                KeyframeEffectKeyframe::new(
-                    0.0,
-                    get_test_values(0.0.try_into().unwrap()),
-                    KeyframeEffectKeyframeCurve::Linear,
-                ),
-                KeyframeEffectKeyframe::new(
-                    1.0,
-                    get_test_values(1.0.try_into().unwrap()),
-                    KeyframeEffectKeyframeCurve::Linear,
-                ),
-            ],
-        };
+        let mut layer = KeyframeEffectLayer::new(vec![
+            KeyframeEffectKeyframe::new(
+                0.0,
+                get_test_values(0.0.try_into().unwrap()),
+                KeyframeEffectKeyframeCurve::Linear,
+            ),
+            KeyframeEffectKeyframe::new(
+                1.0,
+                get_test_values(1.0.try_into().unwrap()),
+                KeyframeEffectKeyframeCurve::Linear,
+            ),
+        ]);
 
         print_layer(&layer);
 

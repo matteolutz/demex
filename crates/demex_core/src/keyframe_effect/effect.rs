@@ -12,6 +12,7 @@ use crate::{
     keyframe_effect::{
         effect_keyframe::KeyframeEffectKeyframe,
         effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_layer::KeyframeEffectLayer,
+        effect_preset::KeyframeEffectPreset,
     },
     patch::Patch,
 };
@@ -19,6 +20,8 @@ use crate::{
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct KeyframeEffect {
     layers: Vec<KeyframeEffectLayer>,
+
+    preset: Option<KeyframeEffectPreset>,
 }
 
 impl KeyframeEffect {
@@ -35,6 +38,14 @@ impl KeyframeEffect {
 
         Self {
             layers: vec![layer],
+            preset: None,
+        }
+    }
+
+    pub fn from_preset(preset: KeyframeEffectPreset) -> Self {
+        Self {
+            layers: preset.build_layers(),
+            preset: Some(preset),
         }
     }
 
@@ -74,13 +85,10 @@ impl KeyframeEffect {
         let time_adjusted =
             (started_elapsed as f32 * speed_multiplier) - phase_offset_deg.to_radians();
 
-        // convert time_adjusted to a value between 0.0 and 1.0 (from 0.0 to 2π)
-        let t = (time_adjusted % (2.0 * f32::consts::PI)) / (2.0 * f32::consts::PI);
-
         let value = self
             .layers
             .iter()
-            .flat_map(|layer| layer.value(fixture_path, attribute, t))
+            .flat_map(|layer| layer.value(fixture_path, attribute, time_adjusted))
             .next()?;
 
         Some(FixtureChannelValue3::discrete(value))

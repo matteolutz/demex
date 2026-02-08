@@ -14,7 +14,7 @@
 
 use std::{
     fmt, num,
-    ops::{Add, Mul},
+    ops::{Add, Div, Mul, Sub},
     str,
 };
 
@@ -150,11 +150,29 @@ impl Mul<f32> for ClampedValue {
     }
 }
 
+impl Div<f32> for ClampedValue {
+    type Output = ClampedValue;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        let val = self.as_f32() / rhs;
+        val.into()
+    }
+}
+
 impl Add<ClampedValue> for ClampedValue {
     type Output = ClampedValue;
 
     fn add(self, rhs: ClampedValue) -> Self::Output {
         let val = self.as_f32() + rhs.as_f32();
+        val.into()
+    }
+}
+
+impl Sub<ClampedValue> for ClampedValue {
+    type Output = ClampedValue;
+
+    fn sub(self, rhs: ClampedValue) -> Self::Output {
+        let val = self.as_f32() - rhs.as_f32();
         val.into()
     }
 }

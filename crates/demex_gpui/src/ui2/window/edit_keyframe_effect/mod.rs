@@ -1,7 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
-
 use demex_core::{
-    channel3::attribute::FixtureChannel3Attribute,
     command::parser::nodes::action::Action,
     engine::comm::KeyframeEffectRequest,
     keyframe_effect::{
@@ -11,24 +8,26 @@ use demex_core::{
     updatables::runtime::RuntimePhase,
 };
 use gpui::{
-    App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Subscription,
-    Window, WindowBounds, div, point, size,
+    App, AppContext, Context, Entity, InteractiveElement, ParentElement, Render, Styled,
+    Subscription, Window, WindowBounds, div, point, size,
 };
-use gpui_component::v_flex;
+use gpui_component::{scroll::ScrollableElement, v_flex};
 
 use crate::{
     engine::DemexEngineHandler,
     ui2::{
         components::{
             runtime_phase_editor::RuntimePhaseEditor,
-            wave_editor::{
-                Wave, WaveEasingFunction, WaveEasingMode, WaveEditor, WaveEditorEvent,
-                WaveEditorState, WaveSegment,
-            },
+            wave_editor::{WaveEasingFunction, WaveEasingMode},
+        },
+        window::edit_keyframe_effect::layer::{
+            EditKeyframeEffectLayer, EditKeyframeEffectLayerEvent,
         },
         wm::edit_window::EditWindowDelegate,
     },
 };
+
+mod layer;
 
 mod actions {
     use gpui::{App, KeyBinding};
@@ -88,7 +87,8 @@ pub struct EditKeyframeEffectWindow {
     preset_id: FixturePresetId,
 
     effect: Entity<Option<KeyframeEffectRuntime>>,
-    waves: Vec<HashMap<FixtureChannel3Attribute, Entity<WaveEditorState>>>,
+
+    layers: Vec<Entity<EditKeyframeEffectLayer>>,
 
     runtime_phase_editor: Entity<RuntimePhaseEditor>,
 
@@ -117,6 +117,8 @@ impl EditKeyframeEffectWindow {
                     return;
                 };
 
+                this._subscriptions.clear();
+
                 this.effect.update(cx, |effect, _| {
                     *effect = Some(effect_res.clone());
                 });
@@ -125,77 +127,49 @@ impl EditKeyframeEffectWindow {
                     editor.set_runtime_phase(*effect_res.phase(), window, cx)
                 });
 
-                let waves = effect_res
+                let layers = effect_res
                     .effect()
                     .layers()
                     .iter()
                     .enumerate()
                     .map(|(layer_idx, layer)| {
-                        let all_attributes = layer.attributes();
-                        all_attributes
-                            .into_iter()
-                            .map(|attribute| {
-                                let wave_segments = layer
-                                    .keyframes()
-                                    .iter()
-                                    .map(|keyframe| {
-                                        let attribute_values = keyframe
-                                            .values_for_attribute(&attribute)
-                                            .into_iter()
-                                            .map(|val| val.as_f32())
-                                            .collect();
+                        let editor = cx.new(|cx| EditKeyframeEffectLayer::new(layer, window, cx));
 
-                                        WaveSegment {
-                                            starting_point: keyframe.starting_point(),
-                                            values: attribute_values,
-                                            easing_functions: Rc::new(keyframe.curve()),
-                                        }
-                                    })
-                                    .collect::<Vec<_>>();
+                        this._subscriptions.push(cx.subscribe(
+                            &editor,
+                            move |this, _, evt: &EditKeyframeEffectLayerEvent, cx| {
+                                this.set_edited(true, cx);
+                                match evt {
+                                    &EditKeyframeEffectLayerEvent::PhaseMultiplierChanged(phase_multiplier) => {
+                                        this.effect.update(cx, |effect, _| {
+                                                let layer = &mut effect
+                                                    .as_mut()
+                                                    .unwrap()
+                                                    .effect_mut()
+                                                    .layers_mut()[layer_idx];
+                                                *layer.phase_multiplier_mut() = phase_multiplier;
+                                            });
+                                    }
+                                    &EditKeyframeEffectLayerEvent::KeyframeStartingPointChanged { keyframe_idx, starting_point } => {
+                                        this.effect.update(cx, |effect, _| {
+                                            let layer = &mut effect
+                                                .as_mut()
+                                                .unwrap()
+                                                .effect_mut()
+                                                .layers_mut()[layer_idx];
+                                            layer.keyframes_mut()[keyframe_idx]
+                                                .set_starting_point(starting_point);
+                                        });
+                                    }
+                                }
+                            },
+                        ));
 
-                                let wave = Wave {
-                                    segments: wave_segments,
-                                    phase_offset: 0.0,
-                                    phase_length: 2.0 * std::f32::consts::PI,
-                                };
-
-                                let wave_state = cx.new(|_| WaveEditorState::new(wave));
-
-                                this._subscriptions.push(cx.subscribe(
-                                    &wave_state,
-                                    move |this, _, evt, cx| {
-                                        this.set_edited(true, cx);
-
-                                        match evt {
-                                            WaveEditorEvent::WaveSegmentStartingPointChanged {
-                                                segment_idx,
-                                                starting_point,
-                                            } => {
-                                                this.effect.update(cx, |effect, _| {
-                                                    let layer = &mut effect
-                                                        .as_mut()
-                                                        .unwrap()
-                                                        .effect_mut()
-                                                        .layers_mut()[layer_idx];
-                                                    layer.keyframes_mut()[*segment_idx]
-                                                        .set_starting_point(*starting_point);
-                                                });
-                                            }
-                                            _ => {}
-                                        }
-
-                                        // TODO: setup subscription
-                                        cx.notify();
-                                    },
-                                ));
-
-                                (attribute, wave_state)
-                            })
-                            .collect::<HashMap<_, _>>()
+                        editor
                     })
                     .collect::<Vec<_>>();
 
-                this.waves = waves;
+                this.layers = layers;
                 cx.notify();
             },
         );
@@ -215,43 +189,25 @@ impl EditKeyframeEffectWindow {
         Self {
             preset_id,
             effect,
-            waves: Vec::new(),
+            layers: Vec::new(),
             runtime_phase_editor,
             _subscriptions,
         }
     }
 }
 
-impl EditKeyframeEffectWindow {
-    fn render_layer(
-        &self,
-        wave: &HashMap<FixtureChannel3Attribute, Entity<WaveEditorState>>,
-        _window: &mut Window,
-        _cx: &mut Context<Self>,
-    ) -> impl IntoElement {
-        v_flex()
-            .w_full()
-            .gap_2()
-            .children(wave.iter().map(|(attribute, wave_state)| {
-                v_flex()
-                    .w_full()
-                    .gap_1()
-                    .child(div().text_lg().child(attribute.to_string()))
-                    .child(WaveEditor::new(wave_state))
-            }))
-    }
-}
-
 impl Render for EditKeyframeEffectWindow {
     fn render(
         &mut self,
-        window: &mut gpui::Window,
-        cx: &mut gpui::Context<Self>,
+        _window: &mut gpui::Window,
+        _cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
         v_flex()
             .size_full()
             .p_4()
-            .gap_4()
+            .gap_8()
+            .id("edit-keyframe-container")
+            .overflow_y_scrollbar()
             .child(
                 v_flex()
                     .w_full()
@@ -259,12 +215,12 @@ impl Render for EditKeyframeEffectWindow {
                     .child(div().text_xl().child("Phase"))
                     .child(self.runtime_phase_editor.clone()),
             )
-            .children(self.waves.iter().enumerate().map(|(idx, wave)| {
+            .children(self.layers.iter().enumerate().map(|(idx, layer)| {
                 v_flex()
                     .gap_2()
                     .w_full()
                     .child(div().text_xl().child(format!("Layer {}", idx + 1)))
-                    .child(self.render_layer(wave, window, cx))
+                    .child(layer.clone())
             }))
     }
 }

@@ -37,9 +37,9 @@ impl Default for KeyframeEffectKeyframeData {
 pub struct KeyframeEffectKeyframe {
     pub(crate) starting_point: f32,
 
-    data: KeyframeEffectKeyframeData,
+    pub(crate) data: KeyframeEffectKeyframeData,
 
-    curve: KeyframeEffectKeyframeCurve,
+    pub(crate) curve: KeyframeEffectKeyframeCurve,
 }
 
 impl KeyframeEffectKeyframe {
