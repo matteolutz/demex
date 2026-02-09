@@ -57,10 +57,10 @@ function = fixture_selector , set_function                          (* e.g., "1 
 
 (* Set function applied to a fixture selector *)
 set_function = specific_preset_or_range                              (* Apply preset to selection *)
-             | attribute , [ channel_value ] ;                       (* Set attribute value *)
+             | attribute , channel_value ;                           (* Set attribute value *)
 
 (* Set function applied to current selection (no selector prefix) *)
-discrete_set_function = attribute , [ channel_value ] ;
+discrete_set_function = attribute , channel_value ;
 
 (* Set object property *)
 set_property_function = object , string , string ;                   (* object key value *)
