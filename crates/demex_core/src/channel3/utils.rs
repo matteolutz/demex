@@ -52,11 +52,11 @@ pub fn mix_dmx_value(
 }
 
 pub trait HashMapExt {
-    fn get_color(&self, fixture: &Fixture) -> Option<ecolor::Color32>;
+    fn get_rgbw_color(&self, fixture: &Fixture) -> Option<ecolor::Color32>;
 }
 
 impl HashMapExt for HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue> {
-    fn get_color(&self, fixture: &Fixture) -> Option<ecolor::Color32> {
+    fn get_rgbw_color(&self, fixture: &Fixture) -> Option<ecolor::Color32> {
         fn get_cf_and_value(
             this: &HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>,
             attribute: &FixtureChannel3Attribute,

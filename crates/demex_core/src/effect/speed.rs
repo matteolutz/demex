@@ -44,7 +44,7 @@ impl EffectSpeedScale {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Default, PartialEq, Eq, strum::EnumIter)]
 pub enum EffectSpeedSyncMode {
     #[default]
     None,
@@ -59,7 +59,7 @@ impl EffectSpeedSyncMode {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, strum::EnumIter)]
 pub enum EffectSpeed {
     Bpm(f32),
     SpeedMaster {

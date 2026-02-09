@@ -1,17 +1,12 @@
 use std::ops::{Deref, DerefMut};
 
-use gpui::{
-    AnyView, App, Pixels, SharedString, Window, WindowHandle, WindowKind, WindowOptions, px,
-};
+use gpui::{AnyView, App, SharedString, Window, WindowHandle, WindowKind, WindowOptions};
 use gpui::{WindowBounds, prelude::*};
-use gpui_component::Root;
+use gpui_component::{Root, v_flex};
 
 use crate::ui2::titlebar::titlebar_options;
 use crate::ui2::wm::DEMEX_APP_ID;
 use crate::ui2::wm::app::WindowManagerAppExt;
-
-pub const TRAFFIC_LIGHT_WIDTH: Pixels = px(14.0);
-pub const TRAFFIC_LIGHT_SPACING: Pixels = px(9.0);
 
 pub trait WindowDelegate: 'static {
     type InitData: 'static;
@@ -100,8 +95,14 @@ impl<D: WindowDelegate> WindowWrapper<D> {
 }
 
 impl<D: WindowDelegate> Render for WindowWrapper<D> {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        self.delegate.view()
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        v_flex()
+            .relative()
+            .size_full()
+            .child(self.delegate.view())
+            .children(Root::render_dialog_layer(window, cx))
+            .children(Root::render_sheet_layer(window, cx))
+            .children(Root::render_notification_layer(window, cx))
     }
 }
 

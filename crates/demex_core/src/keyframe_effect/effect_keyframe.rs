@@ -99,6 +99,10 @@ impl KeyframeEffectKeyframe {
         self.curve
     }
 
+    pub fn curve_mut(&mut self) -> &mut KeyframeEffectKeyframeCurve {
+        &mut self.curve
+    }
+
     pub fn is_affected(&self, fixture_path: &FixturePath) -> bool {
         match &self.data {
             KeyframeEffectKeyframeData::Global(_) => true,

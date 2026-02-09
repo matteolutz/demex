@@ -28,7 +28,7 @@ struct CurrentPoolButton {
     timer: Option<Task<()>>,
 
     mouse_down_pos: Point<Pixels>,
-    actions: Vec<PoolQuickAction>,
+    actions: Vec<Option<PoolQuickAction>>,
 }
 
 impl CurrentPoolButton {}
@@ -47,7 +47,7 @@ pub(super) trait PoolQuickActionsStateEntityExtension {
     fn mouse_down(
         &self,
         pos: Point<Pixels>,
-        actions: Vec<PoolQuickAction>,
+        actions: Vec<Option<PoolQuickAction>>,
         id: ElementId,
         window: &mut Window,
         cx: &mut App,
@@ -88,7 +88,7 @@ impl PoolQuickActionsStateEntityExtension for Entity<PoolQuickActionsState> {
     fn mouse_down(
         &self,
         pos: Point<Pixels>,
-        actions: Vec<PoolQuickAction>,
+        actions: Vec<Option<PoolQuickAction>>,
         id: ElementId,
         window: &mut Window,
         cx: &mut App,
@@ -269,12 +269,12 @@ impl RenderOnce for PoolQuickActions {
                         spread_radius: px(20.0),
                     }])
                     .children((0..4).map(|idx| {
-                        let action = current_button.actions.get(idx);
+                        let action = current_button.actions.get(idx).and_then(|idx| idx.as_ref());
                         Self::render_action_button(idx, action, cx)
                     }))
                     .child(div())
                     .children((4..8).map(|idx| {
-                        let action = current_button.actions.get(idx);
+                        let action = current_button.actions.get(idx).and_then(|idx| idx.as_ref());
                         Self::render_action_button(idx, action, cx)
                     })),
             )

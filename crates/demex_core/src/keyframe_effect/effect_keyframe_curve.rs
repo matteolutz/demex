@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils::ease::{ease_in_out_quad, ease_in_quad, ease_out_quad};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Default, strum::EnumIter)]
 pub enum KeyframeEffectKeyframeCurve {
     #[default]
     Linear,

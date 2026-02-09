@@ -25,6 +25,13 @@ pub struct KeyframeEffect {
 }
 
 impl KeyframeEffect {
+    pub fn new() -> Self {
+        Self {
+            layers: vec![],
+            preset: None,
+        }
+    }
+
     pub fn from_data(
         data: HashMap<FixturePath, HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>>,
         patch: &Patch,

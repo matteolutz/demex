@@ -4,6 +4,7 @@ use demex_core::{
     command::parser::nodes::action::{
         Action, functions::effect_function::KeyframeEffectUpdateArgs,
     },
+    effect::speed::EffectSpeed,
     engine::comm::KeyframeEffectRequest,
     event::DemexEvent,
     keyframe_effect::{
@@ -31,6 +32,7 @@ use crate::{
     engine::DemexEngineHandler,
     ui2::{
         components::{
+            effect_speed_editor::EffectSpeedEditor,
             runtime_phase_editor::RuntimePhaseEditor,
             wave_editor::{WaveEasingFunction, WaveEasingMode},
         },
@@ -45,6 +47,7 @@ use crate::{
     },
 };
 
+mod curve;
 mod layer;
 mod preset;
 
@@ -110,6 +113,7 @@ pub struct EditKeyframeEffectWindow {
     layers: Vec<Entity<EditKeyframeEffectLayer>>,
 
     runtime_phase_editor: Entity<RuntimePhaseEditor>,
+    effect_speed_editor: Entity<EffectSpeedEditor>,
 
     _subscriptions: Vec<Subscription>,
     _effect_subscriptions: Vec<Subscription>,
@@ -128,6 +132,9 @@ impl EditKeyframeEffectWindow {
         let runtime_phase_editor =
             cx.new(|cx| RuntimePhaseEditor::new(RuntimePhase::default(), window, cx));
 
+        let effect_speed_editor =
+            cx.new(|cx| EffectSpeedEditor::new(EffectSpeed::default(), window, cx));
+
         let _subscriptions = vec![cx.subscribe_in(
             &DemexEngineHandler::event_handler(cx),
             window,
@@ -144,6 +151,7 @@ impl EditKeyframeEffectWindow {
             effect,
             layers: Vec::new(),
             runtime_phase_editor,
+            effect_speed_editor,
             _subscriptions,
             _effect_subscriptions: Vec::new(),
         };
@@ -186,6 +194,21 @@ impl EditKeyframeEffectWindow {
                     },
                 ));
 
+                this.effect_speed_editor.update(cx, |editor, cx| {
+                    editor.set_value(*effect_res.speed(), window, cx);
+                });
+                this._effect_subscriptions.push(cx.observe(
+                    &this.effect_speed_editor,
+                    |this, effect_speed_editor, cx| {
+                        this.set_edited(true, cx);
+                        this.effect.update(cx, |effect, cx| {
+                            if let Some(effect) = effect {
+                                *effect.speed_mut() = effect_speed_editor.read(cx).value();
+                            }
+                        });
+                    },
+                ));
+
                 let layers = effect_res
                     .effect()
                     .layers()
@@ -218,6 +241,17 @@ impl EditKeyframeEffectWindow {
                                                 .layers_mut()[layer_idx];
                                             layer.keyframes_mut()[keyframe_idx]
                                                 .set_starting_point(starting_point);
+                                        });
+                                    }
+                                    &EditKeyframeEffectLayerEvent::KeyframeCurveChanged { keyframe_idx, curve } => {
+                                        this.effect.update(cx, |effect, _| {
+                                            let layer = &mut effect
+                                                .as_mut()
+                                                .unwrap()
+                                                .effect_mut()
+                                                .layers_mut()[layer_idx];
+                                            *layer.keyframes_mut()[keyframe_idx]
+                                                .curve_mut() = curve;
                                         });
                                     }
                                 }
@@ -310,11 +344,23 @@ impl Render for EditKeyframeEffectWindow {
                     ),
             )
             .child(
-                v_flex()
-                    .w_full()
+                h_flex()
+                    .items_start()
                     .gap_2()
-                    .child(div().text_xl().child("Phase"))
-                    .child(self.runtime_phase_editor.clone()),
+                    .child(
+                        v_flex()
+                            .w_full()
+                            .gap_2()
+                            .child(div().text_xl().child("Phase"))
+                            .child(self.runtime_phase_editor.clone()),
+                    )
+                    .child(
+                        v_flex()
+                            .w_full()
+                            .gap_2()
+                            .child(div().text_xl().child("Speed"))
+                            .child(self.effect_speed_editor.clone()),
+                    ),
             )
             .children(self.layers.iter().enumerate().map(|(idx, layer)| {
                 v_flex()

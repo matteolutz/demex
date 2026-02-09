@@ -4,10 +4,13 @@ use demex_core::{
         parser::nodes::{
             action::{
                 Action,
-                functions::{go_function::ExecutorGoArgs, set_function::SetFixturePresetArgs},
+                functions::{
+                    create_function::CreateEffectPresetArgs, delete_function::DeleteArgs,
+                    go_function::ExecutorGoArgs, set_function::SetFixturePresetArgs,
+                },
             },
             fixture_selector::FixtureSelector,
-            object::{HomeableObject, Object},
+            object::{HomeableObject, Object, ObjectRange},
         },
     },
     engine::comm::ExecutorSequenceRequest,
@@ -19,7 +22,7 @@ use demex_core::{
     },
     sequence::{SequenceProperty, frontend::FrontendSequence},
 };
-use gpui::{App, prelude::FluentBuilder};
+use gpui::{App, PromptButton, prelude::FluentBuilder};
 
 use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},
@@ -74,25 +77,27 @@ pub fn apply_pool_type_to_button(
             }
 
             button
-                .action("Name", move |_, cx| {
-                    get_sequence(pool_item_id, cx, |seq, cx| {
-                        if let Some(seq) = seq {
-                            WindowManager::open_edit_window::<SetPropertyWindow>(
-                                cx,
-                                move |window, cx| {
-                                    SetPropertyWindow::new(
-                                        Object::Sequence(seq.id),
-                                        SequenceProperty::Name,
-                                        SetPropertyWindowPropertyType::String,
-                                        window,
-                                        cx,
-                                    )
-                                },
-                            );
-                        }
-                    });
+                .when(pool_item.is_some(), |this| {
+                    this.action_at(0, "Name", move |_, cx| {
+                        get_sequence(pool_item_id, cx, |seq, cx| {
+                            if let Some(seq) = seq {
+                                WindowManager::open_edit_window::<SetPropertyWindow>(
+                                    cx,
+                                    move |window, cx| {
+                                        SetPropertyWindow::new(
+                                            Object::Sequence(seq.id),
+                                            SequenceProperty::Name,
+                                            SetPropertyWindowPropertyType::String,
+                                            window,
+                                            cx,
+                                        )
+                                    },
+                                );
+                            }
+                        });
+                    })
                 })
-                .action("Insert", move |_, cx| {
+                .action_at(1, "Insert", move |_, cx| {
                     cx.defer(move |cx| {
                         cx.update_wm(|wm, cx| {
                             let _ = wm.update_main_dock_window(cx, |dock_window, window, cx| {
@@ -105,18 +110,20 @@ pub fn apply_pool_type_to_button(
                         });
                     });
                 })
-                .action("Edit Seq", move |_, cx| {
-                    get_sequence(pool_item_id, cx, |seq, cx| {
-                        if let Some(seq) = seq {
-                            DemexUiState::selected_sequence(cx).update(
-                                cx,
-                                |selected_sequence, cx| {
-                                    *selected_sequence = Some(seq.id);
-                                    cx.notify();
-                                },
-                            );
-                        }
-                    });
+                .when(pool_item.is_some(), |this| {
+                    this.action_at(2, "Edit Seq", move |_, cx| {
+                        get_sequence(pool_item_id, cx, |seq, cx| {
+                            if let Some(seq) = seq {
+                                DemexUiState::selected_sequence(cx).update(
+                                    cx,
+                                    |selected_sequence, cx| {
+                                        *selected_sequence = Some(seq.id);
+                                        cx.notify();
+                                    },
+                                );
+                            }
+                        });
+                    })
                 })
         }
         PoolType::Preset(feature_group) => button
@@ -124,21 +131,57 @@ pub fn apply_pool_type_to_button(
                 pool_item.is_some_and(|item| has_flag!(item, FixturePresetFlags::FeatureEffect)),
                 |this| this.top_right("FeFx"),
             )
-            .action("Name", move |_, cx| {
-                WindowManager::open_edit_window::<SetPropertyWindow>(cx, move |window, cx| {
-                    SetPropertyWindow::new(
-                        Object::Preset(FixturePresetId {
-                            feature_group,
-                            preset_id: pool_item_id,
-                        }),
-                        FixturePresetProperty::Name,
-                        SetPropertyWindowPropertyType::String,
-                        window,
+            .when(pool_item.is_some(), |this| {
+                this.action_at(0, "Name", move |_, cx| {
+                    WindowManager::open_edit_window::<SetPropertyWindow>(cx, move |window, cx| {
+                        SetPropertyWindow::new(
+                            Object::Preset(FixturePresetId {
+                                feature_group,
+                                preset_id: pool_item_id,
+                            }),
+                            FixturePresetProperty::Name,
+                            SetPropertyWindowPropertyType::String,
+                            window,
+                            cx,
+                        )
+                    });
+                })
+                .action_at(2, "Del", move |window, cx| {
+                    let preset_id = FixturePresetId {
+                        feature_group,
+                        preset_id: pool_item_id,
+                    };
+
+                    let answer = window.prompt(
+                        gpui::PromptLevel::Warning,
+                        format!("Delete {}", preset_id).as_str(),
+                        Some("Do you really want to delete this preset?"),
+                        &[PromptButton::ok("Yes"), PromptButton::ok("No")],
                         cx,
-                    )
-                });
+                    );
+
+                    cx.spawn(async move |cx| {
+                        let Ok(answer) = answer.await else {
+                            return;
+                        };
+
+                        // Yes
+                        if answer == 0 {
+                            cx.update(|cx| {
+                                DemexEngineHandler::engine(cx).exec_ui(Action::Delete(
+                                    DeleteArgs {
+                                        object_range: ObjectRange::single(Object::Preset(
+                                            preset_id,
+                                        )),
+                                    },
+                                ));
+                            });
+                        }
+                    })
+                    .detach();
+                })
             })
-            .action("Insert", move |_, cx| {
+            .action_at(1, "Insert", move |_, cx| {
                 cx.defer(move |cx| {
                     cx.update_wm(|wm, cx| {
                         let _ = wm.update_main_dock_window(cx, |dock_window, window, cx| {
@@ -155,6 +198,19 @@ pub fn apply_pool_type_to_button(
                         });
                     });
                 });
+            })
+            .when_none(&pool_item, |this| {
+                this.action_at(3, "Crt FX", move |_, cx| {
+                    DemexEngineHandler::engine(cx).exec_ui(Action::CreateEffectPreset(
+                        CreateEffectPresetArgs {
+                            id: FixturePresetId {
+                                feature_group,
+                                preset_id: pool_item_id,
+                            },
+                            name: None,
+                        },
+                    ));
+                })
             })
             .when(
                 pool_item.is_some_and(|item| has_flag!(item, FixturePresetFlags::KeyframeEffect)),
@@ -173,16 +229,18 @@ pub fn apply_pool_type_to_button(
                     })
                 },
             ),
-        PoolType::Group => button.action("Name", move |_, cx| {
-            WindowManager::open_edit_window::<SetPropertyWindow>(cx, move |window, cx| {
-                SetPropertyWindow::new(
-                    HomeableObject::Group(pool_item_id),
-                    FixtureGroupProperty::Name,
-                    SetPropertyWindowPropertyType::String,
-                    window,
-                    cx,
-                )
-            });
+        PoolType::Group => button.when(pool_item.is_some(), |this| {
+            this.action_at(0, "Name", move |_, cx| {
+                WindowManager::open_edit_window::<SetPropertyWindow>(cx, move |window, cx| {
+                    SetPropertyWindow::new(
+                        HomeableObject::Group(pool_item_id),
+                        FixtureGroupProperty::Name,
+                        SetPropertyWindowPropertyType::String,
+                        window,
+                        cx,
+                    )
+                });
+            })
         }),
         _ => button,
     }

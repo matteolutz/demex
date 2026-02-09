@@ -17,13 +17,16 @@ use crate::{
         },
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
     },
+    effect::speed::EffectSpeed,
     engine::component::Component,
     event::{DemexEvent, list::DemexEventList},
     fixture::Fixture,
+    keyframe_effect::{effect::KeyframeEffect, effect_runtime::KeyframeEffectRuntime},
     patch::Patch,
     pool::{Pool, PoolError, PoolType},
-    presets::preset::MAX_DISPLAY_COLORS,
+    presets::preset::{FixturePresetDisplayColor, MAX_DISPLAY_COLORS},
     state::fixture_state_handler::FixtureStateHandler,
+    updatables::runtime::RuntimePhase,
 };
 
 use super::{
@@ -31,8 +34,6 @@ use super::{
         channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
         feature::feature_group::FixtureChannel3FeatureGroup,
     },
-    effect::feature::runtime::FeatureEffectRuntime,
-    effect2::effect::Effect2,
     selection::FixtureSelection,
     sequence::{
         Sequence,
@@ -170,7 +171,10 @@ impl PresetHandler {
                     patch
                         .fixture(f_path)
                         .ok()
-                        .and_then(|fixture| value.get_color(fixture))
+                        .and_then(|fixture| value.get_rgbw_color(fixture))
+                        .map(|rgbw_color| {
+                            FixturePresetDisplayColor::from_rgbw(rgbw_color.to_array())
+                        })
                 })
                 .dedup()
                 .collect::<Vec<_>>();
@@ -220,8 +224,12 @@ impl PresetHandler {
         let preset = FixturePreset::new(
             id,
             name,
-            FixturePresetData::FeatureEffect {
-                runtime: FeatureEffectRuntime::new(Effect2::default()),
+            FixturePresetData::KeyframeEffect {
+                runtime: KeyframeEffectRuntime::new(
+                    KeyframeEffect::new(),
+                    EffectSpeed::default(),
+                    RuntimePhase::default(),
+                ),
             },
             vec![],
         )?;

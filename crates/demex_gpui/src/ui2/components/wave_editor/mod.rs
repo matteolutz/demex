@@ -1,6 +1,8 @@
+use std::rc::Rc;
+
 use gpui::{
     App, Bounds, Context, Edges, Entity, EventEmitter, Font, InteractiveElement, IntoElement,
-    MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement, Path, PathBuilder, Pixels,
+    MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement, Path, PathBuilder, Pixels, Point,
     RenderOnce, ScrollWheelEvent, Size, Styled, TextRun, Window, canvas, fill, outline, point, px,
 };
 
@@ -27,6 +29,14 @@ pub enum WaveEditorEvent {
 
         /// The new starting point
         starting_point: f32,
+    },
+
+    WaveSegmentHandleRightClicked {
+        /// The index of the segment within the wave
+        segment_idx: usize,
+
+        /// The mouse position when clicking
+        click_pos: Point<Pixels>,
     },
 }
 
@@ -62,6 +72,27 @@ impl WaveEditorState {
         cx.notify();
     }
 
+    pub fn segment_starting_points(&self) -> impl Iterator<Item = f32> {
+        self.wave
+            .segments
+            .iter()
+            .map(|segment| segment.starting_point)
+    }
+
+    pub fn set_segment_easing_function(
+        &mut self,
+        segment_idx: usize,
+        curve: impl WaveEasingFunction,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(segment) = self.wave.segments.get_mut(segment_idx) else {
+            return;
+        };
+
+        segment.easing_functions = Rc::new(curve);
+        cx.notify();
+    }
+
     fn update_canvas_bounds(&mut self, bounds: Bounds<Pixels>) {
         self.canvas_bounds = Some(bounds);
     }
@@ -70,7 +101,7 @@ impl WaveEditorState {
         self.keyframe_handle_bounds[idx] = Some(bounds);
     }
 
-    fn handle_mouse_down(&mut self, evt: &MouseDownEvent, cx: &mut Context<Self>) {
+    fn handle_left_mouse_down(&mut self, evt: &MouseDownEvent, cx: &mut Context<Self>) {
         for (idx, bounds) in self
             .keyframe_handle_bounds
             .iter()
@@ -87,6 +118,23 @@ impl WaveEditorState {
         if self.current_dragging_keyframe_handle.is_some() {
             self.current_dragging_keyframe_handle = None;
             cx.notify();
+        }
+    }
+
+    fn handle_right_mouse_down(&mut self, evt: &MouseDownEvent, cx: &mut Context<Self>) {
+        for (idx, bounds) in self
+            .keyframe_handle_bounds
+            .iter()
+            .filter_map(|b| b.as_ref())
+            .enumerate()
+        {
+            if bounds.contains(&evt.position) {
+                cx.emit(WaveEditorEvent::WaveSegmentHandleRightClicked {
+                    segment_idx: idx,
+                    click_pos: evt.position,
+                });
+                return;
+            }
         }
     }
 
@@ -363,7 +411,15 @@ impl RenderOnce for WaveEditor {
         v_flex()
             .on_mouse_down(gpui::MouseButton::Left, {
                 let state = self.state.clone();
-                move |evt, _, cx| state.update(cx, |state, cx| state.handle_mouse_down(evt, cx))
+                move |evt, _, cx| {
+                    state.update(cx, |state, cx| state.handle_left_mouse_down(evt, cx))
+                }
+            })
+            .on_mouse_down(gpui::MouseButton::Right, {
+                let state = self.state.clone();
+                move |evt, _, cx| {
+                    state.update(cx, |state, cx| state.handle_right_mouse_down(evt, cx))
+                }
             })
             .on_mouse_move({
                 let state = self.state.clone();

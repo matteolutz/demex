@@ -27,7 +27,7 @@ use crate::{
     state::{fixture_state::FixtureState, fixture_state_handler::FixtureStateHandler},
     timing::TimingHandler,
     updatables::runtime::RuntimePhase,
-    utils::color::{ecolor_to_rgbw, rgbw_to_rgb},
+    utils::color::rgbw_to_rgb,
 };
 
 use super::{PresetHandler, error::PresetHandlerError};
@@ -168,6 +168,61 @@ impl FixturePresetData {
     }
 }
 
+/// 12-bit RGB color (4bit per channel)
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[repr(transparent)]
+pub struct FixturePresetDisplayColor(u16);
+
+impl FixturePresetDisplayColor {
+    pub fn new(r: u8, g: u8, b: u8) -> Self {
+        let r_4 = ((r >> 4) & 0xF) as u16;
+        let g_4 = ((g >> 4) & 0xF) as u16;
+        let b_4 = ((b >> 4) & 0xF) as u16;
+        Self((r_4 << 8) | (g_4 << 4) | b_4)
+    }
+
+    pub fn from_rgbw_f(rgbw: [f32; 4]) -> Self {
+        let [r, g, b] = rgbw_to_rgb(rgbw);
+        Self::new((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8)
+    }
+
+    pub fn from_rgbw([r, g, b, w]: [u8; 4]) -> Self {
+        Self::from_rgbw_f([
+            r as f32 / 255.0,
+            g as f32 / 255.0,
+            b as f32 / 255.0,
+            w as f32 / 255.0,
+        ])
+    }
+
+    pub fn r(self) -> u8 {
+        let r_4 = ((self.0 >> 8) & 0xF) as u8;
+        r_4 << 4
+    }
+
+    pub fn g(self) -> u8 {
+        let g_4 = ((self.0 >> 4) & 0xF) as u8;
+        g_4 << 4
+    }
+
+    pub fn b(self) -> u8 {
+        let b_4 = (self.0 & 0xF) as u8;
+        b_4 << 4
+    }
+
+    pub fn rgb(self) -> [u8; 3] {
+        [self.r(), self.g(), self.b()]
+    }
+
+    pub fn rgb_f(self) -> [f32; 3] {
+        [
+            self.r() as f32 / 255.0,
+            self.g() as f32 / 255.0,
+            self.b() as f32 / 255.0,
+        ]
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FixturePreset {
     id: FixturePresetId,
@@ -175,7 +230,7 @@ pub struct FixturePreset {
     name: String,
 
     #[serde(default)]
-    display_colors: Vec<ecolor::Color32>,
+    display_colors: Vec<FixturePresetDisplayColor>,
 
     #[serde(default)]
     fade_up: f32,
@@ -268,9 +323,11 @@ impl FixturePreset {
         id: FixturePresetId,
         name: Option<String>,
         data: FixturePresetData,
-        display_colors: Vec<ecolor::Color32>,
+        mut display_colors: Vec<FixturePresetDisplayColor>,
     ) -> Result<Self, PresetHandlerError> {
         let name = name.unwrap_or(format!("Preset {}", id));
+
+        display_colors.dedup();
 
         Ok(Self {
             id,
@@ -427,8 +484,8 @@ impl FixturePreset {
         &mut self.name
     }
 
-    pub fn display_colors(&self) -> &[ecolor::Color32] {
-        &self.display_colors
+    pub fn display_colors(&self) -> impl Iterator<Item = FixturePresetDisplayColor> {
+        self.display_colors.iter().copied()
     }
 
     pub fn values(
@@ -686,10 +743,7 @@ impl From<&FixturePreset> for PoolItem {
                 value
                     .display_colors
                     .iter()
-                    .map(|color| {
-                        let rgbw = ecolor_to_rgbw(*color);
-                        rgbw_to_rgb(rgbw)
-                    })
+                    .map(|color| color.rgb_f())
                     .collect()
             }),
             flags: flags,

@@ -6,7 +6,7 @@ use gpui::{
     StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div, fill, point,
     prelude::FluentBuilder, px, size,
 };
-use gpui_component::{ActiveTheme, Colorize, Disableable, StyledExt, h_flex, v_flex};
+use gpui_component::{ActiveTheme, Colorize, Disableable, StyledExt, v_flex};
 use itertools::Itertools;
 
 use crate::ui2::panels::pool::pool_quick_actions::{
@@ -43,7 +43,7 @@ pub struct PoolButton {
     indicator_color: Option<PoolItemButtonIndicatorColor>,
 
     quick_actions_state: Option<Entity<PoolQuickActionsState>>,
-    quick_actions: Vec<PoolQuickAction>,
+    quick_actions: Vec<Option<PoolQuickAction>>,
 
     colors: Option<Vec<Hsla>>,
 
@@ -98,10 +98,28 @@ impl PoolButton {
         name: impl Into<SharedString>,
         action: impl Fn(&mut Window, &mut App) + 'static,
     ) -> Self {
-        self.quick_actions.push(PoolQuickAction {
+        self.quick_actions.push(Some(PoolQuickAction {
+            name: name.into(),
+            action: Rc::new(action),
+        }));
+        self
+    }
+
+    pub fn action_at(
+        mut self,
+        idx: usize,
+        name: impl Into<SharedString>,
+        action: impl Fn(&mut Window, &mut App) + 'static,
+    ) -> Self {
+        if self.quick_actions.len() <= idx {
+            self.quick_actions.resize(idx + 1, None);
+        }
+
+        self.quick_actions[idx] = Some(PoolQuickAction {
             name: name.into(),
             action: Rc::new(action),
         });
+
         self
     }
 
@@ -149,7 +167,7 @@ impl PoolButton {
     fn when_quick_actions_state(
         div: Stateful<Div>,
         state: Entity<PoolQuickActionsState>,
-        quick_actions: Vec<PoolQuickAction>,
+        quick_actions: Vec<Option<PoolQuickAction>>,
         id: ElementId,
     ) -> Stateful<Div> {
         div.on_mouse_down(MouseButton::Left, {
@@ -265,9 +283,6 @@ impl RenderOnce for PoolButton {
                                     fill(circle_bounds, colors[0]).corner_radii(radius),
                                 );
                             }
-
-                            // TODO: just for testing
-                            // let circle_color = colors[0];
                         }
                     },
                 )
@@ -284,7 +299,7 @@ impl RenderOnce for PoolButton {
             .when_some(self.on_click, |this, on_click| {
                 this.on_click(move |event, window, cx| {
                     if self.disabled {
-                        cx.stop_propagation();
+                        // cx.stop_propagation();
                         return;
                     }
 
@@ -303,7 +318,7 @@ impl RenderOnce for PoolButton {
                         .justify_center()
                         .items_center()
                         .font_semibold()
-                        .text_sm()
+                        .text_xs()
                         .text_ellipsis()
                         .child(item_name),
                 )
@@ -316,10 +331,10 @@ impl RenderOnce for PoolButton {
             )
             .when_some(self.top_right, |this, top_right| {
                 this.child(
-                    h_flex()
-                        .justify_end()
-                        .py_2()
-                        .px_1()
+                    div()
+                        .absolute()
+                        .top_2()
+                        .right_1()
                         .h_4()
                         .gap_1()
                         .text_color(cx.theme().muted_foreground)
@@ -330,7 +345,8 @@ impl RenderOnce for PoolButton {
             .when_some(self.item_id, |this, item_id| {
                 this.child(
                     div()
-                        .w_full()
+                        .absolute()
+                        .left_1()
                         .px_1()
                         .text_xs()
                         .font_semibold()
@@ -338,13 +354,8 @@ impl RenderOnce for PoolButton {
                         .child(format!("{}", item_id)),
                 )
             })
-            .when_some(
-                (!self.disabled)
-                    .then_some(self.quick_actions_state)
-                    .flatten(),
-                |div, state| {
-                    Self::when_quick_actions_state(div, state, self.quick_actions, self.id)
-                },
-            )
+            .when_some(self.quick_actions_state, |div, state| {
+                Self::when_quick_actions_state(div, state, self.quick_actions, self.id)
+            })
     }
 }

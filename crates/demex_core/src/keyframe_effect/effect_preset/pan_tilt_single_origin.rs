@@ -191,7 +191,71 @@ impl PanTiltSingleOriginEffectPreset {
                 vec![tilt_layer]
             }
             // TODO: figure 8
-            PanTiltSingleOriginEffectPresetType::Figure8 => vec![],
+            PanTiltSingleOriginEffectPresetType::Figure8 => {
+                let pan_min: ClampedValue = self.origin[0] - (self.size[0] / 2.0);
+                let pan_max: ClampedValue = self.origin[0] + (self.size[0] / 2.0);
+
+                let tilt_max: ClampedValue = self.origin[1] + (self.size[1] / 2.0);
+                let tilt_min: ClampedValue = self.origin[1] - (self.size[1] / 2.0);
+
+                let tilt_layer = KeyframeEffectLayer {
+                    keyframes: vec![
+                        KeyframeEffectKeyframe {
+                            starting_point: 0.0,
+                            data: KeyframeEffectKeyframeData::Global(
+                                [(FixtureChannel3Attribute::Tilt, tilt_min)].into(),
+                            ),
+                            curve: KeyframeEffectKeyframeCurve::EaseInOut,
+                        },
+                        KeyframeEffectKeyframe {
+                            starting_point: 0.5,
+                            data: KeyframeEffectKeyframeData::Global(
+                                [(FixtureChannel3Attribute::Tilt, tilt_max)].into(),
+                            ),
+                            curve: KeyframeEffectKeyframeCurve::EaseInOut,
+                        },
+                        KeyframeEffectKeyframe {
+                            starting_point: 1.0,
+                            data: KeyframeEffectKeyframeData::Global(
+                                [(FixtureChannel3Attribute::Tilt, tilt_min)].into(),
+                            ),
+                            curve: KeyframeEffectKeyframeCurve::EaseInOut,
+                        },
+                    ],
+                    phase_multiplier: 2.0,
+                    phase_offset: 90.0,
+                };
+
+                let pan_layer = KeyframeEffectLayer {
+                    keyframes: vec![
+                        KeyframeEffectKeyframe {
+                            starting_point: 0.0,
+                            data: KeyframeEffectKeyframeData::Global(
+                                [(FixtureChannel3Attribute::Pan, pan_min)].into(),
+                            ),
+                            curve: KeyframeEffectKeyframeCurve::EaseInOut,
+                        },
+                        KeyframeEffectKeyframe {
+                            starting_point: 0.5,
+                            data: KeyframeEffectKeyframeData::Global(
+                                [(FixtureChannel3Attribute::Pan, pan_max)].into(),
+                            ),
+                            curve: KeyframeEffectKeyframeCurve::EaseInOut,
+                        },
+                        KeyframeEffectKeyframe {
+                            starting_point: 1.0,
+                            data: KeyframeEffectKeyframeData::Global(
+                                [(FixtureChannel3Attribute::Pan, pan_min)].into(),
+                            ),
+                            curve: KeyframeEffectKeyframeCurve::EaseInOut,
+                        },
+                    ],
+                    phase_multiplier: 1.0,
+                    phase_offset: 90.0,
+                };
+
+                vec![tilt_layer, pan_layer]
+            }
         }
     }
 }

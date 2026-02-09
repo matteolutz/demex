@@ -2,7 +2,9 @@ use std::rc::Rc;
 
 use demex_core::{
     channel3::attribute::FixtureChannel3Attribute,
-    keyframe_effect::effect_layer::KeyframeEffectLayer,
+    keyframe_effect::{
+        effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_layer::KeyframeEffectLayer,
+    },
 };
 use gpui::{
     AppContext, Context, Entity, EventEmitter, ParentElement, Render, Styled, Subscription, Window,
@@ -19,14 +21,20 @@ use gpui_component::{
 };
 use itertools::Itertools;
 
-use crate::ui2::components::wave_editor::{
-    Wave, WaveEditor, WaveEditorEvent, WaveEditorState, WaveSegment,
+use crate::ui2::{
+    components::wave_editor::{Wave, WaveEditor, WaveEditorEvent, WaveEditorState, WaveSegment},
+    window::edit_keyframe_effect::curve::EditKeyframeEffectCurveWindow,
+    wm::{WindowManager, edit_window::WindowManagerExtension},
 };
 
 pub enum EditKeyframeEffectLayerEvent {
     KeyframeStartingPointChanged {
         keyframe_idx: usize,
         starting_point: f32,
+    },
+    KeyframeCurveChanged {
+        keyframe_idx: usize,
+        curve: KeyframeEffectKeyframeCurve,
     },
     PhaseMultiplierChanged(f32),
 }
@@ -66,7 +74,8 @@ impl EditKeyframeEffectLayer {
         let all_attributes = layer.attributes();
         let wave = all_attributes
             .into_iter()
-            .map(|attribute| {
+            .enumerate()
+            .map(|(idx, attribute)| {
                 let wave_segments = layer
                     .keyframes()
                     .iter()
@@ -93,18 +102,49 @@ impl EditKeyframeEffectLayer {
 
                 let wave_state = cx.new(|_| WaveEditorState::new(wave));
 
-                _subscriptions.push(cx.subscribe(&wave_state, move |_, _, evt, cx| match evt {
-                    &WaveEditorEvent::WaveSegmentStartingPointChanged {
-                        segment_idx,
-                        starting_point,
-                    } => {
-                        cx.emit(EditKeyframeEffectLayerEvent::KeyframeStartingPointChanged {
-                            keyframe_idx: segment_idx,
+                _subscriptions.push(cx.subscribe_in(
+                    &wave_state,
+                    window,
+                    move |_, _, evt, _, cx| match evt {
+                        &WaveEditorEvent::WaveSegmentStartingPointChanged {
+                            segment_idx,
                             starting_point,
-                        });
-                    }
-                    _ => {}
-                }));
+                        } => {
+                            cx.emit(EditKeyframeEffectLayerEvent::KeyframeStartingPointChanged {
+                                keyframe_idx: segment_idx,
+                                starting_point,
+                            });
+                        }
+                        &WaveEditorEvent::WaveSegmentHandleRightClicked {
+                            segment_idx,
+                            click_pos: _,
+                        } => {
+                            let this_entity = cx.entity();
+
+                            WindowManager::open_edit_window::<EditKeyframeEffectCurveWindow>(
+                                cx,
+                                move |window, cx| {
+                                    let this_entity = this_entity.clone();
+
+                                    EditKeyframeEffectCurveWindow::new(
+                                        move |curve, _, cx| {
+                                            this_entity.clone().update(cx, |this, cx| {
+                                                this.wave[idx].1.update(cx, |wave, cx| {
+                                                    wave.set_segment_easing_function(segment_idx, *curve, cx);
+                                                });
+
+                                                cx.emit(EditKeyframeEffectLayerEvent::KeyframeCurveChanged { keyframe_idx: segment_idx, curve: *curve });
+                                            });
+                                        },
+                                        window,
+                                        cx,
+                                    )
+                                },
+                            );
+                        }
+                        _ => {}
+                    },
+                ));
 
                 (attribute, wave_state)
             })

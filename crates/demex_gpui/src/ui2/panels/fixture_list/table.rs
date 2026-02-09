@@ -157,19 +157,30 @@ impl TableDelegate for FixtureListTable {
             .unwrap();
 
         match column.key.as_ref() {
-            "id" => fixture.path().to_string().into_any_element(),
-            "patch" => fixture.base_address().to_string().into_any_element(),
+            "id" => div()
+                .text_sm()
+                .child(fixture.path().to_string())
+                .into_any_element(),
+            "patch" => div()
+                .text_sm()
+                .child(fixture.base_address().to_string())
+                .into_any_element(),
             "name" => div()
+                .text_sm()
                 .when(is_selected, |div| div.text_color(cx.theme().green))
                 .when(is_highlighted, |div| div.text_color(cx.theme().red))
                 .child(fixture.name().to_string())
                 .into_any_element(),
-            "fixture_type" => entry.fixture_type_name.clone().into_any_element(),
+            "fixture_type" => div()
+                .text_sm()
+                .child(entry.fixture_type_name.clone())
+                .into_any_element(),
             "dimmer" => {
                 let dimmer_value = fixture_values.get(&FixtureChannel3Attribute::Dimmer);
                 let is_home = dimmer_value.as_ref().is_some_and(|val| val.is_home());
 
                 div()
+                    .text_sm()
                     .when(!is_home, |div| div.text_color(cx.theme().yellow))
                     .child(
                         dimmer_value
