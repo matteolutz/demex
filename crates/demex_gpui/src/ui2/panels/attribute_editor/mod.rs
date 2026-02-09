@@ -12,7 +12,7 @@ use gpui_component::{
     dock::PanelEvent,
     h_flex,
     slider::Slider,
-    tab::TabBar,
+    tab::{Tab, TabBar},
 };
 use itertools::Itertools;
 
@@ -162,8 +162,15 @@ impl AttributeEditorPanel {
 
     fn get_num_pages(&self, cx: &App) -> usize {
         let feature_group = self.get_selected_feature_group(cx);
+        self.get_num_pages_for_feature_group(&feature_group, cx)
+    }
 
-        let Some(attributes) = self.attributes.read(cx).get(&feature_group) else {
+    fn get_num_pages_for_feature_group(
+        &self,
+        feature_group: &Option<FixtureChannel3FeatureGroup>,
+        cx: &App,
+    ) -> usize {
+        let Some(attributes) = self.attributes.read(cx).get(feature_group) else {
             return 0;
         };
 
@@ -325,10 +332,21 @@ impl Render for AttributeEditorPanel {
                         cx.notify();
                     }))
                     .children(
-                        FixtureChannel3FeatureGroup::iter_without_all()
-                            .map(|group| group.name().to_string()),
+                        FixtureChannel3FeatureGroup::iter_without_all().map(|group| {
+                            Tab::new()
+                                .flex_grow()
+                                .disabled(
+                                    self.get_num_pages_for_feature_group(&Some(group), cx) == 0,
+                                )
+                                .label(group.name().to_string())
+                        }),
                     )
-                    .child("Other"),
+                    .child(
+                        Tab::new()
+                            .flex_grow()
+                            .disabled(self.get_num_pages_for_feature_group(&None, cx) == 0)
+                            .label("Other"),
+                    ),
             )
             .child(
                 div()
