@@ -1,142 +1,310 @@
-commands                    = command+
-
-command                     = function
-                            | object
-
-
-function                    = fixture_selector set_function
-                            | discrete_set_function
-                            | "set" set_property_function
-                            | "home" [homeable_object]
-                            | "record" record_function
-                            | "create" create_function
-                            | "rename" rename_function
-                            | "update" update_function
-                            | "delete" delete_function "really"
-                            | "highlight" [fixture_selector]
-                            | "unhighlight"
-                            | "move" move_function
-                            | "clear"
-                            | "nuzul" | "sueud" | "grandetc"
-                            | "save"
-                            | "config" ("output" | "patch")
-                            | "test" string
-                            | "assign" assign_command
-                            | "unassign" unassign_command
-                            | "recall" recall_command
-                            | "lock"
-
-recall_command              = "sequence" integer "cue" cue_idx
-
-unassign_command            = "button" float
-                            | "fader" float
-
-assign_function             = "executor" integer ("go" | "stop" | "flash" | "fader") "to" float
-                            | "preset" integer ["with" fixture_selector] "to" float
-                            | fixture_selector "to" float
-                            | "macro" function "to" float
-                            | "tokens" "to" float "with" [*]
-                            | "grandmaster" "to" float
-                            | "speedmaster" integer ("fader" | "tap") "to" float
-
-set_property_function       = object string string
-
-move_function               = specific_preset "to" specific_preset
-
-delete_function             = "macro" integer_or_range
-                            | sepcific_preset_or_range
-                            | "sequence" integer_or_range
-                            | "executor" integer_or_range
-                            | "group" integer_or_range
-
-update_function             = specific_preset "for" fixture_selector [udpate_mode]
-                            | ("sequence" | "executor") integer "cue" cue_idx "for" fixture_selector ["with" (channel_type_list | "active" | "all")] [update_mode]
-
-rename_function             = specific_preset "to" string
-                            | "group" integer "to" string
-                            | "sequence" integer "to" string
+(* ==========================================================================
+   Demex Command Language Grammar
+   Extended Backus-Naur Form (EBNF) - ISO/IEC 14977 Standard
+   
+   This grammar describes the command language for the Demex lighting control
+   software. It is derived from the lexer and parser implementation in
+   demex_core/src/command/.
+   
+   Legend:
+     =       Definition
+     |       Alternative (OR)
+     [ ... ] Optional (0 or 1)
+     { ... } Repetition (0 or more)
+     ( ... ) Grouping
+     " ... " Terminal string (keyword/symbol)
+     (* *)   Comment
+   ========================================================================== *)
 
 
-record_function             = "preset" feature_group (integer | "next") "for" fixture_selector ["as" string] ["next"]
-                            | "group" (integer | "next") "for" fixture_selector ["as" string]
-                            | "sequence" integer "cue" cue_idx "for" fixture_selector ["with" (channel_type_list | "active" | "all")]
-                            | "executor" integer ["cue" cue_idx] "for" fixture_selector ["with" (channel_type_list | "active" | "all")] ["as" string]
+(* ==================== TOP-LEVEL RULES ==================== *)
 
-create_function             = "sequence" (integer | "next") ["as" string]
-                            | "executor" (integer | "next") "for" ("sequence" integer)
-                            | "macro" (integer | "next") "with" command ["as" string]
-                            | "preset" float ["as" string]
+command = function
+        | object ;
 
-discrete_set_function       = channel_type value_single
+(* A command is either a function (action) or an object reference.
+   When an object is entered alone, its default action is triggered. *)
 
-set_function                = discrete_set_function
-                            | specific_preset_or_range
 
-object_range                = object ["thru" object]
+(* ==================== FUNCTION (ACTION) DEFINITIONS ==================== *)
 
-object                      = homeable_object
-                            | specific_preset
-                            | "sequence" integer ["cue" cue_idx]
-                            | "macro" integer
+function = fixture_selector , set_function                          (* e.g., "1 thru 10 intens full" *)
+         | discrete_set_function                                     (* e.g., "intens 50" on current selection *)
+         | "set" , set_property_function
+         | "home" , [ homeable_object ]
+         | "record" , record_function
+         | "create" , create_function
+         | "rename" , rename_function
+         | "update" , update_function
+         | "delete" , delete_function
+         | "move" , move_function
+         | "highlight" , [ fixture_selector ]
+         | "unhighlight"
+         | "clear"
+         | "save"
+         | "lock"
+         | "config" , config_type
+         | "test" , string
+         | "assign" , assign_function
+         | "unassign" , unassign_function
+         | "recall" , recall_function
+         | "nuzul"                                                   (* Easter egg commands *)
+         | "sueud"
+         | "grandetc" ;
 
-homeable_object             = fixture_selector
-                            | "executor" integer
 
-feature_group               = "intensity"
-                            | "color"
-                            | "position"
-                            | "beam"
-                            | "focus"
-                            | "control"
-                            | "feature" integer
+(* ==================== SET FUNCTIONS ==================== *)
 
-specific_preset             = "preset" integer
-specific_preset_or_range    = specific_preset ["thru" specific_preset]
+(* Set function applied to a fixture selector *)
+set_function = specific_preset_or_range                              (* Apply preset to selection *)
+             | attribute , channel_value ;                           (* Set attribute value *)
 
-value_single                = discrete_value_single
-                            | discrete_value_single "thru" discrete_value_single
+(* Set function applied to current selection (no selector prefix) *)
+discrete_set_function = attribute , channel_value ;
 
-discrete_value_single       = float
-                            | "full"
-                            | "half"
-                            | "out"
+(* Set object property *)
+set_property_function = object , string , string ;                   (* object key value *)
 
-channel_type_list           = "(" channel_type ("," channel_type)* ")"
 
-channel_type                = discrete_channel_type
-                            | "maintenance" string
+(* ==================== RECORD FUNCTION ==================== *)
 
-discrete_channel_type       = "intensity"
-                            | "color"
-                            | "position"
-                            | "strobe"
+record_function = "preset" , preset_id , "for" , fixture_selector , [ as_clause ] , [ "next" ]
+                | ( "group" | "g" ) , integer_or_next , "for" , fixture_selector , [ as_clause ]
+                | ( "sequence" | "seq" ) , integer , "cue" , cue_idx_or_next , "for" , fixture_selector , [ with_channel_type_selector ]
+                | ( "executor" | "exec" ) , integer , [ cue_clause ] , "for" , fixture_selector , [ with_channel_type_selector ] , [ as_clause ] ;
 
-update_mode                 = "merge"
-                            | "override"
+cue_clause = "cue" , cue_idx_or_next
+           | "next" ;                                                (* Legacy syntax for "cue next" *)
 
-fixture_selector            = atomic_fixture_selector
-                            | atomic_fixture_selector "+" atomic_fixture_selector
-                            | atomic_fixture_selector "-" atomic_fixture_selector
-                            | atomic_fixture_selector "%" integer
+with_channel_type_selector = "with" , channel_type_selector ;
 
-atomic_fixture_selector     = integer
-                            | integer "thru" integer
-                            | "group" integer
-                            | "(" fixture_selector ")"
-                            | "~"
+channel_type_selector = "all"
+                      | "active"
+                      | feature_type_list ;
 
-integer_or_range            = integer ["thru" integer]
 
-cue_idx                     = discrete_cue_idx
-                            | "next"
+(* ==================== CREATE FUNCTION ==================== *)
 
-discrete_cue_idx            = integer | float
+create_function = ( "sequence" | "seq" ) , integer_or_next , [ as_clause ]
+                | ( "executor" | "exec" ) , integer_or_next , "for" , ( "sequence" | "seq" ) , integer
+                | "macro" , integer_or_next , "with" , command , [ as_clause ]
+                | "preset" , float , [ as_clause ] ;                 (* Create effect preset *)
 
-integer                     = digit+
-float                       = digit+ ["." digit+]
-digit                       = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "0"
 
-string                      = '"' letter+ '"'
-letter                      = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z"
-                            | "~" | "@" | "#" | "%" | "_" | "$" | "&" | "'" | "-" | "+" | "/" | " "
-                            | digit
+(* ==================== RENAME FUNCTION ==================== *)
+
+rename_function = object , "to" , string ;
+
+
+(* ==================== UPDATE FUNCTION ==================== *)
+
+update_function = "preset" , preset_id , "for" , fixture_selector , [ update_mode ]
+                | ( ( "sequence" | "seq" ) | ( "executor" | "exec" ) ) , integer , "cue" , discrete_cue_idx , "for" , fixture_selector , [ with_channel_type_selector ] , [ update_mode ] ;
+
+update_mode = "merge"
+            | "override" ;
+
+
+(* ==================== DELETE FUNCTION ==================== *)
+
+delete_function = object_or_range , "really" ;
+
+object_or_range = object , [ "thru" , object ] ;
+
+
+(* ==================== MOVE FUNCTION ==================== *)
+
+move_function = specific_preset , "to" , specific_preset ;
+
+
+(* ==================== CONFIG FUNCTION ==================== *)
+
+config_type = "output"
+            | "patch" ;
+
+
+(* ==================== ASSIGN FUNCTION ==================== *)
+
+assign_function = fixture_selector , "to" , button_id                              (* Assign fixture selector to button *)
+                | ( "executor" | "exec" ) , integer , executor_assign_mode          (* Assign executor action *)
+                | specific_preset_or_range , [ "with" , fixture_selector ] , "to" , button_id  (* Assign preset to button *)
+                | "macro" , command , "to" , button_id
+                | ( "grandmaster" | "gm" ) , "to" , fader_id
+                | ( "speedmaster" | "sm" ) , integer , speedmaster_assign_mode ;
+
+executor_assign_mode = "fader" , "to" , fader_id                                    (* Assign executor fader *)
+                     | "go" , "to" , button_id
+                     | "stop" , "to" , button_id
+                     | "flash" , [ "stomp" ] , "to" , button_id ;
+
+speedmaster_assign_mode = "fader" , "to" , fader_id
+                        | "tap" , "to" , button_id ;
+
+button_id = float ;                                                  (* device_idx.button_id *)
+fader_id = float ;                                                   (* device_idx.fader_id *)
+
+
+(* ==================== UNASSIGN FUNCTION ==================== *)
+
+unassign_function = "button" , button_id
+                  | "fader" , fader_id ;
+
+
+(* ==================== RECALL FUNCTION ==================== *)
+
+recall_function = ( "sequence" | "seq" ) , integer , "cue" , discrete_cue_idx ;
+
+
+(* ==================== OBJECT DEFINITIONS ==================== *)
+
+object = homeable_object
+       | specific_preset
+       | ( "sequence" | "seq" ) , integer , [ "cue" , discrete_cue_idx ]
+       | "macro" , integer ;
+
+homeable_object = fixture_selector
+                | ( "executor" | "exec" ) , integer
+                | "programmer" ;
+
+specific_preset = "preset" , preset_id ;
+
+specific_preset_or_range = specific_preset , [ "thru" , specific_preset ] ;
+
+
+(* ==================== PRESET IDENTIFIERS ==================== *)
+
+(* Preset ID can be specified as:
+   - float literal (e.g., "1.5" = feature_group 1, preset 5)
+   - string feature group name followed by integer (e.g., "color" 5) *)
+preset_id = float                                                    (* feature_group_id.preset_id *)
+          | string , integer ;                                       (* feature_group_name preset_id *)
+
+
+(* ==================== FIXTURE SELECTOR ==================== *)
+
+fixture_selector = atomic_fixture_selector , [ fixture_selector_operation ] ;
+
+fixture_selector_operation = "+" , fixture_selector                  (* Union: add fixtures *)
+                           | "-" , fixture_selector                  (* Difference: subtract fixtures *)
+                           | "%" , [ "!" ] , integer ;               (* Modulus: "% n" selects every nth fixture (0th, nth, 2nth...); "%! n" inverts - skips every nth *)
+
+atomic_fixture_selector = "~"                                        (* Current selection *)
+                        | integer , [ "thru" , integer ]             (* Single fixture or range: "1" or "1 thru 10" *)
+                        | float , [ "thru" , integer ]               (* Fixture path or path range: "1.1" or "1.1 thru 5" *)
+                        | ( "group" | "g" ) , integer                (* Fixture group *)
+                        | "(" , fixture_selector , ")" ;             (* Grouping *)
+
+
+(* ==================== ATTRIBUTE AND VALUE DEFINITIONS ==================== *)
+
+attribute = "intens" | "@"                                           (* Dimmer/Intensity *)
+          | string ;                                                 (* Named attribute *)
+
+channel_value = discrete_channel_value , [ "thru" , discrete_channel_value ]
+              | "home" ;                                             (* Home value (returns None) *)
+
+discrete_channel_value = float
+                       | "full"                                      (* 100% / 1.0 *)
+                       | "half"                                      (* 50% / 0.5 *)
+                       | "out" ;                                     (* 0% / 0.0 *)
+
+
+(* ==================== FEATURE TYPES ==================== *)
+
+feature_type_list = "(" , [ feature_type , { "," , feature_type } ] , ")" ;
+
+feature_type = "intens" ;                                            (* Currently only intens/dimmer supported *)
+
+
+(* ==================== CUE INDEX ==================== *)
+
+cue_idx_or_next = discrete_cue_idx
+                | "next" ;
+
+discrete_cue_idx = integer                                           (* e.g., "1" = cue 1.0 *)
+                 | float ;                                           (* e.g., "1.5" = cue 1.5 *)
+
+
+(* ==================== HELPER RULES ==================== *)
+
+as_clause = "as" , string ;
+
+integer_or_next = integer
+                | "next" ;
+
+
+(* ==================== LEXICAL TOKENS ==================== *)
+
+integer = digit , { digit } ;
+
+float = digit , { digit } , "." , digit , { digit } ;
+
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+string = '"' , { string_char } , '"' ;
+
+string_char = letter | digit | special_char | " " ;
+
+letter = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j"
+       | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t"
+       | "u" | "v" | "w" | "x" | "y" | "z"
+       | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J"
+       | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T"
+       | "U" | "V" | "W" | "X" | "Y" | "Z" ;
+
+special_char = "~" | "@" | "#" | "%" | "_" | "$" | "&" | "'" | "-" | "+" | "/" ;
+
+
+(* ==================== KEYWORD ALIASES ==================== *)
+
+(* The lexer accepts the following keyword aliases:
+   
+   Actions:
+     "record" | "rec"      -> KeywordRecord
+     "rename" | "ren"      -> KeywordRename
+     "delete" | "del"      -> KeywordDelete
+     "highlight" | "hl"    -> KeywordHighlight
+     "unhighlight" | "uhl" -> KeywordUnhighlight
+   
+   Objects:
+     "group" | "g"              -> KeywordGroup
+     "sequence" | "seq"         -> KeywordSequence
+     "executor" | "exec"        -> KeywordExecutor
+     "grandmaster" | "gm"       -> KeywordGrandmaster
+     "speedmaster" | "sm"       -> KeywordSpeedmaster
+   
+   Symbol aliases:
+     "@"  -> KeywordIntens (same as "intens")
+     "~"  -> KeywordFixturesSelected (current selection)
+*)
+
+
+(* ==================== COMPLETE KEYWORD LIST ==================== *)
+
+(* Action Keywords:
+     home, manset, record (rec), rename (ren), clear, test,
+     create, update, save, delete (del), move, config, assign,
+     unassign, recall, lock, set, highlight (hl), unhighlight (uhl)
+   
+   Object Keywords:
+     group (g), macro, commandslice, preset, sequence (seq),
+     fader, executor (exec), cue, feature, effect, button,
+     programmer, grandmaster (gm), speedmaster (sm)
+   
+   Channel/Feature Type Keywords:
+     intens, color, position, strobe, maintenance, beam, control, focus
+   
+   Value Keywords:
+     full, half, out, patch
+   
+   Other Keywords:
+     thru, for, as, to, with, all, active, merge, override,
+     really, next, output, go, stop, flash, tokens, stomp, tap
+   
+   Easter Eggs:
+     nuzul, sueud, grandetc
+   
+   Operators:
+     + (Plus), - (Minus), % (Percent), ! (Exclamation),
+     ( (ParenOpen), ) (ParenClose), , (Comma)
+*)
