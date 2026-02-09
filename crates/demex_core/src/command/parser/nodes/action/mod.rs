@@ -23,6 +23,7 @@ use strum::EnumIter;
 
 use crate::{
     command::parser::nodes::action::functions::{
+        effect_function::{KeyframeEffectApplyPresetArgs, KeyframeEffectUpdateArgs},
         move_function::MoveArgs,
         set_function::{CueSetTriggerArgs, ObjectSetPropertyArgs, SetAttributeChannelSetArgs},
         speedmaster_functions::SpeedMasterTapArgs,
@@ -32,11 +33,6 @@ use crate::{
     event::{FixtureSelectionWithGroup, list::DemexEventList},
     fixture::FixturePath,
     input::control::DemexInputDeviceControlUnassignment,
-    keyframe_effect::{effect_preset::KeyframeEffectPreset, effect_runtime::KeyframeEffectRuntime},
-    presets::{
-        error::PresetHandlerError,
-        preset::{FixturePresetData, FixturePresetId},
-    },
     state::fixture_state_handler::FixtureStateHandler,
     utils::serde::approx_instant,
 };
@@ -254,8 +250,8 @@ pub enum Action {
     SpeedMasterSetBpm(u32, f32),
     SpeedMasterTap(SpeedMasterTapArgs),
 
-    PresetUpdateKeyframeEffect(FixturePresetId, KeyframeEffectRuntime),
-    PresetApplyKeyframeEffectPreset(FixturePresetId, KeyframeEffectPreset),
+    KeyframeEffectUpdate(KeyframeEffectUpdateArgs),
+    KeyframeEffectApplyPreset(KeyframeEffectApplyPresetArgs),
 
     GroupmasterSetFaderValue(u32, f32),
 
@@ -386,47 +382,8 @@ impl Action {
 
             Self::SpeedMasterTap(fun) => fun.run(args),
 
-            Self::PresetUpdateKeyframeEffect(preset_id, effect) => {
-                let preset = args
-                    .preset_handler
-                    .get_preset_mut(*preset_id)
-                    .map_err(ActionRunError::PresetHandlerError)?;
-
-                match preset.data_mut() {
-                    FixturePresetData::KeyframeEffect { runtime } => {
-                        *runtime = effect.clone();
-                        Ok(ActionRunResult::Default)
-                    }
-                    _ => Err(ActionRunError::PresetHandlerError(
-                        PresetHandlerError::FeaturePresetNotFound(*preset_id),
-                    )),
-                }
-            }
-            Self::PresetApplyKeyframeEffectPreset(preset_id, effect_preset) => {
-                if effect_preset.feature_group() != preset_id.feature_group {
-                    return Err(ActionRunError::PresetHandlerError(
-                        PresetHandlerError::FeatureGroupMismatch(
-                            effect_preset.feature_group(),
-                            preset_id.feature_group,
-                        ),
-                    ));
-                }
-
-                let preset = args
-                    .preset_handler
-                    .get_preset_mut(*preset_id)
-                    .map_err(ActionRunError::PresetHandlerError)?;
-
-                match preset.data_mut() {
-                    FixturePresetData::KeyframeEffect { runtime } => {
-                        runtime.effect_mut().apply_preset(effect_preset.clone());
-                        Ok(ActionRunResult::Default)
-                    }
-                    _ => Err(ActionRunError::PresetHandlerError(
-                        PresetHandlerError::FeaturePresetNotFound(*preset_id),
-                    )),
-                }
-            }
+            Self::KeyframeEffectUpdate(fun) => fun.run(args),
+            Self::KeyframeEffectApplyPreset(fun) => fun.run(args),
 
             Self::RunMacro(macro_id) => {
                 let mmacro = args

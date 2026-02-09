@@ -1,8 +1,11 @@
 use std::rc::Rc;
 
 use demex_core::{
-    command::parser::nodes::action::Action,
+    command::parser::nodes::action::{
+        Action, functions::effect_function::KeyframeEffectUpdateArgs,
+    },
     engine::comm::KeyframeEffectRequest,
+    event::DemexEvent,
     keyframe_effect::{
         effect_keyframe_curve::KeyframeEffectKeyframeCurve, effect_preset::KeyframeEffectPreset,
         effect_runtime::KeyframeEffectRuntime,
@@ -15,7 +18,9 @@ use gpui::{
     Subscription, Window, WindowBounds, div, point, size,
 };
 use gpui_component::{
+    Disableable,
     button::Button,
+    h_flex,
     menu::{DropdownMenu, PopupMenuItem},
     scroll::ScrollableElement,
     v_flex,
@@ -107,6 +112,7 @@ pub struct EditKeyframeEffectWindow {
     runtime_phase_editor: Entity<RuntimePhaseEditor>,
 
     _subscriptions: Vec<Subscription>,
+    _effect_subscriptions: Vec<Subscription>,
 }
 
 impl EditKeyframeEffectWindow {
@@ -122,16 +128,44 @@ impl EditKeyframeEffectWindow {
         let runtime_phase_editor =
             cx.new(|cx| RuntimePhaseEditor::new(RuntimePhase::default(), window, cx));
 
+        let _subscriptions = vec![cx.subscribe_in(
+            &DemexEngineHandler::event_handler(cx),
+            window,
+            |this, _, evt, window, cx| match evt {
+                &DemexEvent::KeyframeEffectUpdate(effect_id) if effect_id == this.preset_id => {
+                    this.request_effect(window, cx);
+                }
+                _ => {}
+            },
+        )];
+
+        let s = Self {
+            preset_id,
+            effect,
+            layers: Vec::new(),
+            runtime_phase_editor,
+            _subscriptions,
+            _effect_subscriptions: Vec::new(),
+        };
+
+        s.request_effect(window, cx);
+
+        s
+    }
+
+    fn request_effect(&self, window: &mut Window, cx: &mut Context<Self>) {
         DemexEngineHandler::send_in_visual(
             window,
             cx,
-            KeyframeEffectRequest { preset_id },
+            KeyframeEffectRequest {
+                preset_id: self.preset_id,
+            },
             |this, effect_res, window, cx| {
                 let Some(effect_res) = effect_res else {
                     return;
                 };
 
-                this._subscriptions.clear();
+                this._effect_subscriptions.clear();
 
                 this.effect.update(cx, |effect, _| {
                     *effect = Some(effect_res.clone());
@@ -140,6 +174,17 @@ impl EditKeyframeEffectWindow {
                 this.runtime_phase_editor.update(cx, |editor, cx| {
                     editor.set_runtime_phase(*effect_res.phase(), window, cx)
                 });
+                this._effect_subscriptions.push(cx.observe(
+                    &this.runtime_phase_editor,
+                    |this, runtime_phase_editor, cx| {
+                        this.set_edited(true, cx);
+                        this.effect.update(cx, |effect, cx| {
+                            if let Some(effect) = effect {
+                                *effect.phase_mut() = runtime_phase_editor.read(cx).runtime_phase();
+                            }
+                        });
+                    },
+                ));
 
                 let layers = effect_res
                     .effect()
@@ -187,26 +232,6 @@ impl EditKeyframeEffectWindow {
                 cx.notify();
             },
         );
-
-        let _subscriptions =
-            vec![
-                cx.observe(&runtime_phase_editor, |this, runtime_phase_editor, cx| {
-                    this.set_edited(true, cx);
-                    this.effect.update(cx, |effect, cx| {
-                        if let Some(effect) = effect {
-                            *effect.phase_mut() = runtime_phase_editor.read(cx).runtime_phase();
-                        }
-                    });
-                }),
-            ];
-
-        Self {
-            preset_id,
-            effect,
-            layers: Vec::new(),
-            runtime_phase_editor,
-            _subscriptions,
-        }
     }
 }
 
@@ -230,7 +255,7 @@ impl Render for EditKeyframeEffectWindow {
     fn render(
         &mut self,
         _window: &mut gpui::Window,
-        _cx: &mut gpui::Context<Self>,
+        cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
         v_flex()
             .size_full()
@@ -239,30 +264,50 @@ impl Render for EditKeyframeEffectWindow {
             .id("edit-keyframe-container")
             .overflow_y_scrollbar()
             .child(
-                Button::new("use-preset")
-                    .label("Use preset")
-                    .dropdown_menu({
-                        let preset_id = self.preset_id;
-                        move |mut menu, _, _| {
-                            for preset in KeyframeEffectPreset::iter()
-                                .clone()
-                                .filter(|p| p.feature_group() == preset_id.feature_group)
-                            {
-                                menu = menu.item(PopupMenuItem::Item {
-                                    icon: None,
-                                    label: preset.variant_name().into(),
-                                    disabled: false,
-                                    checked: false,
-                                    is_link: false,
-                                    action: None,
-                                    handler: Some(Rc::new(move |_, _, cx| {
-                                        Self::open_preset_window(preset_id, preset.clone(), cx)
-                                    })),
-                                });
-                            }
-                            menu
-                        }
-                    }),
+                h_flex()
+                    .justify_between()
+                    .gap_4()
+                    .child(
+                        Button::new("use-preset")
+                            .label("Use preset")
+                            .w_auto()
+                            .dropdown_menu({
+                                let preset_id = self.preset_id;
+                                move |mut menu, _, _| {
+                                    for preset in KeyframeEffectPreset::iter()
+                                        .clone()
+                                        .filter(|p| p.feature_group() == preset_id.feature_group)
+                                    {
+                                        menu = menu.item(PopupMenuItem::Item {
+                                            icon: None,
+                                            label: preset.variant_name().into(),
+                                            disabled: false,
+                                            checked: false,
+                                            is_link: false,
+                                            action: None,
+                                            handler: Some(Rc::new(move |_, _, cx| {
+                                                Self::open_preset_window(
+                                                    preset_id,
+                                                    preset.clone(),
+                                                    cx,
+                                                )
+                                            })),
+                                        });
+                                    }
+                                    menu
+                                }
+                            }),
+                    )
+                    .child(
+                        Button::new("save")
+                            .disabled(!self.is_edited(cx))
+                            .w_auto()
+                            .label("Save")
+                            .on_click(cx.listener(|this, _, window, cx| {
+                                this.handle_save(window, cx);
+                                this.set_edited(false, cx);
+                            })),
+                    ),
             )
             .child(
                 v_flex()
@@ -288,9 +333,11 @@ impl EditWindowDelegate for EditKeyframeEffectWindow {
 
     fn handle_save(&self, _window: &mut gpui::Window, cx: &mut App) {
         if let Some(effect) = self.effect.read(cx).as_ref() {
-            DemexEngineHandler::engine(cx).exec_ui(Action::PresetUpdateKeyframeEffect(
-                self.preset_id,
-                effect.clone(),
+            DemexEngineHandler::engine(cx).exec_ui(Action::KeyframeEffectUpdate(
+                KeyframeEffectUpdateArgs {
+                    preset_id: self.preset_id,
+                    new_runtime: effect.clone(),
+                },
             ));
         }
     }

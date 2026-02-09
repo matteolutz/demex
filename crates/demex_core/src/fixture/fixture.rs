@@ -691,7 +691,7 @@ macro_rules! fpath {
         let mut p = $crate::fixture::FixturePath::new(
             $crate::fixture::FixtureId::new($first).unwrap()
         );
-        $( p.push($crate::state::fixture::FixtureId::new($rest).unwrap()); )*
+        $( p.push($crate::fixture::FixtureId::new($rest).unwrap()); )*
         p
     }};
     ( $first:expr $(, $rest:expr )* $(,)? ) => {{

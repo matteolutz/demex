@@ -1,4 +1,7 @@
-use crate::{command::parser::nodes::object::Object, fixture::FixturePath, pool::PoolType};
+use crate::{
+    command::parser::nodes::object::Object, fixture::FixturePath, pool::PoolType,
+    presets::preset::FixturePresetId,
+};
 
 mod selection;
 pub use selection::*;
@@ -53,4 +56,6 @@ pub enum DemexEvent {
 
     FixtureValuesChanged(Vec<FixturePath>),
     ObjectPropertyChanged(Object, String),
+
+    KeyframeEffectUpdate(FixturePresetId),
 }

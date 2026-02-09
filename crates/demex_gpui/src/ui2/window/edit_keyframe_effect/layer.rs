@@ -9,8 +9,11 @@ use gpui::{
     div, prelude::FluentBuilder,
 };
 use gpui_component::{
-    IconName, StyledExt, h_flex,
+    IconName, StyledExt,
+    button::{Button, ButtonVariants},
+    h_flex,
     input::{InputEvent, InputState, NumberInput},
+    menu::DropdownMenu,
     tab::{Tab, TabBar},
     v_flex,
 };
@@ -151,17 +154,17 @@ impl Render for EditKeyframeEffectLayer {
                             .iter()
                             .map(|(attr, _)| Tab::new().label(attr.to_string())),
                     )
-                    .child(Tab::new().icon(IconName::Plus)),
+                    .child(
+                        Tab::new().child(
+                            Button::new("add-attribute")
+                                .ghost()
+                                .icon(IconName::Plus)
+                                .dropdown_menu(|menu, _, _| menu),
+                        ),
+                    ),
             )
             .when_some(self.selected_attribute, |this, selected| {
                 this.child(WaveEditor::new(&self.wave[selected].1))
             })
-        /*.children(self.wave.iter().map(|(attribute, wave_state)| {
-            v_flex()
-                .w_full()
-                .gap_1()
-                .child(div().text_lg().child(attribute.to_string()))
-                .child(WaveEditor::new(wave_state))
-        }))*/
     }
 }

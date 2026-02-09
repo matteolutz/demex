@@ -95,7 +95,10 @@ impl KeyframeEffectLayer {
     ) -> Option<ClampedValue> {
         let t = (time_adjusted - self.phase_offset.to_radians()) * self.phase_multiplier;
 
-        let t = (t % (2.0 * f32::consts::PI)) / (2.0 * f32::consts::PI);
+        // let mut t = (t % (2.0 * f32::consts::PI)) / (2.0 * f32::consts::PI);
+        let t = (t.rem_euclid(2.0 * f32::consts::PI)) / (2.0 * f32::consts::PI);
+
+        println!("t is {}", t);
 
         let (keyframe_idx, keyframe) = self
             .keyframes
@@ -147,7 +150,7 @@ impl KeyframeEffectLayer {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, f32};
 
     use crate::{
         fixture::FixtureId, keyframe_effect::effect_keyframe_curve::KeyframeEffectKeyframeCurve,
@@ -175,9 +178,11 @@ mod tests {
         let steps = 20;
         for i in 0..=steps {
             let t = i as f32 / steps as f32;
+            let phase = t * 2.0 * f32::consts::PI;
+
             println!(
                 "t = {}: {:?}",
-                t,
+                phase,
                 layer.value(&test_fixture_path(), &TEST_ATTRIBUTE, t)
             );
         }

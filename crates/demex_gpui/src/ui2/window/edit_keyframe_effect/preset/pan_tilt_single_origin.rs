@@ -1,6 +1,8 @@
 use demex_core::{
     channel3::clamped_value::ClampedValue,
-    command::parser::nodes::action::Action,
+    command::parser::nodes::action::{
+        Action, functions::effect_function::KeyframeEffectApplyPresetArgs,
+    },
     engine::comm::KeyframeEffectRequest,
     keyframe_effect::{
         effect_preset::{
@@ -106,6 +108,7 @@ impl PresetPanTiltSingleOriginState {
         let [width, height] = preset
             .and_then(|p| match p {
                 KeyframeEffectPreset::PanTiltSingleOrigin(preset) => Some(preset.size),
+                #[allow(unreachable_patterns)]
                 _ => None,
             })
             .unwrap_or([0.5.into(), 0.5.into()]);
@@ -175,17 +178,21 @@ impl PresetPanTiltSingleOriginWindow {
             return;
         };
 
-        DemexEngineHandler::engine(cx).exec_ui(Action::PresetApplyKeyframeEffectPreset(
-            self.preset_id,
-            KeyframeEffectPreset::PanTiltSingleOrigin(PanTiltSingleOriginEffectPreset {
-                size: [
-                    state.width_state.read(cx).value().start().into(),
-                    state.height_state.read(cx).value().start().into(),
-                ],
-                origin: state.editor_state.read(cx).value(),
-                move_type,
-                rotation: 0.0,
-            }),
+        DemexEngineHandler::engine(cx).exec_ui(Action::KeyframeEffectApplyPreset(
+            KeyframeEffectApplyPresetArgs {
+                preset_id: self.preset_id,
+                effect_preset: KeyframeEffectPreset::PanTiltSingleOrigin(
+                    PanTiltSingleOriginEffectPreset {
+                        size: [
+                            state.width_state.read(cx).value().start().into(),
+                            state.height_state.read(cx).value().start().into(),
+                        ],
+                        origin: state.editor_state.read(cx).value(),
+                        move_type,
+                        rotation: 0.0,
+                    },
+                ),
+            },
         ));
         self.discard_and_close(cx);
     }
