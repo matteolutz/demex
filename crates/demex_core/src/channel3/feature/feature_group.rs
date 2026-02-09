@@ -39,6 +39,10 @@ impl FixtureChannel3FeatureGroup {
     pub fn features(&self) -> impl Iterator<Item = FixtureChannel3FeatureType> + '_ {
         FixtureChannel3FeatureType::iter().filter(|feature| feature.feature_group() == *self)
     }
+
+    pub fn iter_without_all() -> impl Iterator<Item = Self> {
+        Self::iter().filter(|fg| *fg != FixtureChannel3FeatureGroup::All)
+    }
 }
 
 impl FromStr for FixtureChannel3FeatureGroup {

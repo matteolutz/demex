@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::HashMap};
 
 use demex_core::channel3::feature::feature_group::FixtureChannel3FeatureGroup;
 use gpui::{
@@ -41,12 +41,8 @@ const ATTRIBUTE_PAGE_SIZE: usize = 5;
 pub struct AttributeEditorPanel {
     focus_handle: FocusHandle,
 
-    attributes: Entity<
-        Vec<(
-            Option<FixtureChannel3FeatureGroup>,
-            Vec<AttributeEditorAttributeState>,
-        )>,
-    >,
+    attributes:
+        Entity<HashMap<Option<FixtureChannel3FeatureGroup>, Vec<AttributeEditorAttributeState>>>,
 
     selected_tab: Entity<usize>,
     selected_tab_page: Entity<usize>,
@@ -80,7 +76,7 @@ impl AttributeEditorPanel {
 
         Self {
             focus_handle: cx.focus_handle(),
-            attributes: cx.new(|_| Vec::new()),
+            attributes: cx.new(|_| HashMap::new()),
             selected_tab,
             selected_tab_page,
             value_display_mode: cx.new(|_| Default::default()),
@@ -123,10 +119,12 @@ impl AttributeEditorPanel {
             *attributes = new_attributes;
         });
 
-        self.selected_tab.update(cx, |tab, cx| {
-            *tab = 0;
+        if self.get_num_pages(cx) <= *self.selected_tab_page.read(cx) {
+            self.selected_tab_page.update(cx, |page, _| {
+                *page = 0;
+            });
             cx.notify();
-        });
+        }
 
         cx.notify();
     }
@@ -156,9 +154,16 @@ impl DemexPanel for AttributeEditorPanel {
 }
 
 impl AttributeEditorPanel {
+    fn get_selected_feature_group(&self, cx: &App) -> Option<FixtureChannel3FeatureGroup> {
+        FixtureChannel3FeatureGroup::iter_without_all()
+            .skip(*self.selected_tab.read(cx))
+            .next()
+    }
+
     fn get_num_pages(&self, cx: &App) -> usize {
-        let Some((_, attributes)) = self.attributes.read(cx).get(*self.selected_tab.read(cx))
-        else {
+        let feature_group = self.get_selected_feature_group(cx);
+
+        let Some(attributes) = self.attributes.read(cx).get(&feature_group) else {
             return 0;
         };
 
@@ -166,7 +171,10 @@ impl AttributeEditorPanel {
     }
 
     fn has_next_page(&self, cx: &App) -> bool {
-        let Some((_, attributes)) = self.attributes.read(cx).get(*self.selected_tab.read(cx))
+        let Some(attributes) = self
+            .attributes
+            .read(cx)
+            .get(&self.get_selected_feature_group(cx))
         else {
             return false;
         };
@@ -199,7 +207,10 @@ impl AttributeEditorPanel {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
-        let Some((_, attributes)) = self.attributes.read(cx).get(*self.selected_tab.read(cx))
+        let Some(attributes) = self
+            .attributes
+            .read(cx)
+            .get(&self.get_selected_feature_group(cx))
         else {
             return div().child("-");
         };
@@ -313,11 +324,11 @@ impl Render for AttributeEditorPanel {
                         });
                         cx.notify();
                     }))
-                    .children(self.attributes.read(cx).iter().map(|(group, _)| {
-                        group
-                            .map(|k| k.name().to_string())
-                            .unwrap_or_else(|| "Other".to_string())
-                    })),
+                    .children(
+                        FixtureChannel3FeatureGroup::iter_without_all()
+                            .map(|group| group.name().to_string()),
+                    )
+                    .child("Other"),
             )
             .child(
                 div()

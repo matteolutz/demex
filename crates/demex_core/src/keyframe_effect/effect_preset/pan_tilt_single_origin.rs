@@ -190,7 +190,8 @@ impl PanTiltSingleOriginEffectPreset {
 
                 vec![tilt_layer]
             }
-            _ => todo!(),
+            // TODO: figure 8
+            PanTiltSingleOriginEffectPresetType::Figure8 => vec![],
         }
     }
 }
