@@ -186,7 +186,7 @@ fixture_selector = atomic_fixture_selector , [ fixture_selector_operation ] ;
 
 fixture_selector_operation = "+" , fixture_selector                  (* Union: add fixtures *)
                            | "-" , fixture_selector                  (* Difference: subtract fixtures *)
-                           | "%" , [ "!" ] , integer ;               (* Modulus: select every nth fixture; "!" inverts to skip every nth *)
+                           | "%" , [ "!" ] , integer ;               (* Modulus: "% n" selects every nth fixture (0th, nth, 2nth...); "%! n" inverts - skips every nth *)
 
 atomic_fixture_selector = "~"                                        (* Current selection *)
                         | integer , [ "thru" , integer ]             (* Single fixture or range: "1" or "1 thru 10" *)
