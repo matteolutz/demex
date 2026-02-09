@@ -1,6 +1,6 @@
 [
   {
-    "type": "as",
+    "type": "as_clause",
     "named": true,
     "fields": {},
     "children": {
@@ -9,6 +9,61 @@
       "types": [
         {
           "type": "string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "assign_function",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "button_id",
+          "named": true
+        },
+        {
+          "type": "command",
+          "named": true
+        },
+        {
+          "type": "executor",
+          "named": true
+        },
+        {
+          "type": "executor_assign_mode",
+          "named": true
+        },
+        {
+          "type": "fader_id",
+          "named": true
+        },
+        {
+          "type": "fixture_selector",
+          "named": true
+        },
+        {
+          "type": "grandmaster",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "specific_preset_or_range",
+          "named": true
+        },
+        {
+          "type": "speedmaster",
+          "named": true
+        },
+        {
+          "type": "speedmaster_assign_mode",
           "named": true
         }
       ]
@@ -27,6 +82,10 @@
           "named": true
         },
         {
+          "type": "float",
+          "named": true
+        },
+        {
           "type": "integer",
           "named": true
         },
@@ -38,9 +97,49 @@
     }
   },
   {
-    "type": "channel_attribute",
+    "type": "attribute",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "button_id",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "float",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "channel_type_selector",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "feature_type_list",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "channel_value",
@@ -48,7 +147,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "discrete_channel_value",
@@ -78,6 +177,100 @@
     }
   },
   {
+    "type": "config_type",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "create_function",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "as_clause",
+          "named": true
+        },
+        {
+          "type": "command",
+          "named": true
+        },
+        {
+          "type": "executor",
+          "named": true
+        },
+        {
+          "type": "float",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "integer_or_next",
+          "named": true
+        },
+        {
+          "type": "sequence",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "cue_clause",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "cue_idx_or_next",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "cue_idx_or_next",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "discrete_cue_idx",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "delete_function",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "object_or_range",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "delete_keyword",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "discrete_channel_value",
     "named": true,
     "fields": {},
@@ -93,9 +286,101 @@
     }
   },
   {
+    "type": "discrete_cue_idx",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "float",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "discrete_set_function",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "attribute",
+          "named": true
+        },
+        {
+          "type": "channel_value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "executor",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "executor_assign_mode",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "button_id",
+          "named": true
+        },
+        {
+          "type": "fader_id",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "fader_id",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "float",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "feature_type",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "feature_type_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "feature_type",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "fixture_selector",
@@ -107,6 +392,29 @@
       "types": [
         {
           "type": "atomic_fixture_selector",
+          "named": true
+        },
+        {
+          "type": "fixture_selector_operation",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "fixture_selector_operation",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "fixture_selector",
+          "named": true
+        },
+        {
+          "type": "integer",
           "named": true
         }
       ]
@@ -121,7 +429,35 @@
       "required": false,
       "types": [
         {
+          "type": "assign_function",
+          "named": true
+        },
+        {
+          "type": "config_type",
+          "named": true
+        },
+        {
+          "type": "create_function",
+          "named": true
+        },
+        {
+          "type": "delete_function",
+          "named": true
+        },
+        {
+          "type": "delete_keyword",
+          "named": true
+        },
+        {
+          "type": "discrete_set_function",
+          "named": true
+        },
+        {
           "type": "fixture_selector",
+          "named": true
+        },
+        {
+          "type": "highlight_keyword",
           "named": true
         },
         {
@@ -129,11 +465,31 @@
           "named": true
         },
         {
+          "type": "move_function",
+          "named": true
+        },
+        {
+          "type": "recall_function",
+          "named": true
+        },
+        {
           "type": "record_function",
           "named": true
         },
         {
-          "type": "set_function_call",
+          "type": "record_keyword",
+          "named": true
+        },
+        {
+          "type": "rename_function",
+          "named": true
+        },
+        {
+          "type": "rename_keyword",
+          "named": true
+        },
+        {
+          "type": "set_function",
           "named": true
         },
         {
@@ -143,12 +499,34 @@
         {
           "type": "string",
           "named": true
+        },
+        {
+          "type": "unassign_function",
+          "named": true
+        },
+        {
+          "type": "unhighlight_keyword",
+          "named": true
+        },
+        {
+          "type": "update_function",
+          "named": true
         }
       ]
     }
   },
   {
+    "type": "grandmaster",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "group",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "highlight_keyword",
     "named": true,
     "fields": {}
   },
@@ -158,7 +536,7 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "fixture_selector",
@@ -172,13 +550,47 @@
     }
   },
   {
+    "type": "integer_or_next",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "integer",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "move_function",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "specific_preset",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "object",
     "named": true,
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
+        {
+          "type": "discrete_cue_idx",
+          "named": true
+        },
         {
           "type": "homeable_object",
           "named": true
@@ -188,15 +600,30 @@
           "named": true
         },
         {
+          "type": "sequence",
+          "named": true
+        },
+        {
+          "type": "specific_macro",
+          "named": true
+        },
+        {
           "type": "specific_preset",
           "named": true
-        },
+        }
+      ]
+    }
+  },
+  {
+    "type": "object_or_range",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
         {
-          "type": "specific_sequence",
-          "named": true
-        },
-        {
-          "type": "specific_sequence_cue",
+          "type": "object",
           "named": true
         }
       ]
@@ -211,7 +638,38 @@
       "required": true,
       "types": [
         {
+          "type": "float",
+          "named": true
+        },
+        {
           "type": "integer",
+          "named": true
+        },
+        {
+          "type": "string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "recall_function",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "discrete_cue_idx",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "sequence",
           "named": true
         }
       ]
@@ -226,7 +684,19 @@
       "required": true,
       "types": [
         {
-          "type": "as",
+          "type": "as_clause",
+          "named": true
+        },
+        {
+          "type": "cue_clause",
+          "named": true
+        },
+        {
+          "type": "cue_idx_or_next",
+          "named": true
+        },
+        {
+          "type": "executor",
           "named": true
         },
         {
@@ -234,23 +704,39 @@
           "named": true
         },
         {
-          "type": "float",
+          "type": "group",
           "named": true
         },
         {
-          "type": "object",
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "integer_or_next",
+          "named": true
+        },
+        {
+          "type": "preset_id",
+          "named": true
+        },
+        {
+          "type": "sequence",
+          "named": true
+        },
+        {
+          "type": "with_channel_type_selector",
           "named": true
         }
       ]
     }
   },
   {
-    "type": "sequence",
+    "type": "record_keyword",
     "named": true,
     "fields": {}
   },
   {
-    "type": "set_function_call",
+    "type": "rename_function",
     "named": true,
     "fields": {},
     "children": {
@@ -258,7 +744,36 @@
       "required": true,
       "types": [
         {
-          "type": "channel_attribute",
+          "type": "object",
+          "named": true
+        },
+        {
+          "type": "string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "rename_keyword",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "sequence",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "set_function",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "attribute",
           "named": true
         },
         {
@@ -330,6 +845,21 @@
     }
   },
   {
+    "type": "specific_macro",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "integer",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "specific_preset",
     "named": true,
     "fields": {},
@@ -360,26 +890,55 @@
     }
   },
   {
-    "type": "specific_sequence",
+    "type": "speedmaster",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "speedmaster_assign_mode",
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
-          "type": "integer",
+          "type": "button_id",
           "named": true
         },
         {
-          "type": "sequence",
+          "type": "fader_id",
           "named": true
         }
       ]
     }
   },
   {
-    "type": "specific_sequence_cue",
+    "type": "unassign_function",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "button_id",
+          "named": true
+        },
+        {
+          "type": "fader_id",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "unhighlight_keyword",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "update_function",
     "named": true,
     "fields": {},
     "children": {
@@ -387,15 +946,63 @@
       "required": true,
       "types": [
         {
+          "type": "discrete_cue_idx",
+          "named": true
+        },
+        {
+          "type": "executor",
+          "named": true
+        },
+        {
+          "type": "fixture_selector",
+          "named": true
+        },
+        {
           "type": "integer",
           "named": true
         },
         {
-          "type": "specific_sequence",
+          "type": "preset_id",
+          "named": true
+        },
+        {
+          "type": "sequence",
+          "named": true
+        },
+        {
+          "type": "update_mode",
+          "named": true
+        },
+        {
+          "type": "with_channel_type_selector",
           "named": true
         }
       ]
     }
+  },
+  {
+    "type": "update_mode",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "with_channel_type_selector",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "channel_type_selector",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "!",
+    "named": false
   },
   {
     "type": "%",
@@ -414,11 +1021,11 @@
     "named": false
   },
   {
-    "type": "-",
+    "type": ",",
     "named": false
   },
   {
-    "type": ".",
+    "type": "-",
     "named": false
   },
   {
@@ -426,7 +1033,23 @@
     "named": false
   },
   {
+    "type": "active",
+    "named": false
+  },
+  {
+    "type": "all",
+    "named": false
+  },
+  {
     "type": "as",
+    "named": false
+  },
+  {
+    "type": "assign",
+    "named": false
+  },
+  {
+    "type": "button",
     "named": false
   },
   {
@@ -434,7 +1057,23 @@
     "named": false
   },
   {
+    "type": "config",
+    "named": false
+  },
+  {
+    "type": "create",
+    "named": false
+  },
+  {
     "type": "cue",
+    "named": false
+  },
+  {
+    "type": "del",
+    "named": false
+  },
+  {
+    "type": "delete",
     "named": false
   },
   {
@@ -443,6 +1082,14 @@
   },
   {
     "type": "executor",
+    "named": false
+  },
+  {
+    "type": "fader",
+    "named": false
+  },
+  {
+    "type": "flash",
     "named": false
   },
   {
@@ -462,7 +1109,19 @@
     "named": false
   },
   {
+    "type": "gm",
+    "named": false
+  },
+  {
+    "type": "go",
+    "named": false
+  },
+  {
     "type": "grandetc",
+    "named": false
+  },
+  {
+    "type": "grandmaster",
     "named": false
   },
   {
@@ -471,6 +1130,14 @@
   },
   {
     "type": "half",
+    "named": false
+  },
+  {
+    "type": "highlight",
+    "named": false
+  },
+  {
+    "type": "hl",
     "named": false
   },
   {
@@ -490,6 +1157,18 @@
     "named": false
   },
   {
+    "type": "macro",
+    "named": false
+  },
+  {
+    "type": "merge",
+    "named": false
+  },
+  {
+    "type": "move",
+    "named": false
+  },
+  {
     "type": "next",
     "named": false
   },
@@ -502,11 +1181,47 @@
     "named": false
   },
   {
+    "type": "output",
+    "named": false
+  },
+  {
+    "type": "override",
+    "named": false
+  },
+  {
+    "type": "patch",
+    "named": false
+  },
+  {
     "type": "preset",
     "named": false
   },
   {
+    "type": "programmer",
+    "named": false
+  },
+  {
+    "type": "really",
+    "named": false
+  },
+  {
+    "type": "rec",
+    "named": false
+  },
+  {
+    "type": "recall",
+    "named": false
+  },
+  {
     "type": "record",
+    "named": false
+  },
+  {
+    "type": "ren",
+    "named": false
+  },
+  {
+    "type": "rename",
     "named": false
   },
   {
@@ -526,6 +1241,22 @@
     "named": false
   },
   {
+    "type": "sm",
+    "named": false
+  },
+  {
+    "type": "speedmaster",
+    "named": false
+  },
+  {
+    "type": "stomp",
+    "named": false
+  },
+  {
+    "type": "stop",
+    "named": false
+  },
+  {
     "type": "string",
     "named": true
   },
@@ -534,11 +1265,39 @@
     "named": false
   },
   {
+    "type": "tap",
+    "named": false
+  },
+  {
     "type": "test",
     "named": false
   },
   {
     "type": "thru",
+    "named": false
+  },
+  {
+    "type": "to",
+    "named": false
+  },
+  {
+    "type": "uhl",
+    "named": false
+  },
+  {
+    "type": "unassign",
+    "named": false
+  },
+  {
+    "type": "unhighlight",
+    "named": false
+  },
+  {
+    "type": "update",
+    "named": false
+  },
+  {
+    "type": "with",
     "named": false
   },
   {
