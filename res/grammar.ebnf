@@ -127,7 +127,7 @@ config_type = "output"
 
 assign_function = fixture_selector , "to" , button_id                              (* Assign fixture selector to button *)
                 | ( "executor" | "exec" ) , integer , executor_assign_mode          (* Assign executor action *)
-                | "preset" , specific_preset_or_range , [ "with" , fixture_selector ] , "to" , button_id
+                | specific_preset_or_range , [ "with" , fixture_selector ] , "to" , button_id  (* Assign preset to button *)
                 | "macro" , command , "to" , button_id
                 | ( "grandmaster" | "gm" ) , "to" , fader_id
                 | ( "speedmaster" | "sm" ) , integer , speedmaster_assign_mode ;
