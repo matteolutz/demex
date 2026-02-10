@@ -196,8 +196,6 @@ impl LayoutViewPanel {
             return;
         };
 
-        let world_selection_origin = self.projection.read(cx).unproject(start_pos, cx);
-
         let selection_bounds =
             Bounds::from_corners(start_pos.min(&evt.position), start_pos.max(&evt.position));
 
@@ -221,9 +219,9 @@ impl LayoutViewPanel {
             .filter(|(_, pos)| selection_bounds.contains(&pos))
             .sorted_by(|(_, a_pos), (_, b_pos)| {
                 a_pos
-                    .relative_to(&world_selection_origin)
+                    .relative_to(&start_pos)
                     .magnitude()
-                    .partial_cmp(&b_pos.relative_to(&world_selection_origin).magnitude())
+                    .partial_cmp(&b_pos.relative_to(&start_pos).magnitude())
                     .unwrap_or(Ordering::Equal)
             })
             .map(|(entry, _)| entry.fixture_path)
