@@ -201,9 +201,16 @@ impl LayoutViewPanel {
         let selection_bounds =
             Bounds::from_corners(start_pos.min(&evt.position), start_pos.max(&evt.position));
 
-        let selected_layout = *self.selected_layout.read(cx);
+        let selected_layout_idx = *self.selected_layout.read(cx);
+        let Some(selected_layout) = DemexUiState::patch(cx)
+            .read(cx)
+            .layout_pool()
+            .get(selected_layout_idx)
+        else {
+            return;
+        };
 
-        let selected_fixtures = DemexUiState::patch(cx).read(cx).layout_pool()[selected_layout]
+        let selected_fixtures = selected_layout
             .fixtures()
             .iter()
             .flat_map(|fixture| fixture.get_draw_entries())
@@ -287,10 +294,15 @@ impl LayoutViewPanel {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let selected_layout = *self.selected_layout.read(cx);
-
-        // TODO: fix this
-        let layout = &DemexUiState::patch(cx).read(cx).layout_pool()[selected_layout].clone();
+        let selected_layout_idx = *self.selected_layout.read(cx);
+        let Some(layout) = DemexUiState::patch(cx)
+            .read(cx)
+            .layout_pool()
+            .get(selected_layout_idx)
+            .cloned()
+        else {
+            return;
+        };
 
         let fixture_selection = DemexUiState::fixture_selection(cx)
             .read(cx)
