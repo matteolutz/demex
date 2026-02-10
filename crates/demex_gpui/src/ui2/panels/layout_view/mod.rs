@@ -42,7 +42,7 @@ pub struct LayoutViewPanel {
 
     projection: Entity<LayoutProjection>,
 
-    last_middle_button_mouse_pos: Entity<Option<Point<Pixels>>>,
+    last_dragging_mouse_pos: Entity<Option<Point<Pixels>>>,
     selection_start_mouse_pos: Entity<Option<Point<Pixels>>>,
 
     selected_layout: Entity<usize>,
@@ -128,7 +128,7 @@ impl LayoutViewPanel {
             focus_handle: cx.focus_handle(),
             screen_bounds,
             projection,
-            last_middle_button_mouse_pos: cx.new(|_| None),
+            last_dragging_mouse_pos: cx.new(|_| None),
             selection_start_mouse_pos: cx.new(|_| None),
             zoom_slider_state,
             selected_layout,
@@ -138,28 +138,6 @@ impl LayoutViewPanel {
 }
 
 impl LayoutViewPanel {
-    fn handle_middle_mouse_button_down(
-        &mut self,
-        evt: &MouseDownEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        self.last_middle_button_mouse_pos
-            .update(cx, |pos, _| *pos = Some(evt.position));
-        cx.notify();
-    }
-
-    fn handle_middle_mouse_button_up(
-        &mut self,
-        _evt: &MouseUpEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        self.last_middle_button_mouse_pos
-            .update(cx, |pos, _| *pos = None);
-        cx.notify();
-    }
-
     fn handle_left_mouse_button_down(
         &mut self,
         evt: &MouseDownEvent,
@@ -170,7 +148,7 @@ impl LayoutViewPanel {
         if evt.click_count == 2 {
             self.selection_start_mouse_pos
                 .update(cx, |pos, _| *pos = None);
-            self.last_middle_button_mouse_pos
+            self.last_dragging_mouse_pos
                 .update(cx, |pos, _| *pos = Some(evt.position));
             return;
         }
@@ -186,8 +164,8 @@ impl LayoutViewPanel {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.last_middle_button_mouse_pos.read(cx).is_some() {
-            self.last_middle_button_mouse_pos
+        if self.last_dragging_mouse_pos.read(cx).is_some() {
+            self.last_dragging_mouse_pos
                 .update(cx, |pos, _| *pos = None);
             cx.notify();
         }
@@ -240,7 +218,7 @@ impl LayoutViewPanel {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if let Some(last_pos) = *self.last_middle_button_mouse_pos.read(cx) {
+        if let Some(last_pos) = *self.last_dragging_mouse_pos.read(cx) {
             let projection = self.projection.read(cx);
 
             let from = projection.unproject(last_pos, cx);
@@ -251,7 +229,7 @@ impl LayoutViewPanel {
                 *proj.center_mut() += delta;
                 cx.notify();
             });
-            self.last_middle_button_mouse_pos
+            self.last_dragging_mouse_pos
                 .update(cx, |pos, _| *pos = Some(evt.position));
 
             cx.notify();
@@ -372,16 +350,24 @@ impl Render for LayoutViewPanel {
                             });
                             cx.notify();
                         },
-                    ))),
+                    )))
+                    .child(
+                        Button::new("clear-selection")
+                            .label("Clear Sel.")
+                            .ml_4()
+                            .on_click(|_, _, cx| {
+                                DemexEngineHandler::engine(cx)
+                                    .exec_ui(Action::SetFixtureSelection(None));
+                            }),
+                    ),
             )
             .child(
                 div()
                     .size_full()
                     .cursor_crosshair()
-                    .when(
-                        self.last_middle_button_mouse_pos.read(cx).is_some(),
-                        |this| this.cursor_grabbing(),
-                    )
+                    .when(self.last_dragging_mouse_pos.read(cx).is_some(), |this| {
+                        this.cursor_grabbing()
+                    })
                     .child(
                         canvas(
                             move |bounds, _, cx| {
@@ -395,14 +381,6 @@ impl Render for LayoutViewPanel {
                         .overflow_hidden(),
                     )
                     .overflow_hidden()
-                    .on_mouse_down(
-                        MouseButton::Middle,
-                        cx.listener(Self::handle_middle_mouse_button_down),
-                    )
-                    .on_mouse_up(
-                        MouseButton::Middle,
-                        cx.listener(Self::handle_middle_mouse_button_up),
-                    )
                     .on_mouse_down(
                         MouseButton::Left,
                         cx.listener(Self::handle_left_mouse_button_down),
