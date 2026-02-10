@@ -67,10 +67,24 @@ pub mod actions {
                     });
                 });
             } else {
-                cx.dispatch_action(&SaveAs);
+                cx.spawn(async |cx| {
+                    let file = showfile::dialog::save_showfile_dialog(None).await;
+                    let Some(file) = file else {
+                        return;
+                    };
+                    let _ = cx.update(|cx| {
+                        DemexShowFileManager::save(Some(file.path().into()), cx, |path, cx| {
+                            cx.update_wm(|wm, cx| {
+                                wm.push_success(format!("Saved to \"{}\"", path.display()), cx)
+                            });
+                        })
+                    });
+                })
+                .detach();
             }
         });
         cx.on_action::<SaveAs>(|_, cx| {
+            log::debug!("saving as");
             let current_filename = DemexShowFileManager::current_file_path(cx)
                 .read(cx)
                 .as_ref()
