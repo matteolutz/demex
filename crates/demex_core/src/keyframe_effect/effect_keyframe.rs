@@ -87,6 +87,30 @@ impl KeyframeEffectKeyframe {
         }
     }
 
+    pub fn is_global(&self) -> bool {
+        matches!(self.data, KeyframeEffectKeyframeData::Global(_))
+    }
+
+    pub fn make_global(&mut self) {
+        match &self.data {
+            KeyframeEffectKeyframeData::Selective(_) => {
+                let attributes = self.attributes();
+                self.data = KeyframeEffectKeyframeData::Global(
+                    attributes
+                        .into_iter()
+                        .map(|attribute| {
+                            let values = self.values_for_attribute(&attribute);
+                            let avg: f32 = values.iter().map(|c| c.as_f32()).sum::<f32>()
+                                / values.len() as f32;
+                            (attribute, avg.into())
+                        })
+                        .collect(),
+                );
+            }
+            KeyframeEffectKeyframeData::Global(_) => {}
+        }
+    }
+
     pub fn starting_point(&self) -> f32 {
         self.starting_point
     }

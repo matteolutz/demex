@@ -36,6 +36,24 @@ impl KeyframeEffectLayer {
         }
     }
 
+    pub fn is_global(&self) -> bool {
+        self.keyframes.iter().all(|kf| kf.is_global())
+    }
+
+    pub fn make_global(&mut self) {
+        self.keyframes
+            .iter_mut()
+            .for_each(|layer| layer.make_global());
+    }
+
+    pub fn phase_offset(&self) -> f32 {
+        self.phase_offset
+    }
+
+    pub fn phase_offset_mut(&mut self) -> &mut f32 {
+        &mut self.phase_offset
+    }
+
     pub fn phase_multiplier(&self) -> f32 {
         self.phase_multiplier
     }

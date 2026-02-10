@@ -16,10 +16,10 @@ use demex_core::{
 };
 use gpui::{
     App, AppContext, Context, Entity, InteractiveElement, ParentElement, Render, Styled,
-    Subscription, Window, WindowBounds, div, point, size,
+    Subscription, Window, WindowBounds, div, point, prelude::FluentBuilder, size,
 };
 use gpui_component::{
-    Disableable,
+    ActiveTheme, Disableable,
     button::Button,
     h_flex,
     menu::{DropdownMenu, PopupMenuItem},
@@ -232,6 +232,16 @@ impl EditKeyframeEffectWindow {
                                                 *layer.phase_multiplier_mut() = phase_multiplier;
                                             });
                                     }
+                                    &EditKeyframeEffectLayerEvent::PhaseOffsetChanged(phase_offset) => {
+                                        this.effect.update(cx, |effect, _| {
+                                                let layer = &mut effect
+                                                    .as_mut()
+                                                    .unwrap()
+                                                    .effect_mut()
+                                                    .layers_mut()[layer_idx];
+                                                *layer.phase_offset_mut() = phase_offset;
+                                            });
+                                    }
                                     &EditKeyframeEffectLayerEvent::KeyframeStartingPointChanged { keyframe_idx, starting_point } => {
                                         this.effect.update(cx, |effect, _| {
                                             let layer = &mut effect
@@ -332,6 +342,31 @@ impl Render for EditKeyframeEffectWindow {
                                 }
                             }),
                     )
+                    .when_some(self.effect.read(cx).as_ref(), |this, effect| {
+                        this.child(
+                            if !effect.effect().layers().is_empty() && effect.effect().is_global() {
+                                div()
+                                    .px_2()
+                                    .py_1()
+                                    .child("Global")
+                                    .border_2()
+                                    .border_color(cx.theme().green)
+                                    .rounded_md()
+                                    .text_sm()
+                                    .bg(cx.theme().secondary)
+                            } else {
+                                div()
+                                    .px_2()
+                                    .py_1()
+                                    .child("Selective/Mixed")
+                                    .rounded_md()
+                                    .text_sm()
+                                    .border_2()
+                                    .border_color(cx.theme().blue)
+                                    .bg(cx.theme().secondary)
+                            },
+                        )
+                    })
                     .child(
                         Button::new("save")
                             .disabled(!self.is_edited(cx))

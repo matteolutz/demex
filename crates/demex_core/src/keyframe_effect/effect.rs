@@ -65,6 +65,14 @@ impl KeyframeEffect {
         self.preset = Some(preset);
     }
 
+    pub fn is_global(&self) -> bool {
+        self.layers.iter().all(|layer| layer.is_global())
+    }
+
+    pub fn make_global(&mut self) {
+        self.layers.iter_mut().for_each(|layer| layer.make_global());
+    }
+
     pub fn layers(&self) -> &[KeyframeEffectLayer] {
         &self.layers
     }

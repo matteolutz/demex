@@ -61,6 +61,20 @@ impl FunctionDelegate for UpdatePresetArgs {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdatePresetGlobalArgs {
+    pub id: FixturePresetId,
+}
+
+impl FunctionDelegate for UpdatePresetGlobalArgs {
+    fn run(&self, args: ActionRunArgs) -> Result<ActionRunResult, ActionRunError> {
+        args.preset_handler
+            .make_preset_global(self.id, args.event_list)
+            .map_err(ActionRunError::PresetHandlerError)?;
+        Ok(ActionRunResult::new())
+    }
+}
+
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum UpdateSequenceCueArgsId {
     SequenceId(u32),

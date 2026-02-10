@@ -29,6 +29,7 @@ use crate::{
         speedmaster_functions::SpeedMasterTapArgs,
         start_function::ExecutorStartArgs,
         stomp_function::ExecutorStompArgs,
+        update_function::UpdatePresetGlobalArgs,
     },
     event::{FixtureSelectionWithGroup, list::DemexEventList},
     fixture::FixturePath,
@@ -193,6 +194,7 @@ pub enum Action {
 
     // Update
     UpdatePreset(UpdatePresetArgs),
+    UpdatePresetGlobal(UpdatePresetGlobalArgs),
     UpdateSequenceCue(UpdateSequenceCueArgs),
 
     // Recall
@@ -298,6 +300,7 @@ impl Action {
 
             // Update
             Self::UpdatePreset(fun) => fun.run(args),
+            Self::UpdatePresetGlobal(fun) => fun.run(args),
             Self::UpdateSequenceCue(fun) => fun.run(args),
 
             Self::RecallSequenceCue(fun) => fun.run(args),

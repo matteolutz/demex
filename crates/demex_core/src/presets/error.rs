@@ -16,6 +16,7 @@ pub enum PresetHandlerError {
     PresetCannotRecordNextKeyframe(FixturePresetId),
     FeaturePresetAlreadyExists(FixturePresetId),
     PresetNotFound(u32),
+    PresetNotAnEffect(FixturePresetId),
     FeaturePresetNotFound(FixturePresetId),
     FeatureGroupMismatch(FixtureChannel3FeatureGroup, FixtureChannel3FeatureGroup),
     FixtureError(FixtureError),
@@ -53,6 +54,9 @@ impl std::fmt::Display for PresetHandlerError {
             }
             PresetHandlerError::PresetNotFound(id) => {
                 write!(f, "Object with id {} not found", id)
+            }
+            PresetHandlerError::PresetNotAnEffect(id) => {
+                write!(f, "Object with id {} is not an effect", id)
             }
             PresetHandlerError::FeaturePresetNotFound(id) => {
                 write!(f, "Object with id {} not found", id)

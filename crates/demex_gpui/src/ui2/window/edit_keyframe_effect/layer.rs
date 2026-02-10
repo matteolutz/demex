@@ -37,13 +37,16 @@ pub enum EditKeyframeEffectLayerEvent {
         curve: KeyframeEffectKeyframeCurve,
     },
     PhaseMultiplierChanged(f32),
+    PhaseOffsetChanged(f32),
 }
 
 pub struct EditKeyframeEffectLayer {
     selected_attribute: Option<usize>,
 
     wave: Vec<(FixtureChannel3Attribute, Entity<WaveEditorState>)>,
+
     phase_multiplier: Entity<InputState>,
+    phase_offset: Entity<InputState>,
 
     _subscriptions: Vec<Subscription>,
 }
@@ -70,6 +73,22 @@ impl EditKeyframeEffectLayer {
                 _ => {}
             },
         ));
+
+        let phase_offset = cx
+            .new(|cx| InputState::new(window, cx).default_value(layer.phase_offset().to_string()));
+
+        _subscriptions.push(
+            cx.subscribe(&phase_offset, |_, phase_offset, evt, cx| match evt {
+                InputEvent::Change => {
+                    if let Ok(phase_offset) = phase_offset.read(cx).value().parse() {
+                        cx.emit(EditKeyframeEffectLayerEvent::PhaseOffsetChanged(
+                            phase_offset,
+                        ));
+                    }
+                }
+                _ => {}
+            }),
+        );
 
         let all_attributes = layer.attributes();
         let wave = all_attributes
@@ -157,6 +176,7 @@ impl EditKeyframeEffectLayer {
             wave,
             selected_attribute,
             phase_multiplier,
+            phase_offset,
             _subscriptions,
         }
     }
@@ -174,9 +194,21 @@ impl Render for EditKeyframeEffectLayer {
             .child(
                 h_flex()
                     .w_full()
-                    .gap_2()
-                    .child(div().child("Phase multiplier").text_sm().font_bold())
-                    .child(NumberInput::new(&self.phase_multiplier)),
+                    .gap_4()
+                    .child(
+                        h_flex()
+                            .w_full()
+                            .gap_2()
+                            .child(div().child("Phase multiplier").text_sm().font_bold())
+                            .child(NumberInput::new(&self.phase_multiplier)),
+                    )
+                    .child(
+                        h_flex()
+                            .w_full()
+                            .gap_2()
+                            .child(div().child("Phase offset").text_sm().font_bold())
+                            .child(NumberInput::new(&self.phase_offset).suffix("°")),
+                    ),
             )
             .child(
                 TabBar::new("selected-attribute")

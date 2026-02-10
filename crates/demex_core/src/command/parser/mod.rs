@@ -37,7 +37,7 @@ use crate::{
             nodes::{
                 action::functions::{
                     assign_function::AssignFaderArgsMode, move_function::MoveArgs,
-                    set_function::ObjectSetPropertyArgs,
+                    set_function::ObjectSetPropertyArgs, update_function::UpdatePresetGlobalArgs,
                 },
                 object::ObjectDelegate,
             },
@@ -990,6 +990,11 @@ impl<'a> Parser2<'a> {
                 self.advance();
 
                 let id = self.parse_preset_id()?;
+
+                if matches!(self.current_token()?, Token::KeywordGlobal) {
+                    self.advance();
+                    return Ok(Action::UpdatePresetGlobal(UpdatePresetGlobalArgs { id }));
+                }
 
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
 

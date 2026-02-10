@@ -140,6 +140,7 @@ impl<'a> Lexer<'a> {
                     "set" => Some(Token::KeywordSet),
                     "highlight" | "hl" => Some(Token::KeywordHighlight),
                     "unhighlight" | "uhl" => Some(Token::KeywordUnhighlight),
+                    "global" => Some(Token::KeywordGlobal),
                     _ => None,
                 };
 

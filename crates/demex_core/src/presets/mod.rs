@@ -415,7 +415,7 @@ impl PresetHandler {
         Ok(())
     }
 
-    pub fn delete_preset(&mut self, preset_id: FixturePresetId) -> Result<(), PresetHandlerError> {
+    fn delete_preset(&mut self, preset_id: FixturePresetId) -> Result<(), PresetHandlerError> {
         self.presets
             .remove(&preset_id)
             .ok_or(PresetHandlerError::FeaturePresetNotFound(preset_id))?;
@@ -451,6 +451,17 @@ impl PresetHandler {
         });
 
         Ok(count)
+    }
+
+    pub fn make_preset_global(
+        &mut self,
+        id: FixturePresetId,
+        event_list: &mut DemexEventList,
+    ) -> Result<(), PresetHandlerError> {
+        let preset = self.get_preset_mut(id)?;
+        preset.make_global()?;
+        event_list.push(DemexEvent::KeyframeEffectUpdate(id));
+        Ok(())
     }
 }
 

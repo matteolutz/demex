@@ -1,11 +1,11 @@
 (* ==========================================================================
    Demex Command Language Grammar
    Extended Backus-Naur Form (EBNF) - ISO/IEC 14977 Standard
-   
+
    This grammar describes the command language for the Demex lighting control
    software. It is derived from the lexer and parser implementation in
    demex_core/src/command/.
-   
+
    Legend:
      =       Definition
      |       Alternative (OR)
@@ -99,6 +99,7 @@ rename_function = object , "to" , string ;
 (* ==================== UPDATE FUNCTION ==================== *)
 
 update_function = "preset" , preset_id , "for" , fixture_selector , [ update_mode ]
+                | "preset" , preset_id , "global"
                 | ( ( "sequence" | "seq" ) | ( "executor" | "exec" ) ) , integer , "cue" , discrete_cue_idx , "for" , fixture_selector , [ with_channel_type_selector ] , [ update_mode ] ;
 
 update_mode = "merge"
@@ -258,21 +259,21 @@ special_char = "~" | "@" | "#" | "%" | "_" | "$" | "&" | "'" | "-" | "+" | "/" ;
 (* ==================== KEYWORD ALIASES ==================== *)
 
 (* The lexer accepts the following keyword aliases:
-   
+
    Actions:
      "record" | "rec"      -> KeywordRecord
      "rename" | "ren"      -> KeywordRename
      "delete" | "del"      -> KeywordDelete
      "highlight" | "hl"    -> KeywordHighlight
      "unhighlight" | "uhl" -> KeywordUnhighlight
-   
+
    Objects:
      "group" | "g"              -> KeywordGroup
      "sequence" | "seq"         -> KeywordSequence
      "executor" | "exec"        -> KeywordExecutor
      "grandmaster" | "gm"       -> KeywordGrandmaster
      "speedmaster" | "sm"       -> KeywordSpeedmaster
-   
+
    Symbol aliases:
      "@"  -> KeywordIntens (same as "intens")
      "~"  -> KeywordFixturesSelected (current selection)
@@ -285,25 +286,25 @@ special_char = "~" | "@" | "#" | "%" | "_" | "$" | "&" | "'" | "-" | "+" | "/" ;
      home, manset, record (rec), rename (ren), clear, test,
      create, update, save, delete (del), move, config, assign,
      unassign, recall, lock, set, highlight (hl), unhighlight (uhl)
-   
+
    Object Keywords:
      group (g), macro, commandslice, preset, sequence (seq),
      fader, executor (exec), cue, feature, effect, button,
      programmer, grandmaster (gm), speedmaster (sm)
-   
+
    Channel/Feature Type Keywords:
      intens, color, position, strobe, maintenance, beam, control, focus
-   
+
    Value Keywords:
      full, half, out, patch
-   
+
    Other Keywords:
      thru, for, as, to, with, all, active, merge, override,
      really, next, output, go, stop, flash, tokens, stomp, tap
-   
+
    Easter Eggs:
      nuzul, sueud, grandetc
-   
+
    Operators:
      + (Plus), - (Minus), % (Percent), ! (Exclamation),
      ( (ParenOpen), ) (ParenClose), , (Comma)

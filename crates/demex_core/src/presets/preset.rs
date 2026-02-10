@@ -703,6 +703,16 @@ impl FixturePreset {
             FixturePresetData::KeyframeEffect { .. } => Ok(0),
         }
     }
+
+    pub(super) fn make_global(&mut self) -> Result<(), PresetHandlerError> {
+        match &mut self.data {
+            FixturePresetData::KeyframeEffect { runtime } => {
+                runtime.effect_mut().make_global();
+                Ok(())
+            }
+            _ => Err(PresetHandlerError::PresetNotAnEffect(self.id)),
+        }
+    }
 }
 
 #[derive(strum_macros::EnumString, strum_macros::Display)]

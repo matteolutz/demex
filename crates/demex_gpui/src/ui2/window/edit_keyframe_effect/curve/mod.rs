@@ -6,7 +6,6 @@ use gpui::{
     WindowBounds, size,
 };
 use gpui_component::{
-    StyledExt,
     select::{Select, SelectEvent, SelectItem, SelectState},
     v_flex,
 };
@@ -92,7 +91,6 @@ impl Render for EditKeyframeEffectCurveWindow {
             .size_full()
             .justify_center()
             .items_center()
-            .debug_red()
             .child(Select::new(&self.select_state))
     }
 }
