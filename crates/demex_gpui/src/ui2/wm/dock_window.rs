@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use demex_core::utils::version::VERSION_STR;
 use gpui::{
     App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Subscription,
@@ -19,17 +17,7 @@ use crate::{
         components::context::DemexContextLayer,
         config::AppConfigExt,
         ext::GpuiContextExtension,
-        panels::{
-            DemexPanelContextExt, DockWindowPanelType,
-            attribute_editor::AttributeEditorPanel,
-            command::CommandPanel,
-            fixture_list::FixtureListPanel,
-            fixture_selection::FixtureSelectionPanel,
-            layout_view::LayoutViewPanel,
-            multipool::{MultiPoolPanel, config::MultiPoolConfig},
-            performance::PerformancePanel,
-            sequence_editor::SequenceEditorPanel,
-        },
+        panels::DockWindowPanelType,
         titlebar::{DemexTitleBar, titlebar_options},
         wm::DEMEX_APP_ID,
     },
@@ -74,14 +62,14 @@ impl DockWindow {
         cx: &mut Context<DockArea>,
     ) {
         da.add_panel(
-            Arc::new(cx.new_panel(|cx| FixtureSelectionPanel::new(cx))),
+            DockWindowPanelType::FixtureSelection.build_panel_view(window, cx),
             DockPlacement::Center,
             None,
             window,
             cx,
         );
         da.add_panel(
-            Arc::new(cx.new_panel(|cx| FixtureListPanel::new(window, cx))),
+            DockWindowPanelType::FixtureList.build_panel_view(window, cx),
             DockPlacement::Center,
             None,
             window,
@@ -89,28 +77,28 @@ impl DockWindow {
         );
 
         da.add_panel(
-            Arc::new(cx.new_panel(|cx| MultiPoolPanel::new(MultiPoolConfig::example(), cx))),
+            DockWindowPanelType::Multipool.build_panel_view(window, cx),
             DockPlacement::Center,
             None,
             window,
             cx,
         );
         da.add_panel(
-            Arc::new(cx.new_panel(|cx| LayoutViewPanel::new(window, cx))),
+            DockWindowPanelType::LayoutView.build_panel_view(window, cx),
             DockPlacement::Center,
             None,
             window,
             cx,
         );
         da.add_panel(
-            Arc::new(cx.new_panel(|cx| SequenceEditorPanel::new(window, cx))),
+            DockWindowPanelType::SequenceEditor.build_panel_view(window, cx),
             DockPlacement::Center,
             None,
             window,
             cx,
         );
         da.add_panel(
-            Arc::new(cx.new_panel(|cx| AttributeEditorPanel::new(window, cx))),
+            DockWindowPanelType::AttributeEditor.build_panel_view(window, cx),
             DockPlacement::Center,
             None,
             window,
@@ -118,9 +106,8 @@ impl DockWindow {
         );
 
         if is_main {
-            let command_panel = cx.new_panel(|cx| CommandPanel::new(window, cx));
             da.set_bottom_dock(
-                DockItem::panel(Arc::new(command_panel)),
+                DockItem::panel(DockWindowPanelType::CommandPanel.build_panel_view(window, cx)),
                 Some(130.0.into()),
                 true,
                 window,
@@ -129,9 +116,8 @@ impl DockWindow {
         }
 
         if cfg!(debug_assertions) {
-            let performance_panel = cx.new_panel(|cx| PerformancePanel::new(window, cx));
             da.set_right_dock(
-                DockItem::panel(Arc::new(performance_panel)),
+                DockItem::panel(DockWindowPanelType::PerformancePanel.build_panel_view(window, cx)),
                 Some(300.0.into()),
                 true,
                 window,

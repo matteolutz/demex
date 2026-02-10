@@ -3,11 +3,20 @@ use std::collections::HashSet;
 use demex_core::{channel3::feature::feature_group::FixtureChannel3FeatureGroup, pool::PoolType};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MultiPoolConfig {
     pub(super) pools: Vec<MultiPoolEntry>,
 
     pub(super) size: (u16, u16),
+}
+
+impl Default for MultiPoolConfig {
+    fn default() -> Self {
+        Self {
+            pools: Default::default(),
+            size: (40, 40),
+        }
+    }
 }
 
 impl MultiPoolConfig {
