@@ -7,10 +7,8 @@ use gpui::{
 };
 use gpui_component::{
     ActiveTheme, Root, Sizable,
-    dock::{DockArea, DockAreaState, DockItem, DockPlacement, PanelStyle, TabPanel},
-    h_flex,
-    input::InputState,
-    v_flex,
+    dock::{DockArea, DockAreaState, DockItem, DockPlacement, PanelStyle},
+    h_flex, v_flex,
 };
 use serde::{Deserialize, Serialize};
 
@@ -226,41 +224,6 @@ impl DockWindow {
                 false
             }
         })
-    }
-
-    pub fn command_input_state(&self, cx: &App) -> Option<Entity<InputState>> {
-        let da = self.dock_area.read(cx);
-
-        let command_panel = da.bottom_dock().and_then(|dock| {
-            let panel_view = dock.read(cx).panel();
-
-            let tab_panel_entity = panel_view.view().view().downcast::<TabPanel>().ok()?;
-            let active_panel = tab_panel_entity.read(cx).active_panel(cx)?;
-
-            active_panel.view().downcast::<CommandPanel>().ok()
-        });
-
-        command_panel.map(|panel| panel.read(cx).command_input_state.clone())
-    }
-
-    /// Append text to the command input, also handling whitespaces
-    pub fn append_to_command(&self, text: impl ToString, window: &mut Window, cx: &mut App) {
-        let Some(command_input_state) = self.command_input_state(cx) else {
-            return;
-        };
-
-        command_input_state.update(cx, |state, cx| {
-            let value = state.value();
-            let value = value.strip_suffix(" ").unwrap_or(value.as_str());
-
-            let new_value = if value.is_empty() {
-                text.to_string()
-            } else {
-                format!("{} {}", value, text.to_string())
-            };
-
-            state.set_value(new_value, window, cx);
-        });
     }
 
     pub fn add_panel(

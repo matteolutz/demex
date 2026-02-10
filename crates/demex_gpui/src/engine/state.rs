@@ -17,7 +17,8 @@ use demex_core::{
     pool::{PoolItem, PoolType},
     utils::thread::DemexThreadStats,
 };
-use gpui::{App, AppContext, BorrowAppContext, Entity, Global};
+use gpui::{AnyWindowHandle, App, AppContext, BorrowAppContext, Context, Entity, Global, Window};
+use gpui_component::input::{InputState, Position};
 
 use crate::engine::DemexEngineHandler;
 
@@ -140,6 +141,52 @@ impl<const SIZE: usize> DemexPerformanceBuffer<SIZE> {
     }
 }
 
+#[derive(Clone)]
+pub struct DemexUiCommandInputState {
+    input_state: Entity<InputState>,
+    window_handle: AnyWindowHandle,
+}
+
+impl DemexUiCommandInputState {
+    fn set_cursor_end(state: &mut InputState, window: &mut Window, cx: &mut Context<InputState>) {
+        state.set_cursor_position(Position::new(0, state.value().len() as u32), window, cx);
+    }
+
+    pub fn focus(self, cx: &mut App) {
+        cx.defer(move |cx| {
+            let _ = self.window_handle.update(cx, |_, window, cx| {
+                window.activate_window();
+
+                self.input_state.update(cx, |state, cx| {
+                    Self::set_cursor_end(state, window, cx);
+                    state.focus(window, cx);
+                });
+            });
+        });
+    }
+
+    pub fn append(&self, text: impl ToString, cx: &mut App) {
+        let _ = self.window_handle.update(cx, |_, window, cx| {
+            window.activate_window();
+
+            self.input_state.update(cx, |state, cx| {
+                let value = state.value();
+                let value = value.strip_suffix(" ").unwrap_or(value.as_str());
+
+                let new_value = if value.is_empty() {
+                    text.to_string()
+                } else {
+                    format!("{} {}", value, text.to_string())
+                };
+
+                state.set_value(new_value, window, cx);
+                Self::set_cursor_end(state, window, cx);
+                state.focus(window, cx);
+            });
+        });
+    }
+}
+
 pub struct DemexUiState {
     fixture_selection: Entity<Option<FixtureSelectionWithGroup>>,
     highlight: Entity<Option<FixtureSelectionWithGroup>>,
@@ -152,6 +199,7 @@ pub struct DemexUiState {
 
     pools: HashMap<PoolType, Entity<Vec<PoolItem>>>,
 
+    command_input_state: Option<DemexUiCommandInputState>,
     command_history: Entity<DemexCommandHistory>,
 
     selected_sequence: Entity<Option<u32>>,
@@ -221,6 +269,32 @@ impl DemexUiState {
         let this: &Self = cx.global();
         this.selected_sequence.clone()
     }
+
+    pub fn set_command_input_state(
+        input_state: &Entity<InputState>,
+        window: &mut Window,
+        cx: &mut App,
+    ) {
+        let this: &mut Self = cx.global_mut();
+        this.command_input_state = Some(DemexUiCommandInputState {
+            input_state: input_state.clone(),
+            window_handle: window.window_handle(),
+        });
+    }
+
+    pub fn command_input_state(cx: &App) -> Option<DemexUiCommandInputState> {
+        let this: &Self = cx.global();
+        this.command_input_state.as_ref().cloned()
+    }
+
+    pub fn update_command_input_state(
+        cx: &mut App,
+        f: impl FnOnce(DemexUiCommandInputState, &mut App),
+    ) {
+        if let Some(command_input_state) = DemexUiState::command_input_state(cx) {
+            f(command_input_state, cx);
+        }
+    }
 }
 
 impl DemexUiState {
@@ -267,6 +341,7 @@ impl DemexUiState {
             pools: HashMap::new(),
             command_history: cx.new(|_| Default::default()),
             selected_sequence: cx.new(|_| None),
+            command_input_state: None,
         }
     }
 

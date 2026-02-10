@@ -284,7 +284,7 @@ impl WindowManager {
             .open_window(
                 DockWindowConfig::gpui_window_options(settings),
                 move |window, cx| {
-                    window.set_window_title("demex");
+                    window.set_window_title(format!("demex - {}", window_idx + 1).as_str());
                     window.on_window_should_close(cx, move |window, cx| {
                         let bounds = window.window_bounds();
                         cx.update_global(|settings: &mut DemexSettings, cx| {

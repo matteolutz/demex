@@ -85,6 +85,8 @@ impl CommandPanel {
                 .placeholder("Command")
         });
 
+        DemexUiState::set_command_input_state(&command_input_state, window, cx);
+
         let command_history_idx = cx.new(|_| None);
 
         let subs = vec![

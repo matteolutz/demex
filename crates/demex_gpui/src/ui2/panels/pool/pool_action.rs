@@ -32,7 +32,7 @@ use crate::{
             edit_keyframe_effect::EditKeyframeEffectWindow,
             set_property::{SetPropertyWindow, SetPropertyWindowPropertyType},
         },
-        wm::{WindowManager, app::WindowManagerAppExt, edit_window::WindowManagerExtension},
+        wm::{WindowManager, edit_window::WindowManagerExtension},
     },
 };
 
@@ -98,16 +98,8 @@ pub fn apply_pool_type_to_button(
                     })
                 })
                 .action_at(1, "Insert", move |_, cx| {
-                    cx.defer(move |cx| {
-                        cx.update_wm(|wm, cx| {
-                            let _ = wm.update_main_dock_window(cx, |dock_window, window, cx| {
-                                dock_window.append_to_command(
-                                    format!("{} {}", Token::KeywordExecutor, pool_item_id),
-                                    window,
-                                    cx,
-                                );
-                            });
-                        });
+                    DemexUiState::update_command_input_state(cx, |state, cx| {
+                        state.append(format!("{} {}", Token::KeywordExecutor, pool_item_id), cx)
                     });
                 })
                 .when(pool_item.is_some(), |this| {
@@ -182,21 +174,16 @@ pub fn apply_pool_type_to_button(
                 })
             })
             .action_at(1, "Insert", move |_, cx| {
-                cx.defer(move |cx| {
-                    cx.update_wm(|wm, cx| {
-                        let _ = wm.update_main_dock_window(cx, |dock_window, window, cx| {
-                            dock_window.append_to_command(
-                                format!(
-                                    "{} {}.{}",
-                                    Token::KeywordPreset,
-                                    feature_group as u32,
-                                    pool_item_id
-                                ),
-                                window,
-                                cx,
-                            );
-                        });
-                    });
+                DemexUiState::update_command_input_state(cx, |state, cx| {
+                    state.append(
+                        format!(
+                            "{} {}.{}",
+                            Token::KeywordPreset,
+                            feature_group as u32,
+                            pool_item_id
+                        ),
+                        cx,
+                    )
                 });
             })
             .when_none(&pool_item, |this| {

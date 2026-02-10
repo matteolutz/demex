@@ -51,7 +51,7 @@ pub mod actions {
         cx.bind_keys([KeyBinding::new("secondary-shift-s", SaveAs, None)]);
         cx.bind_keys([KeyBinding::new("secondary-o", Open, None)]);
 
-        cx.bind_keys([KeyBinding::new("secondary-tab", FocusCommand, None)]);
+        cx.bind_keys([KeyBinding::new("secondary-i", FocusCommand, None)]);
 
         cx.on_action::<Quit>(|_, cx| cx.quit());
         cx.on_action::<Save>(|_, cx| {
@@ -139,8 +139,11 @@ pub mod actions {
             });
         });
 
-        cx.on_action::<FocusCommand>(|_, _| {
+        cx.on_action::<FocusCommand>(|_, cx| {
             log::debug!("focussing command input");
+            DemexUiState::update_command_input_state(cx, |state, cx| {
+                state.focus(cx);
+            });
         });
 
         init_menus(cx);
