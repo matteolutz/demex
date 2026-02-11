@@ -33,7 +33,7 @@ use crate::{
         stomp_function::ExecutorStompArgs,
         update_function::UpdatePresetGlobalArgs,
     },
-    event::{FixtureSelectionWithGroup, list::DemexEventList},
+    event::{DemexEvent, FixtureSelectionWithGroup, list::DemexEventList},
     fixture::FixturePath,
     input::control::DemexInputDeviceControlUnassignment,
     master::MasterHandler,
@@ -392,6 +392,20 @@ impl Action {
 
             Self::CueSetTrigger(fun) => fun.run(args),
 
+            Self::SpeedMasterSetBpm(speed_master_id, bpm) => {
+                let speed_master = args
+                    .timing_handler
+                    .get_speed_master_value_mut(*speed_master_id)
+                    .map_err(ActionRunError::TimingHandlerError)?;
+
+                *speed_master.bpm_mut() = *bpm;
+                args.event_list
+                    .push(DemexEvent::SpeedmasterFaderValueChanged {
+                        speed_master_id: *speed_master_id,
+                        bpm: *bpm,
+                    });
+                Ok(ActionRunResult::new())
+            }
             Self::SpeedMasterTap(fun) => fun.run(args),
 
             Self::KeyframeEffectUpdate(fun) => fun.run(args),
