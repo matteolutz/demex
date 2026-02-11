@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     input::{DemexInputDeviceHandler, device::DemexInputDeviceConfig},
-    master::{MasterConfig, MasterHandler},
+    master::MasterHandler,
     patch::{Patch, SerializablePatch},
     pool::{Pool, PoolType},
     presets::PresetHandler,
@@ -16,9 +16,6 @@ pub struct DemexShow {
     pub updatable_handler: UpdatableHandler,
     pub timing_handler: TimingHandler,
     pub input_device_configs: Vec<DemexInputDeviceConfig>,
-
-    #[serde(default)]
-    pub master_config: MasterConfig,
 
     pub patch: SerializablePatch,
 }
@@ -44,7 +41,6 @@ impl<'a> DemexShowRef<'a> {
                 .device_configs()
                 .cloned()
                 .collect(),
-            master_config: self.master_handler.into(),
             patch: self.patch.patch.clone(),
         }
     }

@@ -35,6 +35,7 @@ use crate::{
     event::{FixtureSelectionWithGroup, list::DemexEventList},
     fixture::FixturePath,
     input::control::DemexInputDeviceControlUnassignment,
+    master::MasterHandler,
     state::fixture_state_handler::FixtureStateHandler,
     utils::serde::approx_instant,
 };
@@ -63,6 +64,7 @@ pub struct DeferredActionRunArgs<'a> {
     pub preset_handler: &'a mut PresetHandler,
     pub updatable_handler: &'a mut UpdatableHandler,
     pub timing_handler: &'a mut TimingHandler,
+    pub master_handler: &'a mut MasterHandler,
 
     pub fixture_selector_context: FixtureSelectorContext<'a>,
 
@@ -78,6 +80,7 @@ impl<'a> DeferredActionRunArgs<'a> {
             preset_handler: self.preset_handler,
             updatable_handler: self.updatable_handler,
             timing_handler: self.timing_handler,
+            master_handler: self.master_handler,
             fixture_selector_context: self.fixture_selector_context,
             event_list: self.event_list,
         }
@@ -93,6 +96,7 @@ pub struct ActionRunArgs<'a> {
     pub preset_handler: &'a mut PresetHandler,
     pub updatable_handler: &'a mut UpdatableHandler,
     pub timing_handler: &'a mut TimingHandler,
+    pub master_handler: &'a mut MasterHandler,
 
     pub fixture_selector_context: FixtureSelectorContext<'a>,
 
@@ -257,9 +261,8 @@ pub enum Action {
     KeyframeEffectUpdate(KeyframeEffectUpdateArgs),
     KeyframeEffectApplyPreset(KeyframeEffectApplyPresetArgs),
 
-    GroupmasterSetFaderValue(u32, f32),
-
-    GrandmasterSetValue(u8),
+    GrandmasterSetValue(f32),
+    GroupmasterSetValue(u32, f32),
 
     RunMacro(u32),
 
@@ -390,6 +393,16 @@ impl Action {
 
             Self::KeyframeEffectUpdate(fun) => fun.run(args),
             Self::KeyframeEffectApplyPreset(fun) => fun.run(args),
+
+            Self::GrandmasterSetValue(value) => {
+                args.master_handler.set_grand_master(*value);
+                Ok(ActionRunResult::new())
+            }
+            Self::GroupmasterSetValue(group_id, value) => {
+                args.master_handler
+                    .set_groupmaster_value(*group_id, *value, args.preset_handler);
+                Ok(ActionRunResult::new())
+            }
 
             Self::RunMacro(macro_id) => {
                 let mmacro = args

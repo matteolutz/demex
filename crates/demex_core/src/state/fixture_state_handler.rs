@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::mpsc, u8};
+use std::{collections::HashMap, sync::mpsc};
 
 use crate::{
     channel3::{
@@ -7,6 +7,7 @@ use crate::{
     },
     engine::component::Component,
     fixture::{Fixture, FixturePath, FixturePathMatchLevel, error::FixtureError},
+    master::MasterHandler,
     patch::Patch,
     presets::PresetHandler,
     selection::FixtureSelection,
@@ -21,14 +22,12 @@ impl Component for FixtureStateHandler {}
 #[derive(Debug)]
 pub struct FixtureStateHandler {
     fixture_states: HashMap<FixturePath, FixtureState>,
-    grand_master: u8,
 }
 
 impl Default for FixtureStateHandler {
     fn default() -> Self {
         Self {
             fixture_states: Default::default(),
-            grand_master: u8::MAX,
         }
     }
 }
@@ -83,16 +82,7 @@ impl FixtureStateHandler {
                 .into_iter()
                 .map(|f| (f.path(), FixtureState::new(f)))
                 .collect(),
-            grand_master: u8::MAX,
         })
-    }
-
-    pub fn grand_master(&self) -> u8 {
-        self.grand_master
-    }
-
-    pub fn grand_master_mut(&mut self) -> &mut u8 {
-        &mut self.grand_master
     }
 
     pub fn fixtures(&self) -> &HashMap<FixturePath, FixtureState> {
@@ -179,6 +169,7 @@ impl FixtureStateHandler {
         patch: &Patch,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
+        master_handler: &MasterHandler,
     ) -> Result<(), FixtureError> {
         for (path, state) in self.fixture_states.iter_mut() {
             let mut updated_values = HashMap::new();
@@ -201,9 +192,12 @@ impl FixtureStateHandler {
             }
 
             if !updated_values.is_empty() {
+                let master_value = master_handler.get_fixture_master_value(path);
+
                 value_queue_tx
                     .send(ChannelValueQueueEntry {
                         fixture_path: *path,
+                        master_value,
                         values: updated_values,
                     })
                     .expect("Output channel has hung up");

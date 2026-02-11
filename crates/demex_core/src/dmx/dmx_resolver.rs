@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use demex_dmx::{DemexDmxOutput, DemexDmxOutputTrait};
+use gdtf::dmx_mode::LogicalChannelMaster;
 
 use crate::{
     channel3::{
@@ -105,6 +106,7 @@ impl DmxResolver {
         // calculate dmx values
         for entry in values {
             let fixture_patch = patch.fixture(&entry.fixture_path).unwrap();
+            let master_value = entry.master_value;
 
             for (attribute, value) in entry.sorted_values(fixture_patch) {
                 let Some(channel_function) = fixture_patch.channel_function(&attribute) else {
@@ -114,7 +116,16 @@ impl DmxResolver {
                 match &channel_function.kind {
                     FixtureChannelFunctionKind::Physical { addresses } => {
                         // project the value (0.0..=1.0) into the CF range
-                        let value = value.to_projected(channel_function, 1.0);
+
+                        let value_mult = match channel_function.master {
+                            LogicalChannelMaster::Grand | LogicalChannelMaster::Group => {
+                                master_value.as_f32()
+                            }
+                            _ => 1.0,
+                        };
+
+                        let value = value.to_projected(channel_function, value_mult);
+
                         let mut dmx_value = value.to_bytes(addresses.len());
 
                         for address in addresses.iter().rev() {

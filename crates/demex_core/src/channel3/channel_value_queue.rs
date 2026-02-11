@@ -9,6 +9,7 @@ use itertools::Itertools;
 use crate::{
     channel3::{
         attribute::FixtureChannel3Attribute, channel_value_discrete::FixtureChannelDiscreteValue,
+        clamped_value::ClampedValue,
     },
     engine::component::Component,
     fixture::{Fixture, FixturePath},
@@ -17,6 +18,7 @@ use crate::{
 #[derive(Debug)]
 pub struct ChannelValueQueueEntry {
     pub fixture_path: FixturePath,
+    pub master_value: ClampedValue,
     pub values:
         HashMap<FixtureChannel3Attribute, (FixtureChannelDiscreteValue, Option<time::Instant>)>,
 }
@@ -68,6 +70,7 @@ impl ChannelValueQueue {
     pub fn enqueue(
         &mut self,
         fixture_path: FixturePath,
+        master_value: ClampedValue,
         values: HashMap<
             FixtureChannel3Attribute,
             (FixtureChannelDiscreteValue, Option<time::Instant>),
@@ -75,6 +78,7 @@ impl ChannelValueQueue {
     ) {
         self.inner.push_back(ChannelValueQueueEntry {
             fixture_path,
+            master_value,
             values,
         });
     }

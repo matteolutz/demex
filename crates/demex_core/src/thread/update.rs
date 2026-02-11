@@ -26,7 +26,7 @@ use crate::{
     event::{DemexEvent, list::DemexEventList},
     fixture::FixturePath,
     input::{DemexInputDeviceHandler, device::DemexInputDeviceConfig},
-    master::{MasterConfig, MasterHandler},
+    master::MasterHandler,
     patch::Patch,
     pool::{PoolItem, PoolType},
     presets::PresetHandler,
@@ -65,7 +65,6 @@ impl UpdateThread {
         mut preset_handler: PresetHandler,
         mut updatable_handler: UpdatableHandler,
         mut timing_handler: TimingHandler,
-        master_config: MasterConfig,
         input_device_configs: Vec<DemexInputDeviceConfig>,
         patch: Arc<ArcSwap<Patch>>,
     ) -> (
@@ -76,6 +75,8 @@ impl UpdateThread {
         let mut fixture_state_handler = FixtureStateHandler::new(patch.load().fixtures()).unwrap();
         let fixture_states = fixture_state_handler.fixtures().clone();
 
+        let mut master_handler = MasterHandler::new(&preset_handler);
+
         // TODO: input device init state
         let args = ActionRunArgs {
             issued_at: Instant::now(),
@@ -84,6 +85,7 @@ impl UpdateThread {
             preset_handler: &mut preset_handler,
             updatable_handler: &mut updatable_handler,
             timing_handler: &mut timing_handler,
+            master_handler: &mut master_handler,
             fixture_selector_context: FixtureSelectorContext::new(&None),
             event_list: &mut DemexEventList::new(),
         };
@@ -98,8 +100,6 @@ impl UpdateThread {
             })
             .collect();
         let input_device_handler = DemexInputDeviceHandler::new(input_devices);
-
-        let master_handler = MasterHandler::new(master_config);
 
         let show = DemexShowRef {
             preset_handler: &preset_handler,
@@ -174,6 +174,7 @@ impl DemexThreadDelegate for UpdateThread {
                 ),
                 updatable_handler: &mut self.updatable_handler,
                 timing_handler: &mut self.timing_handler,
+                master_handler: &mut self.master_handler,
                 patch: &patch,
                 event_list: &mut self.event_list,
             };
@@ -228,6 +229,11 @@ impl DemexThreadDelegate for UpdateThread {
                                     .send(DemexEngineCommEvent::Error(err.to_string()));
                             }
                         }
+                        ActionRunResult::GroupFixturesChanges(_)
+                        | ActionRunResult::GroupAdded(_)
+                        | ActionRunResult::GroupsRemoved(_) => {
+                            self.master_handler.invalidate_cache(&self.preset_handler);
+                        }
                         _ => {}
                     }
                 }
@@ -267,6 +273,7 @@ impl DemexThreadDelegate for UpdateThread {
                 &patch,
                 &self.preset_handler,
                 &self.timing_handler,
+                &self.master_handler,
             )
             .inspect_err(|err| log::error!("Failed to submit output values: {}", err));
 

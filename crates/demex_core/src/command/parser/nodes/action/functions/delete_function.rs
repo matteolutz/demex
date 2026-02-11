@@ -143,6 +143,7 @@ impl FunctionDelegate for DeleteArgs {
                             .map_err(ActionRunError::PresetHandlerError)?;
                     }
 
+                    /*
                     let result = if group_id_from == group_id_to {
                         ActionRunResult::new()
                     } else {
@@ -151,8 +152,11 @@ impl FunctionDelegate for DeleteArgs {
                             group_id_from - group_id_to + 1
                         ))
                     };
+                    */
 
-                    Ok(result)
+                    Ok(ActionRunResult::GroupsRemoved(
+                        (group_id_from..=group_id_to).collect(),
+                    ))
                 }
                 (HomeableObject::Executor(id_from), HomeableObject::Executor(id_to)) => {
                     for id in *id_from..=*id_to {

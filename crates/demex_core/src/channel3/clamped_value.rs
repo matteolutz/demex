@@ -14,7 +14,7 @@
 
 use std::{
     fmt, num,
-    ops::{Add, Div, Mul, Sub},
+    ops::{Add, Div, Mul, MulAssign, Sub},
     str,
 };
 
@@ -147,6 +147,20 @@ impl Mul<f32> for ClampedValue {
     fn mul(self, rhs: f32) -> Self::Output {
         let val = self.as_f32() * rhs;
         val.into()
+    }
+}
+
+impl Mul<ClampedValue> for ClampedValue {
+    type Output = ClampedValue;
+
+    fn mul(self, rhs: ClampedValue) -> Self::Output {
+        self * rhs.as_f32()
+    }
+}
+
+impl MulAssign for ClampedValue {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
     }
 }
 

@@ -12,9 +12,8 @@ use crate::{
         error::DemexInputDeviceError,
         event::DemexInputDeviceFaderUpdate,
     },
-    state::fixture_state_handler::FixtureStateHandler,
-    timing::{TimingHandler, speed_master::SpeedMasterValue},
-    updatables::{UpdatableHandler, executor::DemexExecutor},
+    timing::speed_master::SpeedMasterValue,
+    updatables::executor::DemexExecutor,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -60,7 +59,7 @@ impl DemexInputFader {
             }
             Self::Groupmaster(id) => {
                 action_queue.enqueue_now(
-                    Action::GroupmasterSetFaderValue(*id, value),
+                    Action::GroupmasterSetValue(*id, value),
                     ActionIssuer::InputDevice,
                 );
             }
@@ -76,56 +75,14 @@ impl DemexInputFader {
                 );
             }
             Self::Grandmaster => {
-                let byte_value = (value * 255.0) as u8;
                 action_queue.enqueue_now(
-                    Action::GrandmasterSetValue(byte_value),
+                    Action::GrandmasterSetValue(value),
                     ActionIssuer::InputDevice,
                 );
             }
         };
 
         Ok(())
-    }
-
-    pub fn value(
-        &self,
-        fixture_handler: &FixtureStateHandler,
-        updatable_handler: &UpdatableHandler,
-        timing_handler: &TimingHandler,
-    ) -> Result<f32, DemexInputDeviceError> {
-        match self {
-            Self::Fader {
-                executor_id: fader_id,
-            } => {
-                let executor = updatable_handler
-                    .executor(*fader_id)
-                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
-
-                Ok(executor.value())
-            }
-            Self::Groupmaster(id) => {
-                let master = updatable_handler
-                    .group_master(*id)
-                    .map_err(DemexInputDeviceError::UpdatableHandlerError)?;
-
-                Ok(master.value())
-            }
-            Self::SpeedMaster {
-                speed_master_id,
-                bpm_min: min_bpm,
-                bpm_max: max_bpm,
-            } => {
-                let speed_master = timing_handler
-                    .get_speed_master_value(*speed_master_id)
-                    .map_err(DemexInputDeviceError::TimingHandlerError)?;
-
-                Ok(((speed_master.bpm() - min_bpm) / (max_bpm - min_bpm)).clamp(0.0, 1.0))
-            }
-            Self::Grandmaster => {
-                let byte_value = fixture_handler.grand_master();
-                Ok(byte_value as f32 / 255.0)
-            }
-        }
     }
 }
 
@@ -200,10 +157,10 @@ impl DemexInputFaderAssignment {
         }
     }
 
-    pub fn grandmaster(value: u8) -> Self {
+    pub fn grandmaster(value: f32) -> Self {
         Self {
             mode: DemexInputFader::Grandmaster,
-            initial_value: Some(value as f32 / 255.0),
+            initial_value: Some(value),
         }
     }
 
@@ -262,7 +219,7 @@ impl DemexInputDeviceControlAssignmentDelegate for DemexInputFaderAssignment {
                 Self::executor(executor)
             }
             DemexInputFader::Grandmaster => {
-                let gm_value = args.fixture_handler.grand_master();
+                let gm_value = args.master_handler.grand_master().as_f32();
                 Self::grandmaster(gm_value)
             }
             DemexInputFader::SpeedMaster {

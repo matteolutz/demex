@@ -142,7 +142,7 @@ impl FunctionDelegate for RecordGroupArgs {
             .record_group(selection, id, self.name.clone(), event_list)
             .map_err(ActionRunError::PresetHandlerError)?;
 
-        Ok(ActionRunResult::Default)
+        Ok(ActionRunResult::GroupAdded(id))
     }
 }
 

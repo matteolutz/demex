@@ -21,6 +21,10 @@ pub enum ActionRunResult {
     AssignMultiple(Vec<DemexInputDeviceControlAssignment>),
     Unassign(DemexInputDeviceControlUnassignment),
 
+    GroupFixturesChanges(u32),
+    GroupAdded(u32),
+    GroupsRemoved(Vec<u32>),
+
     Lock,
 
     Save,
