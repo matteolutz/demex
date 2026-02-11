@@ -16,6 +16,7 @@ pub mod group_master;
 pub mod input;
 pub mod keyframe_effect;
 pub mod layout;
+pub mod master;
 pub mod patch;
 pub mod pool;
 pub mod presets;

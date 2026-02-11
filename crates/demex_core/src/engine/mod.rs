@@ -108,6 +108,7 @@ impl DemexEngine {
             show.preset_handler,
             show.updatable_handler,
             show.timing_handler,
+            show.master_config,
             show.input_device_configs,
             self.patch.clone(),
         );

@@ -26,6 +26,7 @@ use crate::{
     event::{DemexEvent, list::DemexEventList},
     fixture::FixturePath,
     input::{DemexInputDeviceHandler, device::DemexInputDeviceConfig},
+    master::{MasterConfig, MasterHandler},
     patch::Patch,
     pool::{PoolItem, PoolType},
     presets::PresetHandler,
@@ -44,6 +45,7 @@ pub struct UpdateThread {
     preset_handler: PresetHandler,
     updatable_handler: UpdatableHandler,
     timing_handler: TimingHandler,
+    master_handler: MasterHandler,
     patch: Arc<ArcSwap<Patch>>,
 
     event_list: DemexEventList,
@@ -63,6 +65,7 @@ impl UpdateThread {
         mut preset_handler: PresetHandler,
         mut updatable_handler: UpdatableHandler,
         mut timing_handler: TimingHandler,
+        master_config: MasterConfig,
         input_device_configs: Vec<DemexInputDeviceConfig>,
         patch: Arc<ArcSwap<Patch>>,
     ) -> (
@@ -73,11 +76,37 @@ impl UpdateThread {
         let mut fixture_state_handler = FixtureStateHandler::new(patch.load().fixtures()).unwrap();
         let fixture_states = fixture_state_handler.fixtures().clone();
 
+        // TODO: input device init state
+        let args = ActionRunArgs {
+            issued_at: Instant::now(),
+            patch: &patch.load(),
+            fixture_handler: &mut fixture_state_handler,
+            preset_handler: &mut preset_handler,
+            updatable_handler: &mut updatable_handler,
+            timing_handler: &mut timing_handler,
+            fixture_selector_context: FixtureSelectorContext::new(&None),
+            event_list: &mut DemexEventList::new(),
+        };
+
+        let input_devices = input_device_configs
+            .into_iter()
+            .filter_map(|config| {
+                config
+                    .into_device(&args)
+                    .inspect_err(|err| log::error!("Failed to init device: {}", err))
+                    .ok()
+            })
+            .collect();
+        let input_device_handler = DemexInputDeviceHandler::new(input_devices);
+
+        let master_handler = MasterHandler::new(master_config);
+
         let show = DemexShowRef {
             preset_handler: &preset_handler,
             updatable_handler: &updatable_handler,
             timing_handler: &timing_handler,
-            input_device_configs: &vec![],
+            input_device_handler: &input_device_handler,
+            master_handler: &master_handler,
             patch: &patch.load(),
         };
         let pools = PoolType::all()
@@ -92,28 +121,6 @@ impl UpdateThread {
 
         let state = DemexEngineState::default();
 
-        // TODO: input device init state
-        let args = ActionRunArgs {
-            issued_at: Instant::now(),
-            patch: &patch.load(),
-            fixture_handler: &mut fixture_state_handler,
-            preset_handler: &mut preset_handler,
-            updatable_handler: &mut updatable_handler,
-            timing_handler: &mut timing_handler,
-            fixture_selector_context: FixtureSelectorContext::new(&None),
-            event_list: &mut DemexEventList::new(),
-        };
-        let input_devices = input_device_configs
-            .into_iter()
-            .filter_map(|config| {
-                config
-                    .into_device(&args)
-                    .inspect_err(|err| log::error!("Failed to init device: {}", err))
-                    .ok()
-            })
-            .collect();
-        let input_device_handler = DemexInputDeviceHandler::new(input_devices);
-
         let s = Self {
             event_bus_tx,
             request_handler,
@@ -122,6 +129,7 @@ impl UpdateThread {
             preset_handler,
             updatable_handler,
             timing_handler,
+            master_handler,
             patch,
 
             event_list: DemexEventList::default(),
@@ -300,11 +308,8 @@ impl DemexThreadDelegate for UpdateThread {
                 preset_handler: &self.preset_handler,
                 updatable_handler: &self.updatable_handler,
                 timing_handler: &self.timing_handler,
-                input_device_configs: &self
-                    .input_device_handler
-                    .device_configs()
-                    .cloned()
-                    .collect(),
+                input_device_handler: &self.input_device_handler,
+                master_handler: &self.master_handler,
                 patch: &patch,
             },
             state: &self.state,
