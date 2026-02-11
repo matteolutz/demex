@@ -24,6 +24,7 @@ use strum::EnumIter;
 use crate::{
     command::parser::nodes::action::functions::{
         effect_function::{KeyframeEffectApplyPresetArgs, KeyframeEffectUpdateArgs},
+        go_function::ExecutorGoOutArgs,
         move_function::MoveArgs,
         recall_function::RecallEffectKeyframeArgs,
         set_function::{CueSetTriggerArgs, ObjectSetPropertyArgs, SetAttributeChannelSetArgs},
@@ -250,6 +251,7 @@ pub enum Action {
     ExecutorStart(ExecutorStartArgs),
     ExecutorStomp(ExecutorStompArgs),
     ExecutorGo(ExecutorGoArgs),
+    ExecutorGoOut(ExecutorGoOutArgs),
     ExecutorStop(ExecutorStopArgs),
     ExecutorSetFaderValue(u32, f32),
 
@@ -370,6 +372,7 @@ impl Action {
             Self::ExecutorStomp(fun) => fun.run(args),
             Self::ExecutorStart(fun) => fun.run(args),
             Self::ExecutorGo(fun) => fun.run(args),
+            Self::ExecutorGoOut(fun) => fun.run(args),
             Self::ExecutorStop(fun) => fun.run(args),
             Self::ExecutorSetFaderValue(executor_id, fader_value) => {
                 let executor = args

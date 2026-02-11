@@ -31,3 +31,23 @@ impl FunctionDelegate for ExecutorGoArgs {
             .map(|_| ActionRunResult::Default)
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExecutorGoOutArgs {
+    pub executor_id: u32,
+}
+
+impl FunctionDelegate for ExecutorGoOutArgs {
+    fn run(
+        &self,
+        args: ActionRunArgs,
+    ) -> Result<
+        crate::command::parser::nodes::action::result::ActionRunResult,
+        crate::command::parser::nodes::action::error::ActionRunError,
+    > {
+        args.updatable_handler
+            .executor_cue_out(self.executor_id, args.issued_at.elapsed().as_secs_f32())
+            .map_err(ActionRunError::UpdatableHandlerError)
+            .map(|_| ActionRunResult::Default)
+    }
+}

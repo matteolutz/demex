@@ -5,7 +5,7 @@ use crate::{
         action::{
             Action, ActionIssuer, ActionRunArgs,
             functions::{
-                go_function::ExecutorGoArgs,
+                go_function::{ExecutorGoArgs, ExecutorGoOutArgs},
                 set_function::{SelectionOrSelector, SetFixturePresetArgs},
                 speedmaster_functions::SpeedMasterTapArgs,
                 start_function::ExecutorStartArgs,
@@ -146,7 +146,7 @@ impl DemexInputButton {
                 stomp,
             } => {
                 action_queue.enqueue_now(
-                    Action::ExecutorStop(ExecutorStopArgs { executor_id }),
+                    Action::ExecutorGoOut(ExecutorGoOutArgs { executor_id }),
                     ActionIssuer::InputDevice,
                 );
 
