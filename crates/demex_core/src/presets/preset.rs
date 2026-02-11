@@ -375,7 +375,7 @@ impl FixturePreset {
             FixturePresetData::Default { data } => {
                 if let Some(fixture_data) = data.get(&fixture.path) {
                     for (attribute, _) in fixture_data.iter() {
-                        fixture_state
+                        let _ = fixture_state
                             .set_programmer_value(
                                 fixture,
                                 attribute,
@@ -386,7 +386,14 @@ impl FixturePreset {
                                     )),
                                 },
                             )
-                            .map_err(PresetHandlerError::FixtureError)?;
+                            .inspect_err(|err| {
+                                log::warn!(
+                                    "Failed to set attribute {} on fixture {}: {}",
+                                    attribute,
+                                    fixture.path(),
+                                    err
+                                )
+                            });
                     }
                 }
             }
@@ -396,7 +403,7 @@ impl FixturePreset {
                     .attributes()
                     .filter(|attr| fixture.has_attribute(attr))
                 {
-                    fixture_state
+                    let _ = fixture_state
                         .set_programmer_value(
                             fixture,
                             attribute,
@@ -407,7 +414,14 @@ impl FixturePreset {
                                 )),
                             },
                         )
-                        .map_err(PresetHandlerError::FixtureError)?;
+                        .inspect_err(|err| {
+                            log::warn!(
+                                "Failed to set attribute {} on fixture {}: {}",
+                                attribute,
+                                fixture.path(),
+                                err
+                            )
+                        });
                 }
             }
             FixturePresetData::KeyframeEffect { runtime } => {
@@ -415,7 +429,7 @@ impl FixturePreset {
                     .effect()
                     .affected_attributes_for_fixture(&fixture.path)
                 {
-                    fixture_state
+                    let _ = fixture_state
                         .set_programmer_value(
                             fixture,
                             &attribute,
@@ -426,7 +440,14 @@ impl FixturePreset {
                                 )),
                             },
                         )
-                        .map_err(PresetHandlerError::FixtureError)?;
+                        .inspect_err(|err| {
+                            log::warn!(
+                                "Failed to set attribute {} on fixture {}: {}",
+                                attribute,
+                                fixture.path(),
+                                err
+                            )
+                        });
                 }
             }
         }

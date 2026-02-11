@@ -85,7 +85,7 @@ impl FixtureChannelDiscreteValue {
             Self::Mix { a, b, mix } => {
                 let a = a.to_clamped(channel_function);
                 let b = b.to_clamped(channel_function);
-                ((a.as_f32() * *mix) + (b.as_f32() * (1.0 - *mix))).into()
+                ((b.as_f32() * *mix) + (a.as_f32() * (1.0 - *mix))).into()
             }
         }
     }

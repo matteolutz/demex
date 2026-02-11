@@ -261,6 +261,7 @@ impl SequenceRuntime {
             values.iter().find_map(|(value_attribute, values)| {
                 if value_attribute == attribute {
                     let mut value = FixtureChannelValue3::home();
+
                     for (_, v) in values.iter() {
                         value = FixtureChannelValue3::Mix {
                             a: Box::new(value),
