@@ -353,7 +353,9 @@ impl WaveEditor {
 
         // TODO: find solution for this. we need to know which value of the previous segment
         // connects to which value of the current segment
-        let current_segment_value = graph_bounds.map_y(px(current_segment.values[0])).unwrap();
+        let current_segment_value = graph_bounds
+            .map_y_inverted(px(current_segment.values[0]))
+            .unwrap();
 
         if let Some(previous_segment) = previous_segment {
             let previous_segment_start = graph_bounds
@@ -361,7 +363,7 @@ impl WaveEditor {
                 .unwrap();
 
             for value in &previous_segment.values {
-                let value_mapped = graph_bounds.map_y(px(*value)).unwrap();
+                let value_mapped = graph_bounds.map_y_inverted(px(*value)).unwrap();
 
                 let mut path_builder = PathBuilder::stroke(Self::PATH_STROKE_WIDTH);
 
