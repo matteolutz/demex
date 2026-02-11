@@ -615,6 +615,19 @@ impl<'a> Parser2<'a> {
         }
     }
 
+    fn parse_float(&mut self) -> Result<f32, ParseError> {
+        match self.current_token()? {
+            &Token::FloatingPoint(f, _) => {
+                self.advance();
+                Ok(f)
+            }
+            unexpected_token => Err(ParseError::UnexpectedToken(
+                unexpected_token.clone(),
+                "Expected float".to_string(),
+            )),
+        }
+    }
+
     fn parse_float_individual(&mut self) -> Result<(u32, u32), ParseError> {
         match self.current_token()? {
             &Token::FloatingPoint(_, (n, frac)) => {
@@ -1143,6 +1156,30 @@ impl<'a> Parser2<'a> {
     }
 
     fn parse_set_property_function(&mut self) -> Result<Action, ParseError> {
+        if matches!(self.current_token()?, Token::KeywordMaster) {
+            self.advance();
+
+            match self.current_token()? {
+                Token::KeywordGrand => {
+                    self.advance();
+
+                    let value = self.parse_float()?;
+                    return Ok(Action::GrandmasterSetValue(value));
+                }
+                Token::KeywordGroup => {
+                    self.advance();
+
+                    let group_id = self.parse_integer()?;
+                    let value = self.parse_float()?;
+                    return Ok(Action::GroupmasterSetValue(group_id, value));
+                }
+                unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                    unexpected_token.clone(),
+                    vec!["\"grand\"", "\"group\""],
+                ))?,
+            }
+        }
+
         let object = self.parse_object()?;
 
         let key = self.parse_string()?;
@@ -1287,15 +1324,31 @@ impl<'a> Parser2<'a> {
                     button_id,
                 }))
             }
-            Token::KeywordGrandmaster => {
+            Token::KeywordMaster => {
                 self.advance();
+
+                let fader_type = match self.current_token()? {
+                    Token::KeywordGrand => {
+                        self.advance();
+                        AssignFaderArgsMode::Grandmaster
+                    }
+                    Token::KeywordGroup => {
+                        self.advance();
+                        let group_id = self.parse_integer()?;
+                        AssignFaderArgsMode::Groupmaster(group_id)
+                    }
+                    unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
+                        unexpected_token.clone(),
+                        vec!["\"grand\"", "\"group\""],
+                    ))?,
+                };
 
                 expect_and_consume_token!(self, Token::KeywordTo, "\"to\"");
 
                 let (device_idx, input_fader_id) = self.parse_fader_id(false)?;
 
                 Ok(Action::AssignFader(AssignFaderArgs {
-                    mode: AssignFaderArgsMode::Grandmaster,
+                    mode: fader_type,
                     device_idx: device_idx as usize,
                     input_fader_id,
                 }))

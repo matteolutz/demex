@@ -85,7 +85,8 @@ pub enum Token {
     KeywordProgrammer,
     KeywordStomp,
     KeywordRecall,
-    KeywordGrandmaster,
+    KeywordMaster,
+    KeywordGrand,
     KeywordLock,
     KeywordSpeedmaster,
     KeywordTap,
@@ -168,7 +169,7 @@ impl Token {
             Token::KeywordEffect => TokenType::ObjectKeyword,
             Token::KeywordButton => TokenType::ObjectKeyword,
             Token::KeywordProgrammer => TokenType::ObjectKeyword,
-            Token::KeywordGrandmaster => TokenType::ObjectKeyword,
+            Token::KeywordMaster => TokenType::ObjectKeyword,
             Token::KeywordSpeedmaster => TokenType::ObjectKeyword,
             Token::KeywordKeyframe => TokenType::ObjectKeyword,
 
@@ -190,6 +191,7 @@ impl Token {
             Token::KeywordTokens => TokenType::OtherKeyword,
             Token::KeywordStomp => TokenType::OtherKeyword,
             Token::KeywordTap => TokenType::OtherKeyword,
+            Token::KeywordGrand => TokenType::OtherKeyword,
 
             Token::Eof => TokenType::Eof,
         }
@@ -275,7 +277,7 @@ impl std::fmt::Display for Token {
             Token::KeywordProgrammer => write!(f, "programmer"),
             Token::KeywordStomp => write!(f, "stomp"),
             Token::KeywordRecall => write!(f, "recall"),
-            Token::KeywordGrandmaster => write!(f, "grandmaster"),
+            Token::KeywordMaster => write!(f, "master"),
             Token::KeywordLock => write!(f, "lock"),
             Token::KeywordSpeedmaster => write!(f, "speedmaster"),
             Token::KeywordTap => write!(f, "tap"),
@@ -284,6 +286,7 @@ impl std::fmt::Display for Token {
             Token::KeywordUnhighlight => write!(f, "unhighlight"),
             Token::KeywordGlobal => write!(f, "global"),
             Token::KeywordKeyframe => write!(f, "keyframe"),
+            Token::KeywordGrand => write!(f, "grand"),
             Token::Eof => write!(f, "Eof"),
         }
     }

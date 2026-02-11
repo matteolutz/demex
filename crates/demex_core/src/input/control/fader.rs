@@ -164,6 +164,13 @@ impl DemexInputFaderAssignment {
         }
     }
 
+    pub fn groupmaster(group_id: u32, value: f32) -> Self {
+        Self {
+            mode: DemexInputFader::Groupmaster(group_id),
+            initial_value: Some(value),
+        }
+    }
+
     pub fn speedmaster(
         speedmaster_id: u32,
         speedmaster: &SpeedMasterValue,
@@ -233,8 +240,12 @@ impl DemexInputDeviceControlAssignmentDelegate for DemexInputFaderAssignment {
                     .map_err(DemexInputDeviceError::TimingHandlerError)?;
                 Self::speedmaster(speed_master_id, speedmaster, bpm_min, bpm_max)
             }
-            DemexInputFader::Groupmaster(_) => {
-                todo!("get groupmaster value");
+            DemexInputFader::Groupmaster(group_id) => {
+                let groupmaster_value = args.master_handler.groupmaster_value(group_id);
+                Self::groupmaster(
+                    group_id,
+                    groupmaster_value.map(|val| val.as_f32()).unwrap_or(1.0),
+                )
             }
         };
         Ok(assignment)

@@ -221,6 +221,10 @@ impl FixtureChannelFunction {
         self.snap
     }
 
+    pub fn should_react_to_master(&self) -> bool {
+        !matches!(self.master, LogicalChannelMaster::None)
+    }
+
     pub fn unprojected_default(&self) -> ClampedValue {
         self.unproject(self.default)
     }

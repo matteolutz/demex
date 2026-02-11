@@ -1,10 +1,37 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{channel3::clamped_value::ClampedValue, fixture::FixturePath, presets::PresetHandler};
 
 #[derive(Debug, Copy, Clone)]
 pub enum SubmasterType {
     Group(u32),
+}
+
+#[derive(Debug, Default, Clone)]
+pub enum ForceOutputType {
+    #[default]
+    None,
+
+    All,
+    Fixtures(HashSet<FixturePath>),
+}
+
+impl ForceOutputType {
+    pub fn should_force_output(&self, fixture_path: &FixturePath) -> bool {
+        match self {
+            Self::None => false,
+            Self::All => true,
+            Self::Fixtures(fixtures) => fixtures.contains(fixture_path),
+        }
+    }
+
+    pub fn add_fixtures(&mut self, fixtures_to_add: impl IntoIterator<Item = FixturePath>) {
+        match self {
+            Self::Fixtures(fixtures) => fixtures.extend(fixtures_to_add),
+            Self::All => {}
+            Self::None => *self = Self::Fixtures(fixtures_to_add.into_iter().collect()),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -14,6 +41,8 @@ pub struct MasterHandler {
     group_master_value: HashMap<u32, ClampedValue>,
 
     cached_fixture_submasters: HashMap<FixturePath, Vec<SubmasterType>>,
+
+    force_output: ForceOutputType,
 }
 
 impl MasterHandler {
@@ -22,6 +51,7 @@ impl MasterHandler {
             grand_master: (1.0).into(),
             group_master_value: HashMap::new(),
             cached_fixture_submasters: HashMap::new(),
+            force_output: ForceOutputType::default(),
         };
 
         this.invalidate_cache(preset_handler);
@@ -47,12 +77,21 @@ impl MasterHandler {
         }
     }
 
+    pub fn force_output(&self) -> &ForceOutputType {
+        &self.force_output
+    }
+
+    pub fn update(&mut self) {
+        self.force_output = ForceOutputType::None;
+    }
+
     pub fn grand_master(&self) -> ClampedValue {
         self.grand_master
     }
 
     pub fn set_grand_master(&mut self, value: impl Into<ClampedValue>) {
         self.grand_master = value.into();
+        self.force_output = ForceOutputType::All;
     }
 
     pub fn groupmaster_value(&self, group_id: u32) -> Option<ClampedValue> {
@@ -73,6 +112,11 @@ impl MasterHandler {
             // this means, the value was not present before
             // so we should invalidate the cache
             self.invalidate_cache(preset_handler);
+        }
+
+        if let Ok(group) = preset_handler.get_group(group_id) {
+            self.force_output
+                .add_fixtures(group.fixture_selection().fixtures().iter().copied());
         }
     }
 

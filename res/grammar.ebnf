@@ -64,6 +64,7 @@ discrete_set_function = attribute , channel_value ;
 
 (* Set object property *)
 set_property_function = object , string , string ;                   (* object key value *)
+                      | "master" , ( "grand" | ( "group" , integer ) ) , float
 
 
 (* ==================== RECORD FUNCTION ==================== *)
@@ -130,7 +131,7 @@ assign_function = fixture_selector , "to" , button_id                           
                 | ( "executor" | "exec" ) , integer , executor_assign_mode          (* Assign executor action *)
                 | specific_preset_or_range , [ "with" , fixture_selector ] , "to" , button_id  (* Assign preset to button *)
                 | "macro" , command , "to" , button_id
-                | ( "grandmaster" | "gm" ) , "to" , fader_id
+                | "master" , ( "grand" | ( "group" , integer ) ) , "to" , fader_id
                 | ( "speedmaster" | "sm" ) , integer , speedmaster_assign_mode ;
 
 executor_assign_mode = "fader" , "to" , fader_id                                    (* Assign executor fader *)
@@ -272,7 +273,7 @@ special_char = "~" | "@" | "#" | "%" | "_" | "$" | "&" | "'" | "-" | "+" | "/" ;
      "group" | "g"              -> KeywordGroup
      "sequence" | "seq"         -> KeywordSequence
      "executor" | "exec"        -> KeywordExecutor
-     "grandmaster" | "gm"       -> KeywordGrandmaster
+     "master"                   -> KeywordMaster
      "speedmaster" | "sm"       -> KeywordSpeedmaster
 
    Symbol aliases:
@@ -291,7 +292,7 @@ special_char = "~" | "@" | "#" | "%" | "_" | "$" | "&" | "'" | "-" | "+" | "/" ;
    Object Keywords:
      group (g), macro, commandslice, preset, sequence (seq),
      fader, executor (exec), cue, feature, effect, button,
-     programmer, grandmaster (gm), speedmaster (sm)
+     programmer, master, speedmaster (sm)
 
    Channel/Feature Type Keywords:
      intens, color, position, strobe, maintenance, beam, control, focus

@@ -169,14 +169,21 @@ impl FixtureStateHandler {
         patch: &Patch,
         preset_handler: &PresetHandler,
         timing_handler: &TimingHandler,
-        master_handler: &MasterHandler,
+        master_handler: &mut MasterHandler,
     ) -> Result<(), FixtureError> {
         for (path, state) in self.fixture_states.iter_mut() {
             let mut updated_values = HashMap::new();
             let fixture = patch.fixture(path)?;
+            let should_force_output_fixture =
+                master_handler.force_output().should_force_output(path);
 
             for (attribute, output_value) in state.cached_output_mut() {
-                if !output_value.should_output(preset_handler) {
+                let should_force_output_attribute = should_force_output_fixture
+                    && fixture
+                        .channel_function(attribute)
+                        .is_some_and(|cf| cf.should_react_to_master());
+
+                if !should_force_output_attribute && !output_value.should_output(preset_handler) {
                     continue;
                 }
 
@@ -203,6 +210,8 @@ impl FixtureStateHandler {
                     .expect("Output channel has hung up");
             }
         }
+
+        master_handler.update();
 
         Ok(())
     }

@@ -126,6 +126,7 @@ impl FunctionDelegate for AssignButtonArgs {
 pub enum AssignFaderArgsMode {
     Executor(u32),
     Grandmaster,
+    Groupmaster(u32),
     Speedmaster(u32),
 }
 
@@ -134,6 +135,7 @@ impl From<AssignFaderArgsMode> for DemexInputFader {
         match value {
             AssignFaderArgsMode::Executor(executor_id) => DemexInputFader::Fader { executor_id },
             AssignFaderArgsMode::Grandmaster => DemexInputFader::Grandmaster,
+            AssignFaderArgsMode::Groupmaster(group_id) => DemexInputFader::Groupmaster(group_id),
             AssignFaderArgsMode::Speedmaster(speedmaster_id) => DemexInputFader::SpeedMaster {
                 speed_master_id: speedmaster_id,
                 bpm_min: 50.0,

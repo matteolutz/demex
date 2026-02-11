@@ -273,7 +273,7 @@ impl DemexThreadDelegate for UpdateThread {
                 &patch,
                 &self.preset_handler,
                 &self.timing_handler,
-                &self.master_handler,
+                &mut self.master_handler,
             )
             .inspect_err(|err| log::error!("Failed to submit output values: {}", err));
 
