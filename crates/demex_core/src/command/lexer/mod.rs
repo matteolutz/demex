@@ -141,6 +141,7 @@ impl<'a> Lexer<'a> {
                     "highlight" | "hl" => Some(Token::KeywordHighlight),
                     "unhighlight" | "uhl" => Some(Token::KeywordUnhighlight),
                     "global" => Some(Token::KeywordGlobal),
+                    "keyframe" => Some(Token::KeywordKeyframe),
                     _ => None,
                 };
 

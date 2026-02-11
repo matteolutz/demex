@@ -14,9 +14,11 @@ use super::preset::FixturePresetId;
 pub enum PresetHandlerError {
     PresetAlreadyExists(u32),
     PresetCannotRecordNextKeyframe(FixturePresetId),
+    PresetKeyframeNotFound(FixturePresetId, usize),
     FeaturePresetAlreadyExists(FixturePresetId),
     PresetNotFound(u32),
     PresetNotAnEffect(FixturePresetId),
+    PresetIsEffect(FixturePresetId),
     FeaturePresetNotFound(FixturePresetId),
     FeatureGroupMismatch(FixtureChannel3FeatureGroup, FixtureChannel3FeatureGroup),
     FixtureError(FixtureError),
@@ -45,6 +47,13 @@ impl std::fmt::Display for PresetHandlerError {
                     id
                 )
             }
+            PresetHandlerError::PresetKeyframeNotFound(id, idx) => {
+                write!(
+                    f,
+                    "Object with id {} does not have a keyframe at index {}",
+                    id, idx
+                )
+            }
             PresetHandlerError::FeaturePresetAlreadyExists(id) => {
                 write!(
                     f,
@@ -57,6 +66,9 @@ impl std::fmt::Display for PresetHandlerError {
             }
             PresetHandlerError::PresetNotAnEffect(id) => {
                 write!(f, "Object with id {} is not an effect", id)
+            }
+            PresetHandlerError::PresetIsEffect(id) => {
+                write!(f, "Object with id {} is an effect", id)
             }
             PresetHandlerError::FeaturePresetNotFound(id) => {
                 write!(f, "Object with id {} not found", id)

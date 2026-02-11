@@ -98,7 +98,7 @@ rename_function = object , "to" , string ;
 
 (* ==================== UPDATE FUNCTION ==================== *)
 
-update_function = "preset" , preset_id , "for" , fixture_selector , [ update_mode ]
+update_function = "preset" , preset_id , [ "keyframe" , integer , ] "for" , fixture_selector , [ update_mode ]
                 | "preset" , preset_id , "global"
                 | ( ( "sequence" | "seq" ) | ( "executor" | "exec" ) ) , integer , "cue" , discrete_cue_idx , "for" , fixture_selector , [ with_channel_type_selector ] , [ update_mode ] ;
 
@@ -154,6 +154,7 @@ unassign_function = "button" , button_id
 (* ==================== RECALL FUNCTION ==================== *)
 
 recall_function = ( "sequence" | "seq" ) , integer , "cue" , discrete_cue_idx ;
+                | "preset" , integer , "keyframe" , integer
 
 
 (* ==================== OBJECT DEFINITIONS ==================== *)

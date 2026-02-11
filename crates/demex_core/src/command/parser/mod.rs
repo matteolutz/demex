@@ -37,7 +37,8 @@ use crate::{
             nodes::{
                 action::functions::{
                     assign_function::AssignFaderArgsMode, move_function::MoveArgs,
-                    set_function::ObjectSetPropertyArgs, update_function::UpdatePresetGlobalArgs,
+                    recall_function::RecallEffectKeyframeArgs, set_function::ObjectSetPropertyArgs,
+                    update_function::UpdatePresetGlobalArgs,
                 },
                 object::ObjectDelegate,
             },
@@ -996,6 +997,15 @@ impl<'a> Parser2<'a> {
                     return Ok(Action::UpdatePresetGlobal(UpdatePresetGlobalArgs { id }));
                 }
 
+                let keyframe_idx = match self.current_token()? {
+                    Token::KeywordKeyframe => {
+                        self.advance();
+                        let keyframe_idx = self.parse_integer()?;
+                        Some(keyframe_idx)
+                    }
+                    _ => None,
+                };
+
                 expect_and_consume_token!(self, Token::KeywordFor, "\"for\"");
 
                 let fixture_selector = self.parse_fixture_selector()?;
@@ -1006,6 +1016,7 @@ impl<'a> Parser2<'a> {
 
                 Ok(Action::UpdatePreset(UpdatePresetArgs {
                     id,
+                    keyframe_idx,
                     fixture_selector,
                     update_mode,
                 }))
@@ -1379,7 +1390,7 @@ impl<'a> Parser2<'a> {
 
                 let sequence_id = self.parse_integer()?;
 
-                expect_and_consume_token!(self, Token::KeywordCue, "\"\"cue");
+                expect_and_consume_token!(self, Token::KeywordCue, "\"cue\"");
 
                 let cue_idx = self.parse_discrete_cue_idx()?;
 
@@ -1388,9 +1399,23 @@ impl<'a> Parser2<'a> {
                     cue_idx,
                 }))
             }
+            Token::KeywordPreset => {
+                self.advance();
+
+                let preset_id = self.parse_preset_id()?;
+
+                expect_and_consume_token!(self, Token::KeywordKeyframe, "\"keyframe\"");
+
+                let keyframe_idx = self.parse_integer()?;
+
+                Ok(Action::RecallEffectKeyframe(RecallEffectKeyframeArgs {
+                    preset_id,
+                    keyframe_idx,
+                }))
+            }
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
-                vec!["\"sequence\""],
+                vec!["\"sequence\"", "\"preset\""],
             )),
         }
     }

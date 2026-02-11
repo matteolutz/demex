@@ -4,7 +4,7 @@ use crate::{
     command::parser::nodes::action::{
         ActionRunArgs, error::ActionRunError, result::ActionRunResult,
     },
-    presets::error::PresetHandlerError,
+    presets::{error::PresetHandlerError, preset::FixturePresetId},
     sequence::cue::CueIdx,
 };
 
@@ -40,6 +40,27 @@ impl FunctionDelegate for RecallSequenceCueArgs {
             ))?;
 
         cue.recall(patch, fixture_handler);
+
+        Ok(ActionRunResult::new())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecallEffectKeyframeArgs {
+    pub preset_id: FixturePresetId,
+    pub keyframe_idx: u32,
+}
+
+impl FunctionDelegate for RecallEffectKeyframeArgs {
+    fn run(&self, args: ActionRunArgs) -> Result<ActionRunResult, ActionRunError> {
+        let preset = args
+            .preset_handler
+            .get_preset(self.preset_id)
+            .map_err(ActionRunError::PresetHandlerError)?;
+
+        preset
+            .recall_keyframe(args.patch, args.fixture_handler, self.keyframe_idx as usize)
+            .map_err(ActionRunError::PresetHandlerError)?;
 
         Ok(ActionRunResult::new())
     }

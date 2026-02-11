@@ -25,6 +25,7 @@ use crate::{
     command::parser::nodes::action::functions::{
         effect_function::{KeyframeEffectApplyPresetArgs, KeyframeEffectUpdateArgs},
         move_function::MoveArgs,
+        recall_function::RecallEffectKeyframeArgs,
         set_function::{CueSetTriggerArgs, ObjectSetPropertyArgs, SetAttributeChannelSetArgs},
         speedmaster_functions::SpeedMasterTapArgs,
         start_function::ExecutorStartArgs,
@@ -199,6 +200,7 @@ pub enum Action {
 
     // Recall
     RecallSequenceCue(RecallSequenceCueArgs),
+    RecallEffectKeyframe(RecallEffectKeyframeArgs),
 
     // Delete
     Delete(DeleteArgs),
@@ -304,6 +306,7 @@ impl Action {
             Self::UpdateSequenceCue(fun) => fun.run(args),
 
             Self::RecallSequenceCue(fun) => fun.run(args),
+            Self::RecallEffectKeyframe(fun) => fun.run(args),
 
             // Delete
             Self::Delete(fun) => fun.run(args),

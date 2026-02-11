@@ -675,14 +675,20 @@ impl FixturePreset {
 
     pub fn update(
         &mut self,
+        patch: &Patch,
         values_to_update: HashMap<
             FixturePath,
             HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>,
         >,
         update_mode: UpdateMode,
+        keyframe_idx: Option<usize>,
     ) -> Result<usize, PresetHandlerError> {
         match &mut self.data {
             FixturePresetData::Default { data } => {
+                if keyframe_idx.is_some() {
+                    return Err(PresetHandlerError::PresetNotAnEffect(self.id));
+                }
+
                 let mut updated = 0;
 
                 for (fixture_id, new_fixture_values) in values_to_update {
@@ -700,7 +706,21 @@ impl FixturePreset {
                 Ok(updated)
             }
             FixturePresetData::FeatureEffect { .. } => Ok(0),
-            FixturePresetData::KeyframeEffect { .. } => Ok(0),
+            FixturePresetData::KeyframeEffect { runtime } => {
+                let Some(keyframe_idx) = keyframe_idx else {
+                    return Err(PresetHandlerError::PresetIsEffect(self.id));
+                };
+
+                let keyframe = runtime.effect_mut().layers_mut()[0]
+                    .keyframes_mut()
+                    .get_mut(keyframe_idx)
+                    .ok_or(PresetHandlerError::PresetKeyframeNotFound(
+                        self.id,
+                        keyframe_idx,
+                    ))?;
+
+                Ok(keyframe.update(patch, values_to_update, update_mode))
+            }
         }
     }
 
@@ -708,6 +728,29 @@ impl FixturePreset {
         match &mut self.data {
             FixturePresetData::KeyframeEffect { runtime } => {
                 runtime.effect_mut().make_global();
+                Ok(())
+            }
+            _ => Err(PresetHandlerError::PresetNotAnEffect(self.id)),
+        }
+    }
+
+    pub fn recall_keyframe(
+        &self,
+        patch: &Patch,
+        fixture_state_handler: &mut FixtureStateHandler,
+        keyframe_idx: usize,
+    ) -> Result<(), PresetHandlerError> {
+        match &self.data {
+            FixturePresetData::KeyframeEffect { runtime } => {
+                let keyframe = runtime.effect().layers()[0]
+                    .keyframes()
+                    .get(keyframe_idx)
+                    .ok_or(PresetHandlerError::PresetKeyframeNotFound(
+                        self.id,
+                        keyframe_idx,
+                    ))?;
+
+                keyframe.recall(patch, fixture_state_handler);
                 Ok(())
             }
             _ => Err(PresetHandlerError::PresetNotAnEffect(self.id)),

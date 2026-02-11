@@ -248,6 +248,7 @@ impl PresetHandler {
         fixture_selector: &FixtureSelector,
         fixture_selector_context: FixtureSelectorContext,
         id: FixturePresetId,
+        keyframe_idx: Option<usize>,
         patch: &Patch,
         fixture_handler: &FixtureStateHandler,
         timing_handler: &TimingHandler,
@@ -267,7 +268,7 @@ impl PresetHandler {
 
         let preset = self.get_preset_mut(id)?;
 
-        let values_updated = preset.update(discrete_data, update_mode)?;
+        let values_updated = preset.update(patch, discrete_data, update_mode, keyframe_idx)?;
 
         Ok(values_updated)
     }

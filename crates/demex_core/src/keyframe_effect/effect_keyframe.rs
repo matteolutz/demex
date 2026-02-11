@@ -5,12 +5,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     channel3::{
-        attribute::FixtureChannel3Attribute, channel_value_discrete::FixtureChannelDiscreteValue,
-        clamped_value::ClampedValue,
+        attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3,
+        channel_value_discrete::FixtureChannelDiscreteValue, clamped_value::ClampedValue,
     },
+    command::parser::nodes::action::functions::update_function::UpdateMode,
     fixture::FixturePath,
     keyframe_effect::effect_keyframe_curve::KeyframeEffectKeyframeCurve,
     patch::Patch,
+    state::fixture_state_handler::FixtureStateHandler,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -108,6 +110,75 @@ impl KeyframeEffectKeyframe {
                 );
             }
             KeyframeEffectKeyframeData::Global(_) => {}
+        }
+    }
+
+    pub fn recall(&self, patch: &Patch, fixture_state_handler: &mut FixtureStateHandler) {
+        match &self.data {
+            KeyframeEffectKeyframeData::Selective(data) => {
+                for (fixture_path, values) in data {
+                    let Some((fixture, fixture_state)) = patch
+                        .fixture(fixture_path)
+                        .ok()
+                        .zip(fixture_state_handler.fixture_mut(fixture_path).ok())
+                    else {
+                        continue;
+                    };
+
+                    for (attribute, value) in values {
+                        let _ = fixture_state.set_programmer_value(
+                            fixture,
+                            attribute,
+                            FixtureChannelValue3::discrete(*value),
+                        );
+                    }
+                }
+            }
+            KeyframeEffectKeyframeData::Global(_) => {}
+        }
+    }
+
+    pub fn update(
+        &mut self,
+        patch: &Patch,
+        values_to_update: HashMap<
+            FixturePath,
+            HashMap<FixtureChannel3Attribute, FixtureChannelDiscreteValue>,
+        >,
+        update_mode: UpdateMode,
+    ) -> usize {
+        match &mut self.data {
+            KeyframeEffectKeyframeData::Selective(data) => {
+                let mut updated = 0;
+
+                for (fixture_path, new_fixture_values) in values_to_update {
+                    // if we already have a value for this fixture and we are not in override mode, skip
+                    if data.contains_key(&fixture_path) && update_mode != UpdateMode::Override {
+                        continue;
+                    }
+
+                    let Ok(fixture) = patch.fixture(&fixture_path) else {
+                        continue;
+                    };
+
+                    // Insert or update
+                    data.insert(
+                        fixture_path,
+                        new_fixture_values
+                            .into_iter()
+                            .filter_map(|(attribute, value)| {
+                                let cf = fixture.channel_function(&attribute)?;
+                                Some((attribute, value.to_clamped(cf)))
+                            })
+                            .collect(),
+                    );
+
+                    updated += 1;
+                }
+
+                updated
+            }
+            KeyframeEffectKeyframeData::Global(_) => 0,
         }
     }
 

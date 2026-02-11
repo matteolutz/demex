@@ -176,7 +176,7 @@ impl DemexUiCommandInputState {
                 let new_value = if value.is_empty() {
                     text.to_string()
                 } else {
-                    format!("{} {}", value, text.to_string())
+                    format!("{} {} ", value, text.to_string())
                 };
 
                 state.set_value(new_value, window, cx);

@@ -26,6 +26,7 @@ pub enum UpdateMode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdatePresetArgs {
     pub id: FixturePresetId,
+    pub keyframe_idx: Option<u32>,
     pub fixture_selector: FixtureSelector,
     pub update_mode: UpdateMode,
 }
@@ -44,6 +45,7 @@ impl FunctionDelegate for UpdatePresetArgs {
                 &self.fixture_selector,
                 args.fixture_selector_context,
                 self.id,
+                self.keyframe_idx.map(|idx| idx as usize),
                 args.patch,
                 args.fixture_handler,
                 args.timing_handler,

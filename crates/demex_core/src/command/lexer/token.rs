@@ -93,6 +93,7 @@ pub enum Token {
     KeywordHighlight,
     KeywordUnhighlight,
     KeywordGlobal,
+    KeywordKeyframe,
 
     KeywordNuzul,
     KeywordSueud,
@@ -169,6 +170,7 @@ impl Token {
             Token::KeywordProgrammer => TokenType::ObjectKeyword,
             Token::KeywordGrandmaster => TokenType::ObjectKeyword,
             Token::KeywordSpeedmaster => TokenType::ObjectKeyword,
+            Token::KeywordKeyframe => TokenType::ObjectKeyword,
 
             Token::KeywordThru => TokenType::OtherKeyword,
             Token::KeywordFor => TokenType::OtherKeyword,
@@ -281,6 +283,7 @@ impl std::fmt::Display for Token {
             Token::KeywordHighlight => write!(f, "highlight"),
             Token::KeywordUnhighlight => write!(f, "unhighlight"),
             Token::KeywordGlobal => write!(f, "global"),
+            Token::KeywordKeyframe => write!(f, "keyframe"),
             Token::Eof => write!(f, "Eof"),
         }
     }
