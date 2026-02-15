@@ -143,9 +143,9 @@ impl DemexEngine {
             log::debug!("{} {}", fixture.path(), fixture.name());
             for (attr, cf) in fixture.channel_functions() {
                 log::debug!(
-                    "\t{} (is_initial={}, highlight={:?}) {}",
+                    "\t{} (initial={:?}, highlight={:?}) {}",
                     attr,
-                    cf.is_initial,
+                    cf.initial,
                     cf.highlight,
                     match cf.kind() {
                         FixtureChannelFunctionKind::Physical { addresses } => addresses

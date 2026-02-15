@@ -153,6 +153,15 @@ pub struct FixtureChannelFunctionWheelSlot {
     pub(crate) color: Option<ColorCie>,
 }
 
+#[derive(Debug, Default, Copy, Clone, serde::Serialize, serde::Deserialize)]
+pub enum FixtureChannelFunctionInitial {
+    This,
+    Other(FixtureChannel3Attribute),
+
+    #[default]
+    None,
+}
+
 /// Describes how a fixture attribute maps to DMX channel values.
 ///
 /// A channel function defines whether the attribute is controlled by
@@ -171,7 +180,9 @@ pub struct FixtureChannelFunction {
 
     pub(crate) activation_group: Option<String>,
     pub(crate) master: LogicalChannelMaster,
-    pub(crate) is_initial: bool,
+
+    pub(crate) initial: FixtureChannelFunctionInitial,
+
     pub(crate) snap: bool,
 }
 
@@ -199,6 +210,10 @@ impl FixtureChannelFunction {
     /// The highlight value (projected in the channel function) for this attribute
     pub fn highlight(&self) -> Option<ClampedValue> {
         self.highlight
+    }
+
+    pub fn is_initial(&self) -> bool {
+        matches!(self.initial, FixtureChannelFunctionInitial::This)
     }
 
     pub fn channel_set_names(&self) -> impl Iterator<Item = &String> {

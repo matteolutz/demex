@@ -7,7 +7,7 @@ use crate::{
         attribute::FixtureChannel3Attribute, channel_value_discrete::FixtureChannelDiscreteValue,
         channel_value_queue::ChannelValueQueueEntry,
     },
-    fixture::{FixtureChannelFunctionKind, FixturePath},
+    fixture::{FixtureChannelFunctionInitial, FixtureChannelFunctionKind, FixturePath},
     patch::Patch,
 };
 
@@ -108,9 +108,24 @@ impl DmxResolver {
             let master_value = entry.master_value;
 
             for (attribute, value) in entry.sorted_values(fixture_patch) {
-                let Some(channel_function) = fixture_patch.channel_function(&attribute) else {
+                let Some(mut channel_function) = fixture_patch.channel_function(&attribute) else {
                     continue;
                 };
+
+                // TODO: fix this
+                // we only get changed values, so if we have two non inital channel functions
+                // having a value != Home, and one of them is being homed, the initial cf will be
+                // used instead of the non homed non initial cf
+                if value.is_home() {
+                    match channel_function.initial {
+                        FixtureChannelFunctionInitial::Other(initial_attribute) => {
+                            channel_function = fixture_patch
+                                .channel_function(&initial_attribute)
+                                .unwrap_or(channel_function);
+                        }
+                        _ => {}
+                    }
+                }
 
                 match &channel_function.kind {
                     FixtureChannelFunctionKind::Physical { addresses } => {

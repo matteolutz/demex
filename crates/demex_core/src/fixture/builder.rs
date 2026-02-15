@@ -20,9 +20,9 @@ use gdtf::{dmx_mode::RelationType, geometry::AnyGeometry};
 use crate::{
     channel3::{attribute::FixtureChannel3Attribute, clamped_value::ClampedValue},
     fixture::{
-        Fixture, FixtureChannelFunction, FixtureChannelFunctionKind, FixtureChannelFunctionSet,
-        FixtureChannelFunctionWheelSlot, FixtureId, FixturePath, GdtfFixturePatch, Relation,
-        RelationKind, error::FixtureError,
+        Fixture, FixtureChannelFunction, FixtureChannelFunctionInitial, FixtureChannelFunctionKind,
+        FixtureChannelFunctionSet, FixtureChannelFunctionWheelSlot, FixtureId, FixturePath,
+        GdtfFixturePatch, Relation, RelationKind, error::FixtureError,
     },
     patch::FixtureTypeList,
 };
@@ -594,8 +594,21 @@ impl<'a> FixtureBuilder<'a> {
                             activation_group,
                             master: logical_channel.master,
                             snap: logical_channel.snap,
-                            is_initial: initial_cf
-                                .is_some_and(|initial_cf| initial_cf == *channel_function),
+                            initial: match initial_cf {
+                                Some(initial_cf) => {
+                                    if initial_cf == *channel_function {
+                                        FixtureChannelFunctionInitial::This
+                                    } else {
+                                        let attribute = self.attribute_from_cf(initial_cf);
+                                        attribute
+                                            .map(|(_, attr)| {
+                                                FixtureChannelFunctionInitial::Other(attr)
+                                            })
+                                            .unwrap_or_default()
+                                    }
+                                }
+                                None => FixtureChannelFunctionInitial::None,
+                            },
                         },
                     );
 

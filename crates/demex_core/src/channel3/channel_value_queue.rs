@@ -30,33 +30,38 @@ impl ChannelValueQueueEntry {
     ) -> impl Iterator<Item = (FixtureChannel3Attribute, FixtureChannelDiscreteValue)> {
         self.values
             .into_iter()
-            .sorted_by(|(attr_a, (_, updated_a)), (attr_b, (_, updated_b))| {
-                let a_initial = fixture
-                    .channel_function(attr_a)
-                    .is_some_and(|cf| cf.is_initial);
-                let b_initial = fixture
-                    .channel_function(attr_b)
-                    .is_some_and(|cf| cf.is_initial);
+            .sorted_by(
+                |(attr_a, (value_a, updated_a)), (attr_b, (value_b, updated_b))| {
+                    let a_initial = fixture
+                        .channel_function(attr_a)
+                        .is_some_and(|cf| cf.is_initial());
+                    let b_initial = fixture
+                        .channel_function(attr_b)
+                        .is_some_and(|cf| cf.is_initial());
 
-                match (a_initial, updated_a, b_initial, updated_b) {
-                    // is_initial=false, updated=None should be first
-                    (false, None, false, None) => Ordering::Equal,
-                    (false, None, _, _) => Ordering::Less,
-                    (_, _, false, None) => Ordering::Greater,
+                    let _a_is_home = value_a.is_home();
+                    let _b_is_home = value_b.is_home();
 
-                    // is_initial=true, updated=None should be second
-                    (true, None, true, None) => std::cmp::Ordering::Equal,
-                    (true, None, _, _) => std::cmp::Ordering::Less,
-                    (_, _, true, None) => std::cmp::Ordering::Greater,
+                    match (a_initial, updated_a, b_initial, updated_b) {
+                        // is_initial=false, updated=None should be first
+                        (false, None, false, None) => Ordering::Equal,
+                        (false, None, _, _) => Ordering::Less,
+                        (_, _, false, None) => Ordering::Greater,
 
-                    // is_initial=? and updated=Some(...) should be last, sorted by updated_at.elapsed() smallest first
-                    (_, Some(updated_a), _, Some(updated_b)) => {
-                        // We want smallest elapsed to be last, so reverse the comparison
-                        // if item1 is 'more elapsed' (further in the future), it should come after item2
-                        updated_b.cmp(updated_a)
+                        // is_initial=true, updated=None should be second
+                        (true, None, true, None) => std::cmp::Ordering::Equal,
+                        (true, None, _, _) => std::cmp::Ordering::Less,
+                        (_, _, true, None) => std::cmp::Ordering::Greater,
+
+                        // is_initial=? and updated=Some(...) should be last, sorted by updated_at.elapsed() smallest first
+                        (_, Some(updated_a), _, Some(updated_b)) => {
+                            // We want smallest elapsed to be last, so reverse the comparison
+                            // if item1 is 'more elapsed' (further in the future), it should come after item2
+                            updated_b.cmp(updated_a)
+                        }
                     }
-                }
-            })
+                },
+            )
             .map(|(attr, (value, _))| (attr, value))
     }
 }
