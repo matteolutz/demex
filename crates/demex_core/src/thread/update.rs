@@ -43,6 +43,8 @@ use crate::{
     updatables::UpdatableHandler,
 };
 
+const UPDATE_THREAD_ITS: f64 = 60.0;
+
 pub struct UpdateThread {
     event_bus_tx: mpsc::Sender<DemexEngineCommEvent>,
     request_handler: DemexEngineCommRequestHandler,
@@ -163,7 +165,7 @@ impl DemexThreadDelegate for UpdateThread {
     }
 
     fn its() -> f64 {
-        60.0
+        UPDATE_THREAD_ITS
     }
 
     fn update(&mut self, thread: &mut super::DemexThread<Self>) -> bool {
