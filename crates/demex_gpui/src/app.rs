@@ -191,9 +191,11 @@ impl DemexApp {
                         theme_reg.themes().keys().join(", ")
                     );
 
-                    let Some(selected_theme) = args.theme.as_ref() else {
-                        return;
-                    };
+                    let selected_theme = args
+                        .theme
+                        .as_ref()
+                        .map(String::as_str)
+                        .unwrap_or("Default Dark");
 
                     let theme = theme_reg
                         .themes()
