@@ -8,7 +8,7 @@ use gpui::{
     canvas, div, point, prelude::FluentBuilder, px, size,
 };
 use gpui_component::{
-    ActiveTheme, Colorize, Disableable, IconName, PixelsExt, StyledExt,
+    ActiveTheme, Colorize, Disableable, IconName, StyledExt,
     button::Button,
     dock::{PanelEvent, PanelInfo, PanelState},
     v_flex, white,

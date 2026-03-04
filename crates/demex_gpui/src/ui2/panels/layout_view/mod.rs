@@ -8,7 +8,6 @@ use gpui::{
     Window, black, canvas, div, fill, prelude::FluentBuilder, px, white,
 };
 use gpui_component::{
-    PixelsExt,
     button::Button,
     dock::PanelEvent,
     h_flex,

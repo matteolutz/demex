@@ -7,7 +7,7 @@ use gpui::{
 };
 
 mod wave;
-use gpui_component::{ActiveTheme, PixelsExt, black, v_flex, white};
+use gpui_component::{ActiveTheme, black, v_flex, white};
 pub use wave::*;
 
 use crate::ui2::ext::BoundsExt;

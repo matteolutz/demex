@@ -6,7 +6,7 @@ use gpui::{
 use gpui_component::{
     Sizable,
     dock::PanelEvent,
-    table::{Table, TableEvent, TableState},
+    table::{DataTable, TableEvent, TableState},
 };
 
 use crate::{
@@ -118,7 +118,7 @@ impl Render for FixtureListPanel {
         cx: &mut gpui::Context<Self>,
     ) -> impl IntoElement {
         div().w_full().h_full().child(
-            Table::new(&self.table_state)
+            DataTable::new(&self.table_state)
                 .bordered(false)
                 .with_size(cx.ui_config().ui_size()),
         )

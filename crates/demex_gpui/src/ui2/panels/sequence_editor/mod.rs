@@ -15,7 +15,7 @@ use gpui_component::{
     dock::PanelEvent,
     h_flex,
     scroll::ScrollableElement,
-    table::{Table, TableState},
+    table::{DataTable, TableState},
     v_flex,
 };
 
@@ -259,7 +259,7 @@ impl Render for SequenceEditorPanel {
                 ),
             )
             .child(
-                Table::new(&self.table_state)
+                DataTable::new(&self.table_state)
                     .bordered(false)
                     .with_size(cx.ui_config().ui_size()),
             )

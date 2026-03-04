@@ -3,7 +3,6 @@ use gpui::{
     App, Bounds, Context, Entity, EventEmitter, Pixels, Point, Size, Subscription, Window, point,
     px, size,
 };
-use gpui_component::PixelsExt;
 
 pub trait GpuiContextExtension<T> {
     /// Arranges so that [`Context::notify`] will be called for the current context

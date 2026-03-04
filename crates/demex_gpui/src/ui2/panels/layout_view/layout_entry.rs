@@ -8,7 +8,7 @@ use gpui::{
     App, BorderStyle, Bounds, Entity, Font, PaintQuad, Pixels, Point, Size, TextRun, Window, point,
     px, white,
 };
-use gpui_component::{ActiveTheme, PixelsExt};
+use gpui_component::ActiveTheme;
 
 use crate::{
     engine::state::DemexUiState,

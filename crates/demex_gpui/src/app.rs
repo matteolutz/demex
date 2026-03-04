@@ -166,7 +166,7 @@ pub struct DemexApp {}
 
 impl DemexApp {
     pub fn run(self, args: DemexAppArgs) {
-        gpui::Application::new()
+        gpui_platform::application()
             .with_assets(Assets)
             .run(move |cx: &mut gpui::App| {
                 cx.set_global(DemexSettings::load());

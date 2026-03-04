@@ -8,7 +8,6 @@ use gpui::{
     App, AppContext, Bounds, Context, Entity, IntoElement, ParentElement, Pixels, Render, Styled,
     Subscription, Window, div, prelude::FluentBuilder, px,
 };
-use gpui_component::PixelsExt;
 use itertools::Itertools;
 
 use crate::{
