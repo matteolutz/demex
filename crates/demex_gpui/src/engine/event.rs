@@ -59,6 +59,13 @@ impl DemexEventHandler {
     ) {
         match event {
             DemexEngineCommEvent::DemexEvent(event) => Self::handle_event(event_handler, event, cx),
+            DemexEngineCommEvent::AppendToCommandInput(str_to_append) => {
+                cx.update(|cx| {
+                    DemexUiState::update_command_input_state(cx, |input_state, cx| {
+                        input_state.append(str_to_append, cx)
+                    });
+                });
+            }
             DemexEngineCommEvent::Error(err) => {
                 let _ = cx.update_wm(|wm, cx| wm.push_notifcation(Notification::error(err), cx));
             }

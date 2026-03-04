@@ -8,12 +8,18 @@ use arc_swap::ArcSwap;
 
 use crate::{
     channel3::channel_value_queue::ChannelValueQueueEntry,
-    command::parser::nodes::{
-        action::{
-            ActionIssuer, ActionRunArgs, DeferredActionRunArgs, queue::ActionQueue,
-            result::ActionRunResult,
+    command::{
+        lexer::Lexer,
+        parser::{
+            Parser2,
+            nodes::{
+                action::{
+                    ActionIssuer, ActionRunArgs, DeferredActionRunArgs, queue::ActionQueue,
+                    result::ActionRunResult,
+                },
+                fixture_selector::FixtureSelectorContext,
+            },
         },
-        fixture_selector::FixtureSelectorContext,
     },
     engine::{
         comm::{
@@ -168,9 +174,6 @@ impl DemexThreadDelegate for UpdateThread {
 
         let patch = self.patch.load();
 
-        let command_input = self.command_input.load();
-        log::debug!("command input: {:?}", command_input);
-
         // Handle queued actions
         // TODO: maybe limit amount of actions per frame
         for action in self.action_queue.lock_write().inner_mut().drain(..) {
@@ -299,8 +302,16 @@ impl DemexThreadDelegate for UpdateThread {
                 &patch,
                 FixtureSelectorContext::new(&mut self.state.fixture_selection),
                 &mut self.action_queue.lock_write(),
-                |_| {},
-                || None,
+                |str_to_append| {
+                    let _ = self
+                        .event_bus_tx
+                        .send(DemexEngineCommEvent::AppendToCommandInput(str_to_append));
+                },
+                || {
+                    let command_input = self.command_input.load();
+                    let tokens = Lexer::new(&command_input).tokenize().ok()?;
+                    Parser2::new(&tokens).parse().err()
+                },
                 None,
                 &mut self.event_list,
             )

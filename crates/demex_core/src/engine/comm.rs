@@ -31,6 +31,8 @@ use crate::{
 pub enum DemexEngineCommEvent {
     DemexEvent(DemexEvent),
 
+    AppendToCommandInput(String),
+
     ActionRunResult(ActionRunResult),
 
     Error(String),

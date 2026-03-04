@@ -1586,7 +1586,11 @@
       },
       "timecodes": {}
     },
-    "input_device_configs": [],
+    "input_device_configs": [
+      {
+        "profile_type": { "ApcMiniMk2": { "apc_midi": "" } }
+      }
+    ],
     "patch": {
       "fixtures": [
         {

@@ -199,7 +199,7 @@ impl DemexInputDeviceHandler {
                         if parse_error.as_ref().is_some_and(|err| {
                             err.was_expected(ExpectedParseSlice::ButtonId { is_unassign: true })
                         }) {
-                            append_to_command(format!(" {}.{}", device_idx, button_id));
+                            append_to_command(format!("{}.{}", device_idx, button_id));
                             continue;
                         }
 
@@ -210,7 +210,7 @@ impl DemexInputDeviceHandler {
                         } else if parse_error.is_some_and(|err| {
                             err.was_expected(ExpectedParseSlice::ButtonId { is_unassign: false })
                         }) {
-                            append_to_command(format!(" {}.{}", device_idx, button_id));
+                            append_to_command(format!("{}.{}", device_idx, button_id));
                         }
                     }
                     DemexInputDeviceMessage::ButtonReleased(button_id) => {
@@ -232,7 +232,7 @@ impl DemexInputDeviceHandler {
                                     is_unassign: false,
                                 })
                         }) {
-                            append_to_command(format!(" {}.{}", device_idx, fader_id));
+                            append_to_command(format!("{}.{}", device_idx, fader_id));
                         }
                     }
                     DemexInputDeviceMessage::FaderValueChanged(fader_id, value) => {
@@ -241,7 +241,7 @@ impl DemexInputDeviceHandler {
                         if parse_error.as_ref().is_some_and(|err| {
                             err.was_expected(ExpectedParseSlice::FaderId { is_unassign: true })
                         }) {
-                            append_to_command(format!(" {}.{}", device_idx, fader_id));
+                            append_to_command(format!("{}.{}", device_idx, fader_id));
                             continue;
                         }
 
@@ -252,7 +252,7 @@ impl DemexInputDeviceHandler {
                         } else if parse_error.is_some_and(|err| {
                             err.was_expected(ExpectedParseSlice::FaderId { is_unassign: false })
                         }) {
-                            append_to_command(format!(" {}.{}", device_idx, fader_id));
+                            append_to_command(format!("{}.{}", device_idx, fader_id));
                         }
                     }
                     DemexInputDeviceMessage::FaderValuesChanged(fader_values) => {

@@ -29,8 +29,8 @@ mod actions {
 
     pub fn init(cx: &mut App) {
         cx.bind_keys([
-            KeyBinding::new("secondary-k", PrevCommand, Some(CONTEXT)),
-            KeyBinding::new("secondary-j", NextCommand, Some(CONTEXT)),
+            KeyBinding::new("up", PrevCommand, Some(CONTEXT)),
+            KeyBinding::new("down", NextCommand, Some(CONTEXT)),
         ]);
     }
 }
@@ -79,7 +79,7 @@ impl CommandPanel {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let command_input_state = cx.new(|cx| {
             InputState::new(window, cx)
-                .code_editor("demex")
+                // .code_editor("demex")
                 .line_number(false)
                 .indent_guides(false)
                 .placeholder("Command")
@@ -125,11 +125,9 @@ impl CommandPanel {
         cx: &mut Context<Self>,
     ) {
         let input_value = input_state.read(cx).value();
-        let command = input_value.strip_suffix("\n");
-
-        let Some(command) = command else {
-            return;
-        };
+        let command = input_value
+            .strip_suffix("\n")
+            .unwrap_or(input_value.as_str());
 
         if !command.is_empty() {
             let exec_res = DemexEngineHandler::engine(cx).exec_command(command);
