@@ -116,8 +116,6 @@ impl KeyframeEffectLayer {
         // let mut t = (t % (2.0 * f32::consts::PI)) / (2.0 * f32::consts::PI);
         let t = (t.rem_euclid(2.0 * f32::consts::PI)) / (2.0 * f32::consts::PI);
 
-        println!("t is {}", t);
-
         let (keyframe_idx, keyframe) = self
             .keyframes
             .iter()
