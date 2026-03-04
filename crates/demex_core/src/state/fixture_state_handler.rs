@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::mpsc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::mpsc,
+};
 
 use crate::{
     channel3::{
@@ -6,7 +9,10 @@ use crate::{
         channel_value_queue::ChannelValueQueueEntry,
     },
     engine::component::Component,
-    fixture::{Fixture, FixturePath, FixturePathMatchLevel, error::FixtureError},
+    fixture::{
+        Fixture, FixtureChannelFunctionInitial, FixturePath, FixturePathMatchLevel,
+        error::FixtureError,
+    },
     master::MasterHandler,
     patch::Patch,
     presets::PresetHandler,
@@ -174,19 +180,32 @@ impl FixtureStateHandler {
         for (path, state) in self.fixture_states.iter_mut() {
             let mut updated_values = HashMap::new();
             let fixture = patch.fixture(path)?;
+
+            // is this fixture affected by any master changes?
             let should_force_output_fixture =
                 master_handler.force_output().should_force_output(path);
 
+            // this contains attributes, that we need to force update
+            // in a second pass
+            let mut force_output_attributes = HashSet::new();
+
             for (attribute, output_value) in state.cached_output_mut() {
-                let should_force_output_attribute = should_force_output_fixture
+                // is this attribute affected by master changes or is it in the force output set?
+                let should_force_output_attribute = (should_force_output_fixture
                     && fixture
                         .channel_function(attribute)
-                        .is_some_and(|cf| cf.should_react_to_master());
+                        .is_some_and(|cf| cf.should_react_to_master()))
+                    || force_output_attributes.contains(attribute);
 
                 if !should_force_output_attribute && !output_value.should_output(preset_handler) {
                     continue;
                 }
 
+                // if we added this attribute to the force output set in a previous iteration,
+                // remove it now that we are processing it
+                force_output_attributes.remove(attribute);
+
+                // get the discrete value for this attribute
                 let discrete_value = output_value.value().clone().to_discrete(
                     fixture,
                     &attribute,
@@ -194,7 +213,45 @@ impl FixtureStateHandler {
                     timing_handler,
                 );
 
+                // insert the updated value into the map
                 updated_values.insert(attribute.clone(), (discrete_value, None));
+
+                // this means we just homed this attribute
+                if output_value.value().is_home()
+                // if the channel function is not initial, we should also output the initial
+                // attribute
+                    && let Some(FixtureChannelFunctionInitial::Other(other)) = fixture
+                        .channel_function(attribute)
+                        .map(|cf| cf.initial)
+                {
+                    log::info!("force outputting initial attribute: {}", other);
+                    // add the initial attribute to the force output set
+                    force_output_attributes.insert(other.clone());
+                }
+
+                // reset the output value to clear any pending updates
+                output_value.reset();
+            }
+
+            // add any remaining force output attributes to the queue
+            for force_output_attribute in force_output_attributes.drain() {
+                let Some(output_value) = state.cached_output_mut().get_mut(&force_output_attribute)
+                else {
+                    continue;
+                };
+
+                let discrete_value = output_value.value().clone().to_discrete(
+                    fixture,
+                    &force_output_attribute,
+                    preset_handler,
+                    timing_handler,
+                );
+
+                updated_values.insert(force_output_attribute, (discrete_value, None));
+
+                // the output_value should already be reset.
+                // If it was flagged dirty, it should have been cleared by the previous pass.
+                // But just to make sure..
                 output_value.reset();
             }
 

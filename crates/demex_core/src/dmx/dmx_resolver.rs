@@ -108,11 +108,12 @@ impl DmxResolver {
             let master_value = entry.master_value;
 
             for (attribute, value) in entry.sorted_values(fixture_patch) {
-                let Some(mut channel_function) = fixture_patch.channel_function(&attribute) else {
+                let Some(channel_function) = fixture_patch.channel_function(&attribute) else {
                     continue;
                 };
 
-                // TODO: fix this
+                // INFO: we are handling this in the fixture state handler
+                /*
                 // we only get changed values, so if we have two non inital channel functions
                 // having a value != Home, and one of them is being homed, the initial cf will be
                 // used instead of the non homed non initial cf
@@ -125,7 +126,7 @@ impl DmxResolver {
                         }
                         _ => {}
                     }
-                }
+                }*/
 
                 match &channel_function.kind {
                     FixtureChannelFunctionKind::Physical { addresses } => {
