@@ -116,6 +116,18 @@ pub fn apply_pool_type_to_button(
                             }
                         });
                     })
+                    .action_at(6, "Insert Seq", move |_, cx| {
+                        get_sequence(pool_item_id, cx, |seq, cx| {
+                            if let Some(seq) = seq {
+                                DemexUiState::update_command_input_state(cx, |state, cx| {
+                                    state.append(
+                                        format!("{} {}", Token::KeywordSequence, seq.id),
+                                        cx,
+                                    )
+                                });
+                            }
+                        });
+                    })
                 })
         }
         PoolType::Preset(feature_group) => button
