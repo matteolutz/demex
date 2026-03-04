@@ -48,6 +48,8 @@ pub struct UpdateThread {
     master_handler: MasterHandler,
     patch: Arc<ArcSwap<Patch>>,
 
+    command_input: Arc<ArcSwap<String>>,
+
     event_list: DemexEventList,
 
     input_device_handler: DemexInputDeviceHandler,
@@ -62,6 +64,7 @@ impl UpdateThread {
         request_handler: DemexEngineCommRequestHandler,
         action_queue: ComponentHandle<ActionQueue>,
         value_queue_tx: mpsc::Sender<ChannelValueQueueEntry>,
+        command_input: Arc<ArcSwap<String>>,
         mut preset_handler: PresetHandler,
         mut updatable_handler: UpdatableHandler,
         mut timing_handler: TimingHandler,
@@ -132,6 +135,8 @@ impl UpdateThread {
             master_handler,
             patch,
 
+            command_input,
+
             event_list: DemexEventList::default(),
 
             input_device_handler,
@@ -162,6 +167,9 @@ impl DemexThreadDelegate for UpdateThread {
         }
 
         let patch = self.patch.load();
+
+        let command_input = self.command_input.load();
+        log::debug!("command input: {:?}", command_input);
 
         // Handle queued actions
         // TODO: maybe limit amount of actions per frame

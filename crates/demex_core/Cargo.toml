@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-arc-swap = "1.7.1"
+arc-swap.workspace = true
 
 demex_headless.workspace = true
 demex_dmx.workspace = true

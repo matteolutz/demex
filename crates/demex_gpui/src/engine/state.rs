@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, VecDeque},
+    rc::Rc,
     time::Duration,
 };
 
@@ -17,8 +18,11 @@ use demex_core::{
     pool::{PoolItem, PoolType},
     utils::thread::DemexThreadStats,
 };
-use gpui::{AnyWindowHandle, App, AppContext, BorrowAppContext, Context, Entity, Global, Window};
-use gpui_component::input::{InputState, Position};
+use gpui::{
+    AnyWindowHandle, App, AppContext, BorrowAppContext, Context, Entity, Global, Subscription,
+    Window,
+};
+use gpui_component::input::{InputEvent, InputState, Position};
 
 use crate::engine::DemexEngineHandler;
 
@@ -145,9 +149,31 @@ impl<const SIZE: usize> DemexPerformanceBuffer<SIZE> {
 pub struct DemexUiCommandInputState {
     input_state: Entity<InputState>,
     window_handle: AnyWindowHandle,
+
+    _subscription: Rc<Subscription>,
 }
 
 impl DemexUiCommandInputState {
+    pub fn new(
+        input_state: Entity<InputState>,
+        window_handle: AnyWindowHandle,
+        cx: &mut App,
+    ) -> Self {
+        let subscription =
+            cx.subscribe(&input_state, move |this, evt: &InputEvent, cx| match evt {
+                InputEvent::Change => {
+                    DemexEngineHandler::update_command_input(this.read(cx).value(), cx)
+                }
+                _ => {}
+            });
+
+        Self {
+            input_state,
+            window_handle,
+            _subscription: Rc::new(subscription),
+        }
+    }
+
     fn set_cursor_end(state: &mut InputState, window: &mut Window, cx: &mut Context<InputState>) {
         state.set_cursor_position(Position::new(0, state.value().len() as u32), window, cx);
     }
@@ -275,11 +301,10 @@ impl DemexUiState {
         window: &mut Window,
         cx: &mut App,
     ) {
+        let state = DemexUiCommandInputState::new(input_state.clone(), window.window_handle(), cx);
+
         let this: &mut Self = cx.global_mut();
-        this.command_input_state = Some(DemexUiCommandInputState {
-            input_state: input_state.clone(),
-            window_handle: window.window_handle(),
-        });
+        this.command_input_state = Some(state);
     }
 
     pub fn command_input_state(cx: &App) -> Option<DemexUiCommandInputState> {

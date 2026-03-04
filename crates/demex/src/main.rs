@@ -4,9 +4,10 @@ mod storage;
 use std::{
     io::{self, Write},
     path::PathBuf,
-    sync::mpsc,
+    sync::{Arc, mpsc},
 };
 
+use arc_swap::ArcSwap;
 use demex_core::engine::DemexEngine;
 use gdtf::GdtfFile;
 use itertools::Itertools;
@@ -152,7 +153,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         let (tx, _) = mpsc::channel();
-        let mut engine = DemexEngine::new(tx, args.debug_thread);
+        let command_input = Arc::new(ArcSwap::from_pointee(String::new()));
+        let mut engine = DemexEngine::new(tx, command_input, args.debug_thread);
         engine.load_show(show.engine, fixture_types);
 
         loop {

@@ -55,6 +55,8 @@ pub struct DemexEngine {
     state: ComponentHandle<DemexEngineState>,
     action_queue: ComponentHandle<ActionQueue>,
 
+    command_input: Arc<ArcSwap<String>>,
+
     event_bus_tx: mpsc::Sender<DemexEngineCommEvent>,
 
     update_thread: Option<DemexThreadHandle<UpdateThread>>,
@@ -62,7 +64,11 @@ pub struct DemexEngine {
 }
 
 impl DemexEngine {
-    pub fn new(event_bus_tx: mpsc::Sender<DemexEngineCommEvent>, start_debug: bool) -> Self {
+    pub fn new(
+        event_bus_tx: mpsc::Sender<DemexEngineCommEvent>,
+        command_input: Arc<ArcSwap<String>>,
+        start_debug: bool,
+    ) -> Self {
         let stats = ComponentHandle::create_default();
 
         let s = Self {
@@ -72,6 +78,7 @@ impl DemexEngine {
             action_queue: ComponentHandle::create_default(),
             state: ComponentHandle::create_default(),
             event_bus_tx,
+            command_input,
             patch: Arc::new(ArcSwap::from_pointee(Patch::default())),
             update_thread: None,
             output_thread: None,
@@ -105,6 +112,7 @@ impl DemexEngine {
             comm_handler,
             self.action_queue.clone(),
             value_queue_tx,
+            self.command_input.clone(),
             show.preset_handler,
             show.updatable_handler,
             show.timing_handler,

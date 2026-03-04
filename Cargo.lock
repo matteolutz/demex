@@ -1414,6 +1414,7 @@ checksum = "807800ff3288b621186fe0a8f3392c4652068257302709c24efd918c3dffcdc2"
 name = "demex"
 version = "0.2.0"
 dependencies = [
+ "arc-swap",
  "clap",
  "demex_core",
  "demex_dmx",
@@ -1474,6 +1475,7 @@ name = "demex_gpui"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "arc-swap",
  "chrono",
  "clap",
  "demex_core",

@@ -1,5 +1,6 @@
-use std::sync::mpsc;
+use std::sync::{Arc, mpsc};
 
+use arc_swap::ArcSwap;
 use demex_core::{
     engine::{
         DemexEngine,
@@ -23,6 +24,8 @@ pub struct DemexEngineHandler {
 
     event_handler: Entity<DemexEventHandler>,
 
+    command_input: Arc<ArcSwap<String>>,
+
     dispatcher: DemexEngineCommRequestDispatcher,
 }
 
@@ -34,7 +37,9 @@ impl DemexEngineHandler {
     ) -> Result<DemexFrontendInitState, DemexEngineError> {
         let (event_bus_tx, event_bus_rx) = mpsc::channel();
 
-        let mut engine = DemexEngine::new(event_bus_tx, false);
+        let command_input = Arc::new(ArcSwap::from_pointee(String::new()));
+
+        let mut engine = DemexEngine::new(event_bus_tx, command_input.clone(), false);
 
         let (dispatcher, frontend_state) = engine.load_show(show, fixture_types);
 
@@ -43,6 +48,7 @@ impl DemexEngineHandler {
         cx.set_global(Self {
             engine,
             event_handler,
+            command_input,
             dispatcher,
         });
 
@@ -67,6 +73,12 @@ impl DemexEngineHandler {
     pub fn event_handler(cx: &App) -> Entity<DemexEventHandler> {
         let this: &Self = cx.global();
         this.event_handler.clone()
+    }
+
+    pub fn update_command_input(value: impl Into<String>, cx: &mut App) {
+        let value = value.into();
+        let this: &Self = cx.global();
+        this.command_input.store(Arc::new(value));
     }
 
     pub fn send<R, CB>(cx: &mut App, req: R, cb: CB)
