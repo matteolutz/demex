@@ -152,6 +152,7 @@ pub mod actions {
     pub fn init_menus(cx: &mut App) {
         cx.set_menus(vec![Menu {
             name: "demex".into(),
+            disabled: false,
             items: vec![
                 MenuItem::os_submenu("Services", SystemMenuType::Services),
                 MenuItem::separator(),

@@ -50,7 +50,7 @@ pub struct WindowManager {
 
 impl WindowManager {
     pub fn new(cx: &mut App) -> Self {
-        cx.on_window_closed(|cx| {
+        cx.on_window_closed(|cx, _| {
             let dock_window_closed = cx.update_wm(|wm, cx| {
                 wm.dock_windows
                     .iter()
