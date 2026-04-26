@@ -27,7 +27,7 @@ jobs:
         run: cargo install cargo-bundle
 
       - name: Install apt dependencies
-        run: sudo apt-get update && sudo apt-get install build-essential pkg-config libasound2-dev libudev-dev libx11-dev libxkbcommon-dev libxkbcommon-x11-0 libxkbcommon-x11-dev libwayland-client0
+        run: sudo apt-get update && sudo apt-get install build-essential pkg-config libasound2-dev libudev-dev libx11-dev libxkbcommon-dev libxkbcommon-x11-0 libxkbcommon-x11-dev libwayland-client0 libwayland-dev
 
       - name: cargo check
         run: cargo check --all-features
