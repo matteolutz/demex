@@ -5,9 +5,12 @@ use std::{
 };
 
 use demex_core::{
-    command::parser::nodes::{
-        action::{Action, functions::set_function::ObjectSetPropertyArgs},
-        object::Object,
+    command::{
+        lexer::token::Token,
+        parser::nodes::{
+            action::{Action, functions::set_function::ObjectSetPropertyArgs},
+            object::Object,
+        },
     },
     sequence::{
         cue::{CueFadingFunction, CueIdx, CueOut, CueProperty},
@@ -19,7 +22,7 @@ use gpui::{
     Window, div,
 };
 use gpui_component::{
-    ActiveTheme, Sizable,
+    ActiveTheme, IconName, Sizable,
     button::{Button, ButtonVariants},
     checkbox::Checkbox,
     menu::{DropdownMenu, PopupMenuItem},
@@ -28,7 +31,7 @@ use gpui_component::{
 use strum::IntoEnumIterator;
 
 use crate::{
-    engine::DemexEngineHandler,
+    engine::{DemexEngineHandler, state::DemexUiState},
     ui2::{
         config::AppConfigExt,
         window::{
@@ -73,6 +76,7 @@ impl SequenceEditorTable {
             columns: vec![
                 Column::new("id", "Id").width(60.0),
                 Column::new("name", "Name").width(150.0),
+                Column::new("insert", "").width(50.0),
                 Column::new("in-fade", "In Fade").width(60.0),
                 Column::new("in-delay", "In Delay").width(60.0),
                 Column::new("snap-percent", "Snap %").width(60.0),
@@ -246,6 +250,33 @@ impl TableDelegate for SequenceEditorTable {
                         })
                         .text()
                         .label(cue.name.clone()),
+                )
+                .into_any_element(),
+            "insert" => div()
+                .size_full()
+                .flex()
+                .justify_center()
+                .items_center()
+                .child(
+                    Button::new("insert")
+                        .ghost()
+                        .icon(IconName::ExternalLink)
+                        .on_click(move |_, _, cx| {
+                            cx.defer(move |cx| {
+                                DemexUiState::update_command_input_state(cx, |state, cx| {
+                                    state.append(
+                                        format!(
+                                            "{} {} {} {}",
+                                            Token::KeywordSequence,
+                                            sequence_id,
+                                            Token::KeywordCue,
+                                            cue_idx
+                                        ),
+                                        cx,
+                                    );
+                                });
+                            });
+                        }),
                 )
                 .into_any_element(),
             "in-fade" => div()
