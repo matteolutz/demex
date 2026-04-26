@@ -23,6 +23,7 @@ use gpui_component::{
     scroll::ScrollableElement,
     v_flex,
 };
+use itertools::Itertools;
 
 use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},
@@ -255,30 +256,38 @@ impl Render for SetAttributeWindow {
                     .size_full()
                     .gap_2()
                     .flex_grow()
-                    .children(self.channel_sets.read(cx).iter().map(|(set, fixtures)| {
-                        let all_fixtures_have_set = DemexUiState::fixture_selection(cx)
+                    .children(
+                        self.channel_sets
                             .read(cx)
-                            .as_ref()
-                            .is_some_and(|sel| sel.selection().fixtures().len() == fixtures.len());
-
-                        let entity = cx.entity();
-
-                        Button::new(format!("channel-set-{}", set.clone()))
-                            .when(all_fixtures_have_set, |this| {
-                                this.with_variant(ButtonVariant::Success)
-                            })
-                            .child(set.clone())
-                            .on_click({
-                                let set = set.clone();
-                                move |_, _, cx| {
-                                    let set = set.clone();
-                                    entity.update(cx, move |this, cx| {
-                                        this.set_channel_set(set, cx);
+                            .iter()
+                            .sorted_by_key(|(set, _)| set.as_str())
+                            .map(|(set, fixtures)| {
+                                let all_fixtures_have_set = DemexUiState::fixture_selection(cx)
+                                    .read(cx)
+                                    .as_ref()
+                                    .is_some_and(|sel| {
+                                        sel.selection().fixtures().len() == fixtures.len()
                                     });
-                                }
-                            })
-                            .w_full()
-                    })),
+
+                                let entity = cx.entity();
+
+                                Button::new(format!("channel-set-{}", set.clone()))
+                                    .when(all_fixtures_have_set, |this| {
+                                        this.with_variant(ButtonVariant::Success)
+                                    })
+                                    .child(set.clone())
+                                    .on_click({
+                                        let set = set.clone();
+                                        move |_, _, cx| {
+                                            let set = set.clone();
+                                            entity.update(cx, move |this, cx| {
+                                                this.set_channel_set(set, cx);
+                                            });
+                                        }
+                                    })
+                                    .w_full()
+                            }),
+                    ),
             )
     }
 }
