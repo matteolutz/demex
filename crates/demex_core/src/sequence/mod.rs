@@ -194,6 +194,16 @@ impl Sequence {
             .flat_map(|c| c.affected_fixtures(preset_handler))
             .collect()
     }
+
+    pub fn is_fixture_affected(
+        &self,
+        fixture_path: &FixturePath,
+        preset_handler: &PresetHandler,
+    ) -> bool {
+        self.cues
+            .iter()
+            .any(|c| c.is_fixture_affected(fixture_path, preset_handler))
+    }
 }
 
 #[derive(strum_macros::EnumString, strum_macros::Display)]

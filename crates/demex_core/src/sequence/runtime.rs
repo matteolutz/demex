@@ -257,25 +257,23 @@ impl SequenceRuntime {
         priority: FixtureChannelValuePriority,
         preset_handler: &PresetHandler,
     ) -> Option<FadeFixtureChannelValue> {
-        let tracked_value = self.tracked_values.get(fixture_path).and_then(|values| {
-            values.iter().find_map(|(value_attribute, values)| {
-                if value_attribute == attribute {
-                    let mut value = FixtureChannelValue3::home();
+        let tracked_value = self
+            .tracked_values
+            .get(fixture_path)
+            .and_then(|values| values.get(attribute))
+            .and_then(|values| {
+                let mut value = FixtureChannelValue3::home();
 
-                    for (_, v) in values.iter() {
-                        value = FixtureChannelValue3::Mix {
-                            a: Box::new(value),
-                            b: Box::new(v.value().clone()),
-                            mix: v.alpha,
-                        };
-                    }
-
-                    Some(FadeFixtureChannelValue::new(value, 1.0, priority))
-                } else {
-                    None
+                for (_, v) in values.iter() {
+                    value = FixtureChannelValue3::Mix {
+                        a: Box::new(value),
+                        b: Box::new(v.value().clone()),
+                        mix: v.alpha,
+                    };
                 }
-            })
-        });
+
+                Some(FadeFixtureChannelValue::new(value, 1.0, priority))
+            });
 
         tracked_value.and_then(|tracked_value| {
             if let Some(cue_out_started) = self.state.when_cue_out() {

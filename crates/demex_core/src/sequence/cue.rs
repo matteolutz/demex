@@ -685,6 +685,17 @@ impl Cue {
             .collect()
     }
 
+    pub fn is_fixture_affected(
+        &self,
+        fixture_path: &FixturePath,
+        _preset_handler: &PresetHandler,
+    ) -> bool {
+        match self.data {
+            CueDataMode::Default(_) => self.selection.has_fixture(fixture_path),
+            _ => todo!(),
+        }
+    }
+
     pub fn recall(&self, patch: &Patch, fixture_handler: &mut FixtureStateHandler) {
         match self.data {
             CueDataMode::Default(ref data) => {

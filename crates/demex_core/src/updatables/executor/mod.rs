@@ -215,9 +215,8 @@ impl DemexExecutor {
         let sequence = preset_handler
             .get_sequence(self.runtime.sequence_id())
             .unwrap();
-        let fixtures = sequence.affected_fixtures(preset_handler);
 
-        if !fixtures.contains(fixture_path) {
+        if !sequence.is_fixture_affected(fixture_path, preset_handler) {
             return Err(FixtureError::GdtfAttributeValueNotFound(*attribute));
         }
 

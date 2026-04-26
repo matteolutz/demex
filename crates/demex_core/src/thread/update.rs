@@ -44,6 +44,7 @@ use crate::{
     },
     timing::TimingHandler,
     updatables::UpdatableHandler,
+    utils::profiling::Profiler,
 };
 
 const UPDATE_THREAD_ITS: f64 = MAX_OUTPUT_FPS * 2.0;
@@ -176,6 +177,8 @@ impl DemexThreadDelegate for UpdateThread {
     }
 
     fn update(&mut self, thread: &mut super::DemexThread<Self>) -> bool {
+        let mut profiler = Profiler::default();
+
         for _ in thread.handle_messages() {}
         if thread.should_stop() {
             return true;
@@ -183,6 +186,7 @@ impl DemexThreadDelegate for UpdateThread {
 
         let patch = self.patch.load();
 
+        profiler.start("action handling");
         // Handle queued actions
         // TODO: maybe limit amount of actions per frame
         for action in self.action_queue.lock_write().inner_mut().drain(..) {
@@ -269,6 +273,7 @@ impl DemexThreadDelegate for UpdateThread {
             }
         }
 
+        profiler.start("timecode update");
         self.timing_handler.update_running_timecodes(
             &mut self.fixture_state_handler,
             &self.preset_handler,
@@ -276,6 +281,7 @@ impl DemexThreadDelegate for UpdateThread {
             &mut self.event_list,
         );
 
+        profiler.start("output values update");
         let mut updated_output_values = HashMap::new();
         let _ = self
             .fixture_state_handler
@@ -289,6 +295,7 @@ impl DemexThreadDelegate for UpdateThread {
             )
             .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
 
+        profiler.start("output values submit");
         // the update thread is running much faster than the output thread.
         // so we only need to submit output values at the same rate as the output thread.
         if self.last_output_send.is_none()
@@ -308,6 +315,7 @@ impl DemexThreadDelegate for UpdateThread {
                 .inspect_err(|err| log::error!("Failed to submit output values: {}", err));
         }
 
+        profiler.start("executors update");
         self.updatable_handler.update_executors(
             &patch,
             &mut self.fixture_state_handler,
@@ -316,6 +324,7 @@ impl DemexThreadDelegate for UpdateThread {
             &mut self.event_list,
         );
 
+        profiler.start("input device handler update");
         let _ = self
             .input_device_handler
             .update(
@@ -337,6 +346,7 @@ impl DemexThreadDelegate for UpdateThread {
             )
             .inspect_err(|err| log::error!("Failed to update input device handler: {}", err));
 
+        profiler.start("ui update");
         let _ = self.event_list.send(&self.event_bus_tx);
         if !updated_output_values.is_empty() {
             let _ = self
@@ -365,6 +375,11 @@ impl DemexThreadDelegate for UpdateThread {
         // send tick state
         // let tick_state = DemexEngineTickState {};
         // let _ = event_bus_tx.send(DemexEngineCommEvent::TickStateUpdate(tick_state));
+
+        /*
+        let result = profiler.end();
+        log::info!("Profiling result: {}", result);
+        */
 
         false
     }
