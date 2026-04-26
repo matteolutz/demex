@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     sync::{Arc, mpsc},
-    time::Instant,
+    time::{self, Instant},
 };
 
 use arc_swap::ArcSwap;
@@ -38,12 +38,15 @@ use crate::{
     presets::PresetHandler,
     show::DemexShowRef,
     state::{fixture_state::FixtureState, fixture_state_handler::FixtureStateHandler},
-    thread::DemexThreadDelegate,
+    thread::{
+        DemexThreadDelegate,
+        output::{MAX_OUTPUT_FPS, MIN_OUTPUT_FRAME_TIME},
+    },
     timing::TimingHandler,
     updatables::UpdatableHandler,
 };
 
-const UPDATE_THREAD_ITS: f64 = 60.0;
+const UPDATE_THREAD_ITS: f64 = MAX_OUTPUT_FPS * 2.0;
 
 pub struct UpdateThread {
     event_bus_tx: mpsc::Sender<DemexEngineCommEvent>,
@@ -61,6 +64,8 @@ pub struct UpdateThread {
     event_list: DemexEventList,
 
     input_device_handler: DemexInputDeviceHandler,
+
+    last_output_send: Option<time::Instant>,
 
     fixture_state_handler: FixtureStateHandler,
     state: DemexEngineState,
@@ -148,6 +153,8 @@ impl UpdateThread {
             event_list: DemexEventList::default(),
 
             input_device_handler,
+
+            last_output_send: None,
 
             fixture_state_handler,
             state,
@@ -279,16 +286,24 @@ impl DemexThreadDelegate for UpdateThread {
             )
             .inspect_err(|err| log::error!("Failed to update fixture handler: {}", err));
 
-        let _ = self
-            .fixture_state_handler
-            .submit_output_values(
-                &self.value_queue_tx,
-                &patch,
-                &self.preset_handler,
-                &self.timing_handler,
-                &mut self.master_handler,
-            )
-            .inspect_err(|err| log::error!("Failed to submit output values: {}", err));
+        // the update thread is running much faster than the output thread.
+        // so we only need to submit output values at the same rate as the output thread.
+        if self.last_output_send.is_none()
+            || self.last_output_send.unwrap().elapsed().as_secs_f64() >= MIN_OUTPUT_FRAME_TIME
+        {
+            self.last_output_send = Some(time::Instant::now());
+
+            let _ = self
+                .fixture_state_handler
+                .submit_output_values(
+                    &self.value_queue_tx,
+                    &patch,
+                    &self.preset_handler,
+                    &self.timing_handler,
+                    &mut self.master_handler,
+                )
+                .inspect_err(|err| log::error!("Failed to submit output values: {}", err));
+        }
 
         self.updatable_handler.update_executors(
             &patch,

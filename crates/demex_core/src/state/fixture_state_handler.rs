@@ -169,6 +169,7 @@ impl FixtureStateHandler {
         Ok(())
     }
 
+    // TODO: optimize this really, really bad function
     pub fn submit_output_values(
         &mut self,
         value_queue_tx: &mpsc::Sender<ChannelValueQueueEntry>,
@@ -224,7 +225,7 @@ impl FixtureStateHandler {
                         .channel_function(attribute)
                         .map(|cf| cf.initial)
                 {
-                    log::info!("force outputting initial attribute: {}", other);
+                    log::debug!("force outputting initial attribute: {}", other);
                     // add the initial attribute to the force output set
                     force_output_attributes.insert(other.clone());
                 }
