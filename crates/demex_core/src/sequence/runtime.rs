@@ -199,6 +199,30 @@ impl SequenceRuntimeState {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct TrackedValue {
+    from_cue_idx: usize,
+    value: FadeFixtureChannelValue,
+    is_mib: bool,
+}
+
+impl TrackedValue {
+    pub fn with_mib(mut self, is_mib: bool) -> Self {
+        self.is_mib = is_mib;
+        self
+    }
+}
+
+impl From<(usize, FadeFixtureChannelValue)> for TrackedValue {
+    fn from((from_cue_idx, value): (usize, FadeFixtureChannelValue)) -> Self {
+        Self {
+            from_cue_idx,
+            value,
+            is_mib: false,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct SequenceRuntime {
     sequence_id: u32,
@@ -207,10 +231,7 @@ pub struct SequenceRuntime {
     state: SequenceRuntimeState,
 
     #[serde(default, skip_serializing, skip_deserializing)]
-    tracked_values: HashMap<
-        FixturePath,
-        HashMap<FixtureChannel3Attribute, Vec<(usize, FadeFixtureChannelValue)>>,
-    >,
+    tracked_values: HashMap<FixturePath, HashMap<FixtureChannel3Attribute, Vec<TrackedValue>>>,
 }
 
 impl SequenceRuntime {
@@ -264,11 +285,11 @@ impl SequenceRuntime {
             .and_then(|values| {
                 let mut value = FixtureChannelValue3::home();
 
-                for (_, v) in values.iter() {
+                for v in values.iter() {
                     value = FixtureChannelValue3::Mix {
                         a: Box::new(value),
-                        b: Box::new(v.value().clone()),
-                        mix: v.alpha,
+                        b: Box::new(v.value.value().clone()),
+                        mix: v.value.alpha,
                     };
                 }
 
@@ -303,7 +324,7 @@ impl SequenceRuntime {
     pub fn update_cue_values<'a>(
         tracked_values: &mut HashMap<
             FixturePath,
-            HashMap<FixtureChannel3Attribute, Vec<(usize, FadeFixtureChannelValue)>>,
+            HashMap<FixtureChannel3Attribute, Vec<TrackedValue>>,
         >,
         fixtures: impl Iterator<Item = &'a FixturePath>,
         cue_idx: usize,
@@ -350,32 +371,51 @@ impl SequenceRuntime {
                 if let Some(existing_values) = fixture_values.get_mut(&attribute) {
                     if fixture_cue_fade == 0.0 {
                         continue;
-                    } else if fixture_cue_fade == 1.0 {
-                        if let Some((_, existing_cue_value)) =
-                            existing_values.iter_mut().find(|(i, _)| *i == cue_idx)
+                    }
+
+                    if fixture_cue_fade == 1.0 {
+                        if let Some(existing_cue_value) = existing_values
+                            .iter_mut()
+                            .find(|value| value.from_cue_idx == cue_idx)
                         {
-                            existing_cue_value.set_alpha(1.0);
+                            existing_cue_value.value.set_alpha(1.0);
                         } else {
-                            *existing_values = vec![(
-                                cue_idx,
-                                FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
-                            )];
+                            *existing_values = vec![TrackedValue {
+                                from_cue_idx: cue_idx,
+                                value: FadeFixtureChannelValue::new(
+                                    value,
+                                    fixture_cue_fade,
+                                    priority,
+                                ),
+                                is_mib,
+                            }];
                             continue;
                         }
 
-                        existing_values.retain(|(i, _)| *i == cue_idx);
+                        existing_values.retain(|value| value.from_cue_idx == cue_idx);
                     } else {
                         let existing_cue_value = existing_values
                             .iter_mut()
-                            .find(|(value_cue_idx, _)| *value_cue_idx == cue_idx);
+                            .find(|value| value.from_cue_idx == cue_idx);
 
-                        if let Some((_, existing_cue_value)) = existing_cue_value {
-                            existing_cue_value.set_alpha(fixture_cue_fade);
+                        if let Some(existing_cue_value) = existing_cue_value {
+                            // only fade when the mib mode is the same or we weren't able to
+                            // fade the value entirely in the previous mode
+                            if is_mib == existing_cue_value.is_mib
+                                || existing_cue_value.value.alpha() != 1.0
+                            {
+                                existing_cue_value.value.set_alpha(fixture_cue_fade);
+                            }
                         } else {
-                            existing_values.push((
-                                cue_idx,
-                                FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
-                            ));
+                            existing_values.push(TrackedValue {
+                                from_cue_idx: cue_idx,
+                                value: FadeFixtureChannelValue::new(
+                                    value,
+                                    fixture_cue_fade,
+                                    priority,
+                                ),
+                                is_mib,
+                            });
                         }
 
                         /*
@@ -389,10 +429,11 @@ impl SequenceRuntime {
                 } else {
                     fixture_values.insert(
                         attribute,
-                        vec![(
-                            cue_idx,
-                            FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
-                        )],
+                        vec![TrackedValue {
+                            from_cue_idx: cue_idx,
+                            value: FadeFixtureChannelValue::new(value, fixture_cue_fade, priority),
+                            is_mib,
+                        }],
                     );
                 }
             }
@@ -402,7 +443,7 @@ impl SequenceRuntime {
     pub fn update_values(
         tracked_values: &mut HashMap<
             FixturePath,
-            HashMap<FixtureChannel3Attribute, Vec<(usize, FadeFixtureChannelValue)>>,
+            HashMap<FixtureChannel3Attribute, Vec<TrackedValue>>,
         >,
         sequence: &Sequence,
         active_cues: &[(usize, time::Instant)],
@@ -441,26 +482,31 @@ impl SequenceRuntime {
                 false,
             );
 
-            if *cue_idx == current_cue_idx && cue.move_in_black() && next_cue_idx.is_some() {
+            if *cue_idx == current_cue_idx && next_cue_idx.is_some() {
+                // we have a next cue
                 let next_cue_idx = next_cue_idx.unwrap();
                 let next_cue = sequence.cue(next_cue_idx);
 
-                let mut next_cue_affected_fixtures = next_cue.affected_fixtures(preset_handler);
-                next_cue_affected_fixtures.retain(|f| !cue_affected_fixtures.contains(f));
+                if next_cue.move_in_black() {
+                    // we should move the fixtures from the next cue to their position
 
-                Self::update_cue_values(
-                    tracked_values,
-                    next_cue_affected_fixtures.iter(),
-                    next_cue_idx,
-                    next_cue,
-                    cue_delta,
-                    cue_activated_at,
-                    patch,
-                    preset_handler,
-                    timing_handler,
-                    priority,
-                    true,
-                );
+                    let mut next_cue_affected_fixtures = next_cue.affected_fixtures(preset_handler);
+                    next_cue_affected_fixtures.retain(|f| !cue_affected_fixtures.contains(f));
+
+                    Self::update_cue_values(
+                        tracked_values,
+                        next_cue_affected_fixtures.iter(),
+                        next_cue_idx,
+                        next_cue,
+                        cue_delta,
+                        cue_activated_at,
+                        patch,
+                        preset_handler,
+                        timing_handler,
+                        priority,
+                        true,
+                    );
+                }
             }
         }
     }
