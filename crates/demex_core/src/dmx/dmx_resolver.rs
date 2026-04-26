@@ -7,7 +7,7 @@ use crate::{
         attribute::FixtureChannel3Attribute, channel_value_discrete::FixtureChannelDiscreteValue,
         channel_value_queue::ChannelValueQueueEntry,
     },
-    fixture::{FixtureChannelFunctionInitial, FixtureChannelFunctionKind, FixturePath},
+    fixture::{FixtureChannelFunctionKind, FixturePath},
     patch::Patch,
 };
 
