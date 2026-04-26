@@ -695,7 +695,11 @@ impl Cue {
                                 .set_programmer_value(
                                     patch.fixture(fixture_path).unwrap(),
                                     value.attribute(),
-                                    value.value().clone(),
+                                    value.value().clone().with_preset_state(Some(
+                                        FixtureChannelValue2PresetState::now(
+                                            self.selection.clone(),
+                                        ),
+                                    )),
                                 )
                                 .unwrap();
                         }
