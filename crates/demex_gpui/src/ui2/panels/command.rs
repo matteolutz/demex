@@ -77,13 +77,7 @@ impl DemexPanel for CommandPanel {
 
 impl CommandPanel {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let command_input_state = cx.new(|cx| {
-            InputState::new(window, cx)
-                // .code_editor("demex")
-                .line_number(false)
-                .indent_guides(false)
-                .placeholder("Command")
-        });
+        let command_input_state = cx.new(|cx| InputState::new(window, cx).placeholder("Command"));
 
         DemexUiState::set_command_input_state(&command_input_state, window, cx);
 
