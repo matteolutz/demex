@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
+    channel3::attribute::FixtureChannel3Attribute,
     engine::component::Component,
     fixture::FixturePath,
     patch::Patch,
@@ -13,6 +14,10 @@ use crate::{
 pub struct DemexEngineState {
     /// The currently selected fixtures.
     pub fixture_selection: Option<FixtureSelection>,
+
+    /// The encoder attributes that are visible to the frontend.
+    /// This information is used to have the same encoders on input devices.
+    pub visible_encoder_attributes: Vec<FixtureChannel3Attribute>,
 
     /// The currently highlighted fixtures.
     pub highlight: Option<FixtureSelection>,

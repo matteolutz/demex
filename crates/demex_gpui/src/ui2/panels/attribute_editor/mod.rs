@@ -1,6 +1,9 @@
 use std::{cmp::Ordering, collections::HashMap};
 
-use demex_core::channel3::feature::feature_group::FixtureChannel3FeatureGroup;
+use demex_core::{
+    channel3::feature::feature_group::FixtureChannel3FeatureGroup,
+    command::parser::nodes::action::Action,
+};
 use gpui::{
     App, AppContext, ClickEvent, Context, Entity, EventEmitter, FocusHandle, Focusable,
     IntoElement, ParentElement, Render, SharedString, Styled, Subscription, Window, div,
@@ -17,7 +20,7 @@ use gpui_component::{
 use itertools::Itertools;
 
 use crate::{
-    engine::state::DemexUiState,
+    engine::{DemexEngineHandler, state::DemexUiState},
     ui2::{
         config::AppConfigExt,
         icon::DemexIconName,
@@ -70,7 +73,12 @@ impl AttributeEditorPanel {
             ),
             cx.observe(&selected_tab, |this, _, cx| {
                 this.selected_tab_page.update(cx, |page, _| *page = 0);
+                this.visible_attributes_changed(cx);
+
                 cx.notify();
+            }),
+            cx.observe(&selected_tab_page, |this, _, cx| {
+                this.visible_attributes_changed(cx);
             }),
         ];
 
@@ -82,6 +90,28 @@ impl AttributeEditorPanel {
             value_display_mode: cx.new(|_| Default::default()),
             _subscriptions,
         }
+    }
+
+    pub fn visible_attributes_changed(&self, cx: &mut Context<Self>) {
+        let Some(attributes) = self
+            .attributes
+            .read(cx)
+            .get(&self.get_selected_feature_group(cx))
+        else {
+            return;
+        };
+
+        let page = *self.selected_tab_page.read(cx);
+
+        let visible_attributes = attributes
+            .iter()
+            .skip(page * ATTRIBUTE_PAGE_SIZE)
+            .take(ATTRIBUTE_PAGE_SIZE)
+            .map(|attribute| attribute.attribute)
+            .collect();
+
+        DemexEngineHandler::engine(cx)
+            .exec_ui(Action::VisibleEncoderAttributesChanged(visible_attributes));
     }
 
     pub fn get_attributes(&self, window: &mut Window, cx: &mut Context<Self>) {
@@ -125,6 +155,8 @@ impl AttributeEditorPanel {
             });
             cx.notify();
         }
+
+        self.visible_attributes_changed(cx);
 
         cx.notify();
     }
@@ -191,9 +223,10 @@ impl AttributeEditorPanel {
     }
 
     fn handle_prev_page(&mut self, _: &ClickEvent, _: &mut Window, cx: &mut Context<Self>) {
-        self.selected_tab_page.update(cx, |page, _| {
+        self.selected_tab_page.update(cx, |page, cx| {
             if *page > 0 {
-                *page -= 1
+                *page -= 1;
+                cx.notify();
             }
         });
         cx.notify();
@@ -201,9 +234,10 @@ impl AttributeEditorPanel {
 
     fn handle_next_page(&mut self, _: &ClickEvent, _: &mut Window, cx: &mut Context<Self>) {
         let has_next_page = self.has_next_page(cx);
-        self.selected_tab_page.update(cx, |page, _| {
+        self.selected_tab_page.update(cx, |page, cx| {
             if has_next_page {
                 *page += 1;
+                cx.notify();
             }
         });
         cx.notify();

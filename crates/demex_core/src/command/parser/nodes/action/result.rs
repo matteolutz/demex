@@ -1,4 +1,5 @@
 use crate::{
+    channel3::attribute::FixtureChannel3Attribute,
     event::FixtureSelectionWithGroup,
     input::control::{DemexInputDeviceControlAssignment, DemexInputDeviceControlUnassignment},
     patch::Patch,
@@ -24,6 +25,8 @@ pub enum ActionRunResult {
     GroupFixturesChanges(u32),
     GroupAdded(u32),
     GroupsRemoved(Vec<u32>),
+
+    UpdateVisibleEncoderAttributes(Vec<FixtureChannel3Attribute>),
 
     Lock,
 

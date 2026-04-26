@@ -1,21 +1,20 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    EncoderChannels,
-    command::parser::nodes::fixture_selector::FixtureSelectorContext,
-    event::{DemexEvent, list::DemexEventList},
-    input::{
-        DemexInputDeviceUpdateArgs,
-        control::DemexInputDeviceControlDelegate,
-        encoder::{get_global_encoder_value, handle_global_encoder_change},
-        error::DemexInputDeviceError,
-        event::DemexInputDeviceEncoderUpdate,
+    channel3::attribute::FixtureChannel3Attribute,
+    command::parser::nodes::{
+        action::{
+            Action, ActionIssuer,
+            functions::set_function::{SetAttributeValue, SetAttributeValueArgs},
+            queue::ActionQueue,
+        },
+        fixture_selector::FixtureSelector,
     },
-    patch::Patch,
-    presets::PresetHandler,
-    state::fixture_state_handler::FixtureStateHandler,
-    timing::TimingHandler,
-    updatables::UpdatableHandler,
+    event::DemexEvent,
+    input::{
+        DemexInputDeviceUpdateArgs, control::DemexInputDeviceControlDelegate,
+        error::DemexInputDeviceError, event::DemexInputDeviceEncoderUpdate, message::EncoderValue,
+    },
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -32,43 +31,38 @@ impl Default for DemexInputEncoder {
 impl DemexInputEncoder {
     pub fn handle_change(
         &self,
-        value: f32,
-        fixture_selector_context: FixtureSelectorContext,
-        fixture_handler: &mut FixtureStateHandler,
-        encoder_channels: Option<&EncoderChannels>,
-        _preset_handler: &PresetHandler,
-        _updatable_handler: &mut UpdatableHandler,
-        _timing_handler: &mut TimingHandler,
-        patch: &Patch,
-        event_list: &mut DemexEventList,
+        value: EncoderValue,
+        action_queue: &mut ActionQueue,
+        encoder_attributes: &[FixtureChannel3Attribute],
     ) -> Result<(), DemexInputDeviceError> {
         match self {
             Self::GlobalEncoder { encoder_idx } => {
-                handle_global_encoder_change(
-                    *encoder_idx,
-                    value,
-                    fixture_selector_context,
-                    fixture_handler,
-                    encoder_channels,
-                    patch,
-                );
-
-                event_list.push(DemexEvent::GlobalEncoderValueChanged(*encoder_idx));
+                if let Some(&attribute) = encoder_attributes.get(*encoder_idx as usize) {
+                    action_queue.enqueue_now(
+                        Action::SetAttributeValue(SetAttributeValueArgs {
+                            fixture_selector: FixtureSelector::current_fixtures_selected(),
+                            attribute,
+                            attribute_value: Some(match value {
+                                EncoderValue::Absolute(value) => {
+                                    SetAttributeValue::Absolute(value.into())
+                                }
+                                EncoderValue::RelativeChange(change) => {
+                                    SetAttributeValue::RelativChange(change.into())
+                                }
+                            }),
+                        }),
+                        ActionIssuer::InputDevice,
+                    );
+                }
             }
         }
 
         Ok(())
     }
 
-    pub fn value(&self, args: DemexInputDeviceUpdateArgs) -> Result<f32, DemexInputDeviceError> {
+    pub fn value(&self, _args: DemexInputDeviceUpdateArgs) -> Result<f32, DemexInputDeviceError> {
         match self {
-            Self::GlobalEncoder { encoder_idx } => Ok(get_global_encoder_value(
-                *encoder_idx,
-                args.fixture_selector_context.clone(),
-                args.encoder_channels,
-                args.patch,
-            )
-            .unwrap_or(0.0)),
+            Self::GlobalEncoder { encoder_idx: _ } => Ok(0.0), // TODO
         }
     }
 }
@@ -78,27 +72,11 @@ impl DemexInputDeviceControlDelegate for DemexInputEncoder {
 
     fn map_event(
         &self,
-        args: crate::input::DemexInputDeviceUpdateArgs,
-        event: &DemexEvent,
+        _args: crate::input::DemexInputDeviceUpdateArgs,
+        _event: &DemexEvent,
     ) -> Result<Option<Self::Update>, crate::input::error::DemexInputDeviceError> {
-        let update = match self {
-            Self::GlobalEncoder { encoder_idx } => {
-                if matches!(event, DemexEvent::GlobalEncoderValueChanged(event_encoder_idx) if event_encoder_idx == encoder_idx)
-                {
-                    let value = get_global_encoder_value(
-                        *encoder_idx,
-                        args.fixture_selector_context,
-                        args.encoder_channels,
-                        args.patch,
-                    );
+        // TODO
 
-                    value.map(DemexInputDeviceEncoderUpdate::EncoderValueChange)
-                } else {
-                    None
-                }
-            }
-        };
-
-        Ok(update)
+        Ok(None)
     }
 }

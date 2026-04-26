@@ -120,13 +120,6 @@ impl AttributeEditorAttributeState {
             cx.subscribe(&slider_state, move |_, _, evt, cx| match evt {
                 SliderEvent::Change(value) => {
                     Self::set_value(attribute, Some(value.start().into()), cx);
-                    /*DemexEngineHandler::engine(cx).exec_ui(Action::SetAttributeValue(
-                        SetAttributeValueArgs {
-                            fixture_selector: FixtureSelector::current_fixtures_selected(),
-                            attribute: attribute,
-                            attribute_value: Some(value.start().into()),
-                        },
-                    ));*/
                 }
             }),
         ];

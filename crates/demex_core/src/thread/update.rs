@@ -254,6 +254,9 @@ impl DemexThreadDelegate for UpdateThread {
                         | ActionRunResult::GroupsRemoved(_) => {
                             self.master_handler.invalidate_cache(&self.preset_handler);
                         }
+                        ActionRunResult::UpdateVisibleEncoderAttributes(encoder_attributes) => {
+                            self.state.visible_encoder_attributes = encoder_attributes;
+                        }
                         _ => {}
                     }
                 }
@@ -329,7 +332,7 @@ impl DemexThreadDelegate for UpdateThread {
                     let tokens = Lexer::new(&command_input).tokenize().ok()?;
                     Parser2::new(&tokens).parse().err()
                 },
-                None,
+                &self.state.visible_encoder_attributes,
                 &mut self.event_list,
             )
             .inspect_err(|err| log::error!("Failed to update input device handler: {}", err));

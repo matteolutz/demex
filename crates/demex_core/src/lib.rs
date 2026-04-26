@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use uuid::Uuid;
 
 pub mod channel3;
@@ -31,6 +29,5 @@ pub mod utils;
 pub mod value_source;
 
 pub type FixtureTypeAndMode = (Uuid, String);
-pub type EncoderChannels = Vec<(&'static str, HashMap<FixtureTypeAndMode, Vec<String>>)>;
 
 pub use uuid;

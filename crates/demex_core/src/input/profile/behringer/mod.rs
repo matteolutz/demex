@@ -8,7 +8,7 @@ use crate::input::{
         DemexInputDeviceButtonUpdate, DemexInputDeviceControlUpdate, DemexInputDeviceEncoderUpdate,
         DemexInputDeviceFaderUpdate,
     },
-    message::DemexInputDeviceMessage,
+    message::{DemexInputDeviceMessage, EncoderValue},
     midi::{MidiMessage, device::MidiInOutDevice, device_mode::MidiInOutDeviceMode},
     profile::behringer::encoder::{
         BehringerXTouchCompactButtonLedMode, BehringerXTouchCompactEncoderMode,
@@ -354,7 +354,7 @@ impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
 
                             Some(DemexInputDeviceMessage::GlobalEncoderValueChanged {
                                 encoder_idx,
-                                value: control_value as f32 / 127.0,
+                                value: EncoderValue::Absolute(control_value as f32 / 127.0),
                             })
                         }
                         // Top encoders turn (page B)
@@ -364,7 +364,7 @@ impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
 
                             Some(DemexInputDeviceMessage::GlobalEncoderValueChanged {
                                 encoder_idx,
-                                value: control_value as f32 / 127.0,
+                                value: EncoderValue::Absolute(control_value as f32 / 127.0),
                             })
                         }
                         _ => None,

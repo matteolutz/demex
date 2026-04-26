@@ -18,11 +18,35 @@ use crate::{
 
 use super::FunctionDelegate;
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum SetAttributeValue {
+    Absolute(ValueOrRange<f32>),
+    RelativChange(ValueOrRange<f32>),
+}
+
+impl SetAttributeValue {
+    pub fn value_and_relative(self) -> (ValueOrRange<f32>, bool) {
+        match self {
+            SetAttributeValue::Absolute(value) => (value, false),
+            SetAttributeValue::RelativChange(value) => (value, true),
+        }
+    }
+}
+
+impl<T> From<T> for SetAttributeValue
+where
+    T: Into<ValueOrRange<f32>>,
+{
+    fn from(value: T) -> Self {
+        SetAttributeValue::Absolute(value.into())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetAttributeValueArgs {
     pub fixture_selector: FixtureSelector,
     pub attribute: FixtureChannel3Attribute,
-    pub attribute_value: Option<ValueOrRange<f32>>,
+    pub attribute_value: Option<SetAttributeValue>,
 }
 
 impl FunctionDelegate for SetAttributeValueArgs {
@@ -42,14 +66,52 @@ impl FunctionDelegate for SetAttributeValueArgs {
             let fixture_idx = selection.offset_idx(fixture_path).unwrap();
 
             let value = match self.attribute_value {
-                Some(value) => match value {
-                    ValueOrRange::Single(value) => FixtureChannelValue3::discrete(value),
-                    ValueOrRange::Thru(start, end) => {
-                        let range = end - start;
-                        let step = range / (selection.num_offsets() - 1) as f32;
-                        FixtureChannelValue3::discrete(start + step * fixture_idx as f32)
+                Some(value) => {
+                    let (value, is_relative) = value.value_and_relative();
+
+                    let mut f_value = match value {
+                        ValueOrRange::Single(value) => value,
+                        ValueOrRange::Thru(start, end) => {
+                            let range = end - start;
+                            let step = range / (selection.num_offsets() - 1) as f32;
+                            start + step * fixture_idx as f32
+                        }
+                    };
+
+                    // if the set mode is relative we want to..
+                    if is_relative {
+                        // ...find the fixture...
+                        let fixture = args.patch.fixture(fixture_path).unwrap();
+
+                        // ...get its current value and the channel function
+                        // for the attribute we want to set...
+                        if let Some((current_value, cf)) = args
+                            .fixture_handler
+                            .fixture(fixture_path)
+                            .and_then(|state| state.get_programmer_value(&self.attribute))
+                            .cloned()
+                            .ok()
+                            .zip(fixture.channel_function(&self.attribute))
+                        {
+                            // ...discretize the current value (for presets this means
+                            // getting the current value form the preset)...
+                            let discrete_value = current_value.to_discrete(
+                                fixture,
+                                &self.attribute,
+                                args.preset_handler,
+                                args.timing_handler,
+                            );
+
+                            // ...convert it to a clamped value using the channel function...
+                            let clamped_value = discrete_value.to_clamped(cf);
+
+                            // ...and add it to the value we want to set
+                            f_value += clamped_value.as_f32();
+                        }
                     }
-                },
+
+                    FixtureChannelValue3::discrete(f_value)
+                }
                 None => FixtureChannelValue3::home(),
             };
 

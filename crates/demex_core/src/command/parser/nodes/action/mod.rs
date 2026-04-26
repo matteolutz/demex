@@ -22,6 +22,7 @@ use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 
 use crate::{
+    channel3::attribute::FixtureChannel3Attribute,
     command::parser::nodes::action::functions::{
         effect_function::{KeyframeEffectApplyPresetArgs, KeyframeEffectUpdateArgs},
         go_function::ExecutorGoOutArgs,
@@ -270,6 +271,8 @@ pub enum Action {
 
     UpdateOutputConfigs(Vec<DemexDmxOutputConfig>),
 
+    VisibleEncoderAttributesChanged(Vec<FixtureChannel3Attribute>),
+
     Lock,
 
     #[default]
@@ -430,6 +433,10 @@ impl Action {
             }
 
             Self::Lock => Ok(ActionRunResult::Lock),
+
+            Self::VisibleEncoderAttributesChanged(encoders) => Ok(
+                ActionRunResult::UpdateVisibleEncoderAttributes(encoders.clone()),
+            ),
 
             #[allow(unreachable_patterns)]
             unimplemented_action => Err(ActionRunError::UnimplementedAction(

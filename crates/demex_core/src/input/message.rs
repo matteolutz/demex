@@ -1,5 +1,11 @@
 use super::{midi::MidiQuarterTimecodePiece, timecode::packet::TimecodePacket};
 
+#[derive(Debug, Copy, Clone)]
+pub enum EncoderValue {
+    Absolute(f32),
+    RelativeChange(f32),
+}
+
 #[derive(Debug, Clone)]
 pub enum DemexInputDeviceMessage {
     ButtonPressed(u32),
@@ -13,7 +19,7 @@ pub enum DemexInputDeviceMessage {
     /// These encoders are always automatically mapped to the encoders currently visible in the encoder bar
     GlobalEncoderValueChanged {
         encoder_idx: u32,
-        value: f32,
+        value: EncoderValue,
     },
     GlobalEncoderClick(u32),
 

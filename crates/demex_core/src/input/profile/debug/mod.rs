@@ -1,12 +1,13 @@
 use crate::input::{
-    DemexInputDeviceProfile, DemexInputDeviceUpdateArgs, message::DemexInputDeviceMessage,
+    DemexInputDeviceProfile, DemexInputDeviceUpdateArgs,
+    message::{DemexInputDeviceMessage, EncoderValue},
 };
 
 const ENABLED: bool = false;
 const MESSAGES_TO_SEND: &[DemexInputDeviceMessage] =
     &[DemexInputDeviceMessage::GlobalEncoderValueChanged {
         encoder_idx: 0,
-        value: 0.69,
+        value: EncoderValue::Absolute(0.69),
     }];
 
 #[derive(Debug)]

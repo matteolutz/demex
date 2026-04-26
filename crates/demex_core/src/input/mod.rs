@@ -3,7 +3,7 @@ use error::DemexInputDeviceError;
 use message::DemexInputDeviceMessage;
 
 use crate::{
-    EncoderChannels,
+    channel3::attribute::FixtureChannel3Attribute,
     command::parser::{
         error::ParseError,
         expected::ExpectedParseSlice,
@@ -22,7 +22,6 @@ use crate::{
 
 pub mod control;
 pub mod device;
-pub mod encoder;
 pub mod error;
 pub mod event;
 pub mod message;
@@ -36,7 +35,7 @@ pub struct DemexInputDeviceUpdateArgs<'a> {
 
     pub fixture_selector_context: FixtureSelectorContext<'a>,
     pub patch: &'a Patch,
-    pub encoder_channels: Option<&'a EncoderChannels>,
+    pub encoder_attributes: &'a [FixtureChannel3Attribute],
 }
 
 pub trait DemexInputDeviceProfile: 'static + Send + std::fmt::Debug {
@@ -169,7 +168,7 @@ impl DemexInputDeviceHandler {
         append_to_command: impl Fn(String),
         parse_command_input: impl Fn() -> Option<ParseError>,
 
-        encoder_channels: Option<&EncoderChannels>,
+        encoder_attributes: &[FixtureChannel3Attribute],
         event_list: &mut DemexEventList,
     ) -> Result<(), DemexInputDeviceError> {
         // first poll all events
@@ -273,12 +272,9 @@ impl DemexInputDeviceHandler {
                         todo!()
                     }
                     DemexInputDeviceMessage::GlobalEncoderClick(_) => {}
-                    DemexInputDeviceMessage::GlobalEncoderValueChanged {
-                        encoder_idx,
-                        value: _,
-                    } => {
-                        let _encoder = DemexInputEncoder::GlobalEncoder { encoder_idx };
-                        todo!()
+                    DemexInputDeviceMessage::GlobalEncoderValueChanged { encoder_idx, value } => {
+                        let encoder = DemexInputEncoder::GlobalEncoder { encoder_idx };
+                        encoder.handle_change(value, action_queue, encoder_attributes)?;
                     }
                 };
             }
@@ -293,7 +289,7 @@ impl DemexInputDeviceHandler {
                 device_config: &device.config,
                 fixture_selector_context,
                 patch,
-                encoder_channels,
+                encoder_attributes,
             };
 
             let events = device.config.map_events(args.clone(), event_list.events());

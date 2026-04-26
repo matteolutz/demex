@@ -36,8 +36,10 @@ use crate::{
             expected::ExpectedParseSlice,
             nodes::{
                 action::functions::{
-                    assign_function::AssignFaderArgsMode, move_function::MoveArgs,
-                    recall_function::RecallEffectKeyframeArgs, set_function::ObjectSetPropertyArgs,
+                    assign_function::AssignFaderArgsMode,
+                    move_function::MoveArgs,
+                    recall_function::RecallEffectKeyframeArgs,
+                    set_function::{ObjectSetPropertyArgs, SetAttributeValue},
                     update_function::UpdatePresetGlobalArgs,
                 },
                 object::ObjectDelegate,
@@ -533,7 +535,7 @@ impl<'a> Parser2<'a> {
         Ok(Action::SetAttributeValue(SetAttributeValueArgs {
             fixture_selector: FixtureSelector::current_fixtures_selected(),
             attribute,
-            attribute_value: feature_value,
+            attribute_value: feature_value.map(SetAttributeValue::Absolute),
         }))
     }
 
@@ -556,7 +558,7 @@ impl<'a> Parser2<'a> {
             return Ok(Action::SetAttributeValue(SetAttributeValueArgs {
                 fixture_selector,
                 attribute,
-                attribute_value: feature_value,
+                attribute_value: feature_value.map(SetAttributeValue::Absolute),
             }));
         }
 
