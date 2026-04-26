@@ -178,24 +178,25 @@ impl FixtureStateHandler {
         timing_handler: &TimingHandler,
         master_handler: &mut MasterHandler,
     ) -> Result<(), FixtureError> {
+        // this contains attributes, that we need to force update
+        // in a second pass
+        let mut force_output_attributes = HashSet::new();
+
         for (path, state) in self.fixture_states.iter_mut() {
+            force_output_attributes.clear();
             let mut updated_values = HashMap::new();
+
             let fixture = patch.fixture(path)?;
 
             // is this fixture affected by any master changes?
-            let should_force_output_fixture =
-                master_handler.force_output().should_force_output(path);
-
-            // this contains attributes, that we need to force update
-            // in a second pass
-            let mut force_output_attributes = HashSet::new();
+            let output_for_master_change = master_handler.force_output().should_force_output(path);
 
             for (attribute, output_value) in state.cached_output_mut() {
+                let cf = fixture.channel_function(attribute);
+
                 // is this attribute affected by master changes or is it in the force output set?
-                let should_force_output_attribute = (should_force_output_fixture
-                    && fixture
-                        .channel_function(attribute)
-                        .is_some_and(|cf| cf.should_react_to_master()))
+                let should_force_output_attribute = (output_for_master_change
+                    && cf.as_ref().is_some_and(|cf| cf.should_react_to_master()))
                     || force_output_attributes.contains(attribute);
 
                 if !should_force_output_attribute && !output_value.should_output(preset_handler) {
@@ -215,15 +216,13 @@ impl FixtureStateHandler {
                 );
 
                 // insert the updated value into the map
-                updated_values.insert(attribute.clone(), (discrete_value, None));
+                updated_values.insert(*attribute, (discrete_value, None));
 
                 // this means we just homed this attribute
                 if output_value.value().is_home()
                 // if the channel function is not initial, we should also output the initial
                 // attribute
-                    && let Some(FixtureChannelFunctionInitial::Other(other)) = fixture
-                        .channel_function(attribute)
-                        .map(|cf| cf.initial)
+                    && let Some(FixtureChannelFunctionInitial::Other(other)) = cf.map(|cf| cf.initial)
                 {
                     log::debug!("force outputting initial attribute: {}", other);
                     // add the initial attribute to the force output set
