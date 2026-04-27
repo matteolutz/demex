@@ -6,3 +6,6 @@ pub use id::*;
 
 mod canvas;
 pub use canvas::*;
+
+mod color;
+pub use color::*;
