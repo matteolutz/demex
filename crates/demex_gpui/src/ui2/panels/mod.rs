@@ -18,6 +18,7 @@ use crate::ui2::{
     components::context::DemexContextMenuAction,
     panels::{
         attribute_editor::AttributeEditorPanel,
+        color_picker::ColorPickerPanel,
         command::CommandPanel,
         fixture_list::FixtureListPanel,
         fixture_selection::FixtureSelectionPanel,
@@ -30,6 +31,7 @@ use crate::ui2::{
 };
 
 pub mod attribute_editor;
+pub mod color_picker;
 pub mod command;
 pub mod fixture_list;
 pub mod fixture_selection;
@@ -51,6 +53,7 @@ pub enum DockWindowPanelType {
     LayoutView,
     Multipool,
     SequenceEditor,
+    ColorPicker,
 
     CommandPanel,
     PerformancePanel,
@@ -65,6 +68,7 @@ impl DockWindowPanelType {
             DockWindowPanelType::LayoutView => "layout-view",
             DockWindowPanelType::Multipool => "demex-multipool",
             DockWindowPanelType::SequenceEditor => "demex-sequence-editor",
+            DockWindowPanelType::ColorPicker => "demex-color-picker",
 
             DockWindowPanelType::CommandPanel => "demex-command",
             DockWindowPanelType::PerformancePanel => "demex-performance",
@@ -78,9 +82,12 @@ impl DockWindowPanelType {
             | Self::FixtureSelection
             | Self::LayoutView
             | Self::Multipool
-            | Self::SequenceEditor => true,
+            | Self::SequenceEditor
+            | Self::ColorPicker => true,
 
-            Self::CommandPanel | Self::PerformancePanel => false,
+            Self::PerformancePanel => true,
+
+            Self::CommandPanel => false,
         }
     }
 
@@ -107,6 +114,9 @@ impl DockWindowPanelType {
             }
             DockWindowPanelType::SequenceEditor => {
                 Arc::new(cx.new_panel(|cx| SequenceEditorPanel::new(window, cx)))
+            }
+            DockWindowPanelType::ColorPicker => {
+                Arc::new(cx.new_panel(|cx| ColorPickerPanel::new(window, cx)))
             }
             DockWindowPanelType::CommandPanel => {
                 Arc::new(cx.new_panel(|cx| CommandPanel::new(window, cx)))
@@ -325,4 +335,5 @@ fn register_panels(cx: &mut App) {
     SequenceEditorPanel::register(cx);
     AttributeEditorPanel::register(cx);
     MultiPoolPanel::register(cx);
+    ColorPickerPanel::register(cx);
 }
