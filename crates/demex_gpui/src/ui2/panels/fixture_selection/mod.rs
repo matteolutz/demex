@@ -104,7 +104,7 @@ impl FixtureSelectionPanel {
             .flex_row()
             .items_center()
             .gap_2()
-            .child(property.to_string())
+            .child(div().text_right().w_20().child(property.to_string()))
             .child(
                 Button::new(SharedString::from(format!("dec-{}", property.to_string())))
                     .label("-")
@@ -245,21 +245,6 @@ impl Render for FixtureSelectionPanel {
                     )
                 },
             )
-            /*
-            .child(format!(
-                "Fixtures: {}",
-                self.fixture_selection
-                    .read(cx)
-                    .as_ref()
-                    .map(|sel| sel
-                        .selection()
-                        .fixtures()
-                        .iter()
-                        .map(|f| format!("{}", f))
-                        .join(", "))
-                    .unwrap_or_else(|| "-".to_string())
-            ))
-             */
             .children(FixtureSelectionProperty::iter().map(|property| {
                 match property.get_type() {
                     FixtureSelectionPropertyType::Flag => self
