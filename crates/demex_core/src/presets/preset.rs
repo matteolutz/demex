@@ -542,7 +542,7 @@ impl FixturePreset {
                     fixture,
                     fixture_offset,
                     timing_handler,
-                    state.map(|state| state.started()),
+                    state.and_then(|state| state.started()),
                 )
             }
             FixturePresetData::KeyframeEffect { runtime } => {
@@ -565,7 +565,7 @@ impl FixturePreset {
                                     &fixture.path,
                                     fixture_offset,
                                     timing_handler,
-                                    state.map(|state| state.started()),
+                                    state.and_then(|state| state.started()),
                                 )
                                 .unwrap(),
                         )
@@ -584,7 +584,8 @@ impl FixturePreset {
         state: Option<&FixtureChannelValue2PresetState>,
     ) -> Option<FixtureChannelValue3> {
         let started_delta = state
-            .map(|state| state.started().elapsed().as_secs_f32())
+            .and_then(|state| state.started())
+            .map(|started| started.elapsed().as_secs_f32())
             .unwrap_or(0.0);
 
         let _fade = if self.fade_up > 0.0 {
@@ -611,7 +612,7 @@ impl FixturePreset {
                                 attribute,
                                 fixture_offset,
                                 timing_handler,
-                                state.map(|state| state.started()),
+                                state.and_then(|state| state.started()),
                             )
                             .ok()
                     })
@@ -628,7 +629,7 @@ impl FixturePreset {
                         &fixture.path,
                         fixture_offset,
                         timing_handler,
-                        state.map(|state| state.started()),
+                        state.and_then(|state| state.started()),
                     )
                     .ok()
             }

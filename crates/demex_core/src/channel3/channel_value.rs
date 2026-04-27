@@ -13,12 +13,10 @@ use crate::{
     timing::TimingHandler,
 };
 
-use crate::utils::serde::approx_instant;
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct FixtureChannelValue2PresetState {
-    #[serde(with = "approx_instant")]
-    started: time::Instant,
+    #[serde(default, skip_deserializing, skip_serializing)]
+    started: Option<time::Instant>,
 
     with_selection: FixtureSelection,
 }
@@ -26,20 +24,25 @@ pub struct FixtureChannelValue2PresetState {
 impl FixtureChannelValue2PresetState {
     pub fn new(started: time::Instant, with_selection: FixtureSelection) -> Self {
         Self {
-            started,
+            started: Some(started),
             with_selection,
         }
     }
 
     pub fn now(selection: FixtureSelection) -> Self {
         Self {
-            started: time::Instant::now(),
+            started: Some(time::Instant::now()),
             with_selection: selection,
         }
     }
 
-    pub fn started(&self) -> time::Instant {
+    pub fn started(&self) -> Option<time::Instant> {
         self.started
+    }
+
+    pub fn with_started(mut self, started: Option<time::Instant>) -> Self {
+        self.started = started;
+        self
     }
 
     pub fn selection(&self) -> &FixtureSelection {
@@ -142,6 +145,7 @@ impl FixtureChannelValue3 {
         }
     }
 
+    /*
     pub fn with_preset_state(self, preset_state: Option<FixtureChannelValue2PresetState>) -> Self {
         match self {
             Self::Discrete(_) => self,
@@ -152,6 +156,22 @@ impl FixtureChannelValue3 {
             Self::Mix { a, b, mix } => Self::Mix {
                 a: Box::new(a.with_preset_state(preset_state.clone())),
                 b: Box::new(b.with_preset_state(preset_state)),
+                mix,
+            },
+        }
+    }
+    */
+
+    pub fn with_started(self, started: Option<time::Instant>) -> Self {
+        match self {
+            Self::Discrete(_) => self,
+            Self::Preset { id, state } => Self::Preset {
+                id,
+                state: state.map(|state| state.with_started(started)),
+            },
+            Self::Mix { a, b, mix } => Self::Mix {
+                a: Box::new(a.with_started(started.clone())),
+                b: Box::new(b.with_started(started)),
                 mix,
             },
         }

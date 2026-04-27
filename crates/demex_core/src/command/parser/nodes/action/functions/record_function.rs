@@ -47,7 +47,7 @@ impl RecordChannelTypeSelector {
                             .unwrap()
                             .get_programmer_value(attribute)?
                             .clone()
-                            .with_preset_state(None),
+                            .with_started(None),
                         *attribute,
                         false,
                     ));
@@ -63,7 +63,7 @@ impl RecordChannelTypeSelector {
                     }
 
                     values.push(CueFixtureChannelValue::new(
-                        value.clone().with_preset_state(None),
+                        value.clone().with_started(None),
                         *attribute,
                         false,
                     ));

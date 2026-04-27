@@ -113,11 +113,8 @@ impl CueFixtureChannelValue {
         }
     }
 
-    pub fn with_preset_state(
-        mut self,
-        preset_state: Option<FixtureChannelValue2PresetState>,
-    ) -> Self {
-        self.value = self.value.with_preset_state(preset_state);
+    pub fn with_started(mut self, started: Option<time::Instant>) -> Self {
+        self.value = self.value.with_started(started);
         self
     }
 
@@ -482,20 +479,12 @@ impl Cue {
         cue_started: Option<time::Instant>,
     ) -> Vec<CueFixtureChannelValue> {
         match &self.data {
-            CueDataMode::Default(data) => {
-                let preset_state = cue_started.map(|cue_started| {
-                    FixtureChannelValue2PresetState::new(
-                        cue_started,
-                        self.selection(preset_handler),
-                    )
-                });
-
-                data.get(&fixture.path)
-                    .unwrap_or(&vec![])
-                    .iter()
-                    .map(|value| value.clone().with_preset_state(preset_state.clone()))
-                    .collect()
-            }
+            CueDataMode::Default(data) => data
+                .get(&fixture.path)
+                .unwrap_or(&vec![])
+                .iter()
+                .map(|value| value.clone().with_started(cue_started))
+                .collect(),
             CueDataMode::Builder(entries) => {
                 for entry in entries {
                     // if it's an empty entry, skip it
@@ -550,17 +539,10 @@ impl Cue {
     ) -> Option<FixtureChannelValue3> {
         match &self.data {
             CueDataMode::Default(data) => data.get(&fixture.path).and_then(|values| {
-                let preset_state = cue_started.map(|cue_started| {
-                    FixtureChannelValue2PresetState::new(
-                        cue_started,
-                        self.selection(preset_handler),
-                    )
-                });
-
                 values
                     .iter()
                     .find(|v| v.attribute() == attribute)
-                    .map(|v| v.value().clone().with_preset_state(preset_state))
+                    .map(|v| v.value().clone().with_started(cue_started))
             }),
             CueDataMode::Builder(entries) => {
                 for entry in entries {
@@ -706,11 +688,10 @@ impl Cue {
                                 .set_programmer_value(
                                     patch.fixture(fixture_path).unwrap(),
                                     value.attribute(),
-                                    value.value().clone().with_preset_state(Some(
-                                        FixtureChannelValue2PresetState::now(
-                                            self.selection.clone(),
-                                        ),
-                                    )),
+                                    value
+                                        .value()
+                                        .clone()
+                                        .with_started(Some(time::Instant::now())),
                                 )
                                 .unwrap();
                         }

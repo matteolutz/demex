@@ -15,415 +15,20 @@
               "name": "Cue 1.0",
               "data": {
                 "Default": {
-                  "405": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "207": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "304": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "209": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "208": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "303": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "301": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "211": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "206": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "210": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "404": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "202": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "212": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "401": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "205": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "204": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "403": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "407": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "305": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "302": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "203": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "402": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "201": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "408": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "406": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ]
-                }
-              },
-              "selection": {
-                "fixtures": [
-                  "201",
-                  "202",
-                  "203",
-                  "204",
-                  "205",
-                  "206",
-                  "207",
-                  "208",
-                  "209",
-                  "210",
-                  "211",
-                  "212",
-                  "301",
-                  "302",
-                  "303",
-                  "304",
-                  "305",
-                  "401",
-                  "402",
-                  "403",
-                  "404",
-                  "405",
-                  "406",
-                  "407",
-                  "408"
-                ],
-                "group": 1,
-                "block": 1,
-                "wings": 1,
-                "reverse": false
-              },
-              "in_fade": 0.0,
-              "in_delay": 0.0,
-              "snap_percent": 0.0,
-              "block": false,
-              "timing": { "offset": 0.0, "direction": "LowToHigh" },
-              "trigger": "Manual",
-              "fading_function": "Linear",
-              "move_in_black": false
-            },
-            {
-              "cue_idx": [2, 0],
-              "name": "Cue 2.0",
-              "data": {
-                "Default": {
-                  "2": [
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.716 } }
-                      },
-                      "attribute": "Tilt",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.669 } }
-                      },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "10": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.716 } }
-                      },
-                      "attribute": "Tilt",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.669 } }
-                      },
-                      "attribute": "Pan",
-                      "snap": false
-                    }
-                  ],
-                  "8": [
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.669 } }
-                      },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.716 } }
-                      },
-                      "attribute": "Tilt",
-                      "snap": false
-                    }
-                  ],
-                  "1": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.669 } }
-                      },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.716 } }
-                      },
-                      "attribute": "Tilt",
-                      "snap": false
-                    }
-                  ],
-                  "9": [
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.669 } }
-                      },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.716 } }
-                      },
-                      "attribute": "Tilt",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
-                  "3": [
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.716 } }
-                      },
-                      "attribute": "Tilt",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.669 } }
-                      },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    }
-                  ],
                   "4": [
                     {
                       "value": {
-                        "Discrete": { "Discrete": { "value": 0.669 } }
+                        "Discrete": { "Discrete": { "value": 0.45000002 } }
                       },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
                       "attribute": "Dimmer",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.716 } }
-                      },
-                      "attribute": "Tilt",
                       "snap": false
                     }
                   ],
                   "5": [
                     {
                       "value": {
-                        "Discrete": { "Discrete": { "value": 0.716 } }
+                        "Discrete": { "Discrete": { "value": 0.45000002 } }
                       },
-                      "attribute": "Tilt",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.669 } }
-                      },
-                      "attribute": "Pan",
-                      "snap": false
-                    }
-                  ],
-                  "7": [
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.669 } }
-                      },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.716 } }
-                      },
-                      "attribute": "Tilt",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
                       "attribute": "Dimmer",
                       "snap": false
                     }
@@ -431,107 +36,149 @@
                   "6": [
                     {
                       "value": {
-                        "Discrete": { "Discrete": { "value": 0.669 } }
+                        "Discrete": { "Discrete": { "value": 0.45000002 } }
                       },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
                       "attribute": "Dimmer",
                       "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.716 } }
-                      },
-                      "attribute": "Tilt",
-                      "snap": false
                     }
-                  ]
-                }
-              },
-              "selection": {
-                "fixtures": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
-                "group": 1,
-                "block": 1,
-                "wings": 1,
-                "reverse": false
-              },
-              "in_fade": 0.0,
-              "in_delay": 0.0,
-              "snap_percent": 0.0,
-              "block": false,
-              "timing": { "offset": 0.0, "direction": "LowToHigh" },
-              "trigger": "Manual",
-              "fading_function": "Linear",
-              "move_in_black": true
-            },
-            {
-              "cue_idx": [3, 0],
-              "name": "Cue 3.0",
-              "data": {
-                "Default": {
+                  ],
                   "304": [
-                    {
-                      "value": { "Preset": { "id": "Position.0" } },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.20400001 } }
-                      },
-                      "attribute": "Zoom",
-                      "snap": false
-                    },
                     {
                       "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
                       "attribute": "Iris",
                       "snap": false
                     },
                     {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "Edge",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Preset": { "id": "Position.0" } },
-                      "attribute": "Tilt",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "value": {
+                        "Preset": {
+                          "id": "Dimmer.1",
+                          "state": {
+                            "with_selection": {
+                              "fixtures": ["301", "302", "303", "304", "305"],
+                              "group": 2,
+                              "block": 1,
+                              "wings": 1,
+                              "reverse": false
+                            }
+                          }
+                        }
+                      },
                       "attribute": "Dimmer",
                       "snap": false
                     }
                   ],
                   "303": [
                     {
-                      "value": { "Preset": { "id": "Position.0" } },
-                      "attribute": "Tilt",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "Edge",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Preset": { "id": "Position.0" } },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
                       "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
+                      "attribute": "Iris",
                       "snap": false
                     },
                     {
                       "value": {
-                        "Discrete": { "Discrete": { "value": 0.20400001 } }
+                        "Preset": {
+                          "id": "Dimmer.1",
+                          "state": {
+                            "with_selection": {
+                              "fixtures": ["301", "302", "303", "304", "305"],
+                              "group": 2,
+                              "block": 1,
+                              "wings": 1,
+                              "reverse": false
+                            }
+                          }
+                        }
                       },
-                      "attribute": "Zoom",
+                      "attribute": "Dimmer",
+                      "snap": false
+                    }
+                  ],
+                  "1": [
+                    {
+                      "value": {
+                        "Discrete": { "Discrete": { "value": 0.45000002 } }
+                      },
+                      "attribute": "Dimmer",
+                      "snap": false
+                    }
+                  ],
+                  "8": [
+                    {
+                      "value": {
+                        "Discrete": { "Discrete": { "value": 0.45000002 } }
+                      },
+                      "attribute": "Dimmer",
+                      "snap": false
+                    }
+                  ],
+                  "3": [
+                    {
+                      "value": {
+                        "Discrete": { "Discrete": { "value": 0.45000002 } }
+                      },
+                      "attribute": "Dimmer",
+                      "snap": false
+                    }
+                  ],
+                  "9": [
+                    {
+                      "value": {
+                        "Discrete": { "Discrete": { "value": 0.45000002 } }
+                      },
+                      "attribute": "Dimmer",
+                      "snap": false
+                    }
+                  ],
+                  "302": [
+                    {
+                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "attribute": "Iris",
+                      "snap": false
+                    },
+                    {
+                      "value": {
+                        "Preset": {
+                          "id": "Dimmer.1",
+                          "state": {
+                            "with_selection": {
+                              "fixtures": ["301", "302", "303", "304", "305"],
+                              "group": 2,
+                              "block": 1,
+                              "wings": 1,
+                              "reverse": false
+                            }
+                          }
+                        }
+                      },
+                      "attribute": "Dimmer",
+                      "snap": false
+                    }
+                  ],
+                  "2": [
+                    {
+                      "value": {
+                        "Discrete": { "Discrete": { "value": 0.45000002 } }
+                      },
+                      "attribute": "Dimmer",
+                      "snap": false
+                    }
+                  ],
+                  "301": [
+                    {
+                      "value": {
+                        "Preset": {
+                          "id": "Dimmer.1",
+                          "state": {
+                            "with_selection": {
+                              "fixtures": ["301", "302", "303", "304", "305"],
+                              "group": 2,
+                              "block": 1,
+                              "wings": 1,
+                              "reverse": false
+                            }
+                          }
+                        }
+                      },
+                      "attribute": "Dimmer",
                       "snap": false
                     },
                     {
@@ -540,131 +187,120 @@
                       "snap": false
                     }
                   ],
-                  "302": [
-                    {
-                      "value": { "Preset": { "id": "Position.0" } },
-                      "attribute": "Tilt",
-                      "snap": false
-                    },
+                  "10": [
                     {
                       "value": {
-                        "Discrete": { "Discrete": { "value": 0.20400001 } }
+                        "Discrete": { "Discrete": { "value": 0.45000002 } }
                       },
-                      "attribute": "Zoom",
+                      "attribute": "Dimmer",
                       "snap": false
-                    },
+                    }
+                  ],
+                  "7": [
                     {
-                      "value": { "Preset": { "id": "Position.0" } },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Iris",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "Edge",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
+                      "value": {
+                        "Discrete": { "Discrete": { "value": 0.45000002 } }
+                      },
                       "attribute": "Dimmer",
                       "snap": false
                     }
                   ],
                   "305": [
                     {
-                      "value": { "Preset": { "id": "Position.0" } },
-                      "attribute": "Tilt",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Iris",
-                      "snap": false
-                    },
-                    {
                       "value": {
-                        "Discrete": { "Discrete": { "value": 0.20400001 } }
+                        "Preset": {
+                          "id": "Dimmer.1",
+                          "state": {
+                            "with_selection": {
+                              "fixtures": ["301", "302", "303", "304", "305"],
+                              "group": 2,
+                              "block": 1,
+                              "wings": 1,
+                              "reverse": false
+                            }
+                          }
+                        }
                       },
-                      "attribute": "Zoom",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
-                      "attribute": "Dimmer",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Preset": { "id": "Position.0" } },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "Edge",
-                      "snap": false
-                    }
-                  ],
-                  "301": [
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
                       "attribute": "Dimmer",
                       "snap": false
                     },
                     {
                       "value": { "Discrete": { "Discrete": { "value": 1.0 } } },
                       "attribute": "Iris",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Preset": { "id": "Position.0" } },
-                      "attribute": "Pan",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Discrete": { "Discrete": { "value": 0.0 } } },
-                      "attribute": "Edge",
-                      "snap": false
-                    },
-                    {
-                      "value": { "Preset": { "id": "Position.0" } },
-                      "attribute": "Tilt",
-                      "snap": false
-                    },
-                    {
-                      "value": {
-                        "Discrete": { "Discrete": { "value": 0.20400001 } }
-                      },
-                      "attribute": "Zoom",
                       "snap": false
                     }
                   ]
                 }
               },
               "selection": {
-                "fixtures": ["301", "302", "303", "304", "305"],
-                "group": 1,
+                "fixtures": [
+                  "301",
+                  "302",
+                  "303",
+                  "304",
+                  "305",
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7",
+                  "8",
+                  "9",
+                  "10"
+                ],
+                "group": 2,
                 "block": 1,
                 "wings": 1,
                 "reverse": false
               },
-              "in_fade": 0.0,
+              "in_fade": 2.0,
               "in_delay": 0.0,
               "snap_percent": 0.0,
               "block": false,
               "timing": { "offset": 0.0, "direction": "LowToHigh" },
               "trigger": "Manual",
               "fading_function": "Linear",
-              "move_in_black": true
+              "move_in_black": false
             }
           ],
           "cue_out": { "fade": 0.0, "fading_function": "Linear" }
         }
       },
       "presets": {
+        "Position.0": {
+          "id": "Position.0",
+          "name": "Musicians",
+          "display_colors": [],
+          "fade_up": 0.0,
+          "data": {
+            "Default": {
+              "data": {
+                "305": {
+                  "Pan": { "Discrete": { "value": 0.27 } },
+                  "Tilt": { "Discrete": { "value": 0.58100003 } }
+                },
+                "304": {
+                  "Pan": { "Discrete": { "value": 0.27 } },
+                  "Tilt": { "Discrete": { "value": 0.541 } }
+                },
+                "301": {
+                  "Tilt": { "Discrete": { "value": 0.74600005 } },
+                  "Pan": { "Discrete": { "value": 0.5000076 } }
+                },
+                "303": {
+                  "Pan": { "Discrete": { "value": 0.674 } },
+                  "Tilt": { "Discrete": { "value": 0.381 } }
+                },
+                "302": {
+                  "Tilt": { "Discrete": { "value": 0.559 } },
+                  "Pan": { "Discrete": { "value": 0.33200002 } }
+                }
+              }
+            }
+          }
+        },
         "Dimmer.1": {
           "id": "Dimmer.1",
           "name": "Sine 360",
@@ -713,38 +349,6 @@
               }
             }
           }
-        },
-        "Position.0": {
-          "id": "Position.0",
-          "name": "Musicians",
-          "display_colors": [],
-          "fade_up": 0.0,
-          "data": {
-            "Default": {
-              "data": {
-                "301": {
-                  "Tilt": { "Discrete": { "value": 0.74600005 } },
-                  "Pan": { "Discrete": { "value": 0.5000076 } }
-                },
-                "305": {
-                  "Tilt": { "Discrete": { "value": 0.58100003 } },
-                  "Pan": { "Discrete": { "value": 0.27 } }
-                },
-                "304": {
-                  "Pan": { "Discrete": { "value": 0.27 } },
-                  "Tilt": { "Discrete": { "value": 0.541 } }
-                },
-                "303": {
-                  "Pan": { "Discrete": { "value": 0.674 } },
-                  "Tilt": { "Discrete": { "value": 0.381 } }
-                },
-                "302": {
-                  "Pan": { "Discrete": { "value": 0.33200002 } },
-                  "Tilt": { "Discrete": { "value": 0.559 } }
-                }
-              }
-            }
-          }
         }
       }
     },
@@ -762,16 +366,16 @@
     },
     "timing_handler": {
       "speed_master_values": {
-        "8": { "bpm": 120.0 },
-        "9": { "bpm": 120.0 },
-        "7": { "bpm": 120.0 },
-        "2": { "bpm": 60.0 },
-        "0": { "bpm": 127.74554 },
-        "3": { "bpm": 15.0 },
-        "4": { "bpm": 120.0 },
         "5": { "bpm": 120.0 },
+        "1": { "bpm": 120.0 },
         "6": { "bpm": 120.0 },
-        "1": { "bpm": 120.0 }
+        "3": { "bpm": 15.0 },
+        "9": { "bpm": 120.0 },
+        "8": { "bpm": 120.0 },
+        "2": { "bpm": 60.0 },
+        "4": { "bpm": 120.0 },
+        "0": { "bpm": 127.74554 },
+        "7": { "bpm": 120.0 }
       },
       "timecodes": {}
     },
