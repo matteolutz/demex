@@ -18,6 +18,7 @@ use crate::ui2::{
     components::context::DemexContextMenuAction,
     panels::{
         attribute_editor::AttributeEditorPanel,
+        clock::ClockPanel,
         color_picker::ColorPickerPanel,
         command::CommandPanel,
         fixture_list::FixtureListPanel,
@@ -31,6 +32,7 @@ use crate::ui2::{
 };
 
 pub mod attribute_editor;
+pub mod clock;
 pub mod color_picker;
 pub mod command;
 pub mod fixture_list;
@@ -54,6 +56,7 @@ pub enum DockWindowPanelType {
     Multipool,
     SequenceEditor,
     ColorPicker,
+    Clock,
 
     CommandPanel,
     PerformancePanel,
@@ -69,6 +72,7 @@ impl DockWindowPanelType {
             DockWindowPanelType::Multipool => "demex-multipool",
             DockWindowPanelType::SequenceEditor => "demex-sequence-editor",
             DockWindowPanelType::ColorPicker => "demex-color-picker",
+            DockWindowPanelType::Clock => "demex-clock",
 
             DockWindowPanelType::CommandPanel => "demex-command",
             DockWindowPanelType::PerformancePanel => "demex-performance",
@@ -83,7 +87,8 @@ impl DockWindowPanelType {
             | Self::LayoutView
             | Self::Multipool
             | Self::SequenceEditor
-            | Self::ColorPicker => true,
+            | Self::ColorPicker
+            | Self::Clock => true,
 
             Self::PerformancePanel => true,
 
@@ -118,6 +123,7 @@ impl DockWindowPanelType {
             DockWindowPanelType::ColorPicker => {
                 Arc::new(cx.new_panel(|cx| ColorPickerPanel::new(window, cx)))
             }
+            DockWindowPanelType::Clock => Arc::new(cx.new_panel(|cx| ClockPanel::new(window, cx))),
             DockWindowPanelType::CommandPanel => {
                 Arc::new(cx.new_panel(|cx| CommandPanel::new(window, cx)))
             }
@@ -336,4 +342,5 @@ fn register_panels(cx: &mut App) {
     AttributeEditorPanel::register(cx);
     MultiPoolPanel::register(cx);
     ColorPickerPanel::register(cx);
+    ClockPanel::register(cx);
 }
