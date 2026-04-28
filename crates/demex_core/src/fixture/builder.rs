@@ -27,6 +27,8 @@ use crate::{
     patch::FixtureTypeList,
 };
 
+pub type DmxMap = HashMap<DmxAddress, FixtureChannel3Attribute>;
+
 /// Helper for building the fixture tree from a GDTF fixture type + DMX mode.
 ///
 /// The builder walks the nested geometry tree, constructs fixtures and their channel
@@ -56,7 +58,9 @@ pub struct FixtureBuilder<'a> {
     // depend on being able to find followers across the whole fixture set, so we store
     // them to resolve after the initial construction.
     unresolved_virtual_channels: Vec<(ChannelFunctionId, FixtureChannel3Attribute)>,
-    // defaults: HashSet<(DmxAddress, u8)>,
+
+    /// Map of DMX addresses to fixture channel attributes.
+    dmx_map: DmxMap,
 }
 
 impl<'a> FixtureBuilder<'a> {
@@ -105,6 +109,8 @@ impl<'a> FixtureBuilder<'a> {
             sibling_count_stack: Vec::new(),
             channel_function_map: HashMap::new(),
             unresolved_virtual_channels: Vec::new(),
+
+            dmx_map: HashMap::new(),
         }
     }
 
@@ -113,7 +119,7 @@ impl<'a> FixtureBuilder<'a> {
         self
     }
 
-    pub fn build_fixture_tree(mut self) -> Result<Vec<Fixture>, FixtureError> {
+    pub fn build_fixture_tree(mut self) -> Result<(Vec<Fixture>, DmxMap), FixtureError> {
         // Find the root geometry for the chosen DMX mode and start the recursive building.
         let root_geometry = self.get_root_geometry()?.clone();
         let root_path = FixturePath::new(self.root_id);
@@ -127,7 +133,7 @@ impl<'a> FixtureBuilder<'a> {
             self.collapse_fixtures();
         }
 
-        Ok(self.fixtures)
+        Ok((self.fixtures, self.dmx_map))
     }
 
     fn collapse_fixtures(&mut self) {
@@ -638,7 +644,10 @@ impl<'a> FixtureBuilder<'a> {
                             .with_channel_offset(geometry_address_offset + o - 1)
                             .unwrap()
                     })
-                    .collect();
+                    .collect::<Vec<_>>();
+
+                self.dmx_map
+                    .extend(addresses.iter().map(|address| (*address, *attribute)));
 
                 FixtureChannelFunctionKind::Physical { addresses }
             }

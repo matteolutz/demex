@@ -147,24 +147,31 @@ impl DemexEngine {
         log::debug!("Patch built in {:?}", start.elapsed());
         log::debug!("Built {} fixtures", patch.fixtures().count());
 
-        for fixture in patch.fixtures() {
-            log::debug!("{} {}", fixture.path(), fixture.name());
-            for (attr, cf) in fixture.channel_functions() {
-                log::debug!(
-                    "\t{} (initial={:?}, highlight={:?}) {}",
-                    attr,
-                    cf.initial,
-                    cf.highlight,
-                    match cf.kind() {
-                        FixtureChannelFunctionKind::Physical { addresses } => addresses
-                            .iter()
-                            .map(|addr| format!("{}.{}", addr.universe, addr.channel))
-                            .join(", "),
-                        FixtureChannelFunctionKind::Virtual { .. } => "Virtual".to_string(),
-                    }
-                );
+        if cfg!(debug_assertions) {
+            log::debug!(
+                "DMX Map: {:#?}",
+                patch.dmx_map.iter().sorted_by_key(|(address, _)| *address)
+            );
+
+            for fixture in patch.fixtures() {
+                log::debug!("{} {}", fixture.path(), fixture.name());
+                for (attr, cf) in fixture.channel_functions() {
+                    log::debug!(
+                        "\t{} (initial={:?}, highlight={:?}) {}",
+                        attr,
+                        cf.initial,
+                        cf.highlight,
+                        match cf.kind() {
+                            FixtureChannelFunctionKind::Physical { addresses } => addresses
+                                .iter()
+                                .map(|addr| format!("{}.{}", addr.universe, addr.channel))
+                                .join(", "),
+                            FixtureChannelFunctionKind::Virtual { .. } => "Virtual".to_string(),
+                        }
+                    );
+                }
+                log::debug!("");
             }
-            log::debug!("");
         }
 
         patch

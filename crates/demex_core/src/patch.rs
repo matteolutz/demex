@@ -2,13 +2,15 @@ use std::{collections::HashMap, ops::Range};
 
 use serde::{Deserialize, Serialize};
 
-use demex_dmx::DemexDmxOutputConfig;
+use demex_dmx::{DemexDmxOutputConfig, address::DmxAddress};
 use uuid::Uuid;
 
 use crate::{
+    channel3::attribute::FixtureChannel3Attribute,
     engine::component::Component,
     fixture::{
-        Fixture, FixturePath, GdtfFixturePatch, builder::FixtureBuilder, error::FixtureError,
+        Fixture, FixtureId, FixturePath, GdtfFixturePatch, builder::FixtureBuilder,
+        error::FixtureError,
     },
     layout::FixtureLayoutPool,
 };
@@ -24,19 +26,34 @@ pub struct SerializablePatch {
 
 impl SerializablePatch {
     pub fn into_patch(self, fixture_types: Vec<gdtf::fixture_type::FixtureType>) -> Patch {
-        Patch {
-            fixtures: self
-                .fixtures
+        let mut dmx_map: HashMap<DmxAddress, (FixtureId, FixtureChannel3Attribute)> =
+            HashMap::new();
+
+        let fixtures =
+            self.fixtures
                 .clone()
                 .into_iter()
                 .flat_map(|fixture| {
                     let builder = FixtureBuilder::from_patch(fixture, &fixture_types)
                         .unwrap()
                         .should_collapse(true);
-                    builder.build_fixture_tree().unwrap()
+
+                    let (fixtures, root_fixture_dmx_map) = builder.build_fixture_tree().unwrap();
+
+                    if let Some(root_fixture) = fixtures.first() {
+                        dmx_map.extend(root_fixture_dmx_map.into_iter().map(
+                            |(address, attribute)| (address, (root_fixture.path.root(), attribute)),
+                        ));
+                    }
+
+                    fixtures
                 })
                 .map(|f| (f.path(), f))
-                .collect::<HashMap<_, _>>(),
+                .collect::<HashMap<_, _>>();
+
+        Patch {
+            fixtures,
+            dmx_map,
             fixture_types,
             patch: self,
         }
@@ -49,6 +66,7 @@ impl Component for Patch {}
 pub struct Patch {
     fixtures: HashMap<FixturePath, Fixture>,
     fixture_types: Vec<gdtf::fixture_type::FixtureType>,
+    pub(crate) dmx_map: HashMap<DmxAddress, (FixtureId, FixtureChannel3Attribute)>,
     pub(crate) patch: SerializablePatch,
 }
 
