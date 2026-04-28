@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{collections::HashMap, error::Error};
 
 use demex_core::{
     command::parser::nodes::action::{Action, functions::patch_function::PatchFixturesArgs},
@@ -19,6 +19,7 @@ use gpui_component::{
     list::{List, ListEvent, ListState},
     v_flex,
 };
+use strfmt::strfmt;
 
 use crate::{
     engine::{DemexEngineHandler, state::DemexUiState},
@@ -334,7 +335,8 @@ impl AddFixtureWindow {
 
         let quantity = self.quantity_input_state.read(cx).value().parse::<u32>()?;
 
-        let name = self.name_input_state.read(cx).value().to_string();
+        let name_template = self.name_input_state.read(cx).value().to_string();
+        let mut name_template_vars = HashMap::new();
 
         let mut current_address = starting_dmx_address;
         let mut current_fixture_id = starting_fixture_id;
@@ -349,7 +351,7 @@ impl AddFixtureWindow {
             // build the fixture
             let (_, fixture_dmx_map) = FixtureBuilder::new(
                 current_fixture_id,
-                format!("{} {}", name, i),
+                format!("{} {}", name_template, i),
                 current_address,
                 fixture_type,
                 fixture_mode,
@@ -365,11 +367,17 @@ impl AddFixtureWindow {
                 return Err("DMX address overlap detected".into());
             }
 
+            name_template_vars.insert("i".to_string(), i.to_string());
+            name_template_vars.insert("fid".to_string(), current_fixture_id.to_string());
+            name_template_vars.insert("dmx".to_string(), current_address.to_string());
+
+            let name = strfmt(&name_template, &name_template_vars)?;
+
             // all checks have passed, add this fixture
             // to the list of fixtures to patch
             fixtures.push(GdtfFixturePatch {
                 id: current_fixture_id.as_u32(),
-                name: format!("{} {}", name, i),
+                name,
                 fixture_type_id,
                 fixture_type_dmx_mode: fixture_mode_name.clone(),
                 universe: current_address.universe,
@@ -481,7 +489,7 @@ impl AddFixtureWindow {
                             .child(
                                 Label::new("Name")
                             )
-                            .child(div().text_color(cx.theme().muted_foreground).text_sm().child("Use %i for the fixture index (starting at 1), %fp for the fixture path and %pt for the patch"))
+                            .child(div().text_color(cx.theme().muted_foreground).text_sm().child("Use {i} for the fixture index (starting at 1), {fid} for the fixture id and {dmx} for the DMX address"))
                             .child(Input::new(&self.name_input_state)),
                     )
                     .child(

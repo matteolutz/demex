@@ -1509,6 +1509,7 @@ dependencies = [
  "serde_json",
  "serialport",
  "smol",
+ "strfmt",
  "strum",
  "strum_macros",
  "tree-sitter-demex",
@@ -6017,6 +6018,12 @@ name = "streaming-iterator"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b2231b7c3057d5e4ad0156fb3dc807d900806020c5ffa3ee6ff2c8c76fb8520"
+
+[[package]]
+name = "strfmt"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29fdc163db75f7b5ffa3daf0c5a7136fb0d4b2f35523cd1769da05e034159feb"
 
 [[package]]
 name = "strict-num"
