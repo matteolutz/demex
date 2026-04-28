@@ -29,27 +29,38 @@ impl SerializablePatch {
         let mut dmx_map: HashMap<DmxAddress, (FixtureId, FixtureChannel3Attribute)> =
             HashMap::new();
 
-        let fixtures =
-            self.fixtures
-                .clone()
-                .into_iter()
-                .flat_map(|fixture| {
-                    let builder = FixtureBuilder::from_patch(fixture, &fixture_types)
-                        .unwrap()
-                        .should_collapse(true);
+        let fixtures = self
+            .fixtures
+            .clone()
+            .into_iter()
+            .flat_map(|fixture| {
+                let builder = FixtureBuilder::from_patch(fixture, &fixture_types)
+                    .unwrap()
+                    .should_collapse(true);
 
-                    let (fixtures, root_fixture_dmx_map) = builder.build_fixture_tree().unwrap();
+                let (fixtures, mut root_fixture_dmx_map) = builder.build_fixture_tree().unwrap();
 
-                    if let Some(root_fixture) = fixtures.first() {
-                        dmx_map.extend(root_fixture_dmx_map.into_iter().map(
-                            |(address, attribute)| (address, (root_fixture.path.root(), attribute)),
-                        ));
+                if let Some(root_fixture) = fixtures.first() {
+                    for (address, attribute) in root_fixture_dmx_map.drain() {
+                        let prev = dmx_map.insert(address, (root_fixture.path.root(), attribute));
+
+                        if let Some(prev) = prev {
+                            // TODO: don't panic here
+
+                            panic!(
+                                "DMX Address range overlap. Conflict on address {}: {:?} vs {:?}",
+                                address,
+                                prev,
+                                (root_fixture.path.root(), attribute)
+                            )
+                        }
                     }
+                }
 
-                    fixtures
-                })
-                .map(|f| (f.path(), f))
-                .collect::<HashMap<_, _>>();
+                fixtures
+            })
+            .map(|f| (f.path(), f))
+            .collect::<HashMap<_, _>>();
 
         Patch {
             fixtures,
