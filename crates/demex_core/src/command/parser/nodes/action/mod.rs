@@ -27,6 +27,7 @@ use crate::{
         effect_function::{KeyframeEffectApplyPresetArgs, KeyframeEffectUpdateArgs},
         go_function::ExecutorGoOutArgs,
         move_function::MoveArgs,
+        patch_function::PatchFixturesArgs,
         recall_function::RecallEffectKeyframeArgs,
         set_function::{CueSetTriggerArgs, ObjectSetPropertyArgs, SetAttributeChannelSetArgs},
         speedmaster_functions::SpeedMasterTapArgs,
@@ -270,6 +271,7 @@ pub enum Action {
     RunMacro(u32),
 
     UpdateOutputConfigs(Vec<DemexDmxOutputConfig>),
+    PatchFixtures(PatchFixturesArgs),
 
     VisibleEncoderAttributesChanged(Vec<FixtureChannel3Attribute>),
 
@@ -342,6 +344,7 @@ impl Action {
                 *patch.output_configs_mut() = configs.clone();
                 Ok(ActionRunResult::UpdatePatch(patch))
             }
+            Self::PatchFixtures(fun) => fun.run(args),
 
             Self::AssignFader(fun) => fun.run(args),
 

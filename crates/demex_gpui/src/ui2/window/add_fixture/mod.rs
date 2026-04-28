@@ -1,10 +1,18 @@
-use demex_core::uuid::Uuid;
+use std::error::Error;
+
+use demex_core::{
+    command::parser::nodes::action::{Action, functions::patch_function::PatchFixturesArgs},
+    fixture::{FixtureId, FixturePath, GdtfFixturePatch, builder::FixtureBuilder},
+    uuid::Uuid,
+};
+use demex_dmx::address::DmxAddress;
 use gpui::{
-    App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Subscription,
-    Window, div,
+    App, AppContext, Context, Entity, IntoElement, ParentElement, Render, SharedString, Styled,
+    Subscription, Window, div, prelude::FluentBuilder,
 };
 use gpui_component::{
     ActiveTheme, Disableable, IconName,
+    alert::Alert,
     button::{Button, ButtonVariants},
     input::{Input, InputState, NumberInput},
     label::Label,
@@ -13,7 +21,7 @@ use gpui_component::{
 };
 
 use crate::{
-    engine::state::DemexUiState,
+    engine::{DemexEngineHandler, state::DemexUiState},
     ui2::{
         window::add_fixture::{
             fixture_mode_list::{FixtureModeListDelegate, FixtureModeTableEntry},
@@ -150,6 +158,8 @@ pub struct AddFixtureWindow {
     starting_fixture_path_input_state: Entity<InputState>,
     starting_patch_input_state: Entity<InputState>,
 
+    error: Option<SharedString>,
+
     _subscriptions: Vec<Subscription>,
 }
 
@@ -269,8 +279,117 @@ impl AddFixtureWindow {
             starting_fixture_path_input_state,
             starting_patch_input_state,
 
+            error: None,
+
             _subscriptions,
         }
+    }
+
+    fn submit(&mut self, cx: &mut Context<Self>) -> Result<(), Box<dyn Error>> {
+        let AddFixtureFormState::FixtureTypeAndModeSubmitted {
+            fixture_type_id,
+            fixture_mode: fixture_mode_name,
+        } = self.form_state.read(cx).clone()
+        else {
+            return Err("Fixture type and mode must be selected before submitting".into());
+        };
+
+        let patch = DemexUiState::patch(cx).read(cx);
+
+        let fixture_type = patch
+            .fixture_type(fixture_type_id)
+            .ok_or_else(|| "Fixture type not found")?;
+
+        let fixture_mode = fixture_type
+            .dmx_mode(&fixture_mode_name)
+            .ok_or_else(|| "Fixture DMX mode not found")?;
+
+        let starting_fixture_id = FixtureId::new(
+            self.starting_fixture_path_input_state
+                .read(cx)
+                .value()
+                .parse::<u32>()?,
+        )?;
+
+        let (starting_dmx_universe, starting_dmx_channel) = self
+            .starting_patch_input_state
+            .read(cx)
+            .value()
+            .split_once(".")
+            .and_then(|(universe, channel)| {
+                let universe = universe.parse::<u16>().ok()?;
+                let channel = channel.parse::<u16>().ok()?;
+                Some((universe, channel))
+            })
+            .ok_or_else(|| "Invalid patch format")?;
+
+        if starting_dmx_channel > 512 {
+            return Err("DMX channel out of range".into());
+        }
+
+        let starting_dmx_address = DmxAddress {
+            universe: starting_dmx_universe,
+            channel: starting_dmx_channel,
+        };
+
+        let quantity = self.quantity_input_state.read(cx).value().parse::<u32>()?;
+
+        let name = self.name_input_state.read(cx).value().to_string();
+
+        let mut current_address = starting_dmx_address;
+        let mut current_fixture_id = starting_fixture_id;
+        let mut fixtures = Vec::with_capacity(quantity as usize);
+
+        for i in 1..=quantity {
+            // check if fixture id is available
+            if patch.fixture(&FixturePath::new(current_fixture_id)).is_ok() {
+                return Err("Fixture ID already in use".into());
+            }
+
+            // build the fixture
+            let (_, fixture_dmx_map) = FixtureBuilder::new(
+                current_fixture_id,
+                format!("{} {}", name, i),
+                current_address,
+                fixture_type,
+                fixture_mode,
+            )
+            .should_collapse(true)
+            .build_fixture_tree()?;
+
+            // check for overlaps with the dmx map in the patch
+            let has_overlap = fixture_dmx_map
+                .iter()
+                .any(|(fixture_dmx_address, _)| patch.dmx_map().contains_key(fixture_dmx_address));
+            if has_overlap {
+                return Err("DMX address overlap detected".into());
+            }
+
+            // all checks have passed, add this fixture
+            // to the list of fixtures to patch
+            fixtures.push(GdtfFixturePatch {
+                id: current_fixture_id.as_u32(),
+                name: format!("{} {}", name, i),
+                fixture_type_id,
+                fixture_type_dmx_mode: fixture_mode_name.clone(),
+                universe: current_address.universe,
+                start_address: current_address.channel,
+            });
+
+            // set the next fixture id and address
+            current_fixture_id = current_fixture_id.next();
+            current_address = fixture_dmx_map
+                .keys()
+                .max()
+                .copied()
+                .ok_or_else(|| "Failed to find max DMX address")?
+                .with_channel_offset(1)
+                .ok_or_else(|| "Failed to offset next DMX address")?;
+        }
+
+        DemexEngineHandler::engine(cx)
+            .exec_ui(Action::PatchFixtures(PatchFixturesArgs { fixtures }));
+        Ok(())
     }
 }
 
@@ -351,6 +470,7 @@ impl AddFixtureWindow {
             .p_2()
             .gap_2()
             .size_full()
+            .when_some(self.error.as_ref(), |this, error| this.child(div().p_4().child(Alert::error("patch-error", error.clone()))))
             .child(
                 v_flex()
                     .p_4()
@@ -395,8 +515,15 @@ impl AddFixtureWindow {
                 .child(
                     Button::new("patch")
                         .primary()
-                        .disabled(true)
                         .label("Patch!")
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            if let Err(err) = this.submit(cx) {
+                                this.error = Some(err.to_string().into());
+                                cx.notify();
+                            } else {
+                                this.discard_and_close(cx);
+                            }
+                        }))
                 )
             )
     }

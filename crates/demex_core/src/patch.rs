@@ -129,6 +129,13 @@ impl Patch {
             .dedup()
     }
 
+    /// Adds a fixture to the patch
+    /// This doesn't check for address conflicts etc.
+    pub fn add_fixtures(mut self, fixtures: impl IntoIterator<Item = GdtfFixturePatch>) -> Self {
+        self.patch.fixtures.extend(fixtures);
+        self.patch.into_patch(self.fixture_types)
+    }
+
     pub fn is_address_range_unpatched(&self, _address_range: Range<u16>, _universe: u16) -> bool {
         todo!();
         /*

@@ -371,6 +371,10 @@ impl FixtureId {
     pub fn as_u32(&self) -> u32 {
         self.0.into()
     }
+
+    pub fn next(&self) -> Self {
+        Self(NonZeroU32::new(self.0.get() + 1).unwrap())
+    }
 }
 
 impl fmt::Display for FixtureId {

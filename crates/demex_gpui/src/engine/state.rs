@@ -509,11 +509,11 @@ impl DemexUiState {
     ) {
         self.fixture_values.update(cx, |fixtures, cx| {
             for (id, values) in update.into_iter() {
-                fixtures.entry(id).and_modify(|fixture| {
-                    for (channel, value) in values {
-                        fixture.insert(channel, value);
-                    }
-                });
+                let fixture_values = fixtures.entry(id).or_default();
+
+                for (channel, value) in values {
+                    fixture_values.insert(channel, value);
+                }
             }
 
             cx.notify();

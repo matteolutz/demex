@@ -40,55 +40,25 @@ impl Default for FixtureStateHandler {
 
 impl FixtureStateHandler {
     pub fn new<'a>(fixtures: impl IntoIterator<Item = &'a Fixture>) -> Result<Self, FixtureError> {
-        // TODO: find a new place for this
-        /*
-        // check if the fixtures overlap
-        let mut fixture_addresses: HashMap<u16, BTreeSet<u16>> = HashMap::new();
-
-        for f in patch.fixtures() {
-            let fixture_type = patch
-                .fixture_type(f.fixture_type_id)
-                .expect("Fixture type not found");
-            let dmx_mode = fixture_type
-                .dmx_mode(&f.fixture_type_dmx_mode)
-                .expect("Fixture type DMX mode not found");
-
-            let start_address = f.start_address();
-
-            let address_footprint = (dmx_mode
-                .dmx_channels
-                .iter()
-                .flat_map(|dmx_channel| &dmx_channel.offset)
-                .flatten()
-                .max()
-                .copied()
-                .ok_or(FixtureHandlerError::FixtureError(
-                    FixtureError::GdtfMaxDmxOffsetNotFound,
-                ))?) as u16;
-
-            let end_address = start_address + address_footprint - 1;
-            let address_set = fixture_addresses.entry(f.universe()).or_default();
-
-            for i in start_address..=end_address {
-                if address_set.contains(&i) {
-                    return Err(FixtureHandlerError::FixtureAddressOverlap(
-                        f.universe(),
-                        start_address,
-                        end_address,
-                    ));
-                }
-
-                address_set.insert(i);
-            }
-        }
-        */
-
         Ok(Self {
             fixture_states: fixtures
                 .into_iter()
                 .map(|f| (f.path(), FixtureState::new(f)))
                 .collect(),
         })
+    }
+
+    /// Set default fixture states for fixtures that are present in the patch
+    /// but not in the current fixture states.
+    pub fn insert_new_fixtures(&mut self, patch: &Patch) {
+        for fixture in patch.fixtures() {
+            if self.fixture_states.contains_key(&fixture.path) {
+                continue;
+            }
+
+            self.fixture_states
+                .insert(fixture.path, FixtureState::new(fixture));
+        }
     }
 
     pub fn fixtures(&self) -> &HashMap<FixturePath, FixtureState> {
@@ -154,7 +124,7 @@ impl FixtureStateHandler {
 
                 let output_value = state.cached_output_mut().get_mut(attribute).unwrap();
 
-                if output_value.value == new_output_value {
+                if !output_value.force_update && output_value.value == new_output_value {
                     continue;
                 }
 

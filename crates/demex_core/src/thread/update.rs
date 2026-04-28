@@ -184,7 +184,7 @@ impl DemexThreadDelegate for UpdateThread {
             return true;
         }
 
-        let patch = self.patch.load();
+        let mut patch = self.patch.load();
 
         profiler.start("action handling");
         // Handle queued actions
@@ -227,8 +227,12 @@ impl DemexThreadDelegate for UpdateThread {
                                 DemexEvent::HighlightChanged(highlight),
                             ));
                         }
-                        ActionRunResult::UpdatePatch(patch) => {
-                            self.patch.store(Arc::new(patch));
+                        ActionRunResult::UpdatePatch(new_patch) => {
+                            self.patch.store(Arc::new(new_patch));
+                            patch = self.patch.load();
+
+                            // make the fixture state handler generate default states for the new fixtures
+                            self.fixture_state_handler.insert_new_fixtures(&patch);
                         }
                         ActionRunResult::Assign(assignment) => {
                             if let Err(err) = self.input_device_handler.assign(assignment) {

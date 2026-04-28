@@ -8,6 +8,7 @@ pub mod delete_function;
 pub mod effect_function;
 pub mod go_function;
 pub mod move_function;
+pub mod patch_function;
 pub mod recall_function;
 pub mod record_function;
 pub mod rename_function;
