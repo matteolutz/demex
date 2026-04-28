@@ -14,7 +14,7 @@ use crate::{
     engine::showfile::DemexShowFileManager,
     ui2::{
         ext::GpuiContextExtension,
-        window::{outputs::OutputsConfigWindow, settings::SettingsWindow},
+        window::{outputs::OutputsConfigWindow, patch::PatchWindow, settings::SettingsWindow},
         wm::{WindowManager, app::WindowManagerAppExt, edit_window::WindowManagerExtension},
     },
 };
@@ -113,6 +113,13 @@ impl DemexTitleBarConfig {
                                     );
                                 }),
                         )
+                        .child(Button::new("patch").small().link().label("Patch").on_click(
+                            |_, _, cx| {
+                                WindowManager::open_edit_window::<PatchWindow>(cx, |window, cx| {
+                                    PatchWindow::new(window, cx)
+                                });
+                            },
+                        ))
                         .child(
                             Button::new("outputs")
                                 .small()

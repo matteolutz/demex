@@ -1,5 +1,6 @@
 use std::{collections::HashMap, ops::Range};
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use demex_dmx::{DemexDmxOutputConfig, address::DmxAddress};
@@ -114,6 +115,18 @@ impl Patch {
 
     pub fn output_configs_mut(&mut self) -> &mut Vec<DemexDmxOutputConfig> {
         &mut self.patch.outputs
+    }
+
+    pub fn dmx_map(&self) -> &HashMap<DmxAddress, (FixtureId, FixtureChannel3Attribute)> {
+        &self.dmx_map
+    }
+
+    pub fn dmx_universes(&self) -> impl Iterator<Item = u16> {
+        self.dmx_map
+            .keys()
+            .map(|addr| addr.universe)
+            .sorted()
+            .dedup()
     }
 
     pub fn is_address_range_unpatched(&self, _address_range: Range<u16>, _universe: u16) -> bool {
