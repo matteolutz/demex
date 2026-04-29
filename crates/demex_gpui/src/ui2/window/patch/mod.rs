@@ -12,6 +12,7 @@ use gpui_component::{
 
 use crate::{
     engine::state::DemexUiState,
+    storage,
     ui2::{
         window::{add_fixture::AddFixtureWindow, patch::universe::DmxUniverseOverview},
         wm::{
@@ -76,17 +77,43 @@ impl Render for PatchWindow {
             .gap_2()
             .size_full()
             .child(
-                h_flex().p_4().gap_4().justify_end().child(
-                    Button::new("add-fixture")
-                        .label("Add Fixture")
-                        .icon(IconName::Plus)
-                        .on_click(|_, _, cx| {
-                            WindowManager::open_edit_window::<AddFixtureWindow>(
-                                cx,
-                                |window, cx| AddFixtureWindow::new(window, cx),
-                            );
-                        }),
-                ),
+                h_flex()
+                    .p_4()
+                    .gap_4()
+                    .justify_between()
+                    .child(
+                        Button::new("open-fixture-type-dir")
+                            .label("Open GDTF directory")
+                            .icon(IconName::FolderOpen)
+                            .on_click(|_, window, cx| {
+                                let answer = window.prompt(
+                                    gpui::PromptLevel::Info,
+                                    "Restart after adding GDTF files",
+                                    Some("In order for the new fixtures to be available, you need to restart demex."),
+                                    &["Ok"],
+                                    cx,
+                                );
+
+                                cx.spawn(async |cx| {
+                                    let Ok(_) = answer.await else {
+                                        return;
+                                    };
+
+                                    cx.update(|cx| cx.open_with_system(storage::fixture_types()));
+                                }).detach();
+                            }),
+                    )
+                    .child(
+                        Button::new("add-fixture")
+                            .label("Add Fixture")
+                            .icon(IconName::Plus)
+                            .on_click(|_, _, cx| {
+                                WindowManager::open_edit_window::<AddFixtureWindow>(
+                                    cx,
+                                    |window, cx| AddFixtureWindow::new(window, cx),
+                                );
+                            }),
+                    ),
             )
             .child(
                 v_flex()
