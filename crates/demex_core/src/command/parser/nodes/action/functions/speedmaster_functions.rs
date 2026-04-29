@@ -17,6 +17,7 @@ impl FunctionDelegate for SpeedMasterTapArgs {
         ActionRunArgs {
             timing_handler,
             issued_at,
+            event_list,
             ..
         }: ActionRunArgs,
     ) -> Result<
@@ -24,7 +25,7 @@ impl FunctionDelegate for SpeedMasterTapArgs {
         crate::command::parser::nodes::action::error::ActionRunError,
     > {
         timing_handler
-            .tap_speed_master_value(self.speedmaster_id, issued_at)
+            .tap_speed_master_value(self.speedmaster_id, issued_at, event_list)
             .map_err(ActionRunError::TimingHandlerError)
             .map(|_| ActionRunResult::Default)
     }

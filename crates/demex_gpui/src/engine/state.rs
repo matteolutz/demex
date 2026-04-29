@@ -1,7 +1,7 @@
 use std::{
     collections::{HashMap, VecDeque},
     rc::Rc,
-    time::Duration,
+    time::{self, Duration},
 };
 
 use demex_core::{
@@ -16,6 +16,7 @@ use demex_core::{
     fixture::FixturePath,
     patch::Patch,
     pool::{PoolItem, PoolType},
+    timing::speed_master::SpeedMasterValue,
     utils::thread::DemexThreadStats,
 };
 use gpui::{
@@ -213,6 +214,21 @@ impl DemexUiCommandInputState {
     }
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct DemexUiSpeedMasterValue {
+    pub bpm: f32,
+    pub last_tap: Option<time::Instant>,
+}
+
+impl From<SpeedMasterValue> for DemexUiSpeedMasterValue {
+    fn from(value: SpeedMasterValue) -> Self {
+        Self {
+            bpm: value.bpm(),
+            last_tap: value.interval(),
+        }
+    }
+}
+
 pub struct DemexUiState {
     fixture_selection: Entity<Option<FixtureSelectionWithGroup>>,
     highlight: Entity<Option<FixtureSelectionWithGroup>>,
@@ -224,6 +240,8 @@ pub struct DemexUiState {
     performance: Entity<HashMap<String, DemexPerformanceBuffer<10>>>,
 
     pools: HashMap<PoolType, Entity<Vec<PoolItem>>>,
+
+    speed_masters: Entity<HashMap<u32, DemexUiSpeedMasterValue>>,
 
     command_input_state: Option<DemexUiCommandInputState>,
     command_history: Entity<DemexCommandHistory>,
@@ -289,6 +307,11 @@ impl DemexUiState {
     pub fn try_pool(pool_type: PoolType, cx: &App) -> Option<Entity<Vec<PoolItem>>> {
         let this: &Self = cx.global();
         this.pools.get(&pool_type).cloned()
+    }
+
+    pub fn speed_masters(cx: &App) -> Entity<HashMap<u32, DemexUiSpeedMasterValue>> {
+        let this: &Self = cx.global();
+        this.speed_masters.clone()
     }
 
     pub fn selected_sequence(cx: &App) -> Entity<Option<u32>> {
@@ -366,6 +389,7 @@ impl DemexUiState {
             pools: HashMap::new(),
             command_history: cx.new(|_| Default::default()),
             selected_sequence: cx.new(|_| None),
+            speed_masters: cx.new(|_| Default::default()),
             command_input_state: None,
         }
     }
@@ -416,6 +440,17 @@ impl DemexUiState {
                 cx.notify();
             })
         }
+
+        self.speed_masters.update(cx, |speed_masters, cx| {
+            speed_masters.clear();
+            speed_masters.extend(
+                frontend_state
+                    .speedmasters
+                    .into_iter()
+                    .map(|(id, value)| (id, value.into())),
+            );
+            cx.notify();
+        });
     }
 
     fn update_pool_item(pool_type: PoolType, id: u32, cx: &mut App) {
@@ -493,6 +528,30 @@ impl DemexUiState {
                         return;
                     };
                     item.id = to_id;
+                    cx.notify();
+                });
+            }
+            DemexEvent::SpeedmasterFaderValueChanged {
+                speed_master_id,
+                bpm,
+            } => {
+                self.speed_masters.update(cx, |speed_masters, cx| {
+                    let value = speed_masters.entry(speed_master_id).or_default();
+                    *value = DemexUiSpeedMasterValue {
+                        bpm,
+                        last_tap: None,
+                    };
+                    cx.notify();
+                });
+            }
+            DemexEvent::SpeedmasterTapped {
+                speed_master_id,
+                instant,
+            } => {
+                self.speed_masters.update(cx, |speed_masters, cx| {
+                    if let Some(value) = speed_masters.get_mut(&speed_master_id) {
+                        value.last_tap = Some(instant);
+                    }
                     cx.notify();
                 });
             }

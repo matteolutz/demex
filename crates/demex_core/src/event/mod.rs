@@ -1,3 +1,5 @@
+use std::time;
+
 use crate::{
     command::parser::nodes::object::Object, fixture::FixturePath, pool::PoolType,
     presets::preset::FixturePresetId,
@@ -47,6 +49,10 @@ pub enum DemexEvent {
     SpeedmasterFaderValueChanged {
         speed_master_id: u32,
         bpm: f32,
+    },
+    SpeedmasterTapped {
+        speed_master_id: u32,
+        instant: time::Instant,
     },
 
     GlobalEncoderValueChanged(u32),

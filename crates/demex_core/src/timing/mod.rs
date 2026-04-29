@@ -7,7 +7,7 @@ use timecode::Timecode;
 
 use crate::{
     engine::component::Component,
-    event::list::DemexEventList,
+    event::{DemexEvent, list::DemexEventList},
     input::{
         midi::MidiQuarterTimecodePiece,
         timecode::{packet::TimecodePacket, synchronizer::TimecodeSynchronizer},
@@ -74,9 +74,22 @@ impl TimingHandler {
         &mut self,
         id: u32,
         interval: time::Instant,
+        event_list: &mut DemexEventList,
     ) -> Result<(), TimingHandlerError> {
         let speed_master_value = self.get_speed_master_value_mut(id)?;
-        speed_master_value.tap(interval);
+
+        if let Some(new_bpm) = speed_master_value.tap(interval) {
+            event_list.push(DemexEvent::SpeedmasterFaderValueChanged {
+                speed_master_id: id,
+                bpm: new_bpm,
+            });
+        }
+
+        event_list.push(DemexEvent::SpeedmasterTapped {
+            speed_master_id: id,
+            instant: interval,
+        });
+
         Ok(())
     }
 }

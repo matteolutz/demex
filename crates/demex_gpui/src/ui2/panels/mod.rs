@@ -27,6 +27,7 @@ use crate::ui2::{
         multipool::{MultiPoolPanel, config::MultiPoolConfig},
         performance::PerformancePanel,
         sequence_editor::SequenceEditorPanel,
+        speedmaster::SpeedmasterPanel,
     },
     wm::WindowManager,
 };
@@ -42,6 +43,7 @@ pub mod multipool;
 pub mod performance;
 pub mod pool;
 pub mod sequence_editor;
+pub mod speedmaster;
 
 mod actions {
     gpui::actions!(panels, [AddFixtureSelection, AddFixtureList, AddLayoutView]);
@@ -57,6 +59,7 @@ pub enum DockWindowPanelType {
     SequenceEditor,
     ColorPicker,
     Clock,
+    Speedmaster,
 
     CommandPanel,
     PerformancePanel,
@@ -73,6 +76,7 @@ impl DockWindowPanelType {
             DockWindowPanelType::SequenceEditor => "demex-sequence-editor",
             DockWindowPanelType::ColorPicker => "demex-color-picker",
             DockWindowPanelType::Clock => "demex-clock",
+            DockWindowPanelType::Speedmaster => "demex-speedmaster",
 
             DockWindowPanelType::CommandPanel => "demex-command",
             DockWindowPanelType::PerformancePanel => "demex-performance",
@@ -88,7 +92,8 @@ impl DockWindowPanelType {
             | Self::Multipool
             | Self::SequenceEditor
             | Self::ColorPicker
-            | Self::Clock => true,
+            | Self::Clock
+            | Self::Speedmaster => true,
 
             Self::PerformancePanel => true,
 
@@ -124,6 +129,9 @@ impl DockWindowPanelType {
                 Arc::new(cx.new_panel(|cx| ColorPickerPanel::new(window, cx)))
             }
             DockWindowPanelType::Clock => Arc::new(cx.new_panel(|cx| ClockPanel::new(window, cx))),
+            DockWindowPanelType::Speedmaster => {
+                Arc::new(cx.new_panel(|cx| SpeedmasterPanel::new(window, cx)))
+            }
             DockWindowPanelType::CommandPanel => {
                 Arc::new(cx.new_panel(|cx| CommandPanel::new(window, cx)))
             }
@@ -343,4 +351,5 @@ fn register_panels(cx: &mut App) {
     MultiPoolPanel::register(cx);
     ColorPickerPanel::register(cx);
     ClockPanel::register(cx);
+    SpeedmasterPanel::register(cx);
 }

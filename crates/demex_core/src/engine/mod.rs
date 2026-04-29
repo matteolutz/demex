@@ -99,6 +99,8 @@ impl DemexEngine {
         let patch = Self::build_patch(show.patch, fixture_types);
         self.patch.store(Arc::new(patch.clone()));
 
+        let speedmaster_values = show.timing_handler.speed_master_values().clone();
+
         let (tx, rx) = mpsc::channel();
         let mut comm_handler = DemexEngineCommRequestHandler::new(rx);
         let comm_dispatcher = DemexEngineCommRequestDispatcher::new(tx);
@@ -131,6 +133,7 @@ impl DemexEngine {
         let frontend_state = DemexFrontendInitState {
             fixture_selection: self.state.read(|s| s.fixture_selection.clone()),
             fixture_states,
+            speedmasters: speedmaster_values,
             pools,
             patch,
         };
@@ -208,6 +211,7 @@ impl DemexEngine {
                 fixture_selection: None,
                 fixture_states: HashMap::new(),
                 pools: HashMap::new(),
+                speedmasters: payload.show.timing_handler.speed_master_values().clone(),
             };
             state
         });

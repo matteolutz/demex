@@ -8,6 +8,7 @@ use crate::{
     pool::{PoolItem, PoolType},
     selection::FixtureSelection,
     state::fixture_state::FixtureState,
+    timing::speed_master::SpeedMasterValue,
 };
 
 #[derive(Debug, Clone, Default)]
@@ -30,5 +31,6 @@ pub struct DemexFrontendInitState {
     pub fixture_selection: Option<FixtureSelection>,
     pub fixture_states: HashMap<FixturePath, FixtureState>,
     pub pools: HashMap<PoolType, Vec<PoolItem>>,
+    pub speedmasters: HashMap<u32, SpeedMasterValue>,
     pub patch: Patch,
 }
