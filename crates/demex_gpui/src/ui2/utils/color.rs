@@ -1,7 +1,11 @@
 use demex_core::channel3::attribute::FixtureChannel3Attribute;
 use gpui::Rgba;
 
-pub fn additive_attribute_to_rgba(attr: FixtureChannel3Attribute, value: f32) -> Option<Rgba> {
+pub fn additive_attribute_to_rgba(
+    attr: FixtureChannel3Attribute,
+    value: f32,
+    use_white: bool,
+) -> Option<Rgba> {
     match attr {
         // Base RGB
         FixtureChannel3Attribute::ColorAddR => Some(Rgba {
@@ -82,19 +86,19 @@ pub fn additive_attribute_to_rgba(attr: FixtureChannel3Attribute, value: f32) ->
         }),
 
         // Whites
-        FixtureChannel3Attribute::ColorAddW => Some(Rgba {
+        FixtureChannel3Attribute::ColorAddW if use_white => Some(Rgba {
             r: value,
             g: value,
             b: value,
             a: 0.0,
         }),
-        FixtureChannel3Attribute::ColorAddWW => Some(Rgba {
+        FixtureChannel3Attribute::ColorAddWW if use_white => Some(Rgba {
             r: value,
             g: 0.85 * value,
             b: 0.7 * value,
             a: 0.0,
         }),
-        FixtureChannel3Attribute::ColorAddCW => Some(Rgba {
+        FixtureChannel3Attribute::ColorAddCW if use_white => Some(Rgba {
             r: 0.7 * value,
             g: 0.85 * value,
             b: value,
@@ -138,21 +142,21 @@ pub fn subtractive_attribute_to_rgba_factor(
         }),
 
         FixtureChannel3Attribute::ColorSubC => Some(Rgba {
-            r: 1.0,
-            g: 1.0 - value,
-            b: 1.0 - value,
+            r: 1.0 - value,
+            g: 1.0,
+            b: 1.0,
             a: 0.0,
         }),
         FixtureChannel3Attribute::ColorSubM => Some(Rgba {
-            r: 1.0 - value,
-            g: 1.0,
-            b: 1.0 - value,
+            r: 1.0,
+            g: 1.0 - value,
+            b: 1.0,
             a: 0.0,
         }),
         FixtureChannel3Attribute::ColorSubY => Some(Rgba {
-            r: 1.0 - value,
-            g: 1.0 - value,
-            b: 1.0,
+            r: 1.0,
+            g: 1.0,
+            b: 1.0 - value,
             a: 0.0,
         }),
 
