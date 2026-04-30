@@ -29,7 +29,10 @@ use crate::{
         move_function::MoveArgs,
         patch_function::PatchFixturesArgs,
         recall_function::RecallEffectKeyframeArgs,
-        set_function::{CueSetTriggerArgs, ObjectSetPropertyArgs, SetAttributeChannelSetArgs},
+        set_function::{
+            CueSetTriggerArgs, ObjectSetPropertyArgs, SetAttributeChannelSetArgs,
+            SetFeatureValueArgs,
+        },
         speedmaster_functions::SpeedMasterTapArgs,
         start_function::ExecutorStartArgs,
         stomp_function::ExecutorStompArgs,
@@ -178,6 +181,7 @@ pub enum Action {
     // Set
     SetAttributeValue(SetAttributeValueArgs),
     SetAttributeChannlSet(SetAttributeChannelSetArgs),
+    SetFeatureValue(SetFeatureValueArgs),
     SetFixturePreset(SetFixturePresetArgs),
     ObjectSetProperty(ObjectSetPropertyArgs),
 
@@ -287,6 +291,7 @@ impl Action {
             // Set
             Self::SetAttributeValue(fun) => fun.run(args),
             Self::SetAttributeChannlSet(fun) => fun.run(args),
+            Self::SetFeatureValue(fun) => fun.run(args),
             Self::SetFixturePreset(fun) => fun.run(args),
             Self::ObjectSetProperty(fun) => fun.run(args),
 

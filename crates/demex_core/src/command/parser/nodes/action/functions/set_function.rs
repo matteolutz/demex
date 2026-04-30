@@ -5,6 +5,7 @@ use crate::{
         attribute::FixtureChannel3Attribute,
         channel_value::{FixtureChannelValue2PresetState, FixtureChannelValue3},
     },
+    color::color_space::RgbValue,
     command::parser::nodes::{
         action::{ActionRunArgs, ValueOrRange, error::ActionRunError, result::ActionRunResult},
         fixture_selector::{FixtureSelector, FixtureSelectorContext},
@@ -176,6 +177,150 @@ impl FunctionDelegate for SetAttributeChannelSetArgs {
         args.event_list.push(DemexEvent::FixtureValuesChanged(
             selection.fixtures().to_vec(),
         ));
+        Ok(ActionRunResult::Default)
+    }
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum SetFeatureValue {
+    Rgb { value: RgbValue, use_white: bool },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SetFeatureValueArgs {
+    pub fixture_selector: FixtureSelector,
+    pub feature: SetFeatureValue,
+}
+
+impl FunctionDelegate for SetFeatureValueArgs {
+    fn run(&self, args: ActionRunArgs) -> Result<ActionRunResult, ActionRunError> {
+        let selection = self
+            .fixture_selector
+            .get_selection(args.preset_handler, args.fixture_selector_context)
+            .map_err(ActionRunError::FixtureSelectorError)?;
+
+        match self.feature {
+            SetFeatureValue::Rgb {
+                mut value,
+                use_white,
+            } => {
+                for f_path in selection.fixtures() {
+                    let Some((fixture, fixture_state)) = args
+                        .patch
+                        .fixture(f_path)
+                        .ok()
+                        .zip(args.fixture_handler.fixture_mut(f_path).ok())
+                    else {
+                        continue;
+                    };
+
+                    // TODO: handle more color attributes
+
+                    // if the fixture has a white channel and `use_white` is true
+                    // extract a white component from the rgb values and use that
+                    if use_white {
+                        if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddW) {
+                            let white = value.extract_white();
+                            let _ = fixture_state.set_programmer_value(
+                                fixture,
+                                &FixtureChannel3Attribute::ColorAddW,
+                                FixtureChannelValue3::discrete(white),
+                            );
+                        // we are using `else if`, because we only really want to use one white channel
+                        // this will be maybe replaced by a more elaborate system in the future
+                        } else if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddWW) {
+                            let white = value.extract_warm_white();
+                            let _ = fixture_state.set_programmer_value(
+                                fixture,
+                                &FixtureChannel3Attribute::ColorAddWW,
+                                FixtureChannelValue3::discrete(white),
+                            );
+                        }
+                    }
+
+                    // secondary emitters
+                    if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddRY) {
+                        let amber = value.extract_amber();
+                        let _ = fixture_state.set_programmer_value(
+                            fixture,
+                            &FixtureChannel3Attribute::ColorAddRY,
+                            FixtureChannelValue3::discrete(amber),
+                        );
+                    }
+                    if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddC) {
+                        let cyan = value.extract_cyan();
+                        let _ = fixture_state.set_programmer_value(
+                            fixture,
+                            &FixtureChannel3Attribute::ColorAddC,
+                            FixtureChannelValue3::discrete(cyan),
+                        );
+                    }
+                    if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddM) {
+                        let magenta = value.extract_magenta();
+                        let _ = fixture_state.set_programmer_value(
+                            fixture,
+                            &FixtureChannel3Attribute::ColorAddM,
+                            FixtureChannelValue3::discrete(magenta),
+                        );
+                    }
+                    if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddY) {
+                        let yellow = value.extract_yellow();
+                        let _ = fixture_state.set_programmer_value(
+                            fixture,
+                            &FixtureChannel3Attribute::ColorAddY,
+                            FixtureChannelValue3::discrete(yellow),
+                        );
+                    }
+
+                    // primary additive emitters
+                    if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddR) {
+                        let _ = fixture_state.set_programmer_value(
+                            fixture,
+                            &FixtureChannel3Attribute::ColorAddR,
+                            FixtureChannelValue3::discrete(value.r),
+                        );
+                    }
+                    if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddG) {
+                        let _ = fixture_state.set_programmer_value(
+                            fixture,
+                            &FixtureChannel3Attribute::ColorAddG,
+                            FixtureChannelValue3::discrete(value.g),
+                        );
+                    }
+                    if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddB) {
+                        let _ = fixture_state.set_programmer_value(
+                            fixture,
+                            &FixtureChannel3Attribute::ColorAddB,
+                            FixtureChannelValue3::discrete(value.b),
+                        );
+                    }
+
+                    // subtractive emitters
+                    if fixture.has_attribute(&FixtureChannel3Attribute::ColorSubC) {
+                        let _ = fixture_state.set_programmer_value(
+                            fixture,
+                            &FixtureChannel3Attribute::ColorSubC,
+                            FixtureChannelValue3::discrete(1.0 - value.r),
+                        );
+                    }
+                    if fixture.has_attribute(&FixtureChannel3Attribute::ColorSubM) {
+                        let _ = fixture_state.set_programmer_value(
+                            fixture,
+                            &FixtureChannel3Attribute::ColorSubM,
+                            FixtureChannelValue3::discrete(1.0 - value.g),
+                        );
+                    }
+                    if fixture.has_attribute(&FixtureChannel3Attribute::ColorSubY) {
+                        let _ = fixture_state.set_programmer_value(
+                            fixture,
+                            &FixtureChannel3Attribute::ColorSubY,
+                            FixtureChannelValue3::discrete(1.0 - value.b),
+                        );
+                    }
+                }
+            }
+        }
+
         Ok(ActionRunResult::Default)
     }
 }

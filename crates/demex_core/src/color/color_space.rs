@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, EnumIter)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, EnumIter, Serialize, Deserialize)]
 pub enum RgbColorSpace {
     #[default]
     Srgb,
@@ -70,12 +71,12 @@ impl RgbColorSpace {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct RgbValue {
-    r: f32,
-    g: f32,
-    b: f32,
-    color_space: RgbColorSpace,
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub color_space: RgbColorSpace,
 }
 
 impl RgbValue {
@@ -86,6 +87,10 @@ impl RgbValue {
             b,
             color_space,
         }
+    }
+
+    pub fn srgb(r: f32, g: f32, b: f32) -> Self {
+        Self::new(r, g, b, RgbColorSpace::Srgb)
     }
 
     pub fn from_color(color: ecolor::Color32, color_space: RgbColorSpace) -> Self {
@@ -147,6 +152,65 @@ impl RgbValue {
         let big_z = ((1.0 - x - y) * big_y) / y;
 
         Self::from_xyz(big_x, big_y, big_z, color_space)
+    }
+
+    /// This will extract the white component from the RGB values and return it.
+    pub fn extract_white(&mut self) -> f32 {
+        let white = self.r.min(self.g).min(self.b);
+
+        self.r -= white;
+        self.g -= white;
+        self.b -= white;
+
+        white
+    }
+
+    pub fn extract_warm_white(&mut self) -> f32 {
+        // TODO: make the "warmth" a parameter
+
+        let warm_white = self.r.min(self.g).min(self.b);
+
+        self.r -= warm_white;
+        self.g -= warm_white;
+        self.b -= warm_white;
+
+        warm_white
+    }
+
+    pub fn extract_amber(&mut self) -> f32 {
+        let amber = self.r.min(self.g) * 0.5;
+
+        self.r -= amber;
+        self.g -= amber * 0.5;
+
+        amber
+    }
+
+    pub fn extract_cyan(&mut self) -> f32 {
+        let cyan = self.g.min(self.b);
+
+        self.g -= cyan;
+        self.b -= cyan;
+
+        cyan
+    }
+
+    pub fn extract_magenta(&mut self) -> f32 {
+        let magenta = self.r.min(self.b);
+
+        self.r -= magenta;
+        self.b -= magenta;
+
+        magenta
+    }
+
+    pub fn extract_yellow(&mut self) -> f32 {
+        let yellow = self.r.min(self.g);
+
+        self.r -= yellow;
+        self.g -= yellow;
+
+        yellow
     }
 }
 
