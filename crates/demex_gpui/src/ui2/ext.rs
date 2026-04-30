@@ -89,6 +89,9 @@ pub trait BoundsExt {
     fn map_y_inverted(&self, y: Pixels) -> Option<Pixels>;
 
     fn unmap_x(&self, x: Pixels) -> Option<Pixels>;
+    fn unmap_y(&self, y: Pixels) -> Option<Pixels>;
+
+    fn unmap_point(&self, point: &Point<Pixels>) -> Option<Point<Pixels>>;
 }
 
 impl BoundsExt for Bounds<Pixels> {
@@ -150,6 +153,24 @@ impl BoundsExt for Bounds<Pixels> {
             None
         } else {
             Some(px((x - self.origin.x) / self.size.width))
+        }
+    }
+
+    fn unmap_y(&self, y: Pixels) -> Option<Pixels> {
+        if y < self.origin.y || y > self.bottom() {
+            None
+        } else {
+            Some(px((y - self.origin.y) / self.size.height))
+        }
+    }
+
+    fn unmap_point(&self, absolute_point: &Point<Pixels>) -> Option<Point<Pixels>> {
+        let x = self.unmap_x(absolute_point.x);
+        let y = self.unmap_y(absolute_point.y);
+
+        match (x, y) {
+            (Some(x), Some(y)) => Some(point(x, y)),
+            _ => None,
         }
     }
 }
