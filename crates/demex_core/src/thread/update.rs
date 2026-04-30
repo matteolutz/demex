@@ -336,6 +336,11 @@ impl DemexThreadDelegate for UpdateThread {
                 FixtureSelectorContext::new(&mut self.state.fixture_selection),
                 &mut self.action_queue.lock_write(),
                 |str_to_append| {
+                    // optimistically update the command input.
+                    // The frontend will take some time to process the `AppendToCommandInput` event.
+                    // We also update the command input locally to avoid e.g. double insertion of fader ids
+                    self.command_input.swap(Arc::new(str_to_append.clone()));
+
                     let _ = self
                         .event_bus_tx
                         .send(DemexEngineCommEvent::AppendToCommandInput(str_to_append));
@@ -348,7 +353,7 @@ impl DemexThreadDelegate for UpdateThread {
                 &self.state.visible_encoder_attributes,
                 &mut self.event_list,
             )
-            .inspect_err(|err| log::error!("Failed to update input device handler: {}", err));
+            .inspect_err(|err| log::warn!("Failed to update input device handler: {}", err));
 
         profiler.start("ui update");
         let _ = self.event_list.send(&self.event_bus_tx);
