@@ -424,11 +424,17 @@ impl Action {
 
             Self::GrandmasterSetValue(value) => {
                 args.master_handler.set_grand_master(*value);
+                args.event_list
+                    .push(DemexEvent::GrandmasterFaderValueChanged(*value));
                 Ok(ActionRunResult::new())
             }
             Self::GroupmasterSetValue(group_id, value) => {
                 args.master_handler
                     .set_groupmaster_value(*group_id, *value, args.preset_handler);
+                args.event_list.push(DemexEvent::GroupmasterValueChanged {
+                    group_master_id: *group_id,
+                    value: *value,
+                });
                 Ok(ActionRunResult::new())
             }
 
