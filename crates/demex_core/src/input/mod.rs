@@ -13,7 +13,7 @@ use crate::{
     input::{
         control::{
             DemexInputDeviceControlAssignment, DemexInputDeviceControlUnassignment,
-            button::DemexInputButton, encoder::DemexInputEncoder, fader::DemexInputFader,
+            encoder::DemexInputEncoder,
         },
         event::{DemexInputDeviceConfigExt, DemexInputDeviceControlUpdate},
     },
@@ -39,35 +39,19 @@ pub struct DemexInputDeviceUpdateArgs<'a> {
 }
 
 pub trait DemexInputDeviceProfile: 'static + Send + std::fmt::Debug {
-    fn handle_button_assign(
-        &mut self,
-        _button_id: u32,
-        _button: &DemexInputButton,
-    ) -> Result<(), DemexInputDeviceError> {
+    fn handle_button_assign(&mut self, _button_id: u32) -> Result<(), DemexInputDeviceError> {
         Ok(())
     }
 
-    fn handle_button_unassign(
-        &mut self,
-        _button_id: u32,
-        _button: &DemexInputButton,
-    ) -> Result<(), DemexInputDeviceError> {
+    fn handle_button_unassign(&mut self, _button_id: u32) -> Result<(), DemexInputDeviceError> {
         Ok(())
     }
 
-    fn handle_fader_assign(
-        &mut self,
-        _fader_id: u32,
-        _fader: &DemexInputFader,
-    ) -> Result<(), DemexInputDeviceError> {
+    fn handle_fader_assign(&mut self, _fader_id: u32) -> Result<(), DemexInputDeviceError> {
         Ok(())
     }
 
-    fn handle_fader_unassign(
-        &mut self,
-        _fader_id: u32,
-        _fader: &DemexInputFader,
-    ) -> Result<(), DemexInputDeviceError> {
+    fn handle_fader_unassign(&mut self, _fader_id: u32) -> Result<(), DemexInputDeviceError> {
         Ok(())
     }
 
@@ -124,6 +108,7 @@ impl DemexInputDeviceHandler {
                 assignment,
             } => {
                 let device = self.device_mut(device_idx)?;
+                device.profile_mut().handle_button_assign(button_id)?;
                 device.assign_button(button_id, assignment)
             }
             DemexInputDeviceControlAssignment::Fader {
@@ -132,6 +117,7 @@ impl DemexInputDeviceHandler {
                 assignment,
             } => {
                 let device = self.device_mut(device_idx)?;
+                device.profile_mut().handle_fader_assign(fader_id)?;
                 device.assign_fader(fader_id, assignment)
             }
         }
@@ -147,6 +133,7 @@ impl DemexInputDeviceHandler {
                 button_id,
             } => {
                 let device = self.device_mut(device_idx)?;
+                device.profile_mut().handle_button_unassign(button_id)?;
                 device.unassign_button(button_id)
             }
             DemexInputDeviceControlUnassignment::Fader {
@@ -154,6 +141,7 @@ impl DemexInputDeviceHandler {
                 fader_id,
             } => {
                 let device = self.device_mut(device_idx)?;
+                device.profile_mut().handle_fader_unassign(fader_id)?;
                 device.unassign_fader(fader_id)
             }
         }

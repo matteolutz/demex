@@ -289,23 +289,23 @@ impl DemexInputDeviceControlAssignmentDelegate for DemexInputButtonAssignment {
                     selection,
                     preset_id,
                 },
-                init_event: None,
+                init_event: Some(DemexInputDeviceButtonUpdate::ButtonInactive),
             }),
             DemexInputButtonAssignment::FixtureSelector { fixture_selector } => {
                 Ok(DemexInputControlAssignmentResult {
                     control: DemexInputButton::FixtureSelector { fixture_selector },
-                    init_event: None,
+                    init_event: Some(DemexInputDeviceButtonUpdate::ButtonInactive),
                 })
             }
             DemexInputButtonAssignment::SpeedMasterTap { speed_master_id } => {
                 Ok(DemexInputControlAssignmentResult {
                     control: DemexInputButton::SpeedMasterTap { speed_master_id },
-                    init_event: None,
+                    init_event: Some(DemexInputDeviceButtonUpdate::ButtonInactive),
                 })
             }
             DemexInputButtonAssignment::Macro { action } => Ok(DemexInputControlAssignmentResult {
                 control: DemexInputButton::Macro { action },
-                init_event: None,
+                init_event: Some(DemexInputDeviceButtonUpdate::ButtonInactive),
             }),
             DemexInputButtonAssignment::Unused => Ok(DemexInputControlAssignmentResult {
                 control: DemexInputButton::Unused,

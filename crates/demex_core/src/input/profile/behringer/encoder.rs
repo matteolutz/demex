@@ -22,16 +22,16 @@ impl BehringerXTouchCompactEncoderMode {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum BehringerXTouchCompactButtonLedMode {
     Off,
-    On,
     Blink,
+    On,
 }
 
 impl BehringerXTouchCompactButtonLedMode {
-    pub fn value(&self) -> u8 {
+    pub fn velocity(&self) -> u8 {
         match self {
             BehringerXTouchCompactButtonLedMode::Off => 0,
-            BehringerXTouchCompactButtonLedMode::On => 1,
-            BehringerXTouchCompactButtonLedMode::Blink => 2,
+            BehringerXTouchCompactButtonLedMode::Blink => 1,
+            BehringerXTouchCompactButtonLedMode::On => 127,
         }
     }
 }

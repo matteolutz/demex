@@ -8,6 +8,7 @@ pub mod utils;
 pub(crate) const NOTE_OFF_OP: u8 = 0x8;
 pub(crate) const NOTE_ON_OP: u8 = 0x9;
 pub(crate) const CC_OP: u8 = 0xb;
+pub(crate) const PITCH_BEND_OP: u8 = 0xe;
 
 #[derive(Debug, Clone)]
 pub enum MidiQuarterTimecodePiece {
@@ -37,6 +38,10 @@ pub enum MidiMessage {
         channel: u8,
         control_code: u8,
         control_value: u8,
+    },
+    PitchBend {
+        channel: u8,
+        value: u16,
     },
     AkaiSystemExclusive {
         manufacturer_id: u8,
@@ -87,6 +92,11 @@ impl MidiMessage {
                 (CC_OP << 4) | (channel & 0xF),
                 control_code & 0x7F,
                 control_value,
+            ],
+            Self::PitchBend { channel, value } => vec![
+                (PITCH_BEND_OP << 4) | (channel & 0xF),
+                get_upper_7_bit(value),
+                get_lower_7_bit(value),
             ],
             Self::AkaiSystemExclusive {
                 manufacturer_id,
@@ -245,6 +255,11 @@ impl MidiMessage {
                 control_code: bytes[1] & 0x7F,
                 control_value: bytes[2],
             }),
+            PITCH_BEND_OP => Some(Self::PitchBend {
+                channel,
+                value: ((bytes[1] as u16 & 0x7F) << 7) | (bytes[2] as u16 & 0x7F),
+            }),
+
             _ => None,
         }
     }
