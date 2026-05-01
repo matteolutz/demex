@@ -201,7 +201,7 @@ impl FixtureChannelValue3 {
                     timing_handler,
                     state.as_ref(),
                 )
-                .unwrap()
+                .unwrap_or_default()
                 .to_discrete(fixture, attribute, preset_handler, timing_handler),
             Self::Mix { a, b, mix } => {
                 let a = a.to_discrete(fixture, attribute, preset_handler, timing_handler);
