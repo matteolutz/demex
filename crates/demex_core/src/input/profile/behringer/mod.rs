@@ -27,6 +27,8 @@ const GLOBAL_CHANNEL: u8 = 0;
 // i.e. led ring mode, etc.
 const GLOBAL_CONFIG_CHANNEL: u8 = 1;
 
+const ENCODER_SENSITIVTY: f32 = 2.0;
+
 // **Ressources**
 // https://media.djmania.net/manuales/pdf/Manual_Behringer_X-Touch_Compact.pdf
 
@@ -122,6 +124,18 @@ impl BehringerXTouchCompactDeviceProfile {
             54..=77 => Ok((id + (71 - 54)) as u8),
             _ => Err(DemexInputDeviceError::ButtonNotInProfile),
         }
+    }
+
+    fn get_relative_encoder_value(midi_value: u8) -> f32 {
+        let normalized = if midi_value < 64 {
+            // forward turn
+            midi_value as f32 / 127.0
+        } else {
+            // backward turn
+            (127 - midi_value) as f32 / -127.0
+        };
+
+        normalized / ENCODER_SENSITIVTY
     }
 
     fn send_button_state(
@@ -256,8 +270,8 @@ impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
     fn tick(&mut self, _args: DemexInputDeviceUpdateArgs) -> Result<(), DemexInputDeviceError> {
         // TODO: speed master buttons (blinking)
 
-        for (idx, value) in self.encoder_states.send_values() {
-            self.send_encoder_value(idx as u32, value)?;
+        for (idx, _) in self.encoder_states.send_values() {
+            self.send_encoder_value(idx as u32, 0.0)?;
         }
 
         Ok(())
@@ -354,7 +368,9 @@ impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
 
                             Some(DemexInputDeviceMessage::GlobalEncoderValueChanged {
                                 encoder_idx,
-                                value: EncoderValue::Absolute(control_value as f32 / 127.0),
+                                value: EncoderValue::RelativeChange(
+                                    Self::get_relative_encoder_value(control_value),
+                                ),
                             })
                         }
                         // Top encoders turn (page B)
@@ -364,7 +380,9 @@ impl DemexInputDeviceProfile for BehringerXTouchCompactDeviceProfile {
 
                             Some(DemexInputDeviceMessage::GlobalEncoderValueChanged {
                                 encoder_idx,
-                                value: EncoderValue::Absolute(control_value as f32 / 127.0),
+                                value: EncoderValue::RelativeChange(
+                                    Self::get_relative_encoder_value(control_value),
+                                ),
                             })
                         }
                         _ => None,
