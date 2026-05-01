@@ -145,23 +145,6 @@ impl FixtureChannelValue3 {
         }
     }
 
-    /*
-    pub fn with_preset_state(self, preset_state: Option<FixtureChannelValue2PresetState>) -> Self {
-        match self {
-            Self::Discrete(_) => self,
-            Self::Preset { id, state: _ } => Self::Preset {
-                id,
-                state: preset_state,
-            },
-            Self::Mix { a, b, mix } => Self::Mix {
-                a: Box::new(a.with_preset_state(preset_state.clone())),
-                b: Box::new(b.with_preset_state(preset_state)),
-                mix,
-            },
-        }
-    }
-    */
-
     pub fn with_started(self, started: Option<time::Instant>) -> Self {
         match self {
             Self::Discrete(_) => self,
