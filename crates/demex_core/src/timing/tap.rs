@@ -27,11 +27,12 @@ impl TapChain {
     fn chain_active(&self, instant: time::Instant, last_bpm: f32) -> bool {
         if let Some(last_tap) = self.taps.back() {
             *last_tap + time::Duration::from_secs_f64(MAX_BEAT_LENGTH) > instant
-                && *last_tap
-                    + (time::Duration::from_secs_f64(
-                        self.beat_interval(last_bpm) * CHAIN_RESET_BEATS as f64,
-                    ))
-                    > instant
+                && (last_bpm == 0.0
+                    || *last_tap
+                        + (time::Duration::from_secs_f64(
+                            self.beat_interval(last_bpm) * CHAIN_RESET_BEATS as f64,
+                        ))
+                        > instant)
         } else {
             true
         }

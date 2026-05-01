@@ -285,6 +285,9 @@ impl DemexThreadDelegate for UpdateThread {
             &mut self.event_list,
         );
 
+        profiler.start("speed master update");
+        self.timing_handler.update_speedmasters();
+
         profiler.start("output values update");
         let mut updated_output_values = HashMap::new();
         let _ = self

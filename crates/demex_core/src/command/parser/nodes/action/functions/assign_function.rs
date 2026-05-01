@@ -138,7 +138,7 @@ impl From<AssignFaderArgsMode> for DemexInputFader {
             AssignFaderArgsMode::Groupmaster(group_id) => DemexInputFader::Groupmaster(group_id),
             AssignFaderArgsMode::Speedmaster(speedmaster_id) => DemexInputFader::SpeedMaster {
                 speed_master_id: speedmaster_id,
-                bpm_min: 50.0,
+                bpm_min: 0.0,
                 bpm_max: 300.0,
             },
         }

@@ -102,17 +102,15 @@ impl KeyframeEffect {
         &self,
         fixture_path: &FixturePath,
         attribute: &FixtureChannel3Attribute,
-        started_elapsed: f64,
-        phase_offset_deg: f32,
-        speed_multiplier: f32,
+        phase: f32,
     ) -> Option<FixtureChannelValue3> {
-        let time_adjusted =
-            (started_elapsed as f32 * speed_multiplier) - phase_offset_deg.to_radians();
+        /*let time_adjusted =
+        (started_elapsed as f32 * speed_multiplier) - phase_offset_deg.to_radians();*/
 
         let value = self
             .layers
             .iter()
-            .flat_map(|layer| layer.value(fixture_path, attribute, time_adjusted))
+            .flat_map(|layer| layer.value(fixture_path, attribute, phase))
             .next()?;
 
         Some(FixtureChannelValue3::discrete(value))

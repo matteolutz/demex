@@ -47,6 +47,12 @@ impl Default for TimingHandler {
 }
 
 impl TimingHandler {
+    pub fn update_speedmasters(&mut self) {
+        for speedmaster in self.speed_master_values.values_mut() {
+            speedmaster.update();
+        }
+    }
+
     pub fn speed_master_values(&self) -> &HashMap<u32, SpeedMasterValue> {
         &self.speed_master_values
     }

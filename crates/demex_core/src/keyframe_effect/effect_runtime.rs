@@ -4,15 +4,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     channel3::{attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3},
-    effect::{
-        error::EffectError,
-        speed::{EffectSpeed, EffectSpeedSyncMode},
-    },
+    effect::{error::EffectError, speed::EffectSpeed},
     fixture::FixturePath,
     keyframe_effect::effect::KeyframeEffect,
     timing::TimingHandler,
     updatables::runtime::RuntimePhase,
-    utils::math::instant_diff_secs,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -71,10 +67,16 @@ impl KeyframeEffectRuntime {
             .ok_or(EffectError::EffectNotStarted)
             .and_then(|effect_started| {
                 let phase_offset = self.phase.phase(fixture_offset);
-                let mut started_elapsed = effect_started.elapsed().as_secs_f64();
+                let started_elapsed = effect_started.elapsed().as_secs_f64();
 
-                let effective_bpm = match &self.speed {
-                    EffectSpeed::SpeedMaster { id, scale, sync } => {
+                let phase = match &self.speed {
+                    EffectSpeed::SpeedMaster { id, scale, sync: _ } => {
+                        timing_handler
+                            .get_speed_master_value(*id)
+                            .map(|val| val.current_phase(*scale))
+                            .unwrap_or(0.0)
+
+                        /*
                         if let Ok(speed_master_value) = timing_handler.get_speed_master_value(*id) {
                             if sync.is_synced() {
                                 if let Some(interval) = speed_master_value.interval() {
@@ -93,21 +95,19 @@ impl KeyframeEffectRuntime {
                             speed_master_value.bpm() * scale.scale_value()
                         } else {
                             0.0
-                        }
+                        }*/
                     }
-                    EffectSpeed::Bpm(bpm) => *bpm,
+                    EffectSpeed::Bpm(bpm) => {
+                        let effective_bps = bpm / 60.0;
+                        let speed_multiplier = (2.0 * f32::consts::PI) * effective_bps;
+
+                        started_elapsed as f32 * speed_multiplier
+                    }
                 };
 
-                let effective_bps = effective_bpm / 60.0;
-                let speed_multiplier = (2.0 * f32::consts::PI) * effective_bps;
-
-                let channel_value = self.effect.value(
-                    fixture_path,
-                    attribute,
-                    started_elapsed,
-                    phase_offset,
-                    speed_multiplier,
-                );
+                let channel_value =
+                    self.effect
+                        .value(fixture_path, attribute, phase - phase_offset.to_radians());
 
                 channel_value.ok_or(EffectError::NoValueForAttribute)
             })
