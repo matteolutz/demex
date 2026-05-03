@@ -4,9 +4,9 @@ use gpui::{
     App, Bounds, ClickEvent, Div, ElementId, Entity, Hsla, InteractiveElement, IntoElement,
     MouseButton, ParentElement, PathBuilder, RenderOnce, Rgba, SharedString, Stateful,
     StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div, fill, point,
-    prelude::FluentBuilder, px, size,
+    prelude::FluentBuilder, px, rems, size,
 };
-use gpui_component::{ActiveTheme, Colorize, Disableable, StyledExt, v_flex};
+use gpui_component::{ActiveTheme, Colorize, Disableable, StyledExt, tooltip::Tooltip, v_flex};
 use itertools::Itertools;
 
 use crate::ui2::panels::pool::pool_quick_actions::{
@@ -307,19 +307,25 @@ impl RenderOnce for PoolButton {
                 })
             })
             .when_some(self.item_name, |this, item_name| {
-                this.child(
+                this.tooltip({
+                    let item_name = item_name.clone();
+                    move |window, cx| Tooltip::new(item_name.clone()).build(window, cx)
+                })
+                .child(
                     v_flex()
                         .absolute()
                         .top_0()
                         .left_0()
                         .size_full()
-                        .p_2()
+                        .px_2()
+                        .pt_3()
                         .overflow_hidden()
                         .justify_center()
                         .items_center()
+                        .text_center()
                         .font_semibold()
                         .text_xs()
-                        .text_ellipsis()
+                        .line_height(rems(0.8))
                         .child(item_name),
                 )
             })
