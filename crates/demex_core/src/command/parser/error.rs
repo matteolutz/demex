@@ -25,6 +25,14 @@ pub enum ParseError {
 }
 
 impl ParseError {
+    pub fn with_expected(self, expected: impl IntoIterator<Item = ExpectedParseSlice>) -> Self {
+        ParseError::Expected(Box::new(self), expected.into_iter().collect())
+    }
+
+    pub fn unexpected_token(token: &Token, expected: impl AsRef<str>) -> Self {
+        ParseError::UnexpectedToken(token.clone(), expected.as_ref().to_string())
+    }
+
     pub fn was_expected(&self, expected: ExpectedParseSlice) -> bool {
         match self {
             ParseError::UnexpectedVariant(variants) => {

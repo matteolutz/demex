@@ -380,10 +380,10 @@ impl<'a> Parser2<'a> {
             return Ok(Object::Macro(macro_id));
         }
 
-        Err(ParseError::UnexpectedToken(
-            self.current_token()?.clone(),
-            "Expected object".to_string(),
-        ))
+        Err(
+            ParseError::unexpected_token(self.current_token()?, "Expected object")
+                .with_expected(ExpectedParseSlice::any_object()),
+        )
     }
 
     fn parse_home_function(&mut self) -> Result<Action, ParseError> {
@@ -414,7 +414,8 @@ impl<'a> Parser2<'a> {
             unexpected_token => Err(ParseError::UnexpectedTokenAlternatives(
                 unexpected_token.clone(),
                 vec!["\"intens\"", "String"],
-            )),
+            )
+            .with_expected([ExpectedParseSlice::FixtureAttribute])),
         }
     }
 
@@ -644,21 +645,13 @@ impl<'a> Parser2<'a> {
     }
 
     fn parse_button_id(&mut self, is_unassign: bool) -> Result<(u32, u32), ParseError> {
-        self.parse_float_individual().map_err(|err| {
-            ParseError::Expected(
-                err.into(),
-                vec![ExpectedParseSlice::ButtonId { is_unassign }],
-            )
-        })
+        self.parse_float_individual()
+            .map_err(|err| err.with_expected([ExpectedParseSlice::ButtonId { is_unassign }]))
     }
 
     fn parse_fader_id(&mut self, is_unassign: bool) -> Result<(u32, u32), ParseError> {
-        self.parse_float_individual().map_err(|err| {
-            ParseError::Expected(
-                err.into(),
-                vec![ExpectedParseSlice::FaderId { is_unassign }],
-            )
-        })
+        self.parse_float_individual()
+            .map_err(|err| err.with_expected([ExpectedParseSlice::FaderId { is_unassign }]))
     }
 
     fn _parse_integer_or_range(&mut self) -> Result<(u32, u32), ParseError> {

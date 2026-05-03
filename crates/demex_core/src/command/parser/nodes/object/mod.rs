@@ -792,3 +792,17 @@ impl ObjectRange {
         (&self.from, &self.to)
     }
 }
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, strum::EnumIter)]
+pub enum ObjectType {
+    FixtureSelector,
+    Group,
+    Executor,
+
+    Sequence,
+    SequenceCue,
+    SequenceCueOut,
+    ExecutorCue,
+    Preset,
+    Macro,
+}
