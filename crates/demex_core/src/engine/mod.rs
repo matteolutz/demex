@@ -13,6 +13,7 @@ use crate::{
         lexer::Lexer,
         parser::{
             Parser2,
+            error::ParseError,
             nodes::{
                 action::{Action, ActionIssuer, queue::ActionQueue},
                 fixture_selector::FixtureSelectorContext,
@@ -310,14 +311,18 @@ impl DemexEngine {
         );
     }
 
+    pub fn parse_command(&self, command: &str) -> Result<Action, ParseError> {
+        let mut lexer = Lexer::new(command);
+        let tokens = lexer.tokenize().map_err(ParseError::TokenizationError)?;
+
+        let mut parser = Parser2::new(&tokens);
+        parser.parse()
+    }
+
     pub fn exec_command(&self, command: &str) -> Result<(), Box<dyn std::error::Error>> {
         let now = std::time::Instant::now();
 
-        let mut lexer = Lexer::new(command);
-        let tokens = lexer.tokenize()?;
-
-        let mut parser = Parser2::new(&tokens);
-        let action = parser.parse()?;
+        let action = self.parse_command(command)?;
 
         self.action_queue()
             .write(|action_queue| action_queue.enqueue_at(action, now, ActionIssuer::Command));

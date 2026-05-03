@@ -615,7 +615,7 @@ impl MultiPoolPanel {
                                                     .on_click({
                                                         move |_, _, cx| {
                                                             handle_pool_item_click(
-                                                                pool_type, id, cx,
+                                                                pool_type, id, true, cx,
                                                             )
                                                         }
                                                     })
@@ -635,7 +635,16 @@ impl MultiPoolPanel {
                                                     this.indicator_color(state.indicator_color)
                                                 },
                                             )
-                                            .when_none(&pool_item, |this| this.disabled(true))
+                                            .allow_click_when_disabled(true)
+                                            .when_none(&pool_item, |this| {
+                                                this.disabled(true).on_click({
+                                                    move |_, _, cx| {
+                                                        handle_pool_item_click(
+                                                            pool_type, id, false, cx,
+                                                        )
+                                                    }
+                                                })
+                                            })
                                             .into_any_element()
                                     }),
                             ),

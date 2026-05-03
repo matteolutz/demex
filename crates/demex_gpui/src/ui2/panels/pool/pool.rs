@@ -209,7 +209,7 @@ impl Pool {
                     .on_click({
                         let id = item.id;
                         cx.listener(move |this, _, _, cx| {
-                            handle_pool_item_click(this.pool_type, id, cx)
+                            handle_pool_item_click(this.pool_type, id, true, cx)
                         })
                     })
                     .when_some(

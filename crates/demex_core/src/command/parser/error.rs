@@ -2,7 +2,10 @@ use std::num::TryFromIntError;
 
 use itertools::Itertools;
 
-use crate::command::{lexer::token::Token, parser::expected::ExpectedParseSlice};
+use crate::command::{
+    lexer::{error::TokenizationError, token::Token},
+    parser::expected::ExpectedParseSlice,
+};
 
 use super::nodes::object::{Object, ObjectError};
 
@@ -22,6 +25,8 @@ pub enum ParseError {
     TryFromIntError(TryFromIntError),
 
     UnexpectedArgs(String),
+
+    TokenizationError(TokenizationError),
 }
 
 impl ParseError {
@@ -47,6 +52,7 @@ impl ParseError {
             ParseError::ObjectError(_) => false,
             ParseError::UnexpectedEndOfInput => false,
             ParseError::UnexpectedArgs(_) => false,
+            ParseError::TokenizationError(_) => false,
         }
     }
 }
@@ -94,6 +100,7 @@ impl std::fmt::Display for ParseError {
             }
 
             ParseError::UnexpectedArgs(e) => write!(f, "Unexpected args: {}", e),
+            ParseError::TokenizationError(e) => write!(f, "Tokenization error: {}", e),
         }
     }
 }

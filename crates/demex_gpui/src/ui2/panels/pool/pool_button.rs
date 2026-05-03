@@ -50,6 +50,7 @@ pub struct PoolButton {
     top_right: Option<SharedString>,
 
     disabled: bool,
+    allow_click_when_disabled: bool,
 
     on_click: Option<Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>>,
 }
@@ -69,6 +70,7 @@ impl PoolButton {
             colors: None,
             top_right: None,
             disabled: false,
+            allow_click_when_disabled: false,
             on_click: None,
         }
     }
@@ -147,6 +149,11 @@ impl PoolButton {
 
     pub fn colors_rgb(self, colors: impl IntoIterator<Item = [f32; 3]>) -> Self {
         self.colors(colors.into_iter().map(|[r, g, b]| Rgba { r, g, b, a: 1.0 }))
+    }
+
+    pub fn allow_click_when_disabled(mut self, allow: bool) -> Self {
+        self.allow_click_when_disabled = allow;
+        self
     }
 }
 
@@ -298,7 +305,7 @@ impl RenderOnce for PoolButton {
             })
             .when_some(self.on_click, |this, on_click| {
                 this.on_click(move |event, window, cx| {
-                    if self.disabled {
+                    if self.disabled && !self.allow_click_when_disabled {
                         // cx.stop_propagation();
                         return;
                     }

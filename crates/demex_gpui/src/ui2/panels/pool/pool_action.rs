@@ -1,17 +1,20 @@
 use demex_core::{
     command::{
         lexer::token::Token,
-        parser::nodes::{
-            action::{
-                Action,
-                functions::{
-                    create_function::CreateEffectPresetArgs, delete_function::DeleteArgs,
-                    go_function::ExecutorGoArgs, set_function::SetFixturePresetArgs,
-                    stop_function::ExecutorStopArgs,
+        parser::{
+            expected::ExpectedParseSlice,
+            nodes::{
+                action::{
+                    Action,
+                    functions::{
+                        create_function::CreateEffectPresetArgs, delete_function::DeleteArgs,
+                        go_function::ExecutorGoArgs, set_function::SetFixturePresetArgs,
+                        stop_function::ExecutorStopArgs,
+                    },
                 },
+                fixture_selector::FixtureSelector,
+                object::{HomeableObject, Object, ObjectRange},
             },
-            fixture_selector::FixtureSelector,
-            object::{HomeableObject, Object, ObjectRange},
         },
     },
     engine::comm::ExecutorSequenceRequest,
@@ -37,11 +40,31 @@ use crate::{
     },
 };
 
-pub fn handle_pool_item_click(pool_type: PoolType, pool_item_id: u32, cx: &mut App) {
-    let engine = DemexEngineHandler::engine(cx);
+pub fn append_pool_item_to_command(pool_type: PoolType, pool_item_id: u32, cx: &mut App) {
+    DemexUiState::update_command_input_state(cx, |state, cx| {
+        state.append_pool_item(pool_type, pool_item_id, cx);
+    });
+}
 
-    // TODO: check for ExpectedParseSlice and possibly append to
-    // command input rather than "execute" the pool item
+pub fn handle_pool_item_click(
+    pool_type: PoolType,
+    pool_item_id: u32,
+    pool_item_exists: bool,
+    cx: &mut App,
+) {
+    let engine = DemexEngineHandler::engine(cx);
+    let command = DemexUiState::command_input_state(cx).map(|state| state.value(cx));
+
+    if let Some(parse_error) = command.and_then(|cmd| engine.parse_command(&cmd).err()) {
+        if parse_error.was_expected(ExpectedParseSlice::Object(pool_type.into())) {
+            append_pool_item_to_command(pool_type, pool_item_id, cx);
+            return;
+        }
+    }
+
+    if !pool_item_exists {
+        return;
+    }
 
     match pool_type {
         PoolType::Preset(preset_type) => engine.exec_ui(Action::SetFixturePreset(
@@ -103,7 +126,7 @@ pub fn apply_pool_type_to_button(
                 })
                 .action_at(1, "Insert", move |_, cx| {
                     DemexUiState::update_command_input_state(cx, |state, cx| {
-                        state.append(format!("{} {}", Token::KeywordExecutor, pool_item_id), cx)
+                        state.append_pool_item(PoolType::Executor, pool_item_id, cx);
                     });
                 })
                 .when(pool_item.is_some(), |this| {
@@ -162,10 +185,7 @@ pub fn apply_pool_type_to_button(
                         get_sequence(pool_item_id, cx, |seq, cx| {
                             if let Some(seq) = seq {
                                 DemexUiState::update_command_input_state(cx, |state, cx| {
-                                    state.append(
-                                        format!("{} {}", Token::KeywordSequence, seq.id),
-                                        cx,
-                                    )
+                                    state.append_pool_item(PoolType::Sequence, seq.id, cx);
                                 });
                             }
                         });
@@ -237,15 +257,7 @@ pub fn apply_pool_type_to_button(
             })
             .action_at(1, "Insert", move |_, cx| {
                 DemexUiState::update_command_input_state(cx, |state, cx| {
-                    state.append(
-                        format!(
-                            "{} {}.{}",
-                            Token::KeywordPreset,
-                            feature_group as u32,
-                            pool_item_id
-                        ),
-                        cx,
-                    )
+                    state.append_pool_item(PoolType::Preset(feature_group), pool_item_id, cx);
                 });
             })
             .when_none(&pool_item, |this| {
@@ -292,7 +304,7 @@ pub fn apply_pool_type_to_button(
             })
             .action_at(1, "Insert", move |_, cx| {
                 DemexUiState::update_command_input_state(cx, |state, cx| {
-                    state.append(format!("{} {}", Token::KeywordGroup, pool_item_id), cx)
+                    state.append_pool_item(PoolType::Group, pool_item_id, cx)
                 });
             })
             .action_at(4, "Del", move |window, cx| {

@@ -5,13 +5,11 @@ use std::{
 };
 
 use demex_core::{
-    command::{
-        lexer::token::Token,
-        parser::nodes::{
-            action::{Action, functions::set_function::ObjectSetPropertyArgs},
-            object::Object,
-        },
+    command::parser::nodes::{
+        action::{Action, functions::set_function::ObjectSetPropertyArgs},
+        object::Object,
     },
+    pool::PoolType,
     sequence::{
         cue::{CueFadingFunction, CueIdx, CueOut, CueProperty},
         frontend::FrontendCue,
@@ -264,14 +262,9 @@ impl TableDelegate for SequenceEditorTable {
                         .on_click(move |_, _, cx| {
                             cx.defer(move |cx| {
                                 DemexUiState::update_command_input_state(cx, |state, cx| {
-                                    state.append(
-                                        format!(
-                                            "{} {} {} {}",
-                                            Token::KeywordSequence,
-                                            sequence_id,
-                                            Token::KeywordCue,
-                                            cue_idx
-                                        ),
+                                    state.append_pool_item(
+                                        PoolType::SequenceCue(sequence_id),
+                                        cue_idx.into(),
                                         cx,
                                     );
                                 });

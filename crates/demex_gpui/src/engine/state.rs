@@ -6,7 +6,7 @@ use std::{
 
 use demex_core::{
     channel3::{attribute::FixtureChannel3Attribute, channel_value::FixtureChannelValue3},
-    command::parser::nodes::object::ObjectDelegate,
+    command::{lexer::token::Token, parser::nodes::object::ObjectDelegate},
     engine::{
         comm::{PoolItemRequest, ThreadStatsRequest},
         state::DemexFrontendInitState,
@@ -16,12 +16,13 @@ use demex_core::{
     fixture::FixturePath,
     patch::Patch,
     pool::{PoolItem, PoolType},
+    sequence::cue::CueIdx,
     timing::speed_master::SpeedMasterValue,
     utils::thread::DemexThreadStats,
 };
 use gpui::{
-    AnyWindowHandle, App, AppContext, BorrowAppContext, Context, Entity, Global, Subscription,
-    Window,
+    AnyWindowHandle, App, AppContext, BorrowAppContext, Context, Entity, Global, SharedString,
+    Subscription, Window,
 };
 use gpui_component::input::{InputEvent, InputState, Position};
 
@@ -211,6 +212,37 @@ impl DemexUiCommandInputState {
                 state.focus(window, cx);
             });
         });
+    }
+
+    pub fn append_pool_item(&self, pool_type: PoolType, pool_item_id: u32, cx: &mut App) {
+        self.append(
+            match pool_type {
+                PoolType::Executor => format!("{} {}", Token::KeywordExecutor, pool_item_id),
+                PoolType::Sequence => format!("{} {}", Token::KeywordSequence, pool_item_id),
+                PoolType::SequenceCue(sequence_id) => format!(
+                    "{} {} {} {}",
+                    Token::KeywordSequence,
+                    sequence_id,
+                    Token::KeywordCue,
+                    CueIdx::from(pool_item_id)
+                ),
+                PoolType::Group => format!("{} {}", Token::KeywordGroup, pool_item_id),
+                PoolType::Macro => format!("{} {}", Token::KeywordMacro, pool_item_id),
+                PoolType::Preset(feature_group) => {
+                    format!(
+                        "{} {}.{}",
+                        Token::KeywordPreset,
+                        feature_group as u32,
+                        pool_item_id
+                    )
+                }
+            },
+            cx,
+        )
+    }
+
+    pub fn value(&self, cx: &App) -> SharedString {
+        self.input_state.read(cx).value()
     }
 }
 

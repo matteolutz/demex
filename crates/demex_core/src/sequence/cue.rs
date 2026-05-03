@@ -233,8 +233,8 @@ impl std::fmt::Display for CueIdx {
 
 impl From<u32> for CueIdx {
     fn from(value: u32) -> Self {
-        let major = ((value >> 0xF) & 0xF) as u16;
-        let minor = (value & 0xF) as u16;
+        let major = (value >> 16) as u16;
+        let minor = (value & 0xFFFF) as u16;
 
         Self(major, minor)
     }
@@ -248,7 +248,7 @@ impl From<(u16, u16)> for CueIdx {
 
 impl From<CueIdx> for u32 {
     fn from(value: CueIdx) -> Self {
-        ((value.major() as u32) << 0xF) & value.minor() as u32
+        ((value.major() as u32) << 16) | value.minor() as u32
     }
 }
 
