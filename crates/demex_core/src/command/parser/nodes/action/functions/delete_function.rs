@@ -170,7 +170,7 @@ impl FunctionDelegate for DeleteArgs {
 
                     for id in *id_from..=*id_to {
                         updatable_handler
-                            .delete_executor(id, event_list)
+                            .delete_executor(id, preset_handler, event_list)
                             .map_err(ActionRunError::UpdatableHandlerError)?;
                     }
 

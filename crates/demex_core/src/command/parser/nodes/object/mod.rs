@@ -502,6 +502,10 @@ impl Object {
     pub fn cue_out(seq: u32) -> Self {
         Self::SequenceCueOut(seq)
     }
+
+    pub fn group(id: u32) -> Self {
+        Self::HomeableObject(HomeableObject::FixtureSelector(FixtureSelector::group(id)))
+    }
 }
 
 impl Display for Object {

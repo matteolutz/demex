@@ -7,6 +7,7 @@ use demex_core::{
                 functions::{
                     create_function::CreateEffectPresetArgs, delete_function::DeleteArgs,
                     go_function::ExecutorGoArgs, set_function::SetFixturePresetArgs,
+                    stop_function::ExecutorStopArgs,
                 },
             },
             fixture_selector::FixtureSelector,
@@ -38,6 +39,9 @@ use crate::{
 
 pub fn handle_pool_item_click(pool_type: PoolType, pool_item_id: u32, cx: &mut App) {
     let engine = DemexEngineHandler::engine(cx);
+
+    // TODO: check for ExpectedParseSlice and possibly append to
+    // command input rather than "execute" the pool item
 
     match pool_type {
         PoolType::Preset(preset_type) => engine.exec_ui(Action::SetFixturePreset(
@@ -116,7 +120,45 @@ pub fn apply_pool_type_to_button(
                             }
                         });
                     })
-                    .action_at(6, "Insert Seq", move |_, cx| {
+                    .action_at(3, "Stop", move |_, cx| {
+                        DemexEngineHandler::engine(cx).exec_ui(Action::ExecutorStop(
+                            ExecutorStopArgs {
+                                executor_id: pool_item_id,
+                            },
+                        ))
+                    })
+                    .action_at(4, "Del", move |window, cx| {
+                        let answer = window.prompt(
+                            gpui::PromptLevel::Warning,
+                            format!("Delete Executor {}", pool_item_id).as_str(),
+                            Some("Do you really want to delete this executor?"),
+                            &[PromptButton::ok("Yes"), PromptButton::cancel("No")],
+                            cx,
+                        );
+
+                        cx.spawn(async move |cx| {
+                            let Ok(answer) = answer.await else {
+                                return;
+                            };
+
+                            // Yes
+                            if answer == 0 {
+                                cx.update(|cx| {
+                                    DemexEngineHandler::engine(cx).exec_ui(Action::Delete(
+                                        DeleteArgs {
+                                            object_range: ObjectRange::single(
+                                                Object::HomeableObject(HomeableObject::Executor(
+                                                    pool_item_id,
+                                                )),
+                                            ),
+                                        },
+                                    ));
+                                });
+                            }
+                        })
+                        .detach();
+                    })
+                    .action_at(5, "Insert Seq", move |_, cx| {
                         get_sequence(pool_item_id, cx, |seq, cx| {
                             if let Some(seq) = seq {
                                 DemexUiState::update_command_input_state(cx, |state, cx| {
@@ -126,6 +168,14 @@ pub fn apply_pool_type_to_button(
                                     )
                                 });
                             }
+                        });
+                    })
+                    .action_at(6, "Assign", move |_, cx| {
+                        DemexUiState::update_command_input_state(cx, |state, cx| {
+                            state.append(
+                                format!("assign {} {}", Token::KeywordExecutor, pool_item_id),
+                                cx,
+                            )
                         });
                     })
                 })
@@ -150,7 +200,7 @@ pub fn apply_pool_type_to_button(
                         )
                     });
                 })
-                .action_at(2, "Del", move |window, cx| {
+                .action_at(4, "Del", move |window, cx| {
                     let preset_id = FixturePresetId {
                         feature_group,
                         preset_id: pool_item_id,
@@ -160,7 +210,7 @@ pub fn apply_pool_type_to_button(
                         gpui::PromptLevel::Warning,
                         format!("Delete {}", preset_id).as_str(),
                         Some("Do you really want to delete this preset?"),
-                        &[PromptButton::ok("Yes"), PromptButton::ok("No")],
+                        &[PromptButton::ok("Yes"), PromptButton::cancel("No")],
                         cx,
                     );
 
@@ -239,6 +289,36 @@ pub fn apply_pool_type_to_button(
                         cx,
                     )
                 });
+            })
+            .action_at(1, "Insert", move |_, cx| {
+                DemexUiState::update_command_input_state(cx, |state, cx| {
+                    state.append(format!("{} {}", Token::KeywordGroup, pool_item_id), cx)
+                });
+            })
+            .action_at(4, "Del", move |window, cx| {
+                let answer = window.prompt(
+                    gpui::PromptLevel::Warning,
+                    format!("Delete Group {}", pool_item_id).as_str(),
+                    Some("Do you really want to delete this group?"),
+                    &[PromptButton::ok("Yes"), PromptButton::cancel("No")],
+                    cx,
+                );
+
+                cx.spawn(async move |cx| {
+                    let Ok(answer) = answer.await else {
+                        return;
+                    };
+
+                    // Yes
+                    if answer == 0 {
+                        cx.update(|cx| {
+                            DemexEngineHandler::engine(cx).exec_ui(Action::Delete(DeleteArgs {
+                                object_range: ObjectRange::single(Object::group(pool_item_id)),
+                            }));
+                        });
+                    }
+                })
+                .detach();
             })
         }),
         _ => button,

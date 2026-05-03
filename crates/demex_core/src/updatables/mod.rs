@@ -42,7 +42,7 @@ impl UpdatableHandler {
         !(self
             .executors
             .iter()
-            .any(|(_, fader)| sequence_id == fader.runtime().sequence_id()))
+            .any(|(_, executor)| sequence_id == executor.runtime().sequence_id()))
     }
 
     pub fn last_stomp_source(&self) -> Option<StompSource> {
@@ -137,16 +137,26 @@ impl UpdatableHandler {
     pub fn delete_executor(
         &mut self,
         id: u32,
+        preset_handler: &mut PresetHandler,
         event_list: &mut DemexEventList,
     ) -> Result<(), UpdatableHandlerError> {
-        self.executors
+        let executor = self
+            .executors
             .remove(&id)
             .ok_or(UpdatableHandlerError::UpdatableNotFound(id))?;
+
         event_list.push(DemexEvent::PoolItemsDeleted {
             pool_type: PoolType::Executor,
             from_id: id,
             to_id: id,
         });
+
+        let sequence_id = executor.runtime().sequence_id();
+        if self.sequence_deleteable(sequence_id) {
+            preset_handler
+                .delete_sequence(sequence_id, event_list)
+                .map_err(UpdatableHandlerError::PresetHandlerError)?;
+        }
 
         Ok(())
     }
