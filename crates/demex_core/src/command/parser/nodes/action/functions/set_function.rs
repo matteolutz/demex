@@ -200,11 +200,11 @@ impl FunctionDelegate for SetFeatureValueArgs {
             .map_err(ActionRunError::FixtureSelectorError)?;
 
         match self.feature {
-            SetFeatureValue::Rgb {
-                mut value,
-                use_white,
-            } => {
+            SetFeatureValue::Rgb { value, use_white } => {
                 for f_path in selection.fixtures() {
+                    // copy the color for each fixture so we can modify it
+                    let mut color = value;
+
                     let Some((fixture, fixture_state)) = args
                         .patch
                         .fixture(f_path)
@@ -220,7 +220,7 @@ impl FunctionDelegate for SetFeatureValueArgs {
                     // extract a white component from the rgb values and use that
                     if use_white {
                         if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddW) {
-                            let white = value.extract_white();
+                            let white = color.extract_white();
                             let _ = fixture_state.set_programmer_value(
                                 fixture,
                                 &FixtureChannel3Attribute::ColorAddW,
@@ -229,7 +229,7 @@ impl FunctionDelegate for SetFeatureValueArgs {
                         // we are using `else if`, because we only really want to use one white channel
                         // this will be maybe replaced by a more elaborate system in the future
                         } else if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddWW) {
-                            let white = value.extract_warm_white();
+                            let white = color.extract_warm_white();
                             let _ = fixture_state.set_programmer_value(
                                 fixture,
                                 &FixtureChannel3Attribute::ColorAddWW,
@@ -240,7 +240,7 @@ impl FunctionDelegate for SetFeatureValueArgs {
 
                     // secondary emitters
                     if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddRY) {
-                        let amber = value.extract_amber();
+                        let amber = color.extract_amber();
                         let _ = fixture_state.set_programmer_value(
                             fixture,
                             &FixtureChannel3Attribute::ColorAddRY,
@@ -248,7 +248,7 @@ impl FunctionDelegate for SetFeatureValueArgs {
                         );
                     }
                     if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddC) {
-                        let cyan = value.extract_cyan();
+                        let cyan = color.extract_cyan();
                         let _ = fixture_state.set_programmer_value(
                             fixture,
                             &FixtureChannel3Attribute::ColorAddC,
@@ -256,7 +256,7 @@ impl FunctionDelegate for SetFeatureValueArgs {
                         );
                     }
                     if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddM) {
-                        let magenta = value.extract_magenta();
+                        let magenta = color.extract_magenta();
                         let _ = fixture_state.set_programmer_value(
                             fixture,
                             &FixtureChannel3Attribute::ColorAddM,
@@ -264,7 +264,7 @@ impl FunctionDelegate for SetFeatureValueArgs {
                         );
                     }
                     if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddY) {
-                        let yellow = value.extract_yellow();
+                        let yellow = color.extract_yellow();
                         let _ = fixture_state.set_programmer_value(
                             fixture,
                             &FixtureChannel3Attribute::ColorAddY,
@@ -277,21 +277,21 @@ impl FunctionDelegate for SetFeatureValueArgs {
                         let _ = fixture_state.set_programmer_value(
                             fixture,
                             &FixtureChannel3Attribute::ColorAddR,
-                            FixtureChannelValue3::discrete(value.r),
+                            FixtureChannelValue3::discrete(color.r),
                         );
                     }
                     if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddG) {
                         let _ = fixture_state.set_programmer_value(
                             fixture,
                             &FixtureChannel3Attribute::ColorAddG,
-                            FixtureChannelValue3::discrete(value.g),
+                            FixtureChannelValue3::discrete(color.g),
                         );
                     }
                     if fixture.has_attribute(&FixtureChannel3Attribute::ColorAddB) {
                         let _ = fixture_state.set_programmer_value(
                             fixture,
                             &FixtureChannel3Attribute::ColorAddB,
-                            FixtureChannelValue3::discrete(value.b),
+                            FixtureChannelValue3::discrete(color.b),
                         );
                     }
 
@@ -300,21 +300,21 @@ impl FunctionDelegate for SetFeatureValueArgs {
                         let _ = fixture_state.set_programmer_value(
                             fixture,
                             &FixtureChannel3Attribute::ColorSubC,
-                            FixtureChannelValue3::discrete(1.0 - value.r),
+                            FixtureChannelValue3::discrete(1.0 - color.r),
                         );
                     }
                     if fixture.has_attribute(&FixtureChannel3Attribute::ColorSubM) {
                         let _ = fixture_state.set_programmer_value(
                             fixture,
                             &FixtureChannel3Attribute::ColorSubM,
-                            FixtureChannelValue3::discrete(1.0 - value.g),
+                            FixtureChannelValue3::discrete(1.0 - color.g),
                         );
                     }
                     if fixture.has_attribute(&FixtureChannel3Attribute::ColorSubY) {
                         let _ = fixture_state.set_programmer_value(
                             fixture,
                             &FixtureChannel3Attribute::ColorSubY,
-                            FixtureChannelValue3::discrete(1.0 - value.b),
+                            FixtureChannelValue3::discrete(1.0 - color.b),
                         );
                     }
                 }
