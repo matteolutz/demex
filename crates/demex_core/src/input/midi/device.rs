@@ -95,6 +95,10 @@ impl MidiInOutDevice {
             .map_err(|err| MidiError::MidirError(err.into()))?;
 
         let out_ports = midi_out.ports();
+        for port in &out_ports {
+            log::debug!("Found output port: {:?}", midi_out.port_name(port))
+        }
+
         let out_port = out_ports
             .into_iter()
             .inspect(|port| log::debug!("Checking output port {:?}", midi_out.port_name(port)))
@@ -124,6 +128,10 @@ impl MidiInOutDevice {
             .map_err(|err| MidiError::MidirError(err.into()))?;
 
         let in_ports = midi_in.ports();
+        for port in &in_ports {
+            log::debug!("Found input port: {:?}", midi_in.port_name(port))
+        }
+
         let in_port = in_ports
             .into_iter()
             .inspect(|port| log::debug!("Checking input port {:?}", midi_in.port_name(port)))
@@ -149,7 +157,7 @@ impl MidiInOutDevice {
 
             Ok(Some((port, connection)))
         } else {
-            log::debug!("Found no output port");
+            log::debug!("Found no input port");
             Ok(None)
         }
     }
