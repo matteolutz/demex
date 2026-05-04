@@ -55,10 +55,12 @@ pub fn handle_pool_item_click(
     let engine = DemexEngineHandler::engine(cx);
     let command = DemexUiState::command_input_state(cx).map(|state| state.value(cx));
 
-    if let Some(parse_error) = command.and_then(|cmd| engine.parse_command(&cmd).err()) {
-        if parse_error.was_expected(ExpectedParseSlice::Object(pool_type.into())) {
-            append_pool_item_to_command(pool_type, pool_item_id, cx);
-            return;
+    if let Some(cmd) = command.and_then(|cmd| cmd.is_empty().then_some(cmd)) {
+        if let Some(parse_error) = engine.parse_command(&cmd).err() {
+            if parse_error.was_expected(ExpectedParseSlice::Object(pool_type.into())) {
+                append_pool_item_to_command(pool_type, pool_item_id, cx);
+                return;
+            }
         }
     }
 
