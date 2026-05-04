@@ -95,7 +95,10 @@ impl MidiInOutDevice {
             .map_err(|err| MidiError::MidirError(err.into()))?;
 
         let out_ports = midi_out.ports();
-        let out_port = out_ports.into_iter().find(|port| filter(&midi_out, port));
+        let out_port = out_ports
+            .into_iter()
+            .inspect(|port| log::debug!("Checking output port {:?}", midi_out.port_name(port)))
+            .find(|port| filter(&midi_out, port));
 
         if let Some(port) = out_port {
             let connection = midi_out
@@ -104,6 +107,7 @@ impl MidiInOutDevice {
 
             Ok(Some((port, connection)))
         } else {
+            log::debug!("Found no output port");
             Ok(None)
         }
     }
@@ -120,7 +124,10 @@ impl MidiInOutDevice {
             .map_err(|err| MidiError::MidirError(err.into()))?;
 
         let in_ports = midi_in.ports();
-        let in_port = in_ports.into_iter().find(|port| filter(&midi_in, port));
+        let in_port = in_ports
+            .into_iter()
+            .inspect(|port| log::debug!("Checking input port {:?}", midi_in.port_name(port)))
+            .find(|port| filter(&midi_in, port));
 
         if let Some(port) = in_port {
             let connection = midi_in
@@ -142,6 +149,7 @@ impl MidiInOutDevice {
 
             Ok(Some((port, connection)))
         } else {
+            log::debug!("Found no output port");
             Ok(None)
         }
     }

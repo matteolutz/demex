@@ -14,7 +14,7 @@ pub enum TokenType {
     Eof,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Token {
     Integer(u32),
     FloatingPoint(f32, (u32, u32)),

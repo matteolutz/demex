@@ -375,6 +375,14 @@ impl DemexUiState {
             f(command_input_state, cx);
         }
     }
+
+    pub fn append_to_command_input(tokens: impl IntoIterator<Item = Token>, cx: &mut App) {
+        DemexUiState::update_command_input_state(cx, |state, cx| {
+            for token in tokens {
+                state.append(token.to_string(), cx);
+            }
+        });
+    }
 }
 
 impl DemexUiState {

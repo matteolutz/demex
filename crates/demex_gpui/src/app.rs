@@ -37,13 +37,30 @@ pub mod actions {
         },
         ui2::wm::{WindowManager, app::WindowManagerAppExt},
     };
-    use demex_core::engine::comm::FrontendStateRequest;
+    use demex_core::{command::lexer::token::Token, engine::comm::FrontendStateRequest};
     use gpui::{App, KeyBinding, Menu, MenuItem, SystemMenuType};
 
     gpui::actions!(
         demex,
-        [Quit, Save, SaveAs, Open, ReloadUi, Reload, FocusCommand]
+        [
+            Quit,
+            Save,
+            SaveAs,
+            Open,
+            ReloadUi,
+            Reload,
+            FocusCommand,
+            TokenClear,
+            TokenRec,
+            TokenUpdate,
+            TokenAssign,
+            TokenRecall,
+            TokenExec,
+            TokenSequence,
+            TokenCue
+        ]
     );
+
     pub(super) fn init(cx: &mut App) {
         cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
 
@@ -52,6 +69,44 @@ pub mod actions {
         cx.bind_keys([KeyBinding::new("secondary-o", Open, None)]);
 
         cx.bind_keys([KeyBinding::new("secondary-i", FocusCommand, None)]);
+
+        /*
+        // TEST "command wing" keybindings
+        cx.bind_keys([KeyBinding::new("delete", TokenClear, None)]);
+        cx.bind_keys([KeyBinding::new("home", TokenRec, None)]);
+        cx.bind_keys([KeyBinding::new("end", TokenUpdate, None)]);
+        cx.bind_keys([KeyBinding::new("pageup", TokenAssign, None)]);
+        cx.bind_keys([KeyBinding::new("pagedown", TokenRecall, None)]);
+        cx.bind_keys([KeyBinding::new("f13", TokenExec, None)]);
+        cx.bind_keys([KeyBinding::new("f16", TokenSequence, None)]);
+        cx.bind_keys([KeyBinding::new("f17", TokenCue, None)]);
+        // TEST END
+        */
+
+        cx.on_action::<TokenClear>(|_, cx| {
+            DemexUiState::append_to_command_input([Token::KeywordClear], cx)
+        });
+        cx.on_action::<TokenRec>(|_, cx| {
+            DemexUiState::append_to_command_input([Token::KeywordRecord], cx)
+        });
+        cx.on_action::<TokenUpdate>(|_, cx| {
+            DemexUiState::append_to_command_input([Token::KeywordUpdate], cx)
+        });
+        cx.on_action::<TokenAssign>(|_, cx| {
+            DemexUiState::append_to_command_input([Token::KeywordAssign], cx)
+        });
+        cx.on_action::<TokenRecall>(|_, cx| {
+            DemexUiState::append_to_command_input([Token::KeywordRecall], cx)
+        });
+        cx.on_action::<TokenExec>(|_, cx| {
+            DemexUiState::append_to_command_input([Token::KeywordExecutor], cx)
+        });
+        cx.on_action::<TokenSequence>(|_, cx| {
+            DemexUiState::append_to_command_input([Token::KeywordSequence], cx)
+        });
+        cx.on_action::<TokenCue>(|_, cx| {
+            DemexUiState::append_to_command_input([Token::KeywordCue], cx)
+        });
 
         cx.on_action::<Quit>(|_, cx| cx.quit());
         cx.on_action::<Save>(|_, cx| {
