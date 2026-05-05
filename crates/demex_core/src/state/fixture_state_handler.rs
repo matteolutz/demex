@@ -194,7 +194,6 @@ impl FixtureStateHandler {
                 // attribute
                     && let Some(FixtureChannelFunctionInitial::Other(other)) = cf.map(|cf| cf.initial)
                 {
-                    log::debug!("force outputting initial attribute: {}", other);
                     // add the initial attribute to the force output set
                     force_output_attributes.insert(other.clone());
                 }
