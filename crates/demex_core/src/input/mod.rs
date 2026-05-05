@@ -38,6 +38,8 @@ pub struct DemexInputDeviceUpdateArgs<'a> {
     pub encoder_attributes: &'a [FixtureChannel3Attribute],
 }
 
+pub trait DemexInputDeviceDescriptor: 'static + Send + std::fmt::Debug {}
+
 pub trait DemexInputDeviceProfile: 'static + Send + std::fmt::Debug {
     fn handle_button_assign(&mut self, _button_id: u32) -> Result<(), DemexInputDeviceError> {
         Ok(())

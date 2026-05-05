@@ -10,7 +10,11 @@ use crate::{
             DemexInputDeviceFaderUpdate,
         },
         message::DemexInputDeviceMessage,
-        midi::{MidiMessage, device::MidiInOutDevice, device_mode::MidiInOutDeviceMode},
+        midi::{
+            MidiMessage,
+            device::{MidiInOutDevice, MidiInOutIdentifier},
+            device_mode::MidiInOutDeviceMode,
+        },
     },
     utils::version::demex_version,
 };
@@ -20,9 +24,12 @@ mod led;
 // **Ressources**
 // https://cdn.inmusicbrands.com/akai/attachments/APC%20mini%20mk2%20-%20Communication%20Protocol%20-%20v1.0.pdf
 
+fn midi_filter(name: &str) -> bool {
+    name.contains("APC mini mk2") && (cfg!(target_os = "windows") || name.contains("Contr"))
+}
+
 pub struct ApcMiniMk2InputDeviceProfile {
-    #[allow(dead_code)]
-    apc_midi_name: String,
+    midi_id: MidiInOutIdentifier,
 
     midi: MidiInOutDevice,
 }
@@ -30,22 +37,20 @@ pub struct ApcMiniMk2InputDeviceProfile {
 impl std::fmt::Debug for ApcMiniMk2InputDeviceProfile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ApcMiniMk2InputDeviceProfile")
-            .field("apc_midi_name", &self.apc_midi_name)
+            .field("midi_id", &self.midi_id)
             .finish()
     }
 }
 
 impl ApcMiniMk2InputDeviceProfile {
-    pub fn new(apc_midi_name: String) -> Self {
+    pub fn new(midi_id: MidiInOutIdentifier) -> Self {
         let mut s = Self {
-            apc_midi_name,
+            midi_id: midi_id.clone(),
             midi: MidiInOutDevice::new(
                 "APC Mini Mk2".to_owned(),
-                |name| {
-                    name.contains("APC mini mk2")
-                        && (cfg!(target_os = "windows") || name.contains("Contr"))
-                },
+                midi_filter,
                 MidiInOutDeviceMode::Both,
+                None,
             ),
         };
 

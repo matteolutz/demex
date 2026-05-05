@@ -6,7 +6,11 @@ use crate::input::{
         DemexInputDeviceFaderUpdate,
     },
     message::{DemexInputDeviceMessage, EncoderValue},
-    midi::{MidiMessage, device::MidiInOutDevice, device_mode::MidiInOutDeviceMode},
+    midi::{
+        MidiMessage,
+        device::{MidiInOutDevice, MidiInOutIdentifier},
+        device_mode::MidiInOutDeviceMode,
+    },
     profile::behringer::encoder::BehringerXTouchCompactButtonLedMode,
 };
 
@@ -20,32 +24,35 @@ const GLOBAL_CHANNEL: u8 = 0;
 
 const ENCODER_SENSITIVTY: f32 = 2.0;
 
+fn midi_filter(name: &str) -> bool {
+    name == "X-TOUCH COMPACT"
+}
+
 // **Ressources**
 // https://media.djmania.net/manuales/pdf/Manual_Behringer_X-Touch_Compact.pdf
 
 pub struct BehringerXTouchCompactDeviceProfile {
-    #[allow(dead_code)]
-    xtouch_midi_name: String,
-
+    midi_id: MidiInOutIdentifier,
     midi: MidiInOutDevice,
 }
 
 impl std::fmt::Debug for BehringerXTouchCompactDeviceProfile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BehringerXTouchCompactDeviceProfile")
-            .field("xtouch_midi_name", &self.xtouch_midi_name)
+            .field("midi_id", &self.midi_id)
             .finish()
     }
 }
 
 impl BehringerXTouchCompactDeviceProfile {
-    pub fn new(xtouch_midi_name: String) -> Self {
+    pub fn new(midi_id: MidiInOutIdentifier) -> Self {
         let mut s = Self {
-            xtouch_midi_name,
+            midi_id: midi_id.clone(),
             midi: MidiInOutDevice::new(
                 "Behringer X-Touch Compact".to_owned(),
-                |name| name == "X-TOUCH COMPACT",
+                midi_filter,
                 MidiInOutDeviceMode::Both,
+                None,
             ),
         };
 

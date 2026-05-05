@@ -92,15 +92,15 @@ impl DemexInputDeviceConfig {
         args: &ActionRunArgs,
     ) -> Result<DemexInputDevice, DemexInputDeviceError> {
         let profile: Box<dyn DemexInputDeviceProfile> = match self.profile_type {
-            DemexInputDeviceProfileType::ApcMiniMk2 { ref apc_midi } => {
-                Box::new(ApcMiniMk2InputDeviceProfile::new(apc_midi.clone()))
+            DemexInputDeviceProfileType::ApcMiniMk2 { ref midi_id } => {
+                Box::new(ApcMiniMk2InputDeviceProfile::new(midi_id.clone()))
             }
             DemexInputDeviceProfileType::MidiTimecode { ref midi_in_device } => {
                 Box::new(MidiTimecodeProfile::new(midi_in_device.clone()))
             }
-            DemexInputDeviceProfileType::BehringerXTouchCompact { ref xtouch_midi } => Box::new(
-                BehringerXTouchCompactDeviceProfile::new(xtouch_midi.clone()),
-            ),
+            DemexInputDeviceProfileType::BehringerXTouchCompact { ref midi_id } => {
+                Box::new(BehringerXTouchCompactDeviceProfile::new(midi_id.clone()))
+            }
             DemexInputDeviceProfileType::Debug => Box::new(DebugDeviceProfile::new()),
         };
 
