@@ -74,6 +74,7 @@ impl AtomicFixtureSelector {
         match self {
             &Self::SingleFixture(f) => Ok(vec![fpath!(f)].into()),
             &Self::SingleFixturePath(path) => Ok(vec![path].into()),
+            // TODO: also allow for reversed ranges (e.g. 10 thru 1)
             &Self::FixtureRange(begin, end) => Ok((begin.as_u32()..end.as_u32() + 1)
                 .map(|id| fpath!(FixtureId::new(id).unwrap()))
                 .collect::<Vec<_>>()

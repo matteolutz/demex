@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use itertools::Either;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -74,7 +75,13 @@ impl FixtureSelection {
     }
 
     pub fn extend_from(&mut self, other: &FixtureSelection) {
-        for fixture in other.fixtures() {
+        let new_fixtures = if other.reverse() {
+            Either::Left(other.fixtures().iter().rev())
+        } else {
+            Either::Right(other.fixtures().iter())
+        };
+
+        for fixture in new_fixtures {
             if self.fixtures.contains(fixture) {
                 continue;
             }
