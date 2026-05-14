@@ -3,9 +3,16 @@ use std::collections::HashSet;
 use demex_core::{channel3::feature::feature_group::FixtureChannel3FeatureGroup, pool::PoolType};
 use serde::{Deserialize, Serialize};
 
+fn default_element_size() -> f32 {
+    80.0
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MultiPoolConfig {
     pub(super) pools: Vec<MultiPoolEntry>,
+
+    #[serde(default = "default_element_size")]
+    pub(super) element_size: f32,
 
     pub(super) size: (u16, u16),
 }
@@ -14,6 +21,7 @@ impl Default for MultiPoolConfig {
     fn default() -> Self {
         Self {
             pools: Default::default(),
+            element_size: default_element_size(),
             size: (40, 40),
         }
     }
@@ -23,6 +31,7 @@ impl MultiPoolConfig {
     pub fn example() -> Self {
         Self {
             size: (20, 10),
+            element_size: default_element_size(),
 
             pools: vec![
                 MultiPoolEntry {

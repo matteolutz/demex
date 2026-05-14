@@ -38,7 +38,6 @@ use crate::{
 pub mod config;
 
 const ELEMENT_PADDING: f32 = 5.0;
-const ELEMENT_SIZE: f32 = 80.0;
 
 mod actions {
     use gpui::{App, KeyBinding};
@@ -110,8 +109,6 @@ pub struct MultiPoolPanel {
 
     pool_item_states: Entity<HashMap<PoolType, HashMap<u32, PoolItemState>>>,
 
-    element_size: Entity<f32>,
-
     bounds: Entity<Option<Bounds<Pixels>>>,
 
     current_dragging: Entity<MultiPoolDraggingState>,
@@ -141,7 +138,6 @@ impl MultiPoolPanel {
             focus_handle: cx.focus_handle(),
 
             config,
-            element_size: cx.new(|_| ELEMENT_SIZE),
 
             quick_actions_state,
 
@@ -335,12 +331,12 @@ impl DemexPanel for MultiPoolPanel {
 
 impl MultiPoolPanel {
     fn zoom_out<T>(&mut self, _: &T, _: &mut Window, cx: &mut Context<Self>) {
-        self.element_size.update(cx, |size, _| *size -= 1.0);
+        self.config.element_size -= 1.0;
         cx.notify();
     }
 
     fn zoom_in<T>(&mut self, _: &T, _: &mut Window, cx: &mut Context<Self>) {
-        self.element_size.update(cx, |size, _| *size += 1.0);
+        self.config.element_size += 1.0;
         cx.notify();
     }
 
@@ -348,7 +344,7 @@ impl MultiPoolPanel {
         canvas(
             |_, _, _| {},
             cx.draw_canvas(|this, bounds, _, window, cx| {
-                let element_size = this.element_size.read(cx);
+                let element_size = this.config.element_size;
                 let (n_cols, n_rows) = this.config.size;
 
                 for col in 0..n_cols {
@@ -388,7 +384,7 @@ impl MultiPoolPanel {
             return None;
         };
 
-        let element_size = self.element_size.read(cx);
+        let element_size = self.config.element_size;
 
         let mouse_grid_pos = (
             (grid_pos.x.as_f32() / element_size) as u16,
@@ -460,7 +456,7 @@ impl MultiPoolPanel {
     }
 
     fn render_grid(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let element_size = *self.element_size.read(cx);
+        let element_size = self.config.element_size;
         let (n_cols, n_rows) = self.config.size;
 
         div()
