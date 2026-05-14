@@ -39,6 +39,10 @@ impl EditWindowDelegate for SettingsWindow {
         "Settings"
     }
 
+    fn should_reactivate() -> bool {
+        true
+    }
+
     fn handle_save(&self, _window: &mut gpui::Window, _cx: &mut gpui::App) {
         todo!()
     }

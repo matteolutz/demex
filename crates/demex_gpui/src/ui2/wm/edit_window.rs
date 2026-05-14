@@ -54,6 +54,13 @@ pub trait EditWindowDelegate: 'static + Render {
         });
     }
 
+    /// Whether the window should be reactivated when being reopened.
+    /// When the window has some sort of InitData this should return false
+    /// to ensure the window is not reactivated when being opened with different data.
+    fn should_reactivate() -> bool {
+        false
+    }
+
     fn is_edited(&self, cx: &App) -> bool {
         cx.wm().is_singleton_window_edited::<EditWindow<Self>>()
     }
@@ -146,6 +153,10 @@ impl<V: EditWindowDelegate> WindowDelegate for EditWindow<V> {
 
         #[cfg(target_os = "linux")]
         return WindowKind::Floating;
+    }
+
+    fn matches_data(&self, _data: &Self::InitData) -> bool {
+        V::should_reactivate()
     }
 
     fn view(&self) -> AnyView

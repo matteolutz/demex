@@ -406,6 +406,10 @@ impl EditWindowDelegate for AddFixtureWindow {
         "Add Fixture"
     }
 
+    fn should_reactivate() -> bool {
+        true
+    }
+
     fn handle_save(&self, _window: &mut Window, _cx: &mut App) {}
 
     fn handle_discard(&self, _window: &mut Window, _cx: &mut App) {}

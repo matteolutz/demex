@@ -55,6 +55,10 @@ impl EditWindowDelegate for PatchWindow {
         "Patch"
     }
 
+    fn should_reactivate() -> bool {
+        true
+    }
+
     fn handle_save(&self, _window: &mut gpui::Window, _cx: &mut App) {}
 
     fn handle_discard(&self, _window: &mut gpui::Window, _cx: &mut App) {}

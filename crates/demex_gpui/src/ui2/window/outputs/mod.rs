@@ -250,6 +250,10 @@ impl EditWindowDelegate for OutputsConfigWindow {
         "Output Config"
     }
 
+    fn should_reactivate() -> bool {
+        true
+    }
+
     fn handle_save(&self, _window: &mut gpui::Window, cx: &mut gpui::App) {
         let output_configs = self.outputs.read(cx).clone();
         DemexEngineHandler::engine(cx).exec_ui(Action::UpdateOutputConfigs(output_configs.clone()));

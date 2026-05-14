@@ -108,14 +108,41 @@ impl WindowManager {
     pub fn open_singleton_window<D: WindowDelegate>(cx: &mut App, data: D::InitData) {
         let type_id = TypeId::of::<D>();
 
-        if cx.wm().singleton_windows.contains_key(&type_id) {
-            cx.update_wm(|wm, cx| {
-                let _ = wm
-                    .singleton_windows
-                    .get(&type_id)
-                    .unwrap()
-                    .handle
-                    .update(cx, |_, window, _| window.activate_window());
+        if let Some(window) = cx.wm().singleton_windows.get(&type_id) {
+            let window_delegate = window
+                .handle
+                .read_with(cx, |handle, _| {
+                    handle
+                        .view()
+                        .clone()
+                        .downcast::<WindowWrapper<D>>()
+                        .unwrap()
+                })
+                .unwrap();
+
+            if window_delegate.read(cx).matches_data(&data) {
+                cx.update_wm(|wm, cx| {
+                    let _ = wm
+                        .singleton_windows
+                        .get(&type_id)
+                        .unwrap()
+                        .handle
+                        .update(cx, |_, window, _| window.activate_window());
+                });
+                return;
+            }
+
+            // window does not match data, we need to close it
+            // and reopen it
+
+            cx.update_wm(|wm, cx| wm.request_close_singleton_window::<D>(cx, false, false));
+
+            // the removal of the window handle from the singleton_windows map
+            // is being deferred to avoid double writes. This means we also need to
+            // defer the opening of the new window until after the window handle
+            // has been removed from the singleton_windows map
+            cx.defer(move |cx| {
+                Self::open_singleton_window::<D>(cx, data);
             });
             return;
         }

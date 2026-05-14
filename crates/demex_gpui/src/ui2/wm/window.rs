@@ -62,6 +62,12 @@ pub trait WindowDelegate: 'static {
     where
         Self: Sized;
 
+    /// Returns whether the window matches the given data.
+    /// This functions is used to determine whether the window should be reused or closed.
+    fn matches_data(&self, _data: &Self::InitData) -> bool {
+        false
+    }
+
     fn view(&self) -> AnyView
     where
         Self: Sized;
