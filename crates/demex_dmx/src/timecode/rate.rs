@@ -38,8 +38,8 @@ impl From<u8> for TimecodeRate {
         match value {
             0 => Self::Frames24,
             1 => Self::Frames25,
-            3 => Self::Frames2997,
-            4 => Self::Frames30,
+            2 => Self::Frames2997,
+            3 => Self::Frames30,
             _ => unreachable!(),
         }
     }

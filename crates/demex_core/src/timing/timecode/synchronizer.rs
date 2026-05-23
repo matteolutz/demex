@@ -1,10 +1,9 @@
 use std::collections::VecDeque;
 use std::time::Instant;
 
-use crate::input::{
-    midi::MidiQuarterTimecodePiece,
-    timecode::packet::{TimecodePacket, TimedTimecodePacket},
-};
+use demex_dmx::timecode::{TimecodePacket, TimedTimecodePacket};
+
+use crate::input::{midi::MidiQuarterTimecodePiece, timecode::packet::TimecodePacketMidiExtension};
 
 const MAX_TIME_DIFF_FOR_RESYNC_MS: u64 = 50; // Max acceptable drift before resync
 
@@ -42,22 +41,15 @@ impl TimecodeSynchronizer {
             .unwrap_or_default();
 
         last_tc.update_from(frame);
-        self.process_new_timecode(last_tc)
+        self.process_new_timecode(last_tc.now())
     }
 
     /// Call this whenever a new Timecode is received from the decoder.
-    pub fn process_new_timecode(&mut self, packet: TimecodePacket) -> bool {
-        let received_at = Instant::now(); // Get accurate system time NOW
-
-        let new_timed_tc = TimedTimecodePacket {
-            packet: packet.clone(),
-            received_at,
-        };
-
+    pub fn process_new_timecode(&mut self, packet: TimedTimecodePacket) -> bool {
         let should_reset = if !self.timecode_history.is_empty()
-            && self.timecode_history.back().unwrap().packet < new_timed_tc.packet
+            && self.timecode_history.back().unwrap().packet < packet.packet
         {
-            let new_tc_millis = packet.millis();
+            let new_tc_millis = packet.packet.millis();
 
             let current_drift =
                 (self.current_estimated_millis as i64 - new_tc_millis as i64).abs() as u64;
@@ -71,7 +63,7 @@ impl TimecodeSynchronizer {
                     current_drift
                 );
                 self.current_estimated_millis = new_tc_millis;
-                self.internal_clock_start_time = received_at; // Reset internal clock
+                self.internal_clock_start_time = packet.received_at; // Reset internal clock
             } else {
                 // If it's a small jump, we can try to smooth it.
                 // For now, let's just update the estimated millis.
@@ -83,12 +75,12 @@ impl TimecodeSynchronizer {
         } else {
             self.timecode_history.clear();
             // First timecode received, initialize
-            self.current_estimated_millis = packet.millis();
-            self.internal_clock_start_time = received_at; // Sync internal clock
+            self.current_estimated_millis = packet.packet.millis();
+            self.internal_clock_start_time = packet.received_at; // Sync internal clock
             true
         };
 
-        self.timecode_history.push_back(new_timed_tc);
+        self.timecode_history.push_back(packet);
         if self.timecode_history.len() > 5 {
             self.timecode_history.pop_front();
         }

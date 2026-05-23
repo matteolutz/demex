@@ -1,20 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    event::list::DemexEventList,
-    presets::{PresetHandler, preset::FixturePresetId},
-    selection::FixtureSelection,
-    state::fixture_state_handler::FixtureStateHandler,
-    updatables::UpdatableHandler,
+    event::list::DemexEventList, presets::PresetHandler,
+    state::fixture_state_handler::FixtureStateHandler, updatables::UpdatableHandler,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum TimecodeTriggerType {
-    SetPreset {
-        selection: FixtureSelection,
-        preset: FixturePresetId,
-    },
     ExecutorGo(u32),
+    ExecutorCueOut(u32),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -44,7 +38,7 @@ impl TimecodeTrigger {
         updatable_handler: &mut UpdatableHandler,
         event_list: &mut DemexEventList,
     ) {
-        let time_offset = (trigger_millis - self.millis) as f32 / 1000.0;
+        let seconds_offset = (trigger_millis - self.millis) as f32 / 1000.0;
 
         match self.trigger_type {
             TimecodeTriggerType::ExecutorGo(executor_id) => {
@@ -52,11 +46,13 @@ impl TimecodeTrigger {
                     executor_id,
                     fixture_handler,
                     preset_handler,
-                    time_offset,
+                    seconds_offset,
                     event_list,
                 );
             }
-            _ => todo!(),
+            TimecodeTriggerType::ExecutorCueOut(executor_id) => {
+                let _ = updatable_handler.executor_cue_out(executor_id, seconds_offset);
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ use std::{
 };
 
 use arc_swap::ArcSwap;
+use demex_dmx::DemexDmxInputEvent;
 
 use crate::{
     channel3::channel_value_queue::ChannelValueQueueEntry,
@@ -53,12 +54,14 @@ pub struct UpdateThread {
     event_bus_tx: mpsc::Sender<DemexEngineCommEvent>,
     request_handler: DemexEngineCommRequestHandler,
     action_queue: ComponentHandle<ActionQueue>,
-    value_queue_tx: mpsc::Sender<ChannelValueQueueEntry>,
     preset_handler: PresetHandler,
     updatable_handler: UpdatableHandler,
     timing_handler: TimingHandler,
     master_handler: MasterHandler,
     patch: Arc<ArcSwap<Patch>>,
+
+    value_queue_tx: mpsc::Sender<ChannelValueQueueEntry>,
+    output_event_rx: mpsc::Receiver<DemexDmxInputEvent>,
 
     command_input: Arc<ArcSwap<String>>,
 
@@ -78,6 +81,7 @@ impl UpdateThread {
         request_handler: DemexEngineCommRequestHandler,
         action_queue: ComponentHandle<ActionQueue>,
         value_queue_tx: mpsc::Sender<ChannelValueQueueEntry>,
+        output_event_rx: mpsc::Receiver<DemexDmxInputEvent>,
         command_input: Arc<ArcSwap<String>>,
         mut preset_handler: PresetHandler,
         mut updatable_handler: UpdatableHandler,
@@ -142,12 +146,14 @@ impl UpdateThread {
             event_bus_tx,
             request_handler,
             action_queue,
-            value_queue_tx,
             preset_handler,
             updatable_handler,
             timing_handler,
             master_handler,
             patch,
+
+            value_queue_tx,
+            output_event_rx,
 
             command_input,
 
@@ -273,6 +279,19 @@ impl DemexThreadDelegate for UpdateThread {
                         .event_bus_tx
                         .send(DemexEngineCommEvent::Error(err.to_string()));
                     log::warn!("Failed to run action: {}", err);
+                }
+            }
+        }
+
+        profiler.start("dmx input events");
+        for event in self.output_event_rx.try_iter() {
+            match event {
+                DemexDmxInputEvent::Timecode {
+                    packet,
+                    timecode_slot,
+                } => {
+                    self.timing_handler
+                        .handle_timecode_packet(timecode_slot, packet);
                 }
             }
         }

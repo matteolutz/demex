@@ -109,12 +109,14 @@ impl DemexEngine {
         self.register_comm_handlers(&mut comm_handler);
 
         let (value_queue_tx, value_queue_rx) = mpsc::channel();
+        let (output_event_tx, output_event_rx) = mpsc::channel();
 
         let (update_thread_delegate, fixture_states, pools) = UpdateThread::new(
             self.event_bus_tx.clone(),
             comm_handler,
             self.action_queue.clone(),
             value_queue_tx,
+            output_event_rx,
             self.command_input.clone(),
             show.preset_handler,
             show.updatable_handler,
@@ -126,7 +128,7 @@ impl DemexEngine {
         self.update_thread = Some(update_thread);
 
         let output_thread = DemexThread::start(
-            OutputThread::new(self.patch.clone(), value_queue_rx),
+            OutputThread::new(self.patch.clone(), output_event_tx, value_queue_rx),
             self.stats(),
         );
         self.output_thread = Some(output_thread);

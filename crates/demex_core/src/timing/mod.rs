@@ -1,5 +1,6 @@
 use std::{collections::HashMap, time};
 
+use demex_dmx::timecode::TimedTimecodePacket;
 use error::TimingHandlerError;
 use serde::{Deserialize, Serialize};
 use speed_master::SpeedMasterValue;
@@ -8,11 +9,9 @@ use timecode::Timecode;
 use crate::{
     engine::component::Component,
     event::{DemexEvent, list::DemexEventList},
-    input::{
-        midi::MidiQuarterTimecodePiece,
-        timecode::{packet::TimecodePacket, synchronizer::TimecodeSynchronizer},
-    },
+    input::midi::MidiQuarterTimecodePiece,
     state::fixture_state_handler::FixtureStateHandler,
+    timing::timecode::synchronizer::TimecodeSynchronizer,
 };
 
 use super::{presets::PresetHandler, updatables::UpdatableHandler};
@@ -31,7 +30,7 @@ pub struct TimingHandler {
     timecodes: HashMap<u32, Timecode>,
 
     #[serde(default, skip_serializing, skip_deserializing)]
-    timecode_synchronizer: TimecodeSynchronizer,
+    timecode_slots: HashMap<u32, TimecodeSynchronizer>,
 }
 
 impl Default for TimingHandler {
@@ -41,7 +40,7 @@ impl Default for TimingHandler {
                 (0u32..10u32).map(|id| (id, SpeedMasterValue::default())),
             ),
             timecodes: HashMap::new(),
-            timecode_synchronizer: TimecodeSynchronizer::default(),
+            timecode_slots: HashMap::new(),
         }
     }
 }
@@ -115,8 +114,8 @@ impl TimingHandler {
             .ok_or(TimingHandlerError::TimecodeNotFound(id))
     }
 
-    pub fn timecode_synchronizer(&self) -> &TimecodeSynchronizer {
-        &self.timecode_synchronizer
+    pub fn timecode_synchronizer(&mut self, id: u32) -> &TimecodeSynchronizer {
+        self.timecode_slots.entry(id).or_default()
     }
 
     pub fn update_running_timecodes(
@@ -126,11 +125,16 @@ impl TimingHandler {
         updatable_handler: &mut UpdatableHandler,
         event_list: &mut DemexEventList,
     ) {
-        self.timecode_synchronizer.update_estimated();
+        for (_, ts) in self.timecode_slots.iter_mut() {
+            ts.update_estimated();
+        }
 
         self.timecodes.values_mut().for_each(|timecode| {
             timecode.update(
-                self.timecode_synchronizer.estimated_millis(),
+                self.timecode_slots
+                    .entry(timecode.timecode_slot())
+                    .or_default()
+                    .estimated_millis(),
                 fixture_handler,
                 preset_handler,
                 updatable_handler,
@@ -139,28 +143,50 @@ impl TimingHandler {
         });
     }
 
-    fn recalculate_timecode_indices(&mut self) {
-        let current_millis = self.timecode_synchronizer.estimated_millis();
+    fn recalculate_timecode_indices(&mut self, timecode_slot: u32) {
+        let Some(ts) = self.timecode_slots.get(&timecode_slot) else {
+            return;
+        };
 
-        self.timecodes.values_mut().for_each(|timecode| {
-            timecode
-                .scheduler_mut()
-                .recalculate_next_trigger(current_millis);
-        });
+        let current_millis = ts.estimated_millis();
+
+        self.timecodes
+            .values_mut()
+            .filter(|timecode| timecode.timecode_slot() == timecode_slot)
+            .for_each(|timecode| {
+                timecode
+                    .scheduler_mut()
+                    .recalculate_next_trigger(current_millis);
+            });
     }
 
-    pub fn handle_timecode_packet(&mut self, timecode_packet: TimecodePacket) {
+    pub fn handle_timecode_packet(
+        &mut self,
+        timecode_slot: u32,
+        timecode_packet: TimedTimecodePacket,
+    ) {
         if self
-            .timecode_synchronizer
+            .timecode_slots
+            .entry(timecode_slot)
+            .or_default()
             .process_new_timecode(timecode_packet)
         {
-            self.recalculate_timecode_indices();
+            self.recalculate_timecode_indices(timecode_slot);
         }
     }
 
-    pub fn handle_timecode_quarter_frame(&mut self, piece: MidiQuarterTimecodePiece) {
-        if self.timecode_synchronizer.process_new_quarter_frame(piece) {
-            self.recalculate_timecode_indices();
+    pub fn handle_timecode_quarter_frame(
+        &mut self,
+        timecode_slot: u32,
+        piece: MidiQuarterTimecodePiece,
+    ) {
+        if self
+            .timecode_slots
+            .entry(timecode_slot)
+            .or_default()
+            .process_new_quarter_frame(piece)
+        {
+            self.recalculate_timecode_indices(timecode_slot);
         }
     }
 }

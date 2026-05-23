@@ -38,6 +38,7 @@ impl TimecodeTriggerScheduler {
     }
 
     pub fn update(&mut self, current_millis: u64) -> Vec<&TimecodeTrigger> {
+        // the triggers, that we passed since the last update
         let mut executed_triggers = Vec::new();
 
         for (idx, trigger) in self

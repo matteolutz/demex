@@ -13,9 +13,12 @@ use serial::UsbSerialOutputConfig;
 
 use demex_headless::id::DemexProtoDeviceId;
 
+use crate::timecode::TimedTimecodePacket;
+
 pub mod artnet;
 pub mod debug;
 pub mod serial;
+pub mod timecode;
 
 pub mod address;
 
@@ -24,6 +27,14 @@ pub trait DemexDmxOutputTrait: fmt::Debug {
 }
 
 pub type DmxData = (u16, [u8; 512]);
+
+#[derive(Debug, Clone)]
+pub enum DemexDmxInputEvent {
+    Timecode {
+        packet: TimedTimecodePacket,
+        timecode_slot: u32,
+    },
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DemexDmxOutputConfigData {
@@ -150,11 +161,11 @@ impl Default for DemexDmxOutputConfig {
 #[derive(Debug)]
 pub enum DemexDmxOutputData {
     Artnet {
-        tx: mpsc::Sender<DmxData>,
+        dmx_tx: mpsc::Sender<DmxData>,
         config: ArtnetOutputConfig,
     },
     Serial {
-        tx: mpsc::Sender<DmxData>,
+        dmx_tx: mpsc::Sender<DmxData>,
         config: UsbSerialOutputConfig,
     },
     Debug(DebugOutputVerbosity),
@@ -164,7 +175,9 @@ pub enum DemexDmxOutputData {
 impl DemexDmxOutputTrait for DemexDmxOutputData {
     fn send(&mut self, universe: u16, data: &[u8; 512]) -> Result<(), Box<dyn std::error::Error>> {
         match self {
-            Self::Artnet { tx, .. } | Self::Serial { tx, .. } => tx.send((universe, *data))?,
+            Self::Artnet { dmx_tx: tx, .. } | Self::Serial { dmx_tx: tx, .. } => {
+                tx.send((universe, *data))?
+            }
             Self::Debug(verbosity) => match verbosity {
                 DebugOutputVerbosity::Verbose => {
                     println!("Universe: {}, Data: {:?}", universe, data)
@@ -186,7 +199,11 @@ pub struct DemexDmxOutput {
 }
 
 impl DemexDmxOutput {
-    pub fn from_config(config: DemexDmxOutputConfig, own_device_id: DemexProtoDeviceId) -> Self {
+    pub fn from_config(
+        config: DemexDmxOutputConfig,
+        event_tx: mpsc::Sender<DemexDmxInputEvent>,
+        own_device_id: DemexProtoDeviceId,
+    ) -> Self {
         if own_device_id != config.device_id || config.disabled {
             return Self {
                 data: DemexDmxOutputData::None,
@@ -196,15 +213,16 @@ impl DemexDmxOutput {
 
         let data = match &config.data {
             DemexDmxOutputConfigData::Artnet(config) => {
-                let (tx, rx) = mpsc::channel();
+                let (dmx_tx, dmx_rx) = mpsc::channel();
+
                 if config.broadcast {
-                    start_broadcast_artnet_output_thread(rx, config.clone());
+                    start_broadcast_artnet_output_thread(dmx_rx, event_tx, config.clone());
                 } else {
-                    start_artnet_output_thread(rx, config.clone());
+                    start_artnet_output_thread(dmx_rx, event_tx, config.clone());
                 }
 
                 DemexDmxOutputData::Artnet {
-                    tx,
+                    dmx_tx,
                     config: config.clone(),
                 }
             }
@@ -214,7 +232,7 @@ impl DemexDmxOutput {
                 serial::start_serial_output_thread(rx, config.clone());
 
                 DemexDmxOutputData::Serial {
-                    tx,
+                    dmx_tx: tx,
                     config: config.clone(),
                 }
             }

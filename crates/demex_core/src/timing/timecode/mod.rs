@@ -10,11 +10,13 @@ use crate::{
 
 pub mod scheduler;
 pub mod state;
+pub mod synchronizer;
 pub mod trigger;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerializableTimecode {
     id: u32,
+    timecode_slot: u32,
     name: String,
     triggers: Vec<TimecodeTrigger>,
 }
@@ -23,6 +25,7 @@ impl From<&Timecode> for SerializableTimecode {
     fn from(value: &Timecode) -> Self {
         Self {
             id: value.id,
+            timecode_slot: value.timecode_slot,
             name: value.name.clone(),
             triggers: value.scheduler.triggers().to_vec(),
         }
@@ -32,6 +35,8 @@ impl From<&Timecode> for SerializableTimecode {
 #[derive(Debug, Clone)]
 pub struct Timecode {
     id: u32,
+
+    timecode_slot: u32,
 
     name: String,
 
@@ -56,6 +61,7 @@ impl<'de> Deserialize<'de> for Timecode {
     {
         SerializableTimecode::deserialize(deserializer).map(|serializable_timecode| Self {
             id: serializable_timecode.id,
+            timecode_slot: serializable_timecode.timecode_slot,
             name: serializable_timecode.name,
             state: TimecodeState::default(),
             scheduler: TimecodeTriggerScheduler::new(serializable_timecode.triggers),
@@ -66,6 +72,10 @@ impl<'de> Deserialize<'de> for Timecode {
 impl Timecode {
     pub fn id(&self) -> u32 {
         self.id
+    }
+
+    pub fn timecode_slot(&self) -> u32 {
+        self.timecode_slot
     }
 
     pub fn name(&self) -> &str {

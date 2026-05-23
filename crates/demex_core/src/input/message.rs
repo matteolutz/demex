@@ -1,4 +1,6 @@
-use super::{midi::MidiQuarterTimecodePiece, timecode::packet::TimecodePacket};
+use demex_dmx::timecode::TimecodePacket;
+
+use super::midi::MidiQuarterTimecodePiece;
 
 #[derive(Debug, Copy, Clone)]
 pub enum EncoderValue {

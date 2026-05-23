@@ -4,7 +4,7 @@ use std::{
 };
 
 use arc_swap::ArcSwap;
-use demex_dmx::DemexDmxOutput;
+use demex_dmx::{DemexDmxInputEvent, DemexDmxOutput};
 
 use crate::{
     channel3::channel_value_queue::ChannelValueQueueEntry, dmx::dmx_resolver::DmxResolver,
@@ -28,6 +28,7 @@ pub struct OutputThread {
 impl OutputThread {
     pub fn new(
         patch: Arc<ArcSwap<Patch>>,
+        output_event_tx: mpsc::Sender<DemexDmxInputEvent>,
         value_pipeline: mpsc::Receiver<ChannelValueQueueEntry>,
     ) -> Self {
         let dmx_resolver = DmxResolver::default();
@@ -39,6 +40,7 @@ impl OutputThread {
             .map(|config| {
                 DemexDmxOutput::from_config(
                     config.clone(),
+                    output_event_tx.clone(),
                     demex_headless::id::DemexProtoDeviceId::Controller,
                 )
             })

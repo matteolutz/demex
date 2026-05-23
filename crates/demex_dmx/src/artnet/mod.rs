@@ -9,7 +9,13 @@ use artnet_protocol::{ArtCommand, Output, Poll, PortAddress};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
+use crate::{
+    DemexDmxInputEvent, artnet::timecode::TimecodePacketArtnetExtension, timecode::TimecodePacket,
+};
+
 use super::DmxData;
+
+mod timecode;
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
 pub struct ArtnetOutputConfig {
@@ -19,6 +25,11 @@ pub struct ArtnetOutputConfig {
     pub broadcast_addresses: Vec<String>,
 
     pub bind_ip: Option<String>,
+
+    /// Which timecode slot to use for this output.
+    /// When set to `None`, no timecode packets will be sent.
+    #[serde(default)]
+    pub timecode_slot: Option<u32>,
 
     #[serde(default)]
     pub universes: Vec<u16>,
@@ -32,7 +43,8 @@ struct ArtNetOutputNode {
 const ARTNET_PORT: u16 = 6454;
 
 pub fn start_broadcast_artnet_output_thread(
-    rx: mpsc::Receiver<DmxData>,
+    dmx_rx: mpsc::Receiver<DmxData>,
+    event_tx: mpsc::Sender<DemexDmxInputEvent>,
     config: ArtnetOutputConfig,
 ) {
     thread::spawn(move || {
@@ -59,9 +71,12 @@ pub fn start_broadcast_artnet_output_thread(
             .collect::<Vec<_>>();
 
         socket.set_broadcast(true).unwrap();
+        socket.set_nonblocking(true).unwrap();
+
+        let mut input_buffer = [0u8; 512];
 
         loop {
-            let recv_result = rx.try_recv();
+            let recv_result = dmx_rx.try_recv();
 
             if let Ok((send_universe, send_universe_data)) = recv_result {
                 let output_command = ArtCommand::Output(Output {
@@ -77,11 +92,33 @@ pub fn start_broadcast_artnet_output_thread(
             } else if recv_result.err().unwrap() == TryRecvError::Disconnected {
                 break;
             }
+
+            if let Some(art_cmd) = socket
+                .recv_from(&mut input_buffer)
+                .ok()
+                .and_then(|(length, _)| ArtCommand::from_buffer(&input_buffer[..length]).ok())
+            {
+                match art_cmd {
+                    ArtCommand::OpTimeCode(timecode) => {
+                        if let Some(timecode_slot) = config.timecode_slot {
+                            let _ = event_tx.send(DemexDmxInputEvent::Timecode {
+                                packet: TimecodePacket::from_artnet_timecode(timecode).now(),
+                                timecode_slot: timecode_slot,
+                            });
+                        }
+                    }
+                    _ => {}
+                }
+            }
         }
     });
 }
 
-pub fn start_artnet_output_thread(rx: mpsc::Receiver<DmxData>, config: ArtnetOutputConfig) {
+pub fn start_artnet_output_thread(
+    rx: mpsc::Receiver<DmxData>,
+    _tx: mpsc::Sender<DemexDmxInputEvent>,
+    config: ArtnetOutputConfig,
+) {
     thread::spawn(move || {
         log::debug!("Starting ArtNet thread..");
 
