@@ -8,7 +8,9 @@ use gpui_component::{
 
 use crate::{
     engine::state::DemexUiState,
-    ui2::{ext::GpuiContextExtension, panels::DemexPanel},
+    ui2::{
+        ext::GpuiContextExtension, panels::DemexPanel, utils::profiler::DemexUiProfilerGlobalAppExt,
+    },
 };
 
 pub struct PerformancePanel {
@@ -69,6 +71,7 @@ impl Render for PerformancePanel {
                 .gap_4()
                 .justify_center()
                 .child(div().font_bold().text_2xl().child("Performance"))
+                .child(cx.profiler().to_string())
                 .children(performance.into_iter().map(|(thread_name, stats)| {
                     div().w_full().child(stats_chart_container(
                         thread_name,

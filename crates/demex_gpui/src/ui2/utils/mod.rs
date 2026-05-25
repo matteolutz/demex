@@ -9,3 +9,5 @@ pub use canvas::*;
 
 mod color;
 pub use color::*;
+
+pub mod profiler;

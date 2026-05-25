@@ -8,7 +8,10 @@ use crate::{
     engine::{showfile::DemexShowFileManager, state::DemexUiState},
     settings::DemexSettings,
     storage::themes_dir,
-    ui2::{self, assets::Assets, config::DemexUiConfig, wm::WindowManager},
+    ui2::{
+        self, assets::Assets, config::DemexUiConfig, utils::profiler::DemexUiProfiler,
+        wm::WindowManager,
+    },
 };
 
 use gpui_component::{Theme, ThemeRegistry};
@@ -231,6 +234,8 @@ impl DemexApp {
                     Task::ready(())
                 })
                 .detach();
+
+                cx.set_global(DemexUiProfiler::default());
 
                 gpui_component::init(cx);
                 ui2::init(cx).unwrap();

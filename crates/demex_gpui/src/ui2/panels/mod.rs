@@ -29,6 +29,7 @@ use crate::ui2::{
         sequence_editor::SequenceEditorPanel,
         speedmaster::SpeedmasterPanel,
     },
+    utils::profiler::DemexUiProfilerGlobalBorrowAppExt,
     wm::WindowManager,
 };
 
@@ -49,7 +50,9 @@ mod actions {
     gpui::actions!(panels, [AddFixtureSelection, AddFixtureList, AddLayoutView]);
 }
 
-#[derive(Debug, Copy, Clone, strum::EnumIter, strum::Display)]
+#[derive(
+    Debug, Copy, Clone, strum::EnumIter, strum::Display, Hash, PartialEq, Eq, PartialOrd, Ord,
+)]
 pub enum DockWindowPanelType {
     AttributeEditor,
     FixtureList,
@@ -196,8 +199,8 @@ impl<T: DemexPanel> Focusable for DemexPanelView<T> {
     }
 }
 impl<T: DemexPanel> Render for DemexPanelView<T> {
-    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl gpui::IntoElement {
-        self.view.clone()
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        cx.with_profiler(T::panel_type().into(), |_| self.view.clone())
     }
 }
 
