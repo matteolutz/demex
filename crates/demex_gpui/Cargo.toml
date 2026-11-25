@@ -1,0 +1,63 @@
+[package]
+name = "demex_gpui"
+version.workspace = true
+edition.workspace = true
+
+[package.metadata.bundle]
+name = "demex"
+identifier = "de.matteolutz.demex"
+icon = ["assets/icons/32x32.png", "assets/icons/128x128.png", "assets/icons/128x128@2x.png"]
+copyright = "Copyright (c) Matteo Lutz 2026. All rights reserved."
+category = "public.app-category.utilities"
+
+deb_depends = ["build-essential", "pkg-config", "libasound2-dev", "libudev-dev", "libx11-dev", "libxkbcommon-dev", "libxkbcommon-x11-0", "libxkbcommon-x11-dev"]
+
+osx_frameworks = ["Metal"]
+osx_url_schemes = ["de.matteolutz.demex"]
+
+
+[dependencies]
+rfd = { version = "0.17.1"}
+open = { version = "5.3.2"}
+
+# gpui = { version = "*", features = ["leak-detection"] }
+gpui = { git = "https://github.com/zed-industries/zed"  }
+gpui_platform = { git = "https://github.com/zed-industries/zed", features = ["font-kit"]  }
+
+# gpui-component = { path = "../../../gpui-component/crates/ui" }
+gpui-component = { git = "https://github.com/matteolutz/gpui-component", branch = "main" }
+
+anyhow = {version = "1.0.100" }
+
+ecolor.workspace = true
+emath.workspace = true
+
+chrono.workspace = true
+clap.workspace = true
+env_logger.workspace = true
+gdtf.workspace = true
+interpolator.workspace = true
+itertools.workspace = true
+log.workspace = true
+parking_lot.workspace = true
+regex.workspace = true
+
+serde.workspace = true
+serde_json.workspace = true
+
+strum.workspace = true
+strum_macros.workspace = true
+
+serialport.workspace = true
+
+demex_headless.workspace = true
+demex_dmx.workspace = true
+demex_core.workspace = true
+tree-sitter-demex.workspace = true
+rust-embed = "8.9.0"
+dirs = "6.0.0"
+smol = "2.0.2"
+
+strfmt = "0.2.5"
+
+arc-swap.workspace = true

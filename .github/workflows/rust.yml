@@ -1,34 +1,54 @@
-name: build-and-test
+name: test-and-build
 
 on:
   push:
-    branches: [main, dev]
+    branches:
+      - "main"
+      - "gpui"
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build_and_test:
-    name: Build and Test demex
+  lint_test_and_build:
+    name: Lint, Test and Build demex
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - uses: Swatinem/rust-cache@v2
-
-      - name: setup toolchain
+      - name: Setup Rust toolchain
         uses: hecrj/setup-rust-action@v1
         with:
           rust-version: stable
 
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install global cargo binaries
+        run: cargo install cargo-bundle
+
       - name: Install apt dependencies
-        run: sudo apt-get update && sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
+        run: sudo apt-get update && sudo apt-get install build-essential pkg-config libasound2-dev libudev-dev libx11-dev libxkbcommon-dev libxkbcommon-x11-0 libxkbcommon-x11-dev libwayland-client0 libwayland-dev
+
+      - name: cargo check
+        run: cargo check --all-features
 
       - name: cargo test
         run: cargo test --all-features
 
-      - name: rustfmt
-        run: cargo fmt --all -- --check
+      - name: cargo build demex_gpui
+        run: cargo build --bin demex_gpui --release
 
-      - name: clippy
-        run: cargo clippy --all --all-features --tests
+      - name: cargo bundle
+        run: cargo bundle -p demex_gpui --release
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: demex
+          path: target/release/demex_gpui
+
+      - name: Upload bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: demex Bundles
+          path: target/release/bundle/

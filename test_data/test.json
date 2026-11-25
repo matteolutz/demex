@@ -1,0 +1,112 @@
+{
+  "preset_handler": {
+    "groups": {},
+    "macros": {},
+    "command_slices": {},
+    "sequences": {},
+    "presets": {}
+  },
+  "updatable_handler": { "executors": {}, "group_masters": {} },
+  "timing_handler": {
+    "speed_master_values": {
+      "2": { "bpm": 120.0 },
+      "1": { "bpm": 120.0 },
+      "4": { "bpm": 120.0 },
+      "7": { "bpm": 120.0 },
+      "8": { "bpm": 120.0 },
+      "3": { "bpm": 120.0 },
+      "5": { "bpm": 120.0 },
+      "0": { "bpm": 120.0 },
+      "9": { "bpm": 120.0 },
+      "6": { "bpm": 120.0 }
+    },
+    "timecodes": {}
+  },
+  "input_device_configs": [],
+  "patch": {
+    "fixtures": [],
+    "layout": { "fixtures": [], "decorations": [] },
+    "outputs": []
+  },
+  "ui": {
+    "dock_windows": [
+      {
+        "dock_area_state": {
+          "version": 5,
+          "center": {
+            "panel_name": "StackPanel",
+            "children": [
+              {
+                "panel_name": "TabPanel",
+                "children": [
+                  {
+                    "panel_name": "demex-fixture-selection",
+                    "children": [],
+                    "info": { "panel": null }
+                  },
+                  {
+                    "panel_name": "demex-fixture-list",
+                    "children": [],
+                    "info": { "panel": null }
+                  },
+                  {
+                    "panel_name": "demex-pool",
+                    "children": [],
+                    "info": { "panel": null }
+                  },
+                  {
+                    "panel_name": "demex-pool",
+                    "children": [],
+                    "info": { "panel": null }
+                  },
+                  {
+                    "panel_name": "demex-pool",
+                    "children": [],
+                    "info": { "panel": null }
+                  },
+                  {
+                    "panel_name": "demex-pool",
+                    "children": [],
+                    "info": { "panel": null }
+                  },
+                  {
+                    "panel_name": "demex-pool",
+                    "children": [],
+                    "info": { "panel": null }
+                  },
+                  {
+                    "panel_name": "layout-view",
+                    "children": [],
+                    "info": { "panel": null }
+                  }
+                ],
+                "info": { "tabs": { "active_index": 7 } }
+              }
+            ],
+            "info": { "stack": { "sizes": [1236.0], "axis": 0 } }
+          },
+          "right_dock": {
+            "panel": {
+              "panel_name": "demex-performance",
+              "children": [],
+              "info": { "panel": null }
+            },
+            "placement": "right",
+            "size": 300.0,
+            "open": true
+          },
+          "bottom_dock": {
+            "panel": {
+              "panel_name": "demex-command",
+              "children": [],
+              "info": { "panel": null }
+            },
+            "placement": "bottom",
+            "size": 130.0,
+            "open": true
+          }
+        }
+      }
+    ]
+  }
+}

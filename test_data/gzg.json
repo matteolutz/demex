@@ -1,0 +1,62 @@
+{
+  "engine": {
+    "preset_handler": {
+      "groups": {},
+      "macros": {},
+      "command_slices": {},
+      "sequences": {},
+      "presets": {}
+    },
+    "updatable_handler": { "executors": {}, "group_masters": {} },
+    "timing_handler": {
+      "speed_master_values": {
+        "6": { "bpm": 120.0 },
+        "2": { "bpm": 120.0 },
+        "5": { "bpm": 120.0 },
+        "8": { "bpm": 120.0 },
+        "7": { "bpm": 120.0 },
+        "3": { "bpm": 120.0 },
+        "9": { "bpm": 120.0 },
+        "4": { "bpm": 120.0 },
+        "0": { "bpm": 120.0 },
+        "1": { "bpm": 120.0 }
+      },
+      "timecodes": {}
+    },
+    "input_device_configs": [],
+    "patch": {
+      "fixtures": [
+        {
+          "id": 1,
+          "name": "MAC 1",
+          "fixture_type_id": "734e7429-ed94-47db-9ad4-8eb85072df95",
+          "fixture_type_dmx_mode": "14 CH",
+          "universe": 1,
+          "start_address": 1
+        },
+        {
+          "id": 2,
+          "name": "MAC 2",
+          "fixture_type_id": "734e7429-ed94-47db-9ad4-8eb85072df95",
+          "fixture_type_dmx_mode": "14 CH",
+          "universe": 1,
+          "start_address": 21
+        },
+        {
+          "id": 3,
+          "name": "MAC 3",
+          "fixture_type_id": "734e7429-ed94-47db-9ad4-8eb85072df95",
+          "fixture_type_dmx_mode": "14 CH",
+          "universe": 1,
+          "start_address": 41
+        }
+      ],
+      "layout_pool": { "layouts": [] },
+      "outputs": []
+    }
+  },
+  "ui": {
+    "dock_windows": []
+  },
+  "version": "0.2.0"
+}

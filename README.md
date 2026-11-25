@@ -16,20 +16,31 @@ git clone https://github.com/matteolutz/demex
 and run the project using
 
 ```bash
-cargo run -- -s test_data/cinema.json
+cargo run --bin demex_gpui -- -s test_data/cinema.json
 ```
 
 There will be test data loaded and you can start playing around with the commands and the UI.
 
 ### Installation
 
-#### Ubuntu / Debian
+#### Ubuntu / Debian (X11)
 
 Before you can run demex, you need to install some additional packages. You can do this by running
 
 ```bash
-sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
+sudo apt-get install build-essential pkg-config libasound2-dev libudev-dev libx11-dev libxkbcommon-dev libxkbcommon-x11-0 libxkbcommon-x11-dev
 ```
+
+To use a USB-to-DMX adapter, you need to grant permission to the user account, running demex:
+
+```bash
+sudo usermod -a -G dialout $USER
+sudo usermod -a -G tty $USER
+```
+
+#### macOS
+On macOS GPUI uses Metal as its rendering engine. Please refer to [GPUI's instructions](https://github.com/zed-industries/zed/tree/main/crates/gpui#macos), on how to install it.
+
 
 #### Windows
 > TODO
@@ -41,6 +52,13 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for more informations.
+
+## Acknowledgements
+
+This project incorporates code from:
+
+- [zeevonk](https://github.com/BaukeWestendorp/zeevonk) — Copyright (C) 2026 Bauke Westendorp  
+  Licensed under the Apache License, Version 2.0
 
 ---
 

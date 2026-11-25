@@ -1,0 +1,8 @@
+[package]
+name="demex_headless"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde.workspace = true
+byteorder.workspace = true

@@ -1,0 +1,20 @@
+[package]
+name = "demex"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+demex_headless.workspace = true
+demex_dmx.workspace = true
+demex_core.workspace = true
+
+serde.workspace = true
+serde_json.workspace = true
+gdtf.workspace = true
+itertools.workspace = true
+
+clap.workspace = true
+env_logger.workspace = true
+log.workspace = true
+
+arc-swap.workspace = true
